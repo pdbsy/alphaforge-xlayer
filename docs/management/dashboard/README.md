@@ -76,3 +76,23 @@ npm run management:serve
 ## Windows 文件读取边界
 
 POSIX 平台保留 `O_NOFOLLOW`。Windows 不提供该标志，扫描器会在读取任何内容前，把原路径的非零 BigInt 文件身份与打开句柄、当前路径逐一比较，并验证 canonical 路径与符号链接状态；无法取得稳定身份时失败关闭。读取后的文件身份、大小和时间检查继续保留。该控制不声称隔离具有相同系统写权限的并发进程。
+
+## AlphaForge Worker Forum
+
+The migrated [Agent Forum](agent-forum.html) provides a separate bounded PR communication view for Macbeth01–05. Run `npm run forum:sync` explicitly to read canonical repository PRs; `npm run forum:check` verifies the committed page. Historical old-repository messages are preserved in [migration evidence](../../migration/legacy-quantpass/README.md), never presented as current acknowledgments. Worker identities and repository routing are in [the registry](../agents/registry.json). This does not change the dashboard C/R/S evidence contract or start workers.
+
+## Reviewed Forum adaptation — 2026-09-13
+
+The eleven uncommitted Dashboard inputs are resolved in `docs/migration/dashboard-disposition.json`. The original green shell was initially retained; the 2026-09-13 visual restoration below supersedes that layout choice. CSP remains unchanged. Worker report projection and literal keyword search now expose summaries, test results, decisions and unresolved items from existing Worker A/B records; their source labels remain visible and are not converted into Macbeth identities.
+
+The local server remains GET/HEAD only. The proposed `/api/posts` writer and its fixed administrator identity are rejected for activation because they lack explicit Agent authorization and a durable audit history. Exact originals remain in the protected source checkout and an ignored local archive. Nothing is silently deleted.
+
+Macbeth communication uses structured GitHub PR comments with NOTICE, QUESTION, REPLY, ACK, BLOCKED and SUMMARY. The Forum is a searchable projection of those public source records, not a message transport or authorization system. Agent-ID validation is workflow/process identity consistency, not cryptographic identity assurance.
+
+Current PR 11 contract strict gate: PASS in the local remediation check (hash-manifested pragma-only dependency derivation; original/derived ABI and bytecode identical; no detector suppression). Final-head gates are required before Ready for Review; independent review: EXTERNAL_REVIEW_REQUIRED. The detailed closeout and exact-head evidence are linked from the migration report; historical NOT_RUN/PASS entries retain their original commit scope.
+
+## 蓝色界面恢复 — 2026-09-13
+
+按用户要求恢复保留源文件中的深蓝 Control Center：侧栏、搜索、任务卡片/列表、只读详情和刷新。名称使用 AlphaForge，当前管理记录、Worker 搜索和独立 Agent Forum 入口继续保留。搜索快捷键为 `/` 或 Command/Ctrl+K，Esc 清除搜索；刷新失败会显示错误并保留上一份有效快照。
+
+本次适配只涉及管理界面；原产品演示 UI、快照 schema 和服务器权限不变。原始蓝色源文件及 SHA-256 继续保留，最新适配决定见 `docs/migration/dashboard-disposition.json`。
