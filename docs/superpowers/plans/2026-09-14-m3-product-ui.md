@@ -72,13 +72,13 @@
 - [x] On backend strategy routes and account data, label the existing API content `LOCAL SIMULATION`.
 - [x] Keep `/trade/:strategyId` as the single detail-route shape; do not add a Testnet-only page.
 - [x] Add the account wallet/network/asset shell while keeping current local account data separated.
-- [ ] Run targeted UI, importer and build tests.
+- [x] Run targeted UI, importer and build tests.
 
 ## Task 4: Record evidence and close only the implemented phase
 
 **Files:** Add `docs/management/agents/logs/M3-04-PRODUCT-UI.md`; update this plan's checkboxes.
 
-- [ ] Record Task, status, branch, exact commit, change rationale, files, tests, limitations, dependencies, decision requests and next step.
+- [x] Record Task, status, branch, exact commit, change rationale, files, tests, limitations, dependencies, decision requests and next step.
 - [ ] Run typecheck, lint, format check, focused UI tests, full test suite and web build with the approved toolchain.
 - [ ] Verify the protected prototype byte count and SHA-256 tests still pass.
 - [ ] Request independent review before integration.
