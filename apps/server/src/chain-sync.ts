@@ -281,7 +281,7 @@ export class ChainSynchronizer {
     this.#putProjections(result.projections);
     const confirmationBigInt = latest.number - receipt.blockNumber + 1n;
     const confirmations = toCount(confirmationBigInt);
-    operation = transitionOperation(operation, { state: 'CONFIRMING', confirmations });
+    operation = transitionOperation(operation, { state: 'CONFIRMING', confirmations, reconciled: true });
     this.#store.saveOperation(operation);
     if (confirmations >= this.#confirmationDepth) {
       operation = transitionOperation(operation, {

@@ -58,7 +58,7 @@ export type OperationTransition =
       readonly receiptStatus: 'REVERTED';
       readonly errorCode: 'TRANSACTION_REVERTED';
     }
-  | { readonly state: 'CONFIRMING'; readonly confirmations: number }
+  | { readonly state: 'CONFIRMING'; readonly confirmations: number; readonly reconciled?: boolean }
   | {
       readonly state: 'CONFIRMED';
       readonly confirmations: number;
@@ -158,7 +158,13 @@ export function transitionOperation(current: ChainOperation, update: OperationTr
     case 'CONFIRMING':
       if (!Number.isSafeInteger(update.confirmations) || update.confirmations < current.confirmations)
         throw new Error('INVALID_CONFIRMATION_COUNT');
-      return Object.freeze({ ...current, ...update, confirmedAt: null, errorCode: null });
+      return Object.freeze({
+        ...current,
+        ...update,
+        reconciled: update.reconciled ?? current.reconciled,
+        confirmedAt: null,
+        errorCode: null,
+      });
     case 'CONFIRMED':
       if (!update.reconciled) throw new Error('RECONCILIATION_REQUIRED');
       if (!Number.isSafeInteger(update.confirmations) || update.confirmations < current.confirmations)

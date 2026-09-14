@@ -239,6 +239,7 @@ test('receipt and tx hash remain confirming until canonical event reconciliation
   const confirming = await sync.trackOperation('operation-confirm');
   assert.equal(confirming.state, 'CONFIRMING');
   assert.equal(confirming.confirmations, 2);
+  assert.equal(confirming.reconciled, true);
   assert.equal(confirming.confirmedAt, null);
 
   rpc.head = 102n;
