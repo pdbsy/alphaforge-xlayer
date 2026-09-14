@@ -4,12 +4,7 @@ import { mkdir, mkdtemp } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { ChainStore, type IndexedChainEvent } from '../apps/server/src/chain-store.ts';
-import {
-  asAddress,
-  asBlockHash,
-  asHexData,
-  asTransactionHash,
-} from '../packages/chain-adapter/src/types.ts';
+import { asAddress, asBlockHash, asHexData, asTransactionHash } from '../packages/chain-adapter/src/types.ts';
 import { createOperation, transitionOperation } from '../packages/chain-adapter/src/lifecycle.ts';
 
 const CHAIN_ID = 46_630;

@@ -49,7 +49,11 @@ const factory = new PreparedActionFactory<{ readonly amount: string }>({
 
 test('wallet is inert until explicit connect and connect verifies chain identity', async () => {
   const provider = new ProviderFixture();
-  const wallet = new Eip1193Wallet(provider, { chainId: CHAIN_ID, target: CONTRACT });
+  const wallet = new Eip1193Wallet(provider, {
+    chainId: CHAIN_ID,
+    target: CONTRACT,
+    actionAuthority: factory.authority,
+  });
   assert.deepEqual(provider.methods, []);
   assert.deepEqual(await wallet.connect(), { account: OWNER, chainId: CHAIN_ID });
   assert.deepEqual(provider.methods, ['eth_requestAccounts', 'eth_chainId']);
@@ -60,6 +64,7 @@ test('wallet verifies account and chain again immediately before submission', as
   const wallet = new Eip1193Wallet(provider, {
     chainId: CHAIN_ID,
     target: CONTRACT,
+    actionAuthority: factory.authority,
     now: () => '2026-09-14T12:00:00.000Z',
   });
   const prepared = factory.prepare({ amount: '00' }, OWNER);
@@ -84,7 +89,11 @@ test('wallet verifies account and chain again immediately before submission', as
 
 test('changed account, changed chain and forged prepared data fail before submission', async () => {
   const provider = new ProviderFixture();
-  const wallet = new Eip1193Wallet(provider, { chainId: CHAIN_ID, target: CONTRACT });
+  const wallet = new Eip1193Wallet(provider, {
+    chainId: CHAIN_ID,
+    target: CONTRACT,
+    actionAuthority: factory.authority,
+  });
   const prepared = factory.prepare({ amount: '00' }, OWNER);
 
   provider.accounts = [OTHER_OWNER];
@@ -111,7 +120,7 @@ test('changed account, changed chain and forged prepared data fail before submis
   );
   const foreignFactory = new PreparedActionFactory<{ readonly amount: string }>({
     chainId: CHAIN_ID,
-    target: OTHER_OWNER,
+    target: CONTRACT,
     operationId: () => 'foreign-action',
     encode: () => ({ data: asHexData('0x1234'), value: 0n }),
   });
@@ -126,7 +135,11 @@ test('changed account, changed chain and forged prepared data fail before submis
 
 test('wallet rejection and malformed submission response use stable sanitized errors', async () => {
   const provider = new ProviderFixture();
-  const wallet = new Eip1193Wallet(provider, { chainId: CHAIN_ID, target: CONTRACT });
+  const wallet = new Eip1193Wallet(provider, {
+    chainId: CHAIN_ID,
+    target: CONTRACT,
+    actionAuthority: factory.authority,
+  });
   const prepared = factory.prepare({ amount: '00' }, OWNER);
   provider.sendError = { code: 4001, message: 'secret provider detail' };
   await assert.rejects(
@@ -147,6 +160,16 @@ test('wallet rejection and malformed submission response use stable sanitized er
       return error instanceof WalletFailure && error.code === 'WALLET_INVALID_RESPONSE';
     },
   );
+});
+
+test('prepared action factory rejects values outside the EVM uint256 range', () => {
+  const invalidFactory = new PreparedActionFactory<null>({
+    chainId: CHAIN_ID,
+    target: CONTRACT,
+    operationId: () => 'invalid-value',
+    encode: () => ({ data: asHexData('0x'), value: 1n << 256n }),
+  });
+  assert.throws(() => invalidFactory.prepare(null, OWNER), /INVALID_TRANSACTION_VALUE/);
 });
 
 test('operation evidence keeps receipt, reconciliation and product projection milestones separate', () => {

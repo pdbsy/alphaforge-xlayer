@@ -50,6 +50,11 @@ export interface PreparedAction {
   readonly value: bigint;
 }
 
+declare const preparedActionAuthorityBrand: unique symbol;
+export interface PreparedActionAuthority {
+  readonly [preparedActionAuthorityBrand]: true;
+}
+
 interface PreparedActionPolicy<Action> {
   readonly chainId: number;
   readonly target: Address;
@@ -63,7 +68,10 @@ interface PreparedActionPolicy<Action> {
   };
 }
 
-const trustedActions = new WeakSet<object>();
+const trustedAuthorities = new WeakSet<object>();
+const trustedActions = new WeakMap<object, PreparedActionAuthority>();
+const maximumTransactionValue = (1n << 256n) - 1n;
+const maximumCalldataBytes = 131_072;
 
 function validChainId(value: number): number {
   if (!Number.isSafeInteger(value) || value <= 0) throw new Error('INVALID_CHAIN_ID');
@@ -77,6 +85,7 @@ function validOperationId(value: string): string {
 
 export class PreparedActionFactory<Action> {
   readonly #policy: PreparedActionPolicy<Action>;
+  readonly authority: PreparedActionAuthority;
 
   constructor(policy: PreparedActionPolicy<Action>) {
     this.#policy = Object.freeze({
@@ -84,20 +93,25 @@ export class PreparedActionFactory<Action> {
       chainId: validChainId(policy.chainId),
       target: asAddress(policy.target),
     });
+    this.authority = Object.freeze({}) as PreparedActionAuthority;
+    trustedAuthorities.add(this.authority);
   }
 
   prepare(action: Action, owner: Address): PreparedAction {
     const encoded = this.#policy.encode(action, owner);
-    if (encoded.value < 0n) throw new Error('INVALID_TRANSACTION_VALUE');
+    if (encoded.value < 0n || encoded.value > maximumTransactionValue)
+      throw new Error('INVALID_TRANSACTION_VALUE');
+    const data = asHexData(encoded.data);
+    if ((data.length - 2) / 2 > maximumCalldataBytes) throw new Error('TRANSACTION_DATA_TOO_LARGE');
     const prepared: PreparedAction = Object.freeze({
       operationId: validOperationId(this.#policy.operationId(action)),
       chainId: this.#policy.chainId,
       owner: asAddress(owner),
       target: this.#policy.target,
-      data: asHexData(encoded.data),
+      data,
       value: encoded.value,
     });
-    trustedActions.add(prepared);
+    trustedActions.set(prepared, this.authority);
     return prepared;
   }
 }
@@ -120,6 +134,7 @@ export interface BrowserWalletPort {
 interface WalletOptions {
   readonly chainId: number;
   readonly target: Address;
+  readonly actionAuthority: PreparedActionAuthority;
   readonly now?: () => string;
 }
 
@@ -149,12 +164,15 @@ export class Eip1193Wallet implements BrowserWalletPort {
   readonly #provider: Eip1193Provider;
   readonly #chainId: number;
   readonly #target: Address;
+  readonly #actionAuthority: PreparedActionAuthority;
   readonly #now: () => string;
 
   constructor(provider: Eip1193Provider, options: WalletOptions) {
     this.#provider = provider;
     this.#chainId = validChainId(options.chainId);
     this.#target = asAddress(options.target);
+    if (!trustedAuthorities.has(options.actionAuthority)) throw new Error('INVALID_ACTION_AUTHORITY');
+    this.#actionAuthority = options.actionAuthority;
     this.#now = options.now ?? (() => new Date().toISOString());
   }
 
@@ -186,7 +204,7 @@ export class Eip1193Wallet implements BrowserWalletPort {
   }
 
   async submit(prepared: PreparedAction): Promise<SubmittedOperation> {
-    if (!prepared || typeof prepared !== 'object' || !trustedActions.has(prepared))
+    if (!prepared || typeof prepared !== 'object' || trustedActions.get(prepared) !== this.#actionAuthority)
       throw new WalletFailure('UNTRUSTED_PREPARED_ACTION');
     if (prepared.chainId !== this.#chainId || !sameAddress(prepared.target, this.#target))
       throw new WalletFailure('UNTRUSTED_PREPARED_ACTION');

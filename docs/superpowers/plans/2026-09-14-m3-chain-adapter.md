@@ -8,7 +8,7 @@
 
 **Tech Stack:** Node.js 24.21.0, npm 11.19.1, TypeScript 6, node:test, node:sqlite, native fetch/EIP-1193 interfaces; no new production dependency.
 
-**Spec:** `/Users/ikol/.codex/attachments/05018e29-c810-4c54-a1b3-e81fc73c5a1e/pasted-text.txt`
+**Spec:** user-supplied `Macbeth03 — M3 Chain Adapter Implementation`
 
 ## Global Constraints
 
@@ -27,11 +27,13 @@
 ### Task 1: Transaction lifecycle and chain value types
 
 **Files:**
+
 - Create: `packages/chain-adapter/src/types.ts`
 - Create: `packages/chain-adapter/src/lifecycle.ts`
 - Test: `test/chain-lifecycle.test.ts`
 
 **Interfaces:**
+
 - Produces: `Address`, `TransactionHash`, `BlockHash`, `TransactionState`, `ChainOperation`, `transitionOperation(operation, update)`.
 - Consumes: no contract ABI and no browser APIs.
 
@@ -69,12 +71,14 @@ The function validates evidence required by each destination state, preserves im
 ### Task 2: Trusted deployment manifest and bounded read-only RPC
 
 **Files:**
+
 - Create: `packages/chain-adapter/src/manifest.ts`
 - Create: `packages/chain-adapter/src/rpc.ts`
 - Create: `packages/chain-adapter/src/index.ts`
 - Test: `test/chain-rpc-manifest.test.ts`
 
 **Interfaces:**
+
 - Consumes: `Address`, `TransactionHash`, and `BlockHash` from Task 1.
 - Produces: `validateDeploymentManifest(input, expected)`, `ReadonlyRpc`, `JsonRpcClient`, normalized block/receipt/log records, and injected `RpcTransport`.
 
@@ -138,11 +142,13 @@ Only the allowlisted read methods are emitted. Each request has an abort timeout
 ### Task 3: Independent persistent chain projection store
 
 **Files:**
+
 - Create: `apps/server/chain-migrations/001-chain-projection.sql`
 - Create: `apps/server/src/chain-store.ts`
 - Test: `test/chain-store.test.ts`
 
 **Interfaces:**
+
 - Consumes: normalized operations, blocks, and logs from Tasks 1–2.
 - Produces: `ChainStore`, durable transaction/event/block/checkpoint/projection APIs, `rollbackFromBlock`, and deterministic event reads.
 
@@ -177,11 +183,13 @@ Tables record operations, canonical block history/checkpoints, chain events keye
 ### Task 4: Transaction tracker, indexer, reconciliation and recovery
 
 **Files:**
+
 - Create: `packages/chain-adapter/src/reconciliation.ts`
 - Create: `apps/server/src/chain-sync.ts`
 - Test: `test/chain-sync.test.ts`
 
 **Interfaces:**
+
 - Consumes: `ReadonlyRpc`, validated deployment manifest, `ChainStore`, and contract-specific `EventDecoder`/`ContractReconciler` plugins.
 - Produces: `ChainSynchronizer.syncTo(head)`, `trackOperation(operationId)`, reorg rewind/replay, and UI-safe operation snapshots.
 
@@ -220,11 +228,13 @@ Logs are fetched for the trusted contract and exact block range, sorted by block
 ### Task 5: Browser wallet port and adapter-facing operation model
 
 **Files:**
+
 - Create: `apps/web/src/chain-wallet.ts`
 - Create: `apps/web/src/strategy-adapter.ts`
 - Test: `test/ui-chain-wallet.test.ts`
 
 **Interfaces:**
+
 - Consumes: lifecycle types and ABI-independent prepared transaction fields.
 - Produces: `BrowserWalletPort`, `Eip1193Wallet`, `StrategyAdapter`, `PreparedAction`, `SubmittedOperation`, and wallet/network error codes consumable by Macbeth04.
 
@@ -260,11 +270,13 @@ The adapter requests accounts only on explicit connect, reads `eth_accounts`/`et
 ### Task 6: Documentation, integration gates and worker report evidence
 
 **Files:**
+
 - Create: `docs/M3-CHAIN-ADAPTER.md`
 - Modify: `README.md`
 - Modify: `package.json` only if test registration requires an explicit new script path; the existing wildcard-free test list otherwise receives the new tests.
 
 **Interfaces:**
+
 - Documents the public types from Tasks 1–5 for Macbeth02, Macbeth04, and Macbeth05.
 - Records the contract-specific boundary and absence of fabricated Testnet evidence.
 

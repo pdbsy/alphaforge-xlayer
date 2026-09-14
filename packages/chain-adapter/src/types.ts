@@ -23,7 +23,8 @@ export function asBlockHash(value: string): BlockHash {
 }
 
 export function asHexData(value: string): HexData {
-  if (typeof value !== 'string' || !/^0x(?:[0-9a-fA-F]{2})*$/.test(value)) throw new Error('INVALID_HEX_DATA');
+  if (typeof value !== 'string' || !/^0x(?:[0-9a-fA-F]{2})*$/.test(value))
+    throw new Error('INVALID_HEX_DATA');
   return value as HexData;
 }
 

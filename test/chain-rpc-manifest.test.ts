@@ -47,9 +47,10 @@ test('deployment manifest is accepted only when exact trusted identity matches',
     { ...manifestInput, contractAddress: OWNER },
     { ...manifestInput, unexpected: true },
   ]) {
-    const expectation = 'contractAddress' in changed && changed.contractAddress === OWNER
-      ? { ...expected, contractAddress: CONTRACT }
-      : expected;
+    const expectation =
+      'contractAddress' in changed && changed.contractAddress === OWNER
+        ? { ...expected, contractAddress: CONTRACT }
+        : expected;
     assert.throws(() => validateDeploymentManifest(changed, expectation));
   }
 });
@@ -57,7 +58,10 @@ test('deployment manifest is accepted only when exact trusted identity matches',
 test('deployment manifest rejects missing runtime identity and unsafe identifiers', () => {
   const withoutRuntimeHash = { ...manifestInput } as Partial<typeof manifestInput>;
   delete withoutRuntimeHash.runtimeBytecodeHash;
-  assert.throws(() => validateDeploymentManifest(withoutRuntimeHash, expected), /INVALID_DEPLOYMENT_MANIFEST/);
+  assert.throws(
+    () => validateDeploymentManifest(withoutRuntimeHash, expected),
+    /INVALID_DEPLOYMENT_MANIFEST/,
+  );
   assert.throws(
     () => validateDeploymentManifest({ ...manifestInput, abiVersion: '../untrusted' }, expected),
     /INVALID_DEPLOYMENT_MANIFEST/,
@@ -157,7 +161,10 @@ test('RPC rotates endpoints for bounded retryable failures', async () => {
 
 test('RPC fails closed on JSON-RPC errors, malformed data and oversized responses', async () => {
   const cases: { body: string; code: string }[] = [
-    { body: JSON.stringify({ jsonrpc: '2.0', id: 1, error: { code: -32_000, message: 'bad' } }), code: 'RPC_REMOTE_ERROR' },
+    {
+      body: JSON.stringify({ jsonrpc: '2.0', id: 1, error: { code: -32_000, message: 'bad' } }),
+      code: 'RPC_REMOTE_ERROR',
+    },
     { body: JSON.stringify({ jsonrpc: '2.0', id: 2, result: '0xb626' }), code: 'RPC_INVALID_ENVELOPE' },
     { body: '{', code: 'RPC_INVALID_RESPONSE' },
     { body: 'x'.repeat(129), code: 'RPC_RESPONSE_TOO_LARGE' },
@@ -167,11 +174,14 @@ test('RPC fails closed on JSON-RPC errors, malformed data and oversized response
       maxResponseBytes: 128,
       transport: async () => ({ status: 200, body: value.body }),
     });
-    await assert.rejects(() => rpc.chainId(), (error: unknown) => {
-      assert.ok(error instanceof RpcFailure);
-      assert.equal(error.code, value.code);
-      return true;
-    });
+    await assert.rejects(
+      () => rpc.chainId(),
+      (error: unknown) => {
+        assert.ok(error instanceof RpcFailure);
+        assert.equal(error.code, value.code);
+        return true;
+      },
+    );
   }
 });
 
@@ -183,11 +193,14 @@ test('RPC errors never expose endpoint paths, query credentials or transport det
       throw new Error(`network failure at ${endpoint}`);
     },
   });
-  await assert.rejects(() => rpc.chainId(), (error: unknown) => {
-    assert.ok(error instanceof RpcFailure);
-    assert.equal(error.code, 'RPC_UNAVAILABLE');
-    assert.equal(error.message, 'RPC_UNAVAILABLE');
-    assert.doesNotMatch(String(error), /secret-value|private-provider-key|rpc\.example/);
-    return true;
-  });
+  await assert.rejects(
+    () => rpc.chainId(),
+    (error: unknown) => {
+      assert.ok(error instanceof RpcFailure);
+      assert.equal(error.code, 'RPC_UNAVAILABLE');
+      assert.equal(error.message, 'RPC_UNAVAILABLE');
+      assert.doesNotMatch(String(error), /secret-value|private-provider-key|rpc\.example/);
+      return true;
+    },
+  );
 });

@@ -118,7 +118,8 @@ function endpoint(value: string): string {
 }
 
 function object(value: unknown): Record<string, unknown> {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new RpcFailure('RPC_INVALID_RESPONSE');
+  if (!value || typeof value !== 'object' || Array.isArray(value))
+    throw new RpcFailure('RPC_INVALID_RESPONSE');
   return value as Record<string, unknown>;
 }
 
@@ -277,7 +278,12 @@ export class JsonRpcClient implements ReadonlyRpc {
   }
 
   async block(number: bigint | 'latest'): Promise<ChainBlock | null> {
-    return parseBlock(await this.#request('eth_getBlockByNumber', [number === 'latest' ? number : hexQuantity(number), false]));
+    return parseBlock(
+      await this.#request('eth_getBlockByNumber', [
+        number === 'latest' ? number : hexQuantity(number),
+        false,
+      ]),
+    );
   }
 
   async receipt(hash: TransactionHash): Promise<ChainReceipt | null> {

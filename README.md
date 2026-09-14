@@ -8,9 +8,10 @@ AlphaForge is a safety-first prototype for separating strategy access rights fro
 - Strict money parsing and vault invariants
 - Idempotent commands, optimistic revisions and audit history
 - Robinhood Chain Testnet metadata and fail-closed configuration guard
+- ABI-independent M3 wallet, read-only RPC, canonical indexer and reorg-safe projection foundation
 - Automated tests, linting, formatting, build and baseline secret checks
 
-No contract is deployed yet and the application does not sign or submit transactions. Every balance in the UI is simulated.
+No contract is deployed yet and the application does not wire or broadcast Testnet transactions. The M3 chain foundation remains inactive behind a reviewed ABI and deployment-manifest boundary. Every balance in the current UI is simulated. See [the M3 chain adapter guide](docs/M3-CHAIN-ADAPTER.md) for implemented interfaces and current limits.
 
 ## Quick start
 
@@ -48,6 +49,7 @@ npm run supply:check
 apps/server/          Fastify API and SQLite-backed ledger
 apps/web/             React competition demo
 packages/robinhood-chain/  Robinhood Chain Testnet boundary
+packages/chain-adapter/  M3 transaction, manifest, RPC and reconciliation types
 packages/config/      Runtime safety gate
 packages/domain/      Exact money and vault state machine
 src/security-model/   Threat and trust-boundary model
