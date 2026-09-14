@@ -12,6 +12,19 @@ integration draft for review. It does not define a Vault address, deployment blo
 version, runtime bytecode hash, owner authorization ABI, risk permit ABI, or deployment manifest.
 All addresses remain unset and every onchain operation remains `NOT_RUN`.
 
+## Local toolchain boundary
+
+The branch keeps the locked Forge 1.5.1, solc 0.8.31, OpenZeppelin Contracts 5.4.0, and Slither
+0.11.3 inputs. The derived OpenZeppelin subset now contains 21 exact pragma-only transformations
+needed by EIP-712, ERC-20, SafeERC20, ReentrancyGuard, and their reviewed transitive imports. The
+strict local gate checks all project Forge artifacts against the original and derived compilations,
+runs 12 dependency-derivation regression tests, executes the Solidity unit/fuzz/invariant suites,
+and runs Slither without detector exclusions.
+
+`contracts/README.md` and `contracts/TOOLCHAIN.md` are historical migrated artifacts protected by
+the repository migration manifest. They remain byte-identical to their recorded source versions;
+current M3 notes belong in this document and the eventual M3 work log.
+
 ## Strategy identifier encoding draft
 
 The onchain type is `bytes32`. The proposed deterministic encoding is:
