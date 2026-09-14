@@ -10,10 +10,7 @@ import {
   type BlockHash,
   type HexData,
 } from '../../../packages/chain-adapter/src/types.ts';
-import type {
-  ChainBlock,
-  ChainLog,
-} from '../../../packages/chain-adapter/src/rpc.ts';
+import type { ChainBlock, ChainLog } from '../../../packages/chain-adapter/src/rpc.ts';
 import type {
   ChainOperation,
   OperationErrorCode,
@@ -150,7 +147,12 @@ function eventPayloadFingerprint(event: IndexedChainEvent): string {
   });
 }
 
-function validateEvent(event: IndexedChainEvent, expectedChainId: number, contract: Address, block: ChainBlock): void {
+function validateEvent(
+  event: IndexedChainEvent,
+  expectedChainId: number,
+  contract: Address,
+  block: ChainBlock,
+): void {
   if (
     event.chainId !== expectedChainId ||
     !sameAddress(event.address, contract) ||
@@ -216,14 +218,18 @@ export class ChainStore {
       const version = Number(this.db.prepare('PRAGMA user_version').get()?.user_version);
       const tables = (
         this.db
-          .prepare("SELECT name FROM sqlite_schema WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name")
+          .prepare(
+            "SELECT name FROM sqlite_schema WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name",
+          )
           .all() as { name: string }[]
       ).map((row) => row.name);
       if (version === 0) {
         if (tables.length) throw new Error('REFUSING_UNKNOWN_CHAIN_DATABASE');
         this.db.exec('BEGIN IMMEDIATE');
         try {
-          this.db.exec(readFileSync(new URL('../chain-migrations/001-chain-projection.sql', import.meta.url), 'utf8'));
+          this.db.exec(
+            readFileSync(new URL('../chain-migrations/001-chain-projection.sql', import.meta.url), 'utf8'),
+          );
           this.db.exec('COMMIT');
         } catch (error) {
           this.db.exec('ROLLBACK');
@@ -248,8 +254,7 @@ export class ChainStore {
         'SELECT block_number, block_hash FROM chain_checkpoints WHERE chain_id = ? AND contract_address = ?',
       )
       .get(chainId(valueChainId), normalizedAddress(contract)) as
-      | { block_number: number; block_hash: string }
-      | undefined;
+      { block_number: number; block_hash: string } | undefined;
     return row
       ? Object.freeze({ blockNumber: BigInt(row.block_number), blockHash: asBlockHash(row.block_hash) })
       : null;
@@ -261,8 +266,7 @@ export class ChainStore {
         'SELECT block_number, block_hash, parent_hash, block_timestamp FROM chain_blocks WHERE chain_id = ? AND contract_address = ? AND block_number = ? AND canonical = 1',
       )
       .get(chainId(valueChainId), normalizedAddress(contract), safeNumber(blockNumber)) as
-      | { block_number: number; block_hash: string; parent_hash: string; block_timestamp: string }
-      | undefined;
+      { block_number: number; block_hash: string; parent_hash: string; block_timestamp: string } | undefined;
     return row
       ? Object.freeze({
           number: BigInt(row.block_number),
@@ -288,7 +292,9 @@ export class ChainStore {
     const sorted = [...events].sort(
       (left, right) => left.transactionIndex - right.transactionIndex || left.logIndex - right.logIndex,
     );
-    const identities = new Set(sorted.map((item) => `${item.transactionHash.toLowerCase()}:${item.logIndex}`));
+    const identities = new Set(
+      sorted.map((item) => `${item.transactionHash.toLowerCase()}:${item.logIndex}`),
+    );
     if (identities.size !== sorted.length) throw new Error('CHAIN_EVENT_CONFLICT');
 
     this.db.exec('BEGIN IMMEDIATE');
@@ -300,17 +306,26 @@ export class ChainStore {
         )
         .get(id, address, blockNumber) as { block_hash: string; log_count: number } | undefined;
       if (existingBlock) {
-        if (existingBlock.block_hash.toLowerCase() !== block.hash.toLowerCase() || existingBlock.log_count !== sorted.length)
+        if (
+          existingBlock.block_hash.toLowerCase() !== block.hash.toLowerCase() ||
+          existingBlock.log_count !== sorted.length
+        )
           throw new Error('CHAIN_BLOCK_CONFLICT');
       } else if (
         current &&
-        (block.number !== current.blockNumber + 1n || block.parentHash.toLowerCase() !== current.blockHash.toLowerCase())
+        (block.number !== current.blockNumber + 1n ||
+          block.parentHash.toLowerCase() !== current.blockHash.toLowerCase())
       ) {
         throw new Error('CHAIN_PARENT_MISMATCH');
       } else if (!current || block.number > current.blockNumber) {
         this.db
           .prepare(
-            'INSERT INTO chain_blocks (chain_id, contract_address, block_number, block_hash, parent_hash, block_timestamp, log_count, canonical) VALUES (?, ?, ?, ?, ?, ?, ?, 1)',
+            `INSERT INTO chain_blocks
+              (chain_id, contract_address, block_number, block_hash, parent_hash, block_timestamp, log_count, canonical)
+             VALUES (?, ?, ?, ?, ?, ?, ?, 1)
+             ON CONFLICT(chain_id, contract_address, block_number, block_hash) DO UPDATE SET
+              parent_hash = excluded.parent_hash, block_timestamp = excluded.block_timestamp,
+              log_count = excluded.log_count, canonical = 1`,
           )
           .run(
             id,
@@ -409,7 +424,12 @@ export class ChainStore {
     } catch {
       throw new Error('CORRUPT_CHAIN_DATABASE');
     }
-    if (!Array.isArray(topics) || !normalizedData || typeof normalizedData !== 'object' || Array.isArray(normalizedData))
+    if (
+      !Array.isArray(topics) ||
+      !normalizedData ||
+      typeof normalizedData !== 'object' ||
+      Array.isArray(normalizedData)
+    )
       throw new Error('CORRUPT_CHAIN_DATABASE');
     try {
       return Object.freeze({
@@ -450,7 +470,9 @@ export class ChainStore {
       (previous.chainId !== operation.chainId ||
         !sameAddress(previous.owner, operation.owner) ||
         !sameAddress(previous.target, operation.target) ||
-        (previous.txHash && operation.txHash && previous.txHash.toLowerCase() !== operation.txHash.toLowerCase()))
+        (previous.txHash &&
+          operation.txHash &&
+          previous.txHash.toLowerCase() !== operation.txHash.toLowerCase()))
     )
       throw new Error('OPERATION_IDENTITY_CONFLICT');
     this.db
@@ -523,11 +545,7 @@ export class ChainStore {
 
   putProjection(projection: ProductProjection): void {
     if (!namePattern.test(projection.projectionKey)) throw new Error('INVALID_PROJECTION_KEY');
-    const block = this.canonicalBlock(
-      projection.chainId,
-      projection.contract,
-      projection.blockNumber,
-    );
+    const block = this.canonicalBlock(projection.chainId, projection.contract, projection.blockNumber);
     if (!block || block.hash.toLowerCase() !== projection.blockHash.toLowerCase())
       throw new Error('PROJECTION_BLOCK_NOT_CANONICAL');
     this.db
@@ -556,8 +574,7 @@ export class ChainStore {
         'SELECT block_number, block_hash, state_json FROM product_projections WHERE chain_id = ? AND owner_address = ? AND contract_address = ? AND projection_key = ?',
       )
       .get(chainId(valueChainId), normalizedAddress(owner), normalizedAddress(contract), projectionKey) as
-      | { block_number: number; block_hash: string; state_json: string }
-      | undefined;
+      { block_number: number; block_hash: string; state_json: string } | undefined;
     if (!row) return null;
     try {
       const state = JSON.parse(row.state_json) as unknown;
