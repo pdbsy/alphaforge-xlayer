@@ -6,10 +6,40 @@
   "transformation": "Only the single version pragma line is narrowed; all other bytes and upstream LICENSE retained. Original installation remains unchanged.",
   "files": [
     {
+      "path": "interfaces/draft-IERC6093.sol",
+      "pragma": "pragma solidity >=0.8.4;",
+      "originalSha256": "df936240c9a5d342582cbda70dd773b1c1d0e0dda3042b1c17b902ef0c36827b",
+      "derivedSha256": "b06d0aae9db9f26c4c188df738a036d2918ddd9f4754b03982fb2bc6c40cf093"
+    },
+    {
       "path": "interfaces/IERC5267.sol",
       "pragma": "pragma solidity >=0.4.16;",
       "originalSha256": "f89772d2d4fafcbef8b73bb10ee9a3373edec2eedb2f1b302320915b351dc3d1",
       "derivedSha256": "95713f44187bcf634b3e8823df392df25df7bcbb52ee928ac690474a56f03535"
+    },
+    {
+      "path": "token/ERC20/ERC20.sol",
+      "pragma": "pragma solidity ^0.8.20;",
+      "originalSha256": "9f906af4cba6e7e091dc12d45e6687e1239cf82d17678198424250fd64ab96bd",
+      "derivedSha256": "1fbded8aeea79bb18680e01282667197b24dfdfe551a78b010a482171b158d6f"
+    },
+    {
+      "path": "token/ERC20/IERC20.sol",
+      "pragma": "pragma solidity >=0.4.16;",
+      "originalSha256": "01b6f5c4fa45fd38822b286ecef6daf983d27306dd6362496fa71b3e4600b72c",
+      "derivedSha256": "95375bc04aa1f066dd8725cb806d930786c863d93641e427a8be8a274d01a8fd"
+    },
+    {
+      "path": "token/ERC20/extensions/IERC20Metadata.sol",
+      "pragma": "pragma solidity >=0.6.2;",
+      "originalSha256": "0b7132f17d14d1d84b41b0bb429be62dafdff00fd3470f68724d8018eb07f57a",
+      "derivedSha256": "8c37b3e457ae0a615209ea7f159448355a41ab3c18d2f4b57e6938776eb4e752"
+    },
+    {
+      "path": "utils/Context.sol",
+      "pragma": "pragma solidity ^0.8.20;",
+      "originalSha256": "847fda5460fee70f56f4200f59b82ae622bb03c79c77e67af010e31b7e2cc5b6",
+      "derivedSha256": "04168caff9540cdbcd2d95ee39a24ab8600b7069933fbacce6367b9ef44600f5"
     },
     {
       "path": "utils/Panic.sol",
