@@ -12,6 +12,24 @@
       "derivedSha256": "b06d0aae9db9f26c4c188df738a036d2918ddd9f4754b03982fb2bc6c40cf093"
     },
     {
+      "path": "interfaces/IERC1363.sol",
+      "pragma": "pragma solidity >=0.6.2;",
+      "originalSha256": "9c3a75a925a6dac9e88b03cddc58d42fe3131b0aaaad84408521f3f7af2f991b",
+      "derivedSha256": "36af82afb29283df2adb658667ede3c407aacbdb1b60852f47265dd259aeb5ba"
+    },
+    {
+      "path": "interfaces/IERC165.sol",
+      "pragma": "pragma solidity >=0.4.16;",
+      "originalSha256": "dfb3f56fa928a7c6cae41a7ce2c86b9210fa18d33fa26389099d66a0fa790368",
+      "derivedSha256": "49a66a84d76d3e5c35e2783a976ef3510ac78d0ac459e6a41ffe5e4a0a7b7f8e"
+    },
+    {
+      "path": "interfaces/IERC20.sol",
+      "pragma": "pragma solidity >=0.4.16;",
+      "originalSha256": "0158e2d3e0e28bedd99eec13dcf1a8aa3a70a5b7e4bb2ad709609c95fcc740d1",
+      "derivedSha256": "c45f64d33f0f2e1913d1b5cce51340177761288524aa6f04c7d1a14781bd2a77"
+    },
+    {
       "path": "interfaces/IERC5267.sol",
       "pragma": "pragma solidity >=0.4.16;",
       "originalSha256": "f89772d2d4fafcbef8b73bb10ee9a3373edec2eedb2f1b302320915b351dc3d1",
@@ -36,6 +54,12 @@
       "derivedSha256": "8c37b3e457ae0a615209ea7f159448355a41ab3c18d2f4b57e6938776eb4e752"
     },
     {
+      "path": "token/ERC20/utils/SafeERC20.sol",
+      "pragma": "pragma solidity ^0.8.20;",
+      "originalSha256": "ac1fd9fa99b194a8db8dfa9ae8e3ff44feaa8f16668241fd2b66ae8b47d7c082",
+      "derivedSha256": "ed1b905ddab28a4edddc8dcb85a32dd66a4d64b7664918c3eee062c4ce161591"
+    },
+    {
       "path": "utils/Context.sol",
       "pragma": "pragma solidity ^0.8.20;",
       "originalSha256": "847fda5460fee70f56f4200f59b82ae622bb03c79c77e67af010e31b7e2cc5b6",
@@ -46,6 +70,12 @@
       "pragma": "pragma solidity ^0.8.20;",
       "originalSha256": "270fc8401c1a13fae6a7a4a2dd6e381b95d658896701e51f0d3e2688acab3dec",
       "derivedSha256": "c65e01016667eb2e2c86db53b0d067e4a5437bd3ec9905d9be820c3b56978b1d"
+    },
+    {
+      "path": "utils/ReentrancyGuard.sol",
+      "pragma": "pragma solidity ^0.8.20;",
+      "originalSha256": "32fbb1c908ec1b4de85cc1bb10091aebd5816ffe80dfdd5ca5e084fbea67a462",
+      "derivedSha256": "9f51971bc5bcf21713b80b02fb4bd4effcef7b514862178afc155b8a65fcffbd"
     },
     {
       "path": "utils/ShortStrings.sol",
@@ -94,6 +124,12 @@
       "pragma": "pragma solidity ^0.8.20;",
       "originalSha256": "1ed50b1056af886752f0fb48a0165d381e69bb4a4b18b893b066dc144a7e08d7",
       "derivedSha256": "3bd2bfa4a0bf30804ec582515264078995566e712bd7a991fe91951ca0744611"
+    },
+    {
+      "path": "utils/introspection/IERC165.sol",
+      "pragma": "pragma solidity >=0.4.16;",
+      "originalSha256": "9055c2994b37dea1a41b7b7926dcb510f05dbe2540b0aafc5fbee9558fffd0ca",
+      "derivedSha256": "75ffdb06ae99e087d94035202a847d7b22a67792d832f54ae2ba39d1cc00ddb7"
     }
   ],
   "licenseSource": "https://raw.githubusercontent.com/OpenZeppelin/openzeppelin-contracts/c64a1edb67b6e3f4a15cca8909c9482ad33a02b0/LICENSE",
