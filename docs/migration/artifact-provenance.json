@@ -1468,7 +1468,7 @@
       "target_path": "docs/management/agents/bootstrap/Macbeth04.md",
       "method": "protocol import with current repository/authority preamble",
       "original_sha256": "46ff73062c73b043a204f07bdee932f5450272c4fbc29b20bbd7141670d4ddd5",
-      "migrated_sha256": "41dddea764b58c501ad159d3535769f1e481efac170bca9a4530ff8bf4e9e607",
+      "migrated_sha256": "ed56ce44f8584c0ca75c4cd6a72fd5b1c5f5e78876a08e34c007f54b72b85667",
       "subsequent_adaptations": [
         {
           "task": "AF-M3-IDENTITY",
