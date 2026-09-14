@@ -29,8 +29,10 @@ Bootstrap downloads only the fixed tool/dependency artifacts and installs into i
 
 - `src/VaultIntentPreview.sol`: only `preview(Intent)` plus OpenZeppelin's EIP-712 domain inspection. Digest calculation does not validate or authorize an intent.
 - `src/StrategyPass.sol`: M3 fixed-supply, freely transferable 18-decimal ERC-20 for one strategy. Its constructor is the only mint path; it has no admin, freeze, blacklist, transfer gate, proxy or upgrade path. It is locally validated and not deployed.
+- `src/AlphaForgeTestAsset.sol`: TESTNET_ONLY fixed-supply ERC-20 primitive with constructor-fixed decimals for AF-USDC (6), AF-ETH (18) and AF-BTC (18). It has no owner, post-deployment mint, freeze or blacklist path.
 - `test/VaultIntentPreview.t.sol`: field and domain binding checks in the local EVM, plus an independent fixed EIP-712 reference vector; no keys/signatures.
 - `test/StrategyPass.t.sol`, `test/StrategyPass.invariant.t.sol`: constructor supply, fractional transfer, allowance, native-value rejection, no public mint, 256-run fuzz and 64x32 supply/accounting invariants.
+- `test/AlphaForgeTestAsset.t.sol`: explicit test-asset decimals/supply, real ERC-20 movement, no public mint, zero-recipient rejection and 256-run supply-preservation fuzz coverage.
 - `test/intent-vector.json`: typed data and literal digest computed independently with the locked eth-account 0.14.0 package, using local chain ID 31337 and test-only address 0x1001.
 - `script/bootstrap.py`, `script/check-local.sh`: local tool setup and deterministic checks; **no deployment script**.
 - `toolchain.lock.json`, `requirements-slither.lock`, [TOOLCHAIN.md](TOOLCHAIN.md): exact inputs, official sources, digests, licenses and platform limits.
