@@ -125,3 +125,15 @@
 - Ownership boundary: Product presentation order only. No Macbeth03 state, provider, RPC, adapter, signing, broadcast or retry behavior changed.
 - Evidence handling: This correction becomes the new source C. Manifest R and snapshot S are regenerated only through repository commands, with exact SHAs recorded in Draft PR #16.
 - Next step: Preserve the Draft stack until PR #17 reaches `master`, then retarget and rerun hosted admission. No merge is authorized.
+
+### 2026-09-19 — AF-M3-CLOSEOUT offline browser acceptance
+
+- Task: M3-04-PRODUCT-UI
+- Status: PASSED_OFFLINE_WITH_LIVE_CHAIN_BLOCKED
+- Environment: Approved Node 24.21.0/npm 11.19.1; local demo at `http://127.0.0.1:4180`; Codex in-app browser; no wallet, RPC, signing or broadcast.
+- Actual entry: Loaded `apps/web/index.html` through the production Web build and local server, then verified `#/trade/trend` and `#/account/trades` before and after browser reload.
+- Strategy detail evidence: The M3 shell renders `trend` as the canonical strategy, labels original content `FIXTURE`, reports wallet `DISCONNECTED`, network `UNAVAILABLE`, transaction `IDLE`, and keeps Buy Pass, Sell Pass, Deposit, Withdraw and Approve disabled as `NOT IMPLEMENTED`.
+- Account evidence: The account shell labels the backend identity `LOCAL SIMULATION`, states that account and wallet identities are separate, and preserves the same unavailable Testnet boundary and disabled actions after reload.
+- Fixture boundary: Synthetic price, holdings and trade sections remain explicitly `DEMO`, `FIXTURE`, `LOCAL` or `NOT LIVE`; no local value is presented as Testnet evidence.
+- Browser diagnostics: No browser warning or error entries were observed after navigating and reloading both routes.
+- Limitation: This is offline browser acceptance only. Live Pass/Vault reads and supported actions remain blocked on the reviewed Macbeth02 ABI/deployment and Macbeth03 integration; no Testnet result is claimed.

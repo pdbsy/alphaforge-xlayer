@@ -124,4 +124,5 @@
 - [x] Evaluate lifecycle, receipt, reconciliation and stale-projection failures before accepting product readiness.
 - [x] Keep the correction inside the pure presentation mapper without changing Macbeth03 ownership.
 - [x] Run the expanded 64-test lifecycle/store/sync/wallet/UI integration set.
+- [x] Verify the actual strategy and account entry routes in a real local browser, including reload recovery, disabled actions, fixture/live labels and console diagnostics.
 - Evidence closeout for this correction follows the source C → manifest R → snapshot S workflow; exact immutable SHAs are recorded in Draft PR #16.
