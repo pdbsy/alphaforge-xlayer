@@ -1548,13 +1548,19 @@
       "target_path": "test/agent-management.test.mjs",
       "method": "selective source integration; shared-file resolution recorded in CONFLICTS.md; reviewed PR11 closeout adaptation (see PR11-CLOSEOUT.md); PR11 review remediation: atomic product snapshot, identity lifecycle or bounded logical-message Forum as applicable",
       "original_sha256": "f5c916f2f10f3fbc2e31e89bce0cf041bf091cae876b20490eac7f87140ebc42",
-      "migrated_sha256": "4803cb492aaf6bbf67a817169f115e3ec42fab4127d04b2c6a41418e427f44db",
+      "migrated_sha256": "9cfa07b0ed4cc996b60ac1fbd3772b82b8db537f481a55816135cf34b24d1506",
       "subsequent_adaptations": [
         {
           "task": "AF-M3-IDENTITY",
           "base_commit": "45e80f921df2d3f9172ddbbc8e6ab37c327107e7",
           "previous_sha256": "cdcb4908cc7a7d621c564a62d27205a7948971a91263b4fb61cfe9406f4aaf39",
           "reason": "M3 worker identity and assignment compatibility; original migration source is preserved."
+        },
+        {
+          "task": "AF-M3-05-REGISTRATION",
+          "base_commit": "7ecba357d5a19f387e86f578822af04a6261fed2",
+          "previous_sha256": "4803cb492aaf6bbf67a817169f115e3ec42fab4127d04b2c6a41418e427f44db",
+          "reason": "Update existing registry expectation for the user-assigned Macbeth05 branch prefix; preserve original test provenance."
         }
       ]
     },
