@@ -1,6 +1,6 @@
 import type { ChainOperation } from '../../../packages/chain-adapter/src/lifecycle.ts';
 import { sameAddress, type Address, type BlockHash } from '../../../packages/chain-adapter/src/types.ts';
-import type { BrowserWalletPort, PreparedAction, SubmittedOperation } from './chain-wallet.ts';
+import type { BrowserWalletPort, PreparedAction, WalletSubmission } from './chain-wallet.ts';
 
 export interface ChainProjectionReference {
   readonly chainId: number;
@@ -82,7 +82,7 @@ export interface RobinhoodTestnetStrategyAdapter<Snapshot, Action, Observation> 
 > {
   readonly mode: 'robinhood-testnet';
   prepareAction(action: Action, context: { readonly owner: Address }): Promise<PreparedAction>;
-  submitAction(prepared: PreparedAction, wallet: BrowserWalletPort): Promise<SubmittedOperation>;
+  submitAction(prepared: PreparedAction, wallet: BrowserWalletPort): Promise<WalletSubmission>;
 }
 
 export type StrategyAdapter<Snapshot, Action, LocalResult, Observation> =

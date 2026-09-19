@@ -15,12 +15,18 @@ export interface Eip1193Request {
 
 export interface Eip1193Provider {
   request(input: Eip1193Request): Promise<unknown>;
+  on(event: 'accountsChanged' | 'chainChanged' | 'disconnect', listener: (value: unknown) => void): void;
+  removeListener(
+    event: 'accountsChanged' | 'chainChanged' | 'disconnect',
+    listener: (value: unknown) => void,
+  ): void;
 }
 
 export type WalletFailureCode =
   | 'WALLET_DISCONNECTED'
   | 'WALLET_WRONG_CHAIN'
   | 'WALLET_ACCOUNT_CHANGED'
+  | 'WALLET_SESSION_CHANGED'
   | 'WALLET_REJECTED'
   | 'WALLET_INVALID_RESPONSE'
   | 'WALLET_REQUEST_FAILED'
@@ -126,9 +132,24 @@ export interface SubmittedOperation {
   readonly submittedAt: string;
 }
 
+export interface AmbiguousSubmission {
+  readonly operationId: string;
+  readonly requestedChainId: number;
+  readonly requestedOwner: Address;
+  readonly target: Address;
+  readonly state: 'SUBMISSION_AMBIGUOUS';
+  readonly txHash: TransactionHash | null;
+  readonly observedAt: string | null;
+  readonly reason:
+    'SESSION_CHANGED' | 'POST_SUBMISSION_CHECK_FAILED' | 'PROVIDER_RESULT_UNKNOWN' | 'LOCAL_EVIDENCE_INVALID';
+  readonly retryable: false;
+}
+
+export type WalletSubmission = SubmittedOperation | AmbiguousSubmission;
+
 export interface BrowserWalletPort {
   connect(): Promise<WalletSession>;
-  submit(prepared: PreparedAction): Promise<SubmittedOperation>;
+  submit(prepared: PreparedAction): Promise<WalletSubmission>;
 }
 
 interface WalletOptions {
@@ -168,6 +189,13 @@ export class Eip1193Wallet implements BrowserWalletPort {
   readonly #now: () => string;
 
   constructor(provider: Eip1193Provider, options: WalletOptions) {
+    if (
+      !provider ||
+      typeof provider.request !== 'function' ||
+      typeof provider.on !== 'function' ||
+      typeof provider.removeListener !== 'function'
+    )
+      throw new Error('INVALID_EIP1193_PROVIDER');
     this.#provider = provider;
     this.#chainId = validChainId(options.chainId);
     this.#target = asAddress(options.target);
@@ -203,50 +231,123 @@ export class Eip1193Wallet implements BrowserWalletPort {
     return Object.freeze({ account: accounts[0], chainId });
   }
 
-  async submit(prepared: PreparedAction): Promise<SubmittedOperation> {
+  #ambiguous(
+    prepared: PreparedAction,
+    txHash: TransactionHash | null,
+    observedAt: string | null,
+    reason: AmbiguousSubmission['reason'],
+  ): AmbiguousSubmission {
+    return Object.freeze({
+      operationId: prepared.operationId,
+      requestedChainId: prepared.chainId,
+      requestedOwner: prepared.owner,
+      target: prepared.target,
+      state: 'SUBMISSION_AMBIGUOUS',
+      txHash,
+      observedAt,
+      reason,
+      retryable: false,
+    });
+  }
+
+  #observationTime(): string | null {
+    try {
+      const value = this.#now();
+      return Number.isFinite(Date.parse(value)) ? value : null;
+    } catch {
+      return null;
+    }
+  }
+
+  async submit(prepared: PreparedAction): Promise<WalletSubmission> {
     if (!prepared || typeof prepared !== 'object' || trustedActions.get(prepared) !== this.#actionAuthority)
       throw new WalletFailure('UNTRUSTED_PREPARED_ACTION');
     if (prepared.chainId !== this.#chainId || !sameAddress(prepared.target, this.#target))
       throw new WalletFailure('UNTRUSTED_PREPARED_ACTION');
 
-    const accounts = await this.#accounts('eth_accounts');
-    if (!accounts[0]) throw new WalletFailure('WALLET_DISCONNECTED');
-    if (!sameAddress(accounts[0], prepared.owner)) throw new WalletFailure('WALLET_ACCOUNT_CHANGED');
-    if ((await this.#currentChainId()) !== this.#chainId) throw new WalletFailure('WALLET_WRONG_CHAIN');
+    const session = { changed: false };
+    const invalidateSession = () => {
+      session.changed = true;
+    };
+    const registeredEvents: ('accountsChanged' | 'chainChanged' | 'disconnect')[] = [];
+    try {
+      for (const event of ['accountsChanged', 'chainChanged', 'disconnect'] as const) {
+        try {
+          this.#provider.on(event, invalidateSession);
+        } catch {
+          throw new WalletFailure('WALLET_REQUEST_FAILED');
+        }
+        registeredEvents.push(event);
+      }
+      const accounts = await this.#accounts('eth_accounts');
+      if (!accounts[0]) throw new WalletFailure('WALLET_DISCONNECTED');
+      if (!sameAddress(accounts[0], prepared.owner)) throw new WalletFailure('WALLET_ACCOUNT_CHANGED');
+      if ((await this.#currentChainId()) !== this.#chainId) throw new WalletFailure('WALLET_WRONG_CHAIN');
+      if (session.changed) throw new WalletFailure('WALLET_SESSION_CHANGED');
 
-    let result: unknown;
-    try {
-      result = await this.#provider.request({
-        method: 'eth_sendTransaction',
-        params: [
-          {
-            from: prepared.owner,
-            to: prepared.target,
-            data: prepared.data,
-            value: `0x${prepared.value.toString(16)}`,
-          },
-        ],
+      let result: unknown;
+      try {
+        result = await this.#provider.request({
+          method: 'eth_sendTransaction',
+          params: [
+            {
+              from: prepared.owner,
+              to: prepared.target,
+              data: prepared.data,
+              value: `0x${prepared.value.toString(16)}`,
+            },
+          ],
+        });
+      } catch (error) {
+        if (rejected(error)) throw new WalletFailure('WALLET_REJECTED');
+        return this.#ambiguous(prepared, null, this.#observationTime(), 'PROVIDER_RESULT_UNKNOWN');
+      }
+      let txHash: TransactionHash;
+      try {
+        txHash = asTransactionHash(String(result));
+      } catch {
+        return this.#ambiguous(prepared, null, this.#observationTime(), 'PROVIDER_RESULT_UNKNOWN');
+      }
+      const observedAt = this.#observationTime();
+      if (observedAt === null) return this.#ambiguous(prepared, txHash, null, 'LOCAL_EVIDENCE_INVALID');
+
+      let sessionMatches = false;
+      try {
+        const currentAccounts = await this.#accounts('eth_accounts');
+        const currentChainId = await this.#currentChainId();
+        sessionMatches =
+          !session.changed &&
+          Boolean(currentAccounts[0]) &&
+          sameAddress(currentAccounts[0]!, prepared.owner) &&
+          currentChainId === this.#chainId;
+      } catch {
+        sessionMatches = false;
+      }
+      if (!sessionMatches)
+        return this.#ambiguous(
+          prepared,
+          txHash,
+          observedAt,
+          session.changed ? 'SESSION_CHANGED' : 'POST_SUBMISSION_CHECK_FAILED',
+        );
+
+      return Object.freeze({
+        operationId: prepared.operationId,
+        chainId: prepared.chainId,
+        owner: prepared.owner,
+        target: prepared.target,
+        state: 'SUBMITTED',
+        txHash,
+        submittedAt: observedAt,
       });
-    } catch (error) {
-      if (rejected(error)) throw new WalletFailure('WALLET_REJECTED');
-      throw new WalletFailure('WALLET_REQUEST_FAILED');
+    } finally {
+      for (const event of registeredEvents) {
+        try {
+          this.#provider.removeListener(event, invalidateSession);
+        } catch {
+          // Provider cleanup cannot change or hide an already determined submission outcome.
+        }
+      }
     }
-    let txHash: TransactionHash;
-    try {
-      txHash = asTransactionHash(String(result));
-    } catch {
-      throw new WalletFailure('WALLET_INVALID_RESPONSE');
-    }
-    const submittedAt = this.#now();
-    if (!Number.isFinite(Date.parse(submittedAt))) throw new WalletFailure('WALLET_INVALID_RESPONSE');
-    return Object.freeze({
-      operationId: prepared.operationId,
-      chainId: prepared.chainId,
-      owner: prepared.owner,
-      target: prepared.target,
-      state: 'SUBMITTED',
-      txHash,
-      submittedAt,
-    });
   }
 }

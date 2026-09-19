@@ -22,11 +22,10 @@ export interface ProjectionCandidate {
 }
 
 export type ReconciliationResult =
-  | { readonly status: 'MATCH'; readonly projections: readonly ProjectionCandidate[] }
+  | { readonly status: 'MATCH' }
   | {
       readonly status: 'MISMATCH';
       readonly errorCode: 'EVENT_EVIDENCE_MISMATCH' | 'CONTRACT_STATE_MISMATCH';
-      readonly projections: readonly [];
     };
 
 interface IntegrationContext {

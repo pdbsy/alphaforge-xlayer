@@ -145,15 +145,22 @@ test('rollback marks displaced evidence and operations reorged and removes newer
     receiptStatus: 'SUCCESS',
   });
   store.saveOperation(transitionOperation(mined, { state: 'CONFIRMING', confirmations: 1 }));
-  store.putProjection({
-    chainId: CHAIN_ID,
-    owner: OWNER_A,
-    contract: CONTRACT,
-    projectionKey: 'vault-a',
-    blockNumber: 101n,
-    blockHash: BLOCK_101,
-    state: { principal: '1000000' },
-  });
+  store.commitProjections(
+    CHAIN_ID,
+    CONTRACT,
+    { number: 101n, hash: BLOCK_101, parentHash: BLOCK_100, timestamp: 1_010n },
+    [
+      {
+        chainId: CHAIN_ID,
+        owner: OWNER_A,
+        contract: CONTRACT,
+        projectionKey: 'vault-a',
+        blockNumber: 101n,
+        blockHash: BLOCK_101,
+        state: { principal: '1000000' },
+      },
+    ],
+  );
 
   assert.deepEqual(store.rollbackFromBlock(CHAIN_ID, CONTRACT, 101n), {
     blocks: 1,
@@ -168,7 +175,7 @@ test('rollback marks displaced evidence and operations reorged and removes newer
   assert.equal(store.canonicalEvents(CHAIN_ID, CONTRACT).length, 0);
   assert.equal(store.operation('operation-reorg')?.state, 'REORGED');
   assert.equal(store.operation('operation-reorg')?.canonical, false);
-  assert.equal(store.projection(CHAIN_ID, OWNER_A, CONTRACT, 'vault-a'), null);
+  assert.throws(() => store.projection(CHAIN_ID, OWNER_A, CONTRACT, 'vault-a'), /CHAIN_PROJECTION_PENDING/);
   store.close();
 });
 
@@ -244,20 +251,23 @@ test('wallet projections remain independent and do not imply product-account own
     { number: 100n, hash: BLOCK_100, parentHash: BLOCK_99, timestamp: 1_000n },
     [],
   );
-  for (const [owner, principal] of [
-    [OWNER_A, '1000000'],
-    [OWNER_B, '2500000'],
-  ] as const) {
-    store.putProjection({
+  store.commitProjections(
+    CHAIN_ID,
+    CONTRACT,
+    { number: 100n, hash: BLOCK_100, parentHash: BLOCK_99, timestamp: 1_000n },
+    [
+      [OWNER_A, '1000000'],
+      [OWNER_B, '2500000'],
+    ].map(([owner, principal]) => ({
       chainId: CHAIN_ID,
-      owner,
+      owner: asAddress(owner!),
       contract: CONTRACT,
       projectionKey: 'vault-shared-key',
       blockNumber: 100n,
       blockHash: BLOCK_100,
       state: { principal },
-    });
-  }
+    })),
+  );
   assert.deepEqual(store.projection(CHAIN_ID, OWNER_A, CONTRACT, 'vault-shared-key')?.state, {
     principal: '1000000',
   });
@@ -283,9 +293,9 @@ test('chain store refuses an unrelated database instead of mutating it', async (
   reopened.close();
 });
 
-test('chain store migrates to projection-aware checkpoints and rejects forged confirmed operations', async () => {
+test('chain store migrates to sync leases and rejects forged confirmed operations', async () => {
   const store = new ChainStore(await databasePath());
-  assert.equal(store.db.prepare('PRAGMA user_version').get()?.user_version, 2);
+  assert.equal(store.db.prepare('PRAGMA user_version').get()?.user_version, 4);
   const submitted = transitionOperation(
     createOperation({
       operationId: 'forged-confirmed',
@@ -334,12 +344,49 @@ test('existing version-one chain database migrates without losing indexed eviden
   legacy.close();
 
   const store = new ChainStore(path);
-  assert.equal(store.db.prepare('PRAGMA user_version').get()?.user_version, 2);
+  assert.equal(store.db.prepare('PRAGMA user_version').get()?.user_version, 4);
   assert.deepEqual(store.checkpoint(CHAIN_ID, CONTRACT), {
     blockNumber: 100n,
     blockHash: BLOCK_100,
   });
   assert.equal(store.projectionCheckpoint(CHAIN_ID, CONTRACT), null);
   assert.deepEqual(store.syncHealth(CHAIN_ID, CONTRACT), { healthy: true, error: null });
+  assert.equal(store.syncTarget(CHAIN_ID, CONTRACT), null);
+  store.close();
+});
+
+test('version-three incomplete targets remain authoritative after sync-lease migration', async () => {
+  const path = await databasePath();
+  const legacy = new DatabaseSync(path);
+  for (const migration of [
+    '001-chain-projection.sql',
+    '002-projection-checkpoint.sql',
+    '003-sync-target.sql',
+  ])
+    legacy.exec(
+      readFileSync(new URL(`../apps/server/chain-migrations/${migration}`, import.meta.url), 'utf8'),
+    );
+  legacy
+    .prepare(
+      'INSERT INTO chain_blocks (chain_id, contract_address, block_number, block_hash, parent_hash, block_timestamp, log_count, canonical) VALUES (?, ?, ?, ?, ?, ?, 0, 1)',
+    )
+    .run(CHAIN_ID, CONTRACT.toLowerCase(), 100, BLOCK_100.toLowerCase(), BLOCK_99.toLowerCase(), '1000');
+  legacy
+    .prepare(
+      `INSERT INTO chain_checkpoints
+        (chain_id, contract_address, block_number, block_hash, sync_healthy, sync_error, sync_target_block_number)
+       VALUES (?, ?, ?, ?, 0, 'CHAIN_SYNC_INCOMPLETE', 101)`,
+    )
+    .run(CHAIN_ID, CONTRACT.toLowerCase(), 100, BLOCK_100.toLowerCase());
+  legacy.close();
+
+  const store = new ChainStore(path);
+  assert.equal(store.db.prepare('PRAGMA user_version').get()?.user_version, 4);
+  assert.equal(store.syncTarget(CHAIN_ID, CONTRACT), 101n);
+  assert.throws(
+    () => store.claimSync(CHAIN_ID, CONTRACT, 100n, '00000000-0000-4000-8000-000000000001'),
+    /CHAIN_SYNC_TARGET_BEHIND/,
+  );
+  assert.equal(store.syncTarget(CHAIN_ID, CONTRACT), 101n);
   store.close();
 });

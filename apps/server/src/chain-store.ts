@@ -31,7 +31,7 @@ export interface ChainCheckpoint {
 
 export interface ChainSyncHealth {
   readonly healthy: boolean;
-  readonly error: 'CHAIN_REORG_DEPTH_EXCEEDED' | null;
+  readonly error: 'CHAIN_REORG_DEPTH_EXCEEDED' | 'CHAIN_SYNC_INCOMPLETE' | null;
 }
 
 export interface ProductProjection {
@@ -48,6 +48,7 @@ const expectedTables = [
   'chain_blocks',
   'chain_checkpoints',
   'chain_events',
+  'chain_sync_leases',
   'chain_transactions',
   'product_projections',
 ];
@@ -245,6 +246,18 @@ function boundedJson(value: unknown): string {
   return json;
 }
 
+function operationFingerprint(operation: ChainOperation): string {
+  return boundedJson({
+    ...operation,
+    owner: operation.owner.toLowerCase(),
+    target: operation.target.toLowerCase(),
+    txHash: operation.txHash?.toLowerCase() ?? null,
+    blockNumber: operation.blockNumber?.toString() ?? null,
+    blockHash: operation.blockHash?.toLowerCase() ?? null,
+    replacementTxHash: operation.replacementTxHash?.toLowerCase() ?? null,
+  });
+}
+
 function eventFingerprint(event: IndexedChainEvent): string {
   return boundedJson({
     address: normalizedAddress(event.address),
@@ -365,12 +378,23 @@ export class ChainStore {
               'utf8',
             ),
           );
+          this.db.exec(
+            readFileSync(new URL('../chain-migrations/003-sync-target.sql', import.meta.url), 'utf8'),
+          );
+          this.db.exec(
+            readFileSync(new URL('../chain-migrations/004-sync-lease.sql', import.meta.url), 'utf8'),
+          );
           this.db.exec('COMMIT');
         } catch (error) {
           this.db.exec('ROLLBACK');
           throw error;
         }
-      } else if (JSON.stringify(tables) !== JSON.stringify(expectedTables)) {
+      } else if (
+        JSON.stringify(tables) !==
+        JSON.stringify(
+          version < 4 ? expectedTables.filter((name) => name !== 'chain_sync_leases') : expectedTables,
+        )
+      ) {
         throw new Error('UNSUPPORTED_CHAIN_DATABASE');
       } else if (version === 1) {
         this.db.exec('BEGIN IMMEDIATE');
@@ -381,12 +405,43 @@ export class ChainStore {
               'utf8',
             ),
           );
+          this.db.exec(
+            readFileSync(new URL('../chain-migrations/003-sync-target.sql', import.meta.url), 'utf8'),
+          );
+          this.db.exec(
+            readFileSync(new URL('../chain-migrations/004-sync-lease.sql', import.meta.url), 'utf8'),
+          );
           this.db.exec('COMMIT');
         } catch (error) {
           this.db.exec('ROLLBACK');
           throw error;
         }
-      } else if (version !== 2) {
+      } else if (version === 2) {
+        this.db.exec('BEGIN IMMEDIATE');
+        try {
+          this.db.exec(
+            readFileSync(new URL('../chain-migrations/003-sync-target.sql', import.meta.url), 'utf8'),
+          );
+          this.db.exec(
+            readFileSync(new URL('../chain-migrations/004-sync-lease.sql', import.meta.url), 'utf8'),
+          );
+          this.db.exec('COMMIT');
+        } catch (error) {
+          this.db.exec('ROLLBACK');
+          throw error;
+        }
+      } else if (version === 3) {
+        this.db.exec('BEGIN IMMEDIATE');
+        try {
+          this.db.exec(
+            readFileSync(new URL('../chain-migrations/004-sync-lease.sql', import.meta.url), 'utf8'),
+          );
+          this.db.exec('COMMIT');
+        } catch (error) {
+          this.db.exec('ROLLBACK');
+          throw error;
+        }
+      } else if (version !== 4) {
         throw new Error('UNSUPPORTED_CHAIN_DATABASE');
       }
     } catch (error) {
@@ -397,6 +452,68 @@ export class ChainStore {
 
   close(): void {
     this.db.close();
+  }
+
+  #assertSyncOwner(id: number, address: string, ownerToken: string | null): void {
+    const lease = this.db
+      .prepare('SELECT owner_token FROM chain_sync_leases WHERE chain_id = ? AND contract_address = ?')
+      .get(id, address) as { owner_token: string } | undefined;
+    if ((lease && lease.owner_token !== ownerToken) || (!lease && ownerToken !== null))
+      throw new Error('CHAIN_SYNC_SUPERSEDED');
+  }
+
+  claimSync(valueChainId: number, contract: Address, targetBlock: bigint, ownerToken: string): void {
+    if (!/^[0-9a-f-]{36}$/.test(ownerToken)) throw new Error('INVALID_CHAIN_SYNC_OWNER');
+    const id = chainId(valueChainId);
+    const address = normalizedAddress(contract);
+    const target = safeNumber(targetBlock);
+    this.db.exec('BEGIN IMMEDIATE');
+    try {
+      const existing = this.db
+        .prepare(
+          'SELECT target_block_number FROM chain_sync_leases WHERE chain_id = ? AND contract_address = ?',
+        )
+        .get(id, address) as { target_block_number: number } | undefined;
+      const checkpoint = this.db
+        .prepare(
+          'SELECT sync_target_block_number FROM chain_checkpoints WHERE chain_id = ? AND contract_address = ?',
+        )
+        .get(id, address) as { sync_target_block_number: number | null } | undefined;
+      const requiredTarget = Math.max(
+        existing?.target_block_number ?? -1,
+        checkpoint?.sync_target_block_number ?? -1,
+      );
+      if (target < requiredTarget) throw new Error('CHAIN_SYNC_TARGET_BEHIND');
+      const claimedTarget = Math.max(target, requiredTarget);
+      this.db
+        .prepare(
+          `INSERT INTO chain_sync_leases (chain_id, contract_address, owner_token, target_block_number)
+           VALUES (?, ?, ?, ?)
+           ON CONFLICT(chain_id, contract_address) DO UPDATE SET
+             owner_token = excluded.owner_token,
+             target_block_number = CASE
+               WHEN chain_sync_leases.target_block_number > excluded.target_block_number
+                 THEN chain_sync_leases.target_block_number
+               ELSE excluded.target_block_number
+             END`,
+        )
+        .run(id, address, ownerToken, claimedTarget);
+      this.db
+        .prepare(
+          `UPDATE chain_checkpoints
+           SET sync_healthy = 0, sync_error = 'CHAIN_SYNC_INCOMPLETE',
+             sync_target_block_number = CASE
+               WHEN sync_target_block_number IS NULL OR sync_target_block_number < ? THEN ?
+               ELSE sync_target_block_number
+             END
+           WHERE chain_id = ? AND contract_address = ?`,
+        )
+        .run(claimedTarget, claimedTarget, id, address);
+      this.db.exec('COMMIT');
+    } catch (error) {
+      if (this.db.isTransaction) this.db.exec('ROLLBACK');
+      throw error;
+    }
   }
 
   checkpoint(valueChainId: number, contract: Address): ChainCheckpoint | null {
@@ -432,14 +549,35 @@ export class ChainStore {
   syncHealth(valueChainId: number, contract: Address): ChainSyncHealth {
     const row = this.db
       .prepare(
-        'SELECT sync_healthy, sync_error FROM chain_checkpoints WHERE chain_id = ? AND contract_address = ?',
+        `SELECT checkpoint.sync_healthy, checkpoint.sync_error,
+                checkpoint.sync_target_block_number, lease.owner_token
+         FROM (SELECT 1) AS seed
+         LEFT JOIN chain_checkpoints AS checkpoint
+           ON checkpoint.chain_id = ? AND checkpoint.contract_address = ?
+         LEFT JOIN chain_sync_leases AS lease
+           ON lease.chain_id = ? AND lease.contract_address = ?`,
       )
-      .get(chainId(valueChainId), normalizedAddress(contract)) as
-      { sync_healthy: number; sync_error: string | null } | undefined;
-    if (!row) return Object.freeze({ healthy: true, error: null });
+      .get(
+        chainId(valueChainId),
+        normalizedAddress(contract),
+        chainId(valueChainId),
+        normalizedAddress(contract),
+      ) as {
+      sync_healthy: number | null;
+      sync_error: string | null;
+      sync_target_block_number: number | null;
+      owner_token: string | null;
+    };
+    if (row.owner_token !== null) return Object.freeze({ healthy: false, error: 'CHAIN_SYNC_INCOMPLETE' });
+    if (row.sync_healthy === null) return Object.freeze({ healthy: true, error: null });
     if (
-      (row.sync_healthy === 1 && row.sync_error === null) ||
-      (row.sync_healthy === 0 && row.sync_error === 'CHAIN_REORG_DEPTH_EXCEEDED')
+      (row.sync_healthy === 1 && row.sync_error === null && row.sync_target_block_number === null) ||
+      (row.sync_healthy === 0 &&
+        row.sync_error === 'CHAIN_REORG_DEPTH_EXCEEDED' &&
+        row.sync_target_block_number === null) ||
+      (row.sync_healthy === 0 &&
+        row.sync_error === 'CHAIN_SYNC_INCOMPLETE' &&
+        row.sync_target_block_number !== null)
     )
       return Object.freeze({
         healthy: row.sync_healthy === 1,
@@ -448,21 +586,112 @@ export class ChainStore {
     throw new Error('CORRUPT_CHAIN_DATABASE');
   }
 
-  markSyncUnhealthy(valueChainId: number, contract: Address, error: 'CHAIN_REORG_DEPTH_EXCEEDED'): void {
-    const result = this.db
-      .prepare(
-        'UPDATE chain_checkpoints SET sync_healthy = 0, sync_error = ? WHERE chain_id = ? AND contract_address = ?',
-      )
-      .run(error, chainId(valueChainId), normalizedAddress(contract));
-    if (result.changes !== 1) throw new Error('CHAIN_CHECKPOINT_NOT_FOUND');
+  markSyncUnhealthy(
+    valueChainId: number,
+    contract: Address,
+    error: Exclude<ChainSyncHealth['error'], null>,
+    targetBlock: bigint | null = null,
+    ownerToken: string | null = null,
+  ): void {
+    if ((error === 'CHAIN_SYNC_INCOMPLETE') !== (targetBlock !== null))
+      throw new Error('INVALID_CHAIN_SYNC_HEALTH');
+    const id = chainId(valueChainId);
+    const address = normalizedAddress(contract);
+    const target = targetBlock === null ? null : safeNumber(targetBlock);
+    this.db.exec('BEGIN IMMEDIATE');
+    try {
+      this.#assertSyncOwner(id, address, ownerToken);
+      const result =
+        error === 'CHAIN_SYNC_INCOMPLETE'
+          ? this.db
+              .prepare(
+                `UPDATE chain_checkpoints
+                 SET sync_healthy = 0, sync_error = ?,
+                   sync_target_block_number = CASE
+                     WHEN sync_target_block_number IS NULL OR sync_target_block_number < ? THEN ?
+                     ELSE sync_target_block_number
+                   END
+                 WHERE chain_id = ? AND contract_address = ?`,
+              )
+              .run(error, target, target, id, address)
+          : this.db
+              .prepare(
+                `UPDATE chain_checkpoints
+                 SET sync_healthy = 0, sync_error = ?, sync_target_block_number = NULL
+                 WHERE chain_id = ? AND contract_address = ?`,
+              )
+              .run(error, id, address);
+      if (result.changes !== 1) throw new Error('CHAIN_CHECKPOINT_NOT_FOUND');
+      if (error === 'CHAIN_REORG_DEPTH_EXCEEDED' && ownerToken !== null)
+        this.db
+          .prepare(
+            'DELETE FROM chain_sync_leases WHERE chain_id = ? AND contract_address = ? AND owner_token = ?',
+          )
+          .run(id, address, ownerToken);
+      this.db.exec('COMMIT');
+    } catch (cause) {
+      if (this.db.isTransaction) this.db.exec('ROLLBACK');
+      throw cause;
+    }
   }
 
-  markSyncHealthy(valueChainId: number, contract: Address): void {
-    this.db
+  markSyncHealthy(
+    valueChainId: number,
+    contract: Address,
+    completedTarget: bigint,
+    ownerToken: string | null = null,
+  ): boolean {
+    const id = chainId(valueChainId);
+    const address = normalizedAddress(contract);
+    const completed = safeNumber(completedTarget);
+    this.db.exec('BEGIN IMMEDIATE');
+    try {
+      this.#assertSyncOwner(id, address, ownerToken);
+      const result = this.db
+        .prepare(
+          `UPDATE chain_checkpoints
+           SET sync_healthy = 1, sync_error = NULL, sync_target_block_number = NULL
+           WHERE chain_id = ? AND contract_address = ?
+             AND sync_error = 'CHAIN_SYNC_INCOMPLETE'
+             AND block_number >= ?
+             AND projected_block_number = block_number
+             AND projected_block_hash = block_hash
+             AND sync_target_block_number <= ?`,
+        )
+        .run(id, address, completed, completed);
+      if (result.changes === 1 && ownerToken !== null) {
+        const released = this.db
+          .prepare(
+            'DELETE FROM chain_sync_leases WHERE chain_id = ? AND contract_address = ? AND owner_token = ?',
+          )
+          .run(id, address, ownerToken);
+        if (released.changes !== 1) throw new Error('CHAIN_SYNC_SUPERSEDED');
+      }
+      this.db.exec('COMMIT');
+      return result.changes === 1;
+    } catch (error) {
+      if (this.db.isTransaction) this.db.exec('ROLLBACK');
+      throw error;
+    }
+  }
+
+  syncTarget(valueChainId: number, contract: Address): bigint | null {
+    const row = this.db
       .prepare(
-        'UPDATE chain_checkpoints SET sync_healthy = 1, sync_error = NULL WHERE chain_id = ? AND contract_address = ?',
+        `SELECT COALESCE(lease.target_block_number, checkpoint.sync_target_block_number) AS sync_target_block_number
+         FROM (SELECT 1) AS seed
+         LEFT JOIN chain_checkpoints AS checkpoint
+           ON checkpoint.chain_id = ? AND checkpoint.contract_address = ?
+         LEFT JOIN chain_sync_leases AS lease
+           ON lease.chain_id = ? AND lease.contract_address = ?`,
       )
-      .run(chainId(valueChainId), normalizedAddress(contract));
+      .get(
+        chainId(valueChainId),
+        normalizedAddress(contract),
+        chainId(valueChainId),
+        normalizedAddress(contract),
+      ) as { sync_target_block_number: number | null };
+    return row?.sync_target_block_number === null || !row ? null : BigInt(row.sync_target_block_number);
   }
 
   canonicalBlock(valueChainId: number, contract: Address, blockNumber: bigint): ChainBlock | null {
@@ -487,12 +716,16 @@ export class ChainStore {
     contract: Address,
     block: ChainBlock,
     events: readonly IndexedChainEvent[],
+    syncTargetBlock: bigint | null = null,
+    ownerToken: string | null = null,
   ): { insertedEvents: number; checkpoint: ChainCheckpoint } {
     const id = chainId(valueChainId);
     const address = normalizedAddress(contract);
     const blockNumber = safeNumber(block.number);
     if (block.timestamp < 0n || !Number.isSafeInteger(events.length) || events.length > 10_000)
       throw new Error('INVALID_CHAIN_BLOCK');
+    if (syncTargetBlock !== null && syncTargetBlock < block.number)
+      throw new Error('INVALID_CHAIN_SYNC_TARGET');
     for (const item of events) validateEvent(item, id, contract, block);
     const sorted = [...events].sort(
       (left, right) => left.transactionIndex - right.transactionIndex || left.logIndex - right.logIndex,
@@ -504,6 +737,7 @@ export class ChainStore {
 
     this.db.exec('BEGIN IMMEDIATE');
     try {
+      this.#assertSyncOwner(id, address, ownerToken);
       const current = this.checkpoint(id, contract);
       const existingBlock = this.db
         .prepare(
@@ -511,6 +745,7 @@ export class ChainStore {
         )
         .get(id, address, blockNumber) as { block_hash: string; log_count: number } | undefined;
       if (existingBlock) {
+        if (current && block.number < current.blockNumber) throw new Error('CHAIN_BLOCK_OUT_OF_ORDER');
         if (
           existingBlock.block_hash.toLowerCase() !== block.hash.toLowerCase() ||
           existingBlock.log_count !== sorted.length
@@ -625,6 +860,19 @@ export class ChainStore {
             'INSERT INTO chain_checkpoints (chain_id, contract_address, block_number, block_hash) VALUES (?, ?, ?, ?) ON CONFLICT(chain_id, contract_address) DO UPDATE SET block_number = excluded.block_number, block_hash = excluded.block_hash',
           )
           .run(id, address, blockNumber, block.hash.toLowerCase());
+      }
+      if (syncTargetBlock !== null) {
+        const updated = this.db
+          .prepare(
+            `UPDATE chain_checkpoints SET sync_healthy = 0, sync_error = 'CHAIN_SYNC_INCOMPLETE',
+              sync_target_block_number = CASE
+                WHEN sync_target_block_number IS NULL OR sync_target_block_number < ? THEN ?
+                ELSE sync_target_block_number
+              END
+             WHERE chain_id = ? AND contract_address = ?`,
+          )
+          .run(safeNumber(syncTargetBlock), safeNumber(syncTargetBlock), id, address);
+        if (updated.changes !== 1) throw new Error('CHAIN_CHECKPOINT_NOT_FOUND');
       }
       this.db.exec('COMMIT');
       return {
@@ -766,24 +1014,62 @@ export class ChainStore {
     }
   }
 
-  putProjection(projection: ProductProjection): void {
-    if (!namePattern.test(projection.projectionKey)) throw new Error('INVALID_PROJECTION_KEY');
-    const block = this.canonicalBlock(projection.chainId, projection.contract, projection.blockNumber);
-    if (!block || block.hash.toLowerCase() !== projection.blockHash.toLowerCase())
-      throw new Error('PROJECTION_BLOCK_NOT_CANONICAL');
-    this.db
-      .prepare(
-        'INSERT INTO product_projections (chain_id, owner_address, contract_address, projection_key, block_number, block_hash, state_json) VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT(chain_id, owner_address, contract_address, projection_key) DO UPDATE SET block_number = excluded.block_number, block_hash = excluded.block_hash, state_json = excluded.state_json',
+  saveOperationAtCheckpoint(
+    operation: ChainOperation,
+    expectedOperation: ChainOperation,
+    expectedCheckpoint: ChainCheckpoint,
+  ): void {
+    validateOperationEvidence(operation);
+    if (
+      operation.operationId !== expectedOperation.operationId ||
+      operation.chainId !== expectedOperation.chainId ||
+      !sameAddress(operation.owner, expectedOperation.owner) ||
+      !sameAddress(operation.target, expectedOperation.target) ||
+      operation.txHash?.toLowerCase() !== expectedOperation.txHash?.toLowerCase()
+    )
+      throw new Error('OPERATION_IDENTITY_CONFLICT');
+    const id = chainId(operation.chainId);
+    const address = normalizedAddress(operation.target);
+    this.db.exec('BEGIN IMMEDIATE');
+    try {
+      this.#assertSyncOwner(id, address, null);
+      const checkpoint = this.db
+        .prepare(
+          `SELECT block_number, block_hash, projected_block_number, projected_block_hash,
+                  sync_healthy, sync_error, sync_target_block_number
+           FROM chain_checkpoints WHERE chain_id = ? AND contract_address = ?`,
+        )
+        .get(id, address) as
+        | {
+            block_number: number;
+            block_hash: string;
+            projected_block_number: number | null;
+            projected_block_hash: string | null;
+            sync_healthy: number;
+            sync_error: string | null;
+            sync_target_block_number: number | null;
+          }
+        | undefined;
+      if (
+        !checkpoint ||
+        checkpoint.block_number !== safeNumber(expectedCheckpoint.blockNumber) ||
+        checkpoint.block_hash.toLowerCase() !== expectedCheckpoint.blockHash.toLowerCase() ||
+        checkpoint.projected_block_number !== checkpoint.block_number ||
+        checkpoint.projected_block_hash?.toLowerCase() !== checkpoint.block_hash.toLowerCase() ||
+        checkpoint.sync_healthy !== 1 ||
+        checkpoint.sync_error !== null ||
+        checkpoint.sync_target_block_number !== null
       )
-      .run(
-        chainId(projection.chainId),
-        normalizedAddress(projection.owner),
-        normalizedAddress(projection.contract),
-        projection.projectionKey,
-        safeNumber(projection.blockNumber),
-        projection.blockHash.toLowerCase(),
-        boundedJson(projection.state),
-      );
+        throw new Error('CHAIN_SYNC_SUPERSEDED');
+      const current = this.operation(expectedOperation.operationId);
+      if (!current || operationFingerprint(current) !== operationFingerprint(expectedOperation))
+        throw new Error('CHAIN_SYNC_SUPERSEDED');
+      this.saveOperation(operation);
+      this.db.exec('COMMIT');
+    } catch (error) {
+      if (this.db.isTransaction) this.db.exec('ROLLBACK');
+      throw error;
+    }
   }
 
   commitProjections(
@@ -791,6 +1077,7 @@ export class ChainStore {
     contract: Address,
     block: ChainBlock,
     projections: readonly ProductProjection[],
+    ownerToken: string | null = null,
   ): void {
     const id = chainId(valueChainId);
     const address = normalizedAddress(contract);
@@ -825,6 +1112,22 @@ export class ChainStore {
 
     this.db.exec('BEGIN IMMEDIATE');
     try {
+      this.#assertSyncOwner(id, address, ownerToken);
+      const currentCanonical = this.canonicalBlock(id, contract, block.number);
+      const currentCheckpoint = this.checkpoint(id, contract);
+      if (
+        !currentCanonical ||
+        currentCanonical.hash.toLowerCase() !== block.hash.toLowerCase() ||
+        !currentCheckpoint ||
+        currentCheckpoint.blockNumber !== block.number ||
+        currentCheckpoint.blockHash.toLowerCase() !== block.hash.toLowerCase()
+      )
+        throw new Error('PROJECTION_BLOCK_NOT_CANONICAL');
+      for (const projection of projections) {
+        const projectionBlock = this.canonicalBlock(id, contract, projection.blockNumber);
+        if (!projectionBlock || projectionBlock.hash.toLowerCase() !== projection.blockHash.toLowerCase())
+          throw new Error('PROJECTION_BLOCK_NOT_CANONICAL');
+      }
       this.db
         .prepare('DELETE FROM product_projections WHERE chain_id = ? AND contract_address = ?')
         .run(id, address);
@@ -861,14 +1164,75 @@ export class ChainStore {
     contract: Address,
     projectionKey: string,
   ): ProductProjection | null {
-    if (!this.syncHealth(valueChainId, contract).healthy) throw new Error('CHAIN_SYNC_UNHEALTHY');
+    const id = chainId(valueChainId);
+    const address = normalizedAddress(contract);
     const row = this.db
       .prepare(
-        'SELECT block_number, block_hash, state_json FROM product_projections WHERE chain_id = ? AND owner_address = ? AND contract_address = ? AND projection_key = ?',
+        `SELECT checkpoint.block_number AS checkpoint_block_number,
+                checkpoint.block_hash AS checkpoint_block_hash,
+                checkpoint.projected_block_number,
+                checkpoint.projected_block_hash,
+                checkpoint.sync_healthy,
+                checkpoint.sync_error,
+                checkpoint.sync_target_block_number,
+                lease.owner_token,
+                projection.block_number,
+                projection.block_hash,
+                projection.state_json
+         FROM (SELECT 1) AS seed
+         LEFT JOIN chain_checkpoints AS checkpoint
+           ON checkpoint.chain_id = ? AND checkpoint.contract_address = ?
+         LEFT JOIN chain_sync_leases AS lease
+           ON lease.chain_id = ? AND lease.contract_address = ?
+         LEFT JOIN product_projections AS projection
+           ON projection.chain_id = ? AND projection.owner_address = ?
+          AND projection.contract_address = ? AND projection.projection_key = ?`,
       )
-      .get(chainId(valueChainId), normalizedAddress(owner), normalizedAddress(contract), projectionKey) as
-      { block_number: number; block_hash: string; state_json: string } | undefined;
-    if (!row) return null;
+      .get(id, address, id, address, id, normalizedAddress(owner), address, projectionKey) as {
+      checkpoint_block_number: number | null;
+      checkpoint_block_hash: string | null;
+      projected_block_number: number | null;
+      projected_block_hash: string | null;
+      sync_healthy: number | null;
+      sync_error: string | null;
+      sync_target_block_number: number | null;
+      owner_token: string | null;
+      block_number: number | null;
+      block_hash: string | null;
+      state_json: string | null;
+    };
+    if (row.owner_token !== null) throw new Error('CHAIN_SYNC_UNHEALTHY');
+    if (row.checkpoint_block_number === null) {
+      if (
+        row.checkpoint_block_hash !== null ||
+        row.sync_healthy !== null ||
+        row.sync_error !== null ||
+        row.sync_target_block_number !== null ||
+        row.block_number !== null ||
+        row.block_hash !== null ||
+        row.state_json !== null
+      )
+        throw new Error('CORRUPT_CHAIN_DATABASE');
+      return null;
+    }
+    const healthValid =
+      (row.sync_healthy === 1 && row.sync_error === null && row.sync_target_block_number === null) ||
+      (row.sync_healthy === 0 &&
+        row.sync_error === 'CHAIN_REORG_DEPTH_EXCEEDED' &&
+        row.sync_target_block_number === null) ||
+      (row.sync_healthy === 0 &&
+        row.sync_error === 'CHAIN_SYNC_INCOMPLETE' &&
+        row.sync_target_block_number !== null);
+    if (!healthValid || row.checkpoint_block_hash === null) throw new Error('CORRUPT_CHAIN_DATABASE');
+    if (row.sync_healthy !== 1) throw new Error('CHAIN_SYNC_UNHEALTHY');
+    if (
+      row.projected_block_number !== row.checkpoint_block_number ||
+      row.projected_block_hash?.toLowerCase() !== row.checkpoint_block_hash.toLowerCase()
+    )
+      throw new Error('CHAIN_PROJECTION_PENDING');
+    if (row.block_number === null && row.block_hash === null && row.state_json === null) return null;
+    if (row.block_number === null || row.block_hash === null || row.state_json === null)
+      throw new Error('CORRUPT_CHAIN_DATABASE');
     try {
       const state = JSON.parse(row.state_json) as unknown;
       if (!state || typeof state !== 'object' || Array.isArray(state)) throw new Error();
@@ -890,12 +1254,14 @@ export class ChainStore {
     valueChainId: number,
     contract: Address,
     fromBlock: bigint,
+    ownerToken: string | null = null,
   ): { blocks: number; events: number; operations: number; projections: number } {
     const id = chainId(valueChainId);
     const address = normalizedAddress(contract);
     const number = safeNumber(fromBlock);
     this.db.exec('BEGIN IMMEDIATE');
     try {
+      this.#assertSyncOwner(id, address, ownerToken);
       const blocks = this.db
         .prepare(
           'UPDATE chain_blocks SET canonical = 0 WHERE chain_id = ? AND contract_address = ? AND block_number >= ? AND canonical = 1',

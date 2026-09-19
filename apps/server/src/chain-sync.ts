@@ -1,10 +1,8 @@
+import { randomUUID } from 'node:crypto';
 import type { ChainStore, IndexedChainEvent } from './chain-store.ts';
 import { transitionOperation, type ChainOperation } from '../../../packages/chain-adapter/src/lifecycle.ts';
 import type { DeploymentManifest } from '../../../packages/chain-adapter/src/manifest.ts';
-import type {
-  ContractIntegration,
-  ProjectionCandidate,
-} from '../../../packages/chain-adapter/src/reconciliation.ts';
+import type { ContractIntegration } from '../../../packages/chain-adapter/src/reconciliation.ts';
 import type { ChainBlock, ChainLog, ReadonlyRpc } from '../../../packages/chain-adapter/src/rpc.ts';
 import { sameAddress, sameHash, type TransactionHash } from '../../../packages/chain-adapter/src/types.ts';
 
@@ -13,6 +11,8 @@ export type ChainSyncFailureCode =
   | 'CHAIN_HEAD_UNAVAILABLE'
   | 'CHAIN_HEAD_BEFORE_DEPLOYMENT'
   | 'CHAIN_SYNC_RANGE_EXCEEDED'
+  | 'CHAIN_SYNC_TARGET_BEHIND'
+  | 'CHAIN_SYNC_SUPERSEDED'
   | 'CHAIN_REORG_DEPTH_EXCEEDED'
   | 'CHAIN_BLOCK_UNAVAILABLE'
   | 'CHAIN_BLOCK_MISMATCH'
@@ -79,6 +79,7 @@ export class ChainSynchronizer {
   readonly #maxBlocksPerSync: number;
   readonly #maxReorgDepth: number;
   readonly #now: () => string;
+  #syncTail: Promise<void> = Promise.resolve();
 
   constructor(options: ChainSynchronizerOptions) {
     this.#rpc = options.rpc;
@@ -96,7 +97,7 @@ export class ChainSynchronizer {
       throw new ChainSyncFailure('CHAIN_ID_MISMATCH');
   }
 
-  async #rewindIfNeeded(): Promise<number> {
+  async #rewindIfNeeded(ownerToken: string): Promise<number> {
     const checkpoint = this.#store.checkpoint(this.#manifest.chainId, this.#manifest.contractAddress);
     if (!checkpoint) return 0;
     const remoteCheckpoint = await this.#rpc.block(checkpoint.blockNumber);
@@ -118,6 +119,7 @@ export class ChainSynchronizer {
           this.#manifest.chainId,
           this.#manifest.contractAddress,
           candidate + 1n,
+          ownerToken,
         ).blocks;
       }
       candidate--;
@@ -128,6 +130,8 @@ export class ChainSynchronizer {
         this.#manifest.chainId,
         this.#manifest.contractAddress,
         'CHAIN_REORG_DEPTH_EXCEEDED',
+        null,
+        ownerToken,
       );
       throw new ChainSyncFailure('CHAIN_REORG_DEPTH_EXCEEDED');
     }
@@ -135,6 +139,7 @@ export class ChainSynchronizer {
       this.#manifest.chainId,
       this.#manifest.contractAddress,
       this.#manifest.deploymentBlock,
+      ownerToken,
     ).blocks;
   }
 
@@ -149,17 +154,21 @@ export class ChainSynchronizer {
     return Object.freeze(events);
   }
 
-  #putProjections(projections: readonly ProjectionCandidate[]): void {
-    for (const projection of projections) {
-      this.#store.putProjection({
-        ...projection,
-        chainId: this.#manifest.chainId,
-        contract: this.#manifest.contractAddress,
-      });
+  #saveOperationAtCheckpoint(
+    next: ChainOperation,
+    previous: ChainOperation,
+    checkpoint: Readonly<{ blockNumber: bigint; blockHash: ChainBlock['hash'] }>,
+  ): void {
+    try {
+      this.#store.saveOperationAtCheckpoint(next, previous, checkpoint);
+    } catch (error) {
+      if (error instanceof Error && error.message === 'CHAIN_SYNC_SUPERSEDED')
+        throw new ChainSyncFailure('CHAIN_SYNC_SUPERSEDED');
+      throw error;
     }
   }
 
-  async #rebuildProjection(block: ChainBlock): Promise<void> {
+  async #rebuildProjection(block: ChainBlock, ownerToken: string): Promise<void> {
     const projections = await this.#integration.rebuildProjections({
       rpc: this.#rpc,
       manifest: this.#manifest,
@@ -175,10 +184,11 @@ export class ChainSynchronizer {
         chainId: this.#manifest.chainId,
         contract: this.#manifest.contractAddress,
       })),
+      ownerToken,
     );
   }
 
-  async #recoverProjection(): Promise<void> {
+  async #recoverProjection(ownerToken: string): Promise<void> {
     const checkpoint = this.#store.checkpoint(this.#manifest.chainId, this.#manifest.contractAddress);
     if (!checkpoint) return;
     const projected = this.#store.projectionCheckpoint(
@@ -199,25 +209,53 @@ export class ChainSynchronizer {
     if (!block || !sameHash(block.hash, checkpoint.blockHash))
       throw new ChainSyncFailure('PROJECTION_REBUILD_FAILED');
     try {
-      await this.#rebuildProjection(block);
-    } catch {
+      await this.#rebuildProjection(block, ownerToken);
+    } catch (error) {
+      if (error instanceof Error && error.message === 'CHAIN_SYNC_SUPERSEDED') throw error;
       throw new ChainSyncFailure('PROJECTION_REBUILD_FAILED');
     }
   }
 
   async syncTo(head: bigint): Promise<ChainSyncResult> {
+    const previous = this.#syncTail;
+    let release!: () => void;
+    const turn = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    this.#syncTail = previous.then(() => turn);
+    await previous;
+    try {
+      return await this.#syncTo(head);
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        (error.message === 'CHAIN_SYNC_SUPERSEDED' || error.message === 'CHAIN_SYNC_TARGET_BEHIND')
+      )
+        throw new ChainSyncFailure(error.message as 'CHAIN_SYNC_SUPERSEDED' | 'CHAIN_SYNC_TARGET_BEHIND');
+      throw error;
+    } finally {
+      release();
+    }
+  }
+
+  async #syncTo(head: bigint): Promise<ChainSyncResult> {
     await this.#assertChain();
     if (head < this.#manifest.deploymentBlock) throw new ChainSyncFailure('CHAIN_HEAD_BEFORE_DEPLOYMENT');
     const remoteHead = await this.#rpc.block(head);
     if (!remoteHead) throw new ChainSyncFailure('CHAIN_HEAD_UNAVAILABLE');
     if (remoteHead.number !== head) throw new ChainSyncFailure('CHAIN_BLOCK_MISMATCH');
 
-    const reorgedBlocks = await this.#rewindIfNeeded();
-    await this.#recoverProjection();
+    const ownerToken = randomUUID();
+    this.#store.claimSync(this.#manifest.chainId, this.#manifest.contractAddress, head, ownerToken);
+    const reorgedBlocks = await this.#rewindIfNeeded(ownerToken);
+    await this.#recoverProjection(ownerToken);
     const checkpoint = this.#store.checkpoint(this.#manifest.chainId, this.#manifest.contractAddress);
     const start = checkpoint ? checkpoint.blockNumber + 1n : this.#manifest.deploymentBlock;
     if (start > head) {
-      this.#store.markSyncHealthy(this.#manifest.chainId, this.#manifest.contractAddress);
+      if (
+        !this.#store.markSyncHealthy(this.#manifest.chainId, this.#manifest.contractAddress, head, ownerToken)
+      )
+        throw new Error('CHAIN_SYNC_SUPERSEDED');
       return { scannedBlocks: 0, insertedEvents: 0, reorgedBlocks };
     }
     const count = toCount(head - start + 1n);
@@ -242,15 +280,32 @@ export class ChainSynchronizer {
         this.#manifest.contractAddress,
         current,
         events,
+        head,
+        ownerToken,
       ).insertedEvents;
       try {
-        await this.#rebuildProjection(current);
-      } catch {
-        this.#store.rollbackFromBlock(this.#manifest.chainId, this.#manifest.contractAddress, number);
+        await this.#rebuildProjection(current, ownerToken);
+      } catch (error) {
+        try {
+          this.#store.rollbackFromBlock(
+            this.#manifest.chainId,
+            this.#manifest.contractAddress,
+            number,
+            ownerToken,
+          );
+        } catch (rollbackError) {
+          if (rollbackError instanceof Error && rollbackError.message === 'CHAIN_SYNC_SUPERSEDED')
+            throw rollbackError;
+          throw rollbackError;
+        }
+        if (error instanceof Error && error.message === 'CHAIN_SYNC_SUPERSEDED') throw error;
         throw new ChainSyncFailure('PROJECTION_REBUILD_FAILED');
       }
     }
-    this.#store.markSyncHealthy(this.#manifest.chainId, this.#manifest.contractAddress);
+    if (
+      !this.#store.markSyncHealthy(this.#manifest.chainId, this.#manifest.contractAddress, head, ownerToken)
+    )
+      throw new Error('CHAIN_SYNC_SUPERSEDED');
     return { scannedBlocks: count, insertedEvents, reorgedBlocks };
   }
 
@@ -268,6 +323,11 @@ export class ChainSynchronizer {
     const latest = await this.#rpc.block('latest');
     if (!latest) throw new ChainSyncFailure('CHAIN_HEAD_UNAVAILABLE');
     await this.syncTo(latest.number);
+    const synchronizedCheckpoint = this.#store.checkpoint(
+      this.#manifest.chainId,
+      this.#manifest.contractAddress,
+    );
+    if (!synchronizedCheckpoint) throw new ChainSyncFailure('CHAIN_SYNC_SUPERSEDED');
     operation = this.#store.operation(operationId)!;
     const receipt = await this.#rpc.receipt(transactionHash);
     if (!receipt) return operation;
@@ -286,6 +346,7 @@ export class ChainSynchronizer {
     if (!canonicalBlock || !sameHash(canonicalBlock.hash, receipt.blockHash)) return operation;
 
     if (operation.state === 'SUBMITTED' || operation.state === 'REORGED') {
+      const operationBeforeReceipt = operation;
       operation = transitionOperation(
         operation,
         receipt.status === 'REVERTED'
@@ -303,7 +364,7 @@ export class ChainSynchronizer {
               receiptStatus: 'SUCCESS',
             },
       );
-      this.#store.saveOperation(operation);
+      this.#saveOperationAtCheckpoint(operation, operationBeforeReceipt, synchronizedCheckpoint);
     }
     if (receipt.status === 'REVERTED' || operation.state === 'REVERTED') return operation;
     if (operation.state === 'CONFIRMED') return operation;
@@ -320,22 +381,21 @@ export class ChainSynchronizer {
       events,
       block: canonicalBlock,
     });
+    const operationBeforeReconciliation = operation;
     if (result.status === 'MISMATCH') {
       if (operation.state !== 'RECONCILIATION_FAILED') {
         operation = transitionOperation(operation, {
           state: 'RECONCILIATION_FAILED',
           errorCode: result.errorCode,
         });
-        this.#store.saveOperation(operation);
+        this.#saveOperationAtCheckpoint(operation, operationBeforeReconciliation, synchronizedCheckpoint);
       }
       return operation;
     }
 
-    this.#putProjections(result.projections);
     const confirmationBigInt = latest.number - receipt.blockNumber + 1n;
     const confirmations = toCount(confirmationBigInt);
     operation = transitionOperation(operation, { state: 'CONFIRMING', confirmations, reconciled: true });
-    this.#store.saveOperation(operation);
     if (confirmations >= this.#confirmationDepth) {
       operation = transitionOperation(operation, {
         state: 'CONFIRMED',
@@ -343,8 +403,8 @@ export class ChainSynchronizer {
         reconciled: true,
         confirmedAt: this.#now(),
       });
-      this.#store.saveOperation(operation);
     }
+    this.#saveOperationAtCheckpoint(operation, operationBeforeReconciliation, synchronizedCheckpoint);
     return operation;
   }
 
