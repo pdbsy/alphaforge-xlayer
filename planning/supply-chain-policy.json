@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-09-08",
+  "updatedAt": "2026-09-20",
   "repository": "pdbsy/quantpass-arbitrum-hackathon",
   "defaultBranch": "master",
   "dependencyPolicy": {
@@ -28,6 +28,7 @@
       "actions/checkout",
       "actions/dependency-review-action",
       "actions/setup-node",
+      "actions/setup-python",
       "github/codeql-action/analyze",
       "github/codeql-action/init"
     ],

@@ -1,3 +1,4 @@
+import { validateCIGateWorkflows } from './ci/workflow-contract.mjs';
 import { createHash } from 'node:crypto';
 import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
@@ -316,6 +317,9 @@ const workflowProfiles = new Map([
         ['verify', readContents],
         ['verify-windows', readContents],
         ['verify-macos', readContents],
+        ['contracts-m3-macos', readContents],
+        ['source-policy-js', readContents],
+        ['dependency-delta-audit', readContents],
       ]),
     },
   ],
@@ -572,6 +576,7 @@ export async function checkSupplyChain(options = {}) {
   for (const name of workflows) {
     const text = await readFile(resolve(workflowsPath, name), 'utf8');
     validateWorkflowText(`.github/workflows/${name}`, text, policy);
+    if (name === 'ci.yml') validateCIGateWorkflows(text);
   }
   if (options.write) {
     await mkdir(dirname(sbomPath), { recursive: true });
