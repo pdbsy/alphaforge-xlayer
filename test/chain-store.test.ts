@@ -277,6 +277,340 @@ test('wallet projections remain independent and do not imply product-account own
   store.close();
 });
 
+test('product readiness is computed under one canonical database snapshot', async () => {
+  const store = new ChainStore(await databasePath());
+  store.recordCanonicalBlock(
+    CHAIN_ID,
+    CONTRACT,
+    { number: 100n, hash: BLOCK_100, parentHash: BLOCK_99, timestamp: 1_000n },
+    [],
+  );
+  store.recordCanonicalBlock(
+    CHAIN_ID,
+    CONTRACT,
+    { number: 101n, hash: BLOCK_101, parentHash: BLOCK_100, timestamp: 1_010n },
+    [],
+  );
+  store.commitProjections(
+    CHAIN_ID,
+    CONTRACT,
+    { number: 101n, hash: BLOCK_101, parentHash: BLOCK_100, timestamp: 1_010n },
+    [
+      {
+        chainId: CHAIN_ID,
+        owner: OWNER_A,
+        contract: CONTRACT,
+        projectionKey: 'vault-a',
+        blockNumber: 101n,
+        blockHash: BLOCK_101,
+        state: { principal: '1000000' },
+      },
+    ],
+  );
+  const submitted = transitionOperation(
+    createOperation({
+      operationId: 'operation-snapshot',
+      chainId: CHAIN_ID,
+      owner: OWNER_A,
+      target: CONTRACT,
+      state: 'AWAITING_SIGNATURE',
+    }),
+    { state: 'SUBMITTED', txHash: TX_A, submittedAt: '2026-09-14T12:00:00.000Z' },
+  );
+  const mined = transitionOperation(submitted, {
+    state: 'MINED',
+    blockNumber: 100n,
+    blockHash: BLOCK_100,
+    receiptStatus: 'SUCCESS',
+  });
+  const confirming = transitionOperation(mined, {
+    state: 'CONFIRMING',
+    confirmations: 2,
+    reconciled: true,
+  });
+  store.saveOperation(confirming);
+  assert.deepEqual(store.operationEvidence('operation-snapshot', 'missing-projection'), {
+    lifecycle: 'CONFIRMING',
+    receipt: 'SUCCESS',
+    confirmations: 2,
+    reconciliation: 'MATCHED',
+    projection: 'PENDING',
+    productReady: false,
+  });
+  store.saveOperation(
+    transitionOperation(confirming, {
+      state: 'CONFIRMED',
+      confirmations: 3,
+      reconciled: true,
+      confirmedAt: '2026-09-14T12:01:00.000Z',
+    }),
+  );
+
+  assert.deepEqual(store.operationEvidence('operation-snapshot', 'vault-a'), {
+    lifecycle: 'CONFIRMED',
+    receipt: 'SUCCESS',
+    confirmations: 3,
+    reconciliation: 'MATCHED',
+    projection: 'READY',
+    productReady: true,
+  });
+  store.close();
+});
+
+test('server readiness rejects a projection hash from a competing fork', async () => {
+  const store = new ChainStore(await databasePath());
+  store.recordCanonicalBlock(
+    CHAIN_ID,
+    CONTRACT,
+    { number: 100n, hash: BLOCK_100, parentHash: BLOCK_99, timestamp: 1_000n },
+    [],
+  );
+  store.commitProjections(
+    CHAIN_ID,
+    CONTRACT,
+    { number: 100n, hash: BLOCK_100, parentHash: BLOCK_99, timestamp: 1_000n },
+    [
+      {
+        chainId: CHAIN_ID,
+        owner: OWNER_A,
+        contract: CONTRACT,
+        projectionKey: 'vault-a',
+        blockNumber: 100n,
+        blockHash: BLOCK_100,
+        state: { principal: '1000000' },
+      },
+    ],
+  );
+  const submitted = transitionOperation(
+    createOperation({
+      operationId: 'operation-corrupt-snapshot',
+      chainId: CHAIN_ID,
+      owner: OWNER_A,
+      target: CONTRACT,
+      state: 'AWAITING_SIGNATURE',
+    }),
+    { state: 'SUBMITTED', txHash: TX_A, submittedAt: '2026-09-14T12:00:00.000Z' },
+  );
+  const mined = transitionOperation(submitted, {
+    state: 'MINED',
+    blockNumber: 100n,
+    blockHash: BLOCK_100,
+    receiptStatus: 'SUCCESS',
+  });
+  store.saveOperation(transitionOperation(mined, { state: 'CONFIRMING', confirmations: 1 }));
+  store.db
+    .prepare(
+      'UPDATE product_projections SET block_hash = ? WHERE chain_id = ? AND contract_address = ? AND projection_key = ?',
+    )
+    .run(BLOCK_101_ALT.toLowerCase(), CHAIN_ID, CONTRACT.toLowerCase(), 'vault-a');
+
+  assert.deepEqual(store.operationEvidence('operation-corrupt-snapshot', 'vault-a'), {
+    lifecycle: 'CONFIRMING',
+    receipt: 'SUCCESS',
+    confirmations: 1,
+    reconciliation: 'PENDING',
+    projection: 'STALE',
+    productReady: false,
+  });
+  store.close();
+});
+
+test('server readiness rejects internally consistent blocks from different ancestry', async () => {
+  const store = new ChainStore(await databasePath());
+  store.recordCanonicalBlock(
+    CHAIN_ID,
+    CONTRACT,
+    { number: 100n, hash: BLOCK_100, parentHash: BLOCK_99, timestamp: 1_000n },
+    [],
+  );
+  store.recordCanonicalBlock(
+    CHAIN_ID,
+    CONTRACT,
+    { number: 101n, hash: BLOCK_101, parentHash: BLOCK_100, timestamp: 1_010n },
+    [],
+  );
+  store.commitProjections(
+    CHAIN_ID,
+    CONTRACT,
+    { number: 101n, hash: BLOCK_101, parentHash: BLOCK_100, timestamp: 1_010n },
+    [
+      {
+        chainId: CHAIN_ID,
+        owner: OWNER_A,
+        contract: CONTRACT,
+        projectionKey: 'vault-a',
+        blockNumber: 101n,
+        blockHash: BLOCK_101,
+        state: { principal: '1000000' },
+      },
+    ],
+  );
+  const submitted = transitionOperation(
+    createOperation({
+      operationId: 'operation-competing-ancestry',
+      chainId: CHAIN_ID,
+      owner: OWNER_A,
+      target: CONTRACT,
+      state: 'AWAITING_SIGNATURE',
+    }),
+    { state: 'SUBMITTED', txHash: TX_A, submittedAt: '2026-09-14T12:00:00.000Z' },
+  );
+  const mined = transitionOperation(submitted, {
+    state: 'MINED',
+    blockNumber: 100n,
+    blockHash: BLOCK_100,
+    receiptStatus: 'SUCCESS',
+  });
+  store.saveOperation(
+    transitionOperation(
+      transitionOperation(mined, { state: 'CONFIRMING', confirmations: 2, reconciled: true }),
+      {
+        state: 'CONFIRMED',
+        confirmations: 3,
+        reconciled: true,
+        confirmedAt: '2026-09-14T12:01:00.000Z',
+      },
+    ),
+  );
+
+  // Simulate two individually self-consistent cache/fork witnesses: operation
+  // 100/A100 and projection/checkpoint 101/B101, where B101 does not descend
+  // from A100. The server must verify the parent chain, not just endpoints.
+  store.db
+    .prepare(
+      'UPDATE chain_blocks SET parent_hash = ? WHERE chain_id = ? AND contract_address = ? AND block_number = 101 AND canonical = 1',
+    )
+    .run(BLOCK_101_ALT.toLowerCase(), CHAIN_ID, CONTRACT.toLowerCase());
+
+  const evidence = store.operationEvidence('operation-competing-ancestry', 'vault-a');
+  assert.equal(evidence?.projection, 'STALE');
+  assert.equal(evidence?.productReady, false);
+  store.close();
+});
+
+test('server readiness bounds ancestry work and fails closed beyond the engineering limit', async () => {
+  const store = new ChainStore(await databasePath());
+  const hashAt = (height: number) => asBlockHash(`0x${height.toString(16).padStart(64, '0')}`);
+  store.recordCanonicalBlock(
+    CHAIN_ID,
+    CONTRACT,
+    { number: 100n, hash: hashAt(100), parentHash: hashAt(99), timestamp: 100n },
+    [],
+  );
+  store.db.exec('BEGIN IMMEDIATE');
+  try {
+    const insert = store.db.prepare(
+      `INSERT INTO chain_blocks
+       (chain_id, contract_address, block_number, block_hash, parent_hash, block_timestamp, log_count, canonical)
+       VALUES (?, ?, ?, ?, ?, ?, 0, 1)`,
+    );
+    for (let height = 101; height <= 2_099; height++) {
+      insert.run(
+        CHAIN_ID,
+        CONTRACT.toLowerCase(),
+        height,
+        hashAt(height).toLowerCase(),
+        hashAt(height - 1).toLowerCase(),
+        String(height),
+      );
+    }
+    store.db
+      .prepare(
+        'UPDATE chain_checkpoints SET block_number = 2099, block_hash = ? WHERE chain_id = ? AND contract_address = ?',
+      )
+      .run(hashAt(2_099).toLowerCase(), CHAIN_ID, CONTRACT.toLowerCase());
+    store.db.exec('COMMIT');
+  } catch (error) {
+    store.db.exec('ROLLBACK');
+    throw error;
+  }
+  store.commitProjections(
+    CHAIN_ID,
+    CONTRACT,
+    { number: 2_099n, hash: hashAt(2_099), parentHash: hashAt(2_098), timestamp: 2_099n },
+    [
+      {
+        chainId: CHAIN_ID,
+        owner: OWNER_A,
+        contract: CONTRACT,
+        projectionKey: 'vault-a',
+        blockNumber: 2_099n,
+        blockHash: hashAt(2_099),
+        state: { principal: '1000000' },
+      },
+    ],
+  );
+  const submitted = transitionOperation(
+    createOperation({
+      operationId: 'operation-bounded-ancestry',
+      chainId: CHAIN_ID,
+      owner: OWNER_A,
+      target: CONTRACT,
+      state: 'AWAITING_SIGNATURE',
+    }),
+    { state: 'SUBMITTED', txHash: TX_A, submittedAt: '2026-09-14T12:00:00.000Z' },
+  );
+  const mined = transitionOperation(submitted, {
+    state: 'MINED',
+    blockNumber: 100n,
+    blockHash: hashAt(100),
+    receiptStatus: 'SUCCESS',
+  });
+  store.saveOperation(
+    transitionOperation(
+      transitionOperation(mined, { state: 'CONFIRMING', confirmations: 2, reconciled: true }),
+      {
+        state: 'CONFIRMED',
+        confirmations: 3,
+        reconciled: true,
+        confirmedAt: '2026-09-14T12:01:00.000Z',
+      },
+    ),
+  );
+
+  const atLimit = store.operationEvidence('operation-bounded-ancestry', 'vault-a');
+  assert.equal(atLimit?.projection, 'READY');
+  assert.equal(atLimit?.productReady, true);
+
+  store.recordCanonicalBlock(
+    CHAIN_ID,
+    CONTRACT,
+    {
+      number: 2_100n,
+      hash: hashAt(2_100),
+      parentHash: hashAt(2_099),
+      timestamp: 2_100n,
+    },
+    [],
+  );
+  store.commitProjections(
+    CHAIN_ID,
+    CONTRACT,
+    {
+      number: 2_100n,
+      hash: hashAt(2_100),
+      parentHash: hashAt(2_099),
+      timestamp: 2_100n,
+    },
+    [
+      {
+        chainId: CHAIN_ID,
+        owner: OWNER_A,
+        contract: CONTRACT,
+        projectionKey: 'vault-a',
+        blockNumber: 2_100n,
+        blockHash: hashAt(2_100),
+        state: { principal: '1000000' },
+      },
+    ],
+  );
+
+  const beyondLimit = store.operationEvidence('operation-bounded-ancestry', 'vault-a');
+  assert.equal(beyondLimit?.projection, 'STALE');
+  assert.equal(beyondLimit?.productReady, false);
+  store.close();
+});
+
 test('chain store refuses an unrelated database instead of mutating it', async () => {
   const path = await databasePath();
   const db = new DatabaseSync(path);

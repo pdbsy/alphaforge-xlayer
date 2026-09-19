@@ -2,7 +2,7 @@
 
 This document describes the ABI-independent M3 chain foundation implemented by Macbeth03. It is the integration contract for the first owner-authorized Vault/Pass vertical slice on Robinhood Chain Testnet.
 
-The contract-specific slice is not wired yet. Macbeth02 confirmed on 2026-09-14 that the owner-only action ABI, expected event, contract view, deployment manifest, and deployed Testnet contracts are still pending. The current code therefore contains no invented Vault accounting, token, Pass locking, event, or deployment semantics and has not broadcast a Testnet transaction.
+The contract-specific slice is not wired yet. Macbeth02 reconfirmed on 2026-09-19 at PR #18 head `d473f9df9eb5d1be41024b4b58ebc5ec4f5d9fcd` that there is no Vault source or compiled owner-only Vault ABI. Proposed methods, events, errors, selectors, topics, accounting transitions, and deployment values remain drafts. The current code therefore contains no invented Vault calldata, accounting, event, or deployment semantics and has not broadcast a Testnet transaction.
 
 ## Current boundary
 
@@ -39,6 +39,7 @@ The backend surface is `ChainSynchronizer` and `ChainStore`:
 - `syncTo(head)` verifies the Chain ID, detects checkpoint hash divergence, performs a bounded common-ancestor search, rewinds displaced state, and sequentially replays the canonical fork.
 - `trackOperation(operationId)` verifies the receipt owner, target, block hash, expected normalized event, contract reconciliation result, and injected confirmation depth.
 - `recordReplacement` and `recordDropped` accept explicit backend evidence decisions; the indexer does not infer either result from elapsed time.
+- `operationEvidence(operationId, projectionKey)` reads the operation, current projection, sync checkpoint, and every canonical block from the operation through the checkpoint inside one SQLite read transaction. The backend verifies the full parent-hash ancestry and returns final product evidence. API/UI code receives that result and has no supported path for deriving readiness from independently cached operation or projection objects.
 
 The browser surface is `Eip1193Wallet`, `PreparedActionFactory`, and the discriminated `StrategyAdapter` direction:
 
@@ -55,7 +56,7 @@ The canonical lifecycle is:
 
 Explicit alternate outcomes are `REJECTED`, `REVERTED`, `REPLACED`, `DROPPED`, `REORGED`, and `RECONCILIATION_FAILED`. A canonical operation can still become `REORGED` after it was confirmed.
 
-`operationEvidence(operation, projection)` exposes separate UI fields:
+`ChainStore.operationEvidence(operationId, projectionKey)` exposes separate UI fields:
 
 | Field            | Meaning                                                                                            |
 | ---------------- | -------------------------------------------------------------------------------------------------- |
@@ -65,6 +66,8 @@ Explicit alternate outcomes are `REJECTED`, `REVERTED`, `REPLACED`, `DROPPED`, `
 | `reconciliation` | `PENDING`, `MATCHED`, or `FAILED`                                                                  |
 | `projection`     | `PENDING`, `READY`, or `STALE`, with chain/owner/contract/block context checked                    |
 | `productReady`   | True only for canonical `CONFIRMED`, matched reconciliation, and a compatible non-stale projection |
+
+The store computes the result inside one database read transaction. It checks chain, owner, contract, operation and projection block hashes, height bounds, the checkpoint, and every parent link from the operation block through the checkpoint. The ancestry query streams rows and is capped at 2,000 blocks as an engineering resource bound; a larger proof request fails closed as `STALE`. Different-height endpoints that are individually valid but belong to competing forks therefore also fail closed. The browser surface exports only the final evidence type; it does not expose a function that can turn client-composed raw objects into `productReady`.
 
 For the Macbeth04 UI, receipt success can drive its receipt milestone, while `MINED`/`CONFIRMING` remain in progress. The UI may enter `READY` only when `productReady` is true. `REORGED`, `RECONCILIATION_FAILED`, a stale projection, wrong wallet, or wrong network must remain non-ready. Wallet account and network checks are repeated at submission time; product reads may still display public canonical state while a wallet is disconnected.
 
@@ -85,6 +88,8 @@ Migration `002-projection-checkpoint.sql` adds the independently committed proje
 Events are applied in block number, transaction index, and log index order. Re-reading an identical canonical block requires the exact same ordered event identities and payloads. Conflicting data for an existing event identity, or a same-count block replay with different event identities, fails closed. A displaced event can reappear on a new canonical block only when its event payload is unchanged.
 
 On a concrete checkpoint hash mismatch, the synchronizer searches backward within the configured reorg bound. A missing RPC block is treated as provider unavailability and never mutates local canonical evidence. For a bounded reorg, the synchronizer marks displaced blocks and events non-canonical, changes affected operations to `REORGED`, clears projections, rewinds the indexed checkpoint, and deterministically rebuilds the new branch. A reorg deeper than policy persists an unhealthy state and projection reads fail closed until canonical recovery succeeds.
+
+Confirmation depth and maximum reorg depth are required injected inputs. The repository does not assign operational values to either one. `maxBlocksPerSync = 2000` remains an engineering resource bound, with an explicit override, and is not a finality claim. The authoritative deployment/finality owner must still approve confirmation depth, reorg depth, and the response required after a deeper reorg before a Testnet composition can be enabled.
 
 Each projection rebuild atomically replaces the contract's projection set and advances its projected checkpoint. Canonical rebuild is the only path that writes product projections; operation-specific reconciliation updates lifecycle evidence only, so an earlier transaction in the same block cannot overwrite that block's final rebuilt state. Calls on one synchronizer are serialized in process, while the persisted owner token prevents stale synchronizers using another instance, connection, or process from writing or rolling back after another synchronization takes over. Multi-block synchronizations remain persistently `CHAIN_SYNC_INCOMPLETE` from the database claim until the recorded target head completes. A restart or request below that recorded target cannot reopen reads. A later RPC, log, parent, or projection failure therefore leaves the recoverable prefix unreadable instead of presenting it as complete. Projection lookup obtains the lease, health, indexed checkpoint, projected checkpoint, and requested row in one SQLite statement, so another connection cannot change synchronization state between validation and use. Operation reconciliation captures the completed checkpoint before awaiting contract-specific work and persists its lifecycle result only if that exact healthy checkpoint and prior operation are still current and no synchronization lease is active. If a process stops after the indexed checkpoint commits but before projection commit, direct projection reads fail with `CHAIN_SYNC_UNHEALTHY` while its lease remains; after a new synchronizer takes over, an indexed/projected checkpoint gap fails with `CHAIN_PROJECTION_PENDING` until that synchronizer rebuilds it. A rebuild failure for the block currently being indexed removes that partially indexed block only while the caller still owns the lease; stale callers cannot undo newer canonical evidence. Destroying the chain database loses only the cache: a new database can replay from the trusted deployment block and reconstruct canonical events and projections. Browser local storage and submission history are not recovery dependencies.
 
@@ -116,5 +121,7 @@ When Macbeth02 publishes an immutable contract input, the integrating change mus
 6. add explicit fail-closed Testnet configuration without changing Local mode;
 7. obtain a reviewed confirmation/finality policy before setting an operational depth;
 8. collect real chain ID, address, transaction hash, receipt, event, block hash, confirmation, and reconciled projection evidence.
+
+The owner source (`owner_` versus deployment caller), AF-USDC-to-Pass base-unit conversion wording, partial withdrawal with non-USDC balances or third-party dust, and direct custody calls versus relayed custody intents are also unresolved contract inputs. They must be resolved in the protocol source before the encoder, decoder, view reader, or expected-event rules can be implemented.
 
 Strategy execution, risk signing, venues, PnL settlement, mainnet, production keys, and wallet-link authentication remain outside this slice.

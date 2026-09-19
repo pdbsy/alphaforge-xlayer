@@ -3,6 +3,20 @@ import type { DeploymentManifest } from './manifest.ts';
 import type { ChainOperation } from './lifecycle.ts';
 import type { Address, BlockHash, HexData } from './types.ts';
 
+/**
+ * Final product evidence computed by the server from one canonical database
+ * snapshot. Clients consume this result; they do not derive readiness from
+ * independently cached operation or projection objects.
+ */
+export interface ProductOperationEvidence {
+  readonly lifecycle: ChainOperation['state'];
+  readonly receipt: 'PENDING' | 'SUCCESS' | 'REVERTED';
+  readonly confirmations: number;
+  readonly reconciliation: 'PENDING' | 'MATCHED' | 'FAILED';
+  readonly projection: 'PENDING' | 'READY' | 'STALE';
+  readonly productReady: boolean;
+}
+
 export interface DecodedContractEvent {
   readonly eventSignature: HexData;
   readonly eventName: string;
