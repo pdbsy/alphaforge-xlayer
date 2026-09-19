@@ -1,6 +1,6 @@
 # AlphaForge M3 Partial On-chain Vault Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use `executing-plans` to implement this plan task-by-task. Repository instructions prohibit additional workers. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use `executing-plans` to implement this plan task-by-task. Repository instructions prohibit additional workers. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Implement the owner-controlled AlphaForge Vault custody, exact Pass capacity accounting,
 tracked-position withdrawal gates, close settlement, and post-close dust rescue required by
@@ -59,7 +59,7 @@ Slither 0.11.3, Node 24.21.0, npm 11.19.1.
   bytecode hashes, ABI hash, and deployment evidence as null/NOT_DEPLOYED until a real compiled
   implementation exists.
 - [x] **Step 4: Run the focused interface test and the existing PassLocker suite.**
-- [ ] **Step 5: Commit `[Macbeth02][M3-02-PROTOCOL] Freeze partial Vault interface` and immediately
+- [x] **Step 5: Commit `[Macbeth02][M3-02-PROTOCOL] Freeze partial Vault interface` and immediately
   send the exact commit and signatures to Macbeth03 and Macbeth04.**
 
 ### Task 2: Implement immutable custody and exact deposit capacity
@@ -73,22 +73,22 @@ Slither 0.11.3, Node 24.21.0, npm 11.19.1.
 - Consumes the Task 1 interface and existing `PassLocker(address,address,IERC20)`.
 - Produces exact conversion helpers and owner-only deposit with real AF-USDC and Pass movement.
 
-- [ ] **Step 1: Write RED constructor tests.** Reject zero owner, creator, strategy identity, token,
+- [x] **Step 1: Write RED constructor tests.** Reject zero owner, creator, strategy identity, token,
   duplicate token, wrong Pass decimals, and wrong AF-USDC decimals; prove owner differs from
   deployer, creator may equal or differ from owner, and no ownership transfer/renounce/initialize
   selector exists.
-- [ ] **Step 2: Run the focused custody file and observe failure because `AlphaForgeVault` is absent.**
-- [ ] **Step 3: Implement immutable constructor state and deploy the PassLocker with
+- [x] **Step 2: Run the focused custody file and observe failure because `AlphaForgeVault` is absent.**
+- [x] **Step 3: Implement immutable constructor state and deploy the PassLocker with
   `(address(this), owner_, pass_)`.** Accept native dust through `receive()` without accounting it.
-- [ ] **Step 4: Write RED conversion/deposit tests.** Cover 1 AF-USDC base unit to `1e12` Pass raw,
+- [x] **Step 4: Write RED conversion/deposit tests.** Cover 1 AF-USDC base unit to `1e12` Pass raw,
   inexact reverse conversion, full 18-decimal ordinary Pass transfer, owner-only deposit, exact
   100 AF-USDC/100 Pass lock, third-party allowance rejection, closed rejection, zero amount,
   balance-delta mismatch, and overflow.
-- [ ] **Step 5: Implement conversions and deposit with checks-effects-interactions,
+- [x] **Step 5: Implement conversions and deposit with checks-effects-interactions,
   `SafeERC20`, exact balance deltas, and `nonReentrant`.** Increase `principalBasis` and
   `trackedUsdcBalance` only by the accepted six-decimal amount.
-- [ ] **Step 6: Run custody, interface, PassLocker, Pass, and asset tests.**
-- [ ] **Step 7: Commit `[Macbeth02][M3-02-PROTOCOL] Add immutable Vault custody`.**
+- [x] **Step 6: Run custody, interface, PassLocker, Pass, and asset tests.**
+- [x] **Step 7: Commit `[Macbeth02][M3-02-PROTOCOL] Add immutable Vault custody`.**
 
 ### Task 3: Implement profit-first withdrawal, tracked positions, and loss-safe close
 
@@ -105,22 +105,22 @@ Slither 0.11.3, Node 24.21.0, npm 11.19.1.
 - The test harness controller moves real tokens and then calls those internal hooks to simulate
   legitimate settlement; an unsolicited transfer alone never changes accounting.
 
-- [ ] **Step 1: Write RED accounting tests.** Cover profit-only withdrawal, mixed profit/principal,
+- [x] **Step 1: Write RED accounting tests.** Cover profit-only withdrawal, mixed profit/principal,
   principal-only withdrawal, loss without unlock, loss withdrawal, loss close without top-up,
   complete Pass release, fixed recipient, and transfer-failure atomicity.
-- [ ] **Step 2: Write RED tracked-position tests.** Cover allowed AF-ETH/AF-BTC positions, unsupported
+- [x] **Step 2: Write RED tracked-position tests.** Cover allowed AF-ETH/AF-BTC positions, unsupported
   assets, profit-only withdrawal while a position is open, principal withdrawal block, close block,
   position settlement, locked-Pass exception, and unsolicited known/unknown token dust.
-- [ ] **Step 3: Implement internal tracked accounting plus owner-only `withdraw` and `close`.** Compute
+- [x] **Step 3: Implement internal tracked accounting plus owner-only `withdraw` and `close`.** Compute
   `profitAmount = min(amount, max(trackedUsdcBalance - principalBasis, 0))`; unlock exactly
   `(amount - profitAmount) * 1e12`; close transfers only tracked AF-USDC, zeros obligations, and
   releases all remaining accounted Pass atomically.
-- [ ] **Step 4: Run focused accounting tests and all prior Vault tests.**
-- [ ] **Step 5: Add fuzz/invariant coverage.** Prove `lockedPassRaw == principalBasis * 1e12` while
+- [x] **Step 4: Run focused accounting tests and all prior Vault tests.**
+- [x] **Step 5: Add fuzz/invariant coverage.** Prove `lockedPassRaw == principalBasis * 1e12` while
   active, unsolicited tokens never increase withdrawable value, non-owner mutations fail, and a
   successful close leaves zero tracked AF-USDC/principal/locked Pass obligations.
-- [ ] **Step 6: Run the pinned 256 fuzz and 64x32 invariant profile.**
-- [ ] **Step 7: Commit `[Macbeth02][M3-02-PROTOCOL] Enforce Vault principal accounting`.**
+- [x] **Step 6: Run the pinned 256 fuzz and 64x32 invariant profile.**
+- [x] **Step 7: Commit `[Macbeth02][M3-02-PROTOCOL] Enforce Vault principal accounting`.**
 
 ### Task 4: Implement post-close dust rescue and failure isolation
 
@@ -136,18 +136,18 @@ Slither 0.11.3, Node 24.21.0, npm 11.19.1.
   obligations in that token's own raw units.
 - `untrackedExcess(token)` returns `max(actualBalanceAtVault - reservedTrackedBalance, 0)`.
 
-- [ ] **Step 1: Write RED rescue tests.** Cover active rejection, non-owner rejection, fixed owner
+- [x] **Step 1: Write RED rescue tests.** Cover active rejection, non-owner rejection, fixed owner
   recipient, unknown ERC-20/native dust, known-asset excess, zero excess, locked Pass reservation,
   and no principal/profit/capacity mutation.
-- [ ] **Step 2: Write RED failure/reentrancy tests.** Prove malicious token rescue failure leaves an
+- [x] **Step 2: Write RED failure/reentrancy tests.** Prove malicious token rescue failure leaves an
   earlier close intact; AF-USDC close transfer failure and Pass release failure revert the entire
   close; callbacks cannot reenter withdraw, close, token rescue, or native rescue.
-- [ ] **Step 3: Implement reserved/excess views and rescue methods with `SafeERC20`, fixed recipient,
+- [x] **Step 3: Implement reserved/excess views and rescue methods with `SafeERC20`, fixed recipient,
   closed-state checks, effects before interactions where applicable, and `nonReentrant`.**
-- [ ] **Step 4: Run rescue, accounting, custody, interface, and PassLocker suites.**
-- [ ] **Step 5: Extend invariants so rescue never reduces a reserved tracked balance and non-owner
+- [x] **Step 4: Run rescue, accounting, custody, interface, and PassLocker suites.**
+- [x] **Step 5: Extend invariants so rescue never reduces a reserved tracked balance and non-owner
   callers never change Vault asset state.**
-- [ ] **Step 6: Commit `[Macbeth02][M3-02-PROTOCOL] Add isolated Vault dust rescue`.**
+- [x] **Step 6: Commit `[Macbeth02][M3-02-PROTOCOL] Add isolated Vault dust rescue`.**
 
 ### Task 5: Publish compiled ABI evidence and complete local verification
 
