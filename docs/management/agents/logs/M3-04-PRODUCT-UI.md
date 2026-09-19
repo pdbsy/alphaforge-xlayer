@@ -114,3 +114,14 @@
 - Product capability: Unchanged. Vault/Pass writes remain disabled and `NOT IMPLEMENTED`; no signing or broadcast is performed by the product shell.
 - Evidence handling: This record joins the implementation as the new source C. Manifest R and snapshot S are generated only through repository commands, with exact SHAs maintained in Draft PR #16.
 - Next step: Preserve the Draft stack until the authorized upstream integration sequence permits a `master`-based hosted rerun. Entire Testnet closure remains BLOCKED.
+
+### 2026-09-19 — Contradictory evidence failure precedence
+
+- Task: M3-04-PRODUCT-UI
+- Status: READY_FOR_REVIEW_WITH_HOSTED_ADMISSION_BLOCKER
+- Review source: Macbeth05 independent review identified that `productReady=true` was evaluated before explicit failure evidence.
+- What changed: Moved the success projection check after lifecycle, receipt, reconciliation and stale-projection failures. Contradictory evidence now fails closed instead of rendering `READY`.
+- Tests: Added a red-first regression covering reorg, reverted receipt, reconciliation failure and stale projection combined with `productReady=true`; the expanded focused lifecycle/store/sync/wallet/UI set passes 64/64.
+- Ownership boundary: Product presentation order only. No Macbeth03 state, provider, RPC, adapter, signing, broadcast or retry behavior changed.
+- Evidence handling: This correction becomes the new source C. Manifest R and snapshot S are regenerated only through repository commands, with exact SHAs recorded in Draft PR #16.
+- Next step: Preserve the Draft stack until PR #17 reaches `master`, then retarget and rerun hosted admission. No merge is authorized.

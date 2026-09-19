@@ -115,3 +115,13 @@
 - [x] Cover all four reasons: `SESSION_CHANGED`, `POST_SUBMISSION_CHECK_FAILED`, `PROVIDER_RESULT_UNKNOWN` and `LOCAL_EVIDENCE_INVALID`.
 - [x] Run the expanded 63-test lifecycle/store/sync/wallet/UI integration set, typecheck, lint and formatting.
 - Evidence closeout for this update follows the same source C → manifest R → snapshot S workflow; exact immutable SHAs are recorded in Draft PR #16.
+
+## Task 7: Fail closed on contradictory product evidence
+
+**Files:** Modify `apps/web/src/m3-product-shell.ts` and `test/m3-product-ui.test.ts`; record the independent review correction in the worker log.
+
+- [x] Add a failing regression for explicit failure evidence combined with `productReady=true`.
+- [x] Evaluate lifecycle, receipt, reconciliation and stale-projection failures before accepting product readiness.
+- [x] Keep the correction inside the pure presentation mapper without changing Macbeth03 ownership.
+- [x] Run the expanded 64-test lifecycle/store/sync/wallet/UI integration set.
+- Evidence closeout for this correction follows the source C → manifest R → snapshot S workflow; exact immutable SHAs are recorded in Draft PR #16.
