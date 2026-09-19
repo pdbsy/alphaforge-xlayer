@@ -331,3 +331,29 @@ test('removing integration manifest cannot launder closeout history through merg
     /integration.*queue/i,
   );
 });
+
+test('ordinary queued change after an already integrated base remains admissible', (t) => {
+  const s = fixture(t);
+  const base = s.git('rev-parse', 'HEAD');
+  s.git(
+    'commit',
+    '--allow-empty',
+    '-qm',
+    '[Macbeth01][AF-OTHER] Ordinary follow-up',
+    '-m',
+    'Agent-ID: Macbeth01\nTask-ID: AF-OTHER',
+  );
+  succeeds(
+    s.run({
+      name: 'merge_group',
+      event: {
+        merge_group: {
+          base_ref: 'refs/heads/master',
+          base_sha: base,
+          head_sha: s.git('rev-parse', 'HEAD'),
+          head_ref: 'refs/heads/gh-readonly-queue/master/pr-21-fixture',
+        },
+      },
+    }),
+  );
+});

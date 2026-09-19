@@ -99,3 +99,15 @@ The first assembly preserves protocol `5d1a26d`, adapter `20347ec`, updated UI/b
 Conflict resolutions retain the union of all test commands; retain both worker 04/05 registrations and bootstrap test expectations with the manager assigned to AF-M3-CLOSEOUT; retain both provenance adaptation histories and hash the resolved source files. Conflicting generated management evidence/snapshots were restored byte-for-byte from fixed master, not edited into PASS. They remain stale for this candidate until a new C→R→S collection.
 
 The approved identity mode passed 35 targeted tests, including independently pinned stacked sources and rejection of foreign task laundering. This is local implementation validation, not independent approval or whole-candidate acceptance. Required checks/protection remain unchanged.
+
+## Independent-review remediation checkpoint
+
+05 scan `fcd15838-e8e3-4026-9aad-df58a2038ea9` on `7ecba357..5340dfe2` found two verified Low issues: foreign/missing PR repository identity could enter the manager mode, and merge-group routing could skip its fixed-base/source graph. Regression tests first reproduced successful admission, then the CLI was tightened to require canonical head/base repository and exact refs. Introducing closeout history through a merge queue now fails closed because this mode has no trusted queue PR/source binding. Removal of the manifest does not erase the historical queue guard. Ordinary queue provenance validation remains supported. No queue/merge authorization is implied. Independent fix acceptance remains pending on the new candidate.
+
+03 source `1023cafa296655615f4381e656868cd6e8d18e00`, delivered in `588efa531b83548ffa7b1b01f976dfc49ff470b7`, is now included. It replaces independent frontend READY composition with a single SQLite snapshot and bounded canonical parent-chain verification; competing forks and excessive lookup ranges fail closed. Confirmation/reorg policy must be supplied explicitly. The 2,000-block lookup budget is a resource limit, not finality policy. FU-003 requires independent candidate retest.
+
+FU-002 was already fixed by 04 `91777c9`, with regression `4f54f94`, both ancestors of the included `22616d8`; failure states now precede the productReady flag. Earlier notes saying implementation was still awaited were stale. Independent closure is still pending.
+
+Prior candidate `3518c49bfb218fccf0d7516cabbe3362e42f4ac8` passed 467 Node tests and all three hosted engineering jobs. Its dependency-review failed because the repository does not support that feature; CodeQL produced SARIF but failed with GitHub API integration access denial. These remain real failures; no settings or checks were weakened. That candidate's results do not certify the later remediation.
+
+Finality DECISION REQUEST remains open: no approved confirmation/reorg thresholds exist. User may keep live composition blocked pending official evidence/observations or explicitly approve temporary Testnet soft-readiness thresholds. Do not infer approval from example test values.
