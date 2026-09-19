@@ -70,3 +70,36 @@ Reasons: no official combined candidate, unresolved acceptance scope and account
 ## Independence boundary
 
 Worker-authored local manifests, tests, and hosted CI are inputs. Macbeth05 independently inspected the exact source ranges and provider status and repeated the listed focused tests under the approved runtime. No unexecuted worker PASS has been copied into the matrix as an independent PASS.
+
+## Unified foundation candidate review
+
+Later candidate facts:
+
+| Item | Exact value |
+| --- | --- |
+| PR | `#20` |
+| Fixed base | `7ecba357d5a19f387e86f578822af04a6261fed2` |
+| Initial identity-review head | `5340dfe2cd2323d21c32786396ec2236ab78a0ee` |
+| Identity remediation source | `00d3b0e0015084fdc5cae6caa6c3ffabd7e5cc2e` |
+| Final evidence head | `919505b45572916a3868ecf355691fb09fa1e2c3` |
+| Macbeth03 ancestry fix source | `588efa531b83548ffa7b1b01f976dfc49ff470b7` |
+| Macbeth04 contradictory-evidence fix source | `22616d809a5bbd83e4d15c9946bd91006c1417b2` |
+
+The Codex Security identity-mode scan used immutable range `7ecba357d5a19f387e86f578822af04a6261fed2..5340dfe2cd2323d21c32786396ec2236ab78a0ee` and scan ID `fcd15838-e8e3-4026-9aad-df58a2038ea9`. It sealed two Low, high-confidence findings. Both original proofs were reproduced against the vulnerable version and rejected after remediation.
+
+Independent commands were run from exact `git archive` snapshots or a separate temporary Git repository. The approved runtime was confirmed as Node `24.21.0` and npm `11.19.1` through `fnm exec`.
+
+| Exact source | Independent scope | Result |
+| --- | --- | --- |
+| PR #20 final head `919505b...` | integration identity, lifecycle, bypass, management | **59/59 PASS** |
+| PR #20 final head `919505b...` | real canonical PR event against all pinned source refs | **PASS**, 102 records: 84 source + 18 manager |
+| PR #20 final head `919505b...` | same-name foreign-repository PR PoC | **REJECTED** |
+| PR #20 final head `919505b...` | closeout merge-group PoC | **REJECTED** |
+| Macbeth04 included source | `m3-product-ui` including four contradictory `productReady` cases | **15/15 PASS** |
+| Macbeth03 source `588efa5...` | chain store, chain sync, wallet, product adapter | **60/60 PASS** |
+
+One broader `ui-product-adapter-races` attempt from the dependency-free Macbeth03 archive could not start because `fastify` was not installed in that isolated snapshot. This was an environment limitation, not a test assertion failure, and that file does not exercise the FU-003 ancestry path. No dependency installation or shared `node_modules` use was introduced to mask the limitation.
+
+`npm run management:check` was also attempted on the QA documentation worktree and stopped before validation because the isolated QA checkout had no installed `prettier` package. It is recorded as `NOT_RUN`; no dependency was installed and no generated management evidence was rewritten.
+
+Final provider readback for PR #20 showed all Linux, macOS, and Windows engineering-check runs successful. CodeQL scanned 61 JavaScript, 60 TypeScript, and 3 Actions files before failing on GitHub result-upload/run-metadata permission. Dependency review failed because the feature was unavailable. These platform failures are not source-test failures, but failed required checks are not converted into PASS.

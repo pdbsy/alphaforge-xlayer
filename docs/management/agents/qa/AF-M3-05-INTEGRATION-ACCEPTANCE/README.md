@@ -5,9 +5,9 @@ Owner: `Macbeth05`
 Task: `AF-M3-05-INTEGRATION-ACCEPTANCE`
 
 QA branch: `macbeth05/AF-M3-05-INTEGRATION-ACCEPTANCE`
-Status: **FOCUSED RETEST COMPLETE; INTEGRATED OFFLINE ACCEPTANCE BLOCKED; TESTNET NOT RUN**
+Status: **UNIFIED FOUNDATION REVIEWED; PRODUCT ACCEPTANCE PARTIAL_BLOCKED; TESTNET NOT RUN**
 
-No common candidate containing the Macbeth02, Macbeth03, and Macbeth04 deliveries has been designated. The records in this directory therefore preserve exact per-PR static review results and must not be read as acceptance of a combined version.
+PR #20 head `919505b45572916a3868ecf355691fb09fa1e2c3` is the first source-bound unified foundation candidate reviewed by Macbeth05. Its identity controls and the FU-002/FU-003 fixes passed focused independent verification. The required Pass/Vault user journey remains absent, so this result must not be read as product or milestone acceptance.
 
 - [Restart intake](RESTART-INTAKE.md)
 - [Requirement-to-evidence matrix](ACCEPTANCE-MATRIX.md)
@@ -15,5 +15,6 @@ No common candidate containing the Macbeth02, Macbeth03, and Macbeth04 deliverie
 - [Independent execution log](EXECUTION-LOG.md)
 - [Interim acceptance report](INTERIM-ACCEPTANCE.md)
 - [AF-M3-CLOSEOUT QA handoff](CLOSEOUT-HANDOFF.md)
+- [Unified foundation candidate review](FOUNDATION-CANDIDATE-REVIEW.md)
 
-The two findings reported against Macbeth03 head `9f87275dc6c328ff0be10c7238a966109372856d` are fixed at replacement head `20347ec22729346d617525d64dc76f58354b5f0d`; the independent focused regression passed 42/42. Macbeth04 head `037c2b55f7eb03b80b60dd11f4b4c400fb9c1215` passed a 71/71 focused regression and produced no new reportable finding in its exact diff. These are slice-bound results: PR #16 hosted admission is still blocked, there is no common 02–04 candidate, and no Testnet work was run. This work is AI-assisted QA, not a third-party contract audit or repository approval.
+Earlier slice-bound results remain historical evidence. The current review adds a 59/59 identity regression on the final unified head, a 15/15 FU-002 regression, and a 60/60 FU-003 regression under the approved Node runtime. Codex Security scan `fcd15838-e8e3-4026-9aad-df58a2038ea9` found two Low identity-routing issues in the initial closeout candidate; both are fixed at the current head. No Testnet work was run. This work is AI-assisted QA, not a third-party contract audit or repository approval.

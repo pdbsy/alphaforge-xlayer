@@ -2,6 +2,29 @@
 
 This matrix distinguishes static per-delivery review from integrated acceptance. A worker's own test or CI result is supporting input and is not relabelled as Macbeth05 independent execution.
 
+## Current unified-candidate overlay
+
+This overlay supersedes stale baseline and disposition cells in the historical slice matrix below. Current candidate: PR #20 head `919505b45572916a3868ecf355691fb09fa1e2c3`, fixed base `7ecba357d5a19f387e86f578822af04a6261fed2`.
+
+| Requirement | Current scope | Required mode | Macbeth05 result | Evidence | Remaining condition |
+| --- | --- | --- | --- | --- | --- |
+| Immutable source-bound candidate preserves registered 02–05 and manager history | Yes | Static + negative identity tests | `PASS` | Exact checker 102 records; identity/lifecycle/bypass/management 59/59; manifest pins six source heads | None for this candidate's identity graph. |
+| Foreign or incomplete PR repository identity cannot claim the closeout branch | Yes | Negative event tests | `PASS` | Original foreign-repository PoC rejected; missing/foreign head/base repository cases pass regression | Canonical GitHub event integrity remains an external assumption. |
+| Merge queue cannot bypass fixed-base/source-graph review | Yes | Fixed/advanced/deleted-manifest queue tests | `PASS` by fail-closed policy | Closeout queue PoC rejected; fixed base, advanced base, manifest deletion/history cases pass regression; ordinary post-integration queue remains valid | Closeout candidates are not queue-authorized until a separately reviewed trusted PR/source binding exists. |
+| Creator-defined immutable fixed-supply fractional Pass | Yes | Contract tests + static | Supporting evidence `PASS`; Macbeth05 full contract execution `NOT_RUN` | Included Macbeth02 source `d473f9d...`; manager reports Forge/Slither/artifact checks | Independent exact-final-head contract analyzer run remains absent. |
+| Vault capacity/accounting implements deposit, profit/principal withdrawal, loss, full close, isolation, and authorization rules | Yes | Contract/invariant/integration | `BLOCKED` | Unified source review | Required Vault/accounting/authorization implementation is absent. |
+| Wallet submission is bound to checked account/chain and ambiguity is fail-closed | Yes | Mocked race and lifecycle tests | Focused integrated-source `PASS`; live path `NOT_RUN` | Prior SEC-001 fix plus current 60/60 chain/wallet/adapter run | Real wallet-to-contract product composition is absent. |
+| Reorg and partial sync cannot expose orphan-derived projection as healthy | Yes | Fork/restart/concurrency tests | Focused integrated-source `PASS` | Prior SEC-002 fix plus current 60/60 run | Live service/E2E composition remains untested. |
+| Product readiness proves one canonical operation-to-projection ancestry | Yes | Competing-fork and resource-bound tests | `PASS` for server security boundary; product path `NOT_RUN` | FU-003 fixed at `588efa5...`; included by final candidate; 60/60 focused tests | No production API/UI caller of `ChainStore.operationEvidence`. |
+| Contradictory failure evidence never displays `READY` | Yes | Malformed evidence regression | `PASS` | FU-002 fix in current ancestry; 15/15, including four `productReady: true` contradictions and legitimate READY | Real product evidence caller remains absent. |
+| Real entrypoint performs Wallet -> Pass/Vault -> confirmation -> Indexer -> Account | Yes | Offline E2E + browser + Testnet when authorized | `BLOCKED` / `NOT_RUN` | Static unified source review | Pass/Vault and live composition must be implemented before offline/browser acceptance; Testnet requires separate authorization. |
+| Bounded authorization -> Risk Permit -> Spot Swap execution loop | Deferred | Security review for exposed code | `NOT_APPLICABLE` to current delivery scope; exposed foundations reviewed | Approved closeout scope and `AF-M3-05-FU-001` | Re-enter acceptance scope only when strategy execution is assigned. |
+| Required hosted checks pass on the exact candidate | Yes | Hosted CI | `BLOCKED` at recorded checkpoint | Linux/macOS/Windows engineering checks passed; CodeQL failed after complete scan on GitHub integration permissions; dependency review failed for unavailable repository feature | Failed required checks need an authoritative repository-level resolution. |
+| Independent approved-environment suite covers the exact final head | Yes | Offline | Focused `PASS`; full suite `NOT_RUN` | Independent 59/59, 15/15, 60/60 under Node `24.21.0`; manager reports 479/479 | Manager evidence is not relabelled as Macbeth05 independent full-suite evidence. |
+| Real Robinhood Chain Testnet closed loop | Yes for final product acceptance | Testnet | `BLOCKED` / `NOT_RUN` | No operation attempted | Requires implemented loop, satisfied gates, exact deployment evidence, and explicit operation authorization. |
+
+## Historical slice matrix
+
 | Requirement | Source | In current intended product | Required mode | Macbeth05 result | Evidence | Limitation / next condition |
 | --- | --- | --- | --- | --- | --- | --- |
 | QA identity and branch are registered | Macbeth01 PR #19 task record | Yes | Static | `PASS` | PR #19 source `1cfe2b6839fc3bf274df0ca49f032caded0b1dfa`; branch/HEAD intake | Registration PR remains draft and unmerged, but explicitly authorizes intake records. |
@@ -26,4 +49,4 @@ This matrix distinguishes static per-delivery review from integrated acceptance.
 | Wallet → Pass/Vault → confirmation → Indexer → Account completes on Robinhood Chain Testnet | Product objective | Yes | Testnet | `BLOCKED` / `NOT_RUN` | No deployment, common candidate, or authorization | No Testnet read/write, signature, broadcast, or asset action was attempted. |
 | Authorization → Risk Permit → Spot Swap → Account completes on Testnet | Frozen architecture; milestone inclusion pending | Undecided | Testnet | `BLOCKED` | Scope question and implementation absent | Must not be marked `NOT_APPLICABLE` without an approved scope decision. |
 
-Current matrix verdict: no integrated scope has passed. Static review of the three exact delivery heads is complete enough to identify blockers and follow-up work, but it is not a substitute for the missing common-candidate tests.
+Current matrix verdict: the unified foundation candidate's identity controls and FU-002/FU-003 security fixes passed focused independent verification. The approved Pass/Vault product scope remains `PARTIAL_BLOCKED` because its implementation and real product composition are absent. Testnet is `NOT_RUN`.
