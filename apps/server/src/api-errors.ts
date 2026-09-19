@@ -33,6 +33,7 @@ const errors: Readonly<Record<string, { status: number; message: string; retryab
   CROSS_SITE_REJECTED: { status: 403, message: '请求来源不可用。', retryable: false },
   DEMO_HEADER_REQUIRED: { status: 403, message: '需要本地演示请求标记。', retryable: false },
   VAULT_NOT_FOUND: { status: 404, message: '未找到该 Vault。', retryable: false },
+  CHAIN_OPERATION_NOT_FOUND: { status: 404, message: '未找到该链上操作。', retryable: false },
   RATE_LIMITED: { status: 429, message: '请求过于频繁，请稍后重试。', retryable: true },
   LOCAL_OPERATION_FAILED: { status: 500, message: '本地操作未完成，请稍后重试。', retryable: true },
 };

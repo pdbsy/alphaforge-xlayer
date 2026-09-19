@@ -37,6 +37,7 @@ test('chain values reject malformed data and compare addresses without changing 
 });
 
 test('a transaction hash advances only to submitted and cannot skip canonical reconciliation', () => {
+  assert.equal(awaiting().transactionIndex, null);
   const submitted = transitionOperation(awaiting(), {
     state: 'SUBMITTED',
     txHash: HASH,
@@ -67,8 +68,21 @@ test('successful receipt remains mined or confirming until reconciliation succee
     state: 'MINED',
     blockNumber: 120n,
     blockHash: BLOCK,
+    transactionIndex: 7,
     receiptStatus: 'SUCCESS',
   });
+  assert.equal(mined.transactionIndex, 7);
+  assert.throws(
+    () =>
+      transitionOperation(submitted, {
+        state: 'MINED',
+        blockNumber: 120n,
+        blockHash: BLOCK,
+        transactionIndex: -1,
+        receiptStatus: 'SUCCESS',
+      }),
+    /INVALID_TRANSACTION_INDEX/,
+  );
   const confirming = transitionOperation(mined, { state: 'CONFIRMING', confirmations: 2 });
   assert.equal(confirming.canonical, true);
   assert.equal(confirming.confirmedAt, null);
@@ -156,6 +170,7 @@ test('canonical mined and confirmed operations can become reorged without erasin
     state: 'MINED',
     blockNumber: 120n,
     blockHash: BLOCK,
+    transactionIndex: 7,
     receiptStatus: 'SUCCESS',
   });
   const reorged = transitionOperation(mined, { state: 'REORGED', errorCode: 'CHAIN_REORG' });
@@ -163,6 +178,22 @@ test('canonical mined and confirmed operations can become reorged without erasin
   assert.equal(reorged.blockHash, BLOCK);
   assert.equal(reorged.txHash, HASH);
   assert.equal(reorged.confirmedAt, null);
+
+  for (const terminal of [
+    transitionOperation(reorged, { state: 'DROPPED', errorCode: 'TRANSACTION_DROPPED' }),
+    transitionOperation(reorged, {
+      state: 'REPLACED',
+      replacementTxHash: REPLACEMENT,
+      errorCode: 'TRANSACTION_REPLACED',
+    }),
+  ]) {
+    assert.equal(terminal.blockNumber, 120n);
+    assert.equal(terminal.blockHash, BLOCK);
+    assert.equal(terminal.transactionIndex, 7);
+    assert.equal(terminal.receiptStatus, 'SUCCESS');
+    assert.equal(terminal.confirmations, 0);
+    assert.equal(terminal.canonical, false);
+  }
 });
 
 test('conflicting contract evidence enters reconciliation failure and remains non-confirmed', () => {

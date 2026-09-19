@@ -332,9 +332,15 @@ test('product readiness is computed under one canonical database snapshot', asyn
   assert.deepEqual(store.operationEvidence('operation-snapshot', 'missing-projection'), {
     lifecycle: 'CONFIRMING',
     receipt: 'SUCCESS',
+    receiptCanonical: true,
     confirmations: 2,
     reconciliation: 'MATCHED',
     projection: 'PENDING',
+    chainStatus: 'INCLUDED',
+    l1Status: 'UNKNOWN',
+    finalityStatus: 'UNKNOWN',
+    indexerStatus: 'HEALTHY',
+    degradedReason: null,
     productReady: false,
   });
   store.saveOperation(
@@ -349,9 +355,15 @@ test('product readiness is computed under one canonical database snapshot', asyn
   assert.deepEqual(store.operationEvidence('operation-snapshot', 'vault-a'), {
     lifecycle: 'CONFIRMED',
     receipt: 'SUCCESS',
+    receiptCanonical: true,
     confirmations: 3,
     reconciliation: 'MATCHED',
     projection: 'READY',
+    chainStatus: 'SOFT_READY',
+    l1Status: 'UNKNOWN',
+    finalityStatus: 'UNKNOWN',
+    indexerStatus: 'HEALTHY',
+    degradedReason: null,
     productReady: true,
   });
   store.close();
@@ -407,9 +419,15 @@ test('server readiness rejects a projection hash from a competing fork', async (
   assert.deepEqual(store.operationEvidence('operation-corrupt-snapshot', 'vault-a'), {
     lifecycle: 'CONFIRMING',
     receipt: 'SUCCESS',
+    receiptCanonical: true,
     confirmations: 1,
     reconciliation: 'PENDING',
     projection: 'STALE',
+    chainStatus: 'INCLUDED',
+    l1Status: 'UNKNOWN',
+    finalityStatus: 'UNKNOWN',
+    indexerStatus: 'HEALTHY',
+    degradedReason: null,
     productReady: false,
   });
   store.close();
@@ -629,7 +647,7 @@ test('chain store refuses an unrelated database instead of mutating it', async (
 
 test('chain store migrates to sync leases and rejects forged confirmed operations', async () => {
   const store = new ChainStore(await databasePath());
-  assert.equal(store.db.prepare('PRAGMA user_version').get()?.user_version, 4);
+  assert.equal(store.db.prepare('PRAGMA user_version').get()?.user_version, 5);
   const submitted = transitionOperation(
     createOperation({
       operationId: 'forged-confirmed',
@@ -678,7 +696,7 @@ test('existing version-one chain database migrates without losing indexed eviden
   legacy.close();
 
   const store = new ChainStore(path);
-  assert.equal(store.db.prepare('PRAGMA user_version').get()?.user_version, 4);
+  assert.equal(store.db.prepare('PRAGMA user_version').get()?.user_version, 5);
   assert.deepEqual(store.checkpoint(CHAIN_ID, CONTRACT), {
     blockNumber: 100n,
     blockHash: BLOCK_100,
@@ -715,7 +733,7 @@ test('version-three incomplete targets remain authoritative after sync-lease mig
   legacy.close();
 
   const store = new ChainStore(path);
-  assert.equal(store.db.prepare('PRAGMA user_version').get()?.user_version, 4);
+  assert.equal(store.db.prepare('PRAGMA user_version').get()?.user_version, 5);
   assert.equal(store.syncTarget(CHAIN_ID, CONTRACT), 101n);
   assert.throws(
     () => store.claimSync(CHAIN_ID, CONTRACT, 100n, '00000000-0000-4000-8000-000000000001'),

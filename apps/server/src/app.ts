@@ -12,6 +12,7 @@ import { apiError } from './api-errors.ts';
 import { view, accountView } from './product-views.ts';
 
 import { registerProductRoutes } from './product-routes.ts';
+import { registerChainEvidenceRoutes, type ChainEvidenceRoutesOptions } from './chain-routes.ts';
 import { idSchema, amountSchema, limitSchema } from './api-schema.ts';
 
 export { STRATEGIES } from './strategy-catalog.ts';
@@ -49,6 +50,7 @@ export async function buildApp(options: {
   env: Readonly<Record<string, string | undefined>>;
   origin: string;
   webRoot?: string;
+  chainEvidence?: ChainEvidenceRoutesOptions;
 }) {
   readConfig(options.env);
   const origin = new URL(options.origin);
@@ -286,6 +288,7 @@ export async function buildApp(options: {
       },
     );
   registerProductRoutes(app, store, session);
+  if (options.chainEvidence) registerChainEvidenceRoutes(app, options.chainEvidence);
   if (options.webRoot)
     await app.register(staticFiles, {
       root: options.webRoot,
