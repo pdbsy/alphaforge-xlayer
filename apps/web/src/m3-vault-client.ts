@@ -2,10 +2,12 @@ import {
   asAddress,
   asBlockHash,
   asHexData,
+  asTransactionHash,
   sameAddress,
   type Address,
   type BlockHash,
   type HexData,
+  type TransactionHash,
 } from '../../../packages/chain-adapter/src/types.ts';
 
 export class M3VaultReadFailure extends Error {
@@ -15,6 +17,38 @@ export class M3VaultReadFailure extends Error {
     super('M3_VAULT_READ_FAILED');
     this.name = 'M3VaultReadFailure';
   }
+}
+
+export class M3VaultSubmissionFailure extends Error {
+  readonly code = 'M3_VAULT_SUBMISSION_FAILED' as const;
+
+  constructor() {
+    super('M3_VAULT_SUBMISSION_FAILED');
+    this.name = 'M3VaultSubmissionFailure';
+  }
+}
+
+export interface M3VaultSubmissionInput {
+  readonly operationId: string;
+  readonly chainId: 46_630;
+  readonly owner: Address;
+  readonly target: Address;
+  readonly calldata: HexData;
+  readonly txHash: TransactionHash;
+}
+
+export interface M3VaultSubmissionRecord extends M3VaultSubmissionInput {
+  readonly state:
+    | 'SUBMITTED'
+    | 'MINED'
+    | 'CONFIRMING'
+    | 'CONFIRMED'
+    | 'REVERTED'
+    | 'REPLACED'
+    | 'DROPPED'
+    | 'REORGED'
+    | 'RECONCILIATION_FAILED';
+  readonly submittedAt: string;
 }
 
 export interface M3VaultSnapshot {
@@ -157,6 +191,85 @@ function snapshot(value: unknown, expectedOwner: Address): M3VaultSnapshot {
   });
 }
 
+const operationStates = new Set<M3VaultSubmissionRecord['state']>([
+  'SUBMITTED',
+  'MINED',
+  'CONFIRMING',
+  'CONFIRMED',
+  'REVERTED',
+  'REPLACED',
+  'DROPPED',
+  'REORGED',
+  'RECONCILIATION_FAILED',
+]);
+
+function submissionInput(value: unknown): M3VaultSubmissionInput {
+  try {
+    const row = exactObject(value, ['operationId', 'chainId', 'owner', 'target', 'calldata', 'txHash']);
+    if (
+      typeof row.operationId !== 'string' ||
+      !/^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/.test(row.operationId) ||
+      row.chainId !== 46_630
+    )
+      throw new M3VaultSubmissionFailure();
+    return Object.freeze({
+      operationId: row.operationId,
+      chainId: 46_630,
+      owner: asAddress(String(row.owner)),
+      target: asAddress(String(row.target)),
+      calldata: asHexData(String(row.calldata)),
+      txHash: asTransactionHash(String(row.txHash)),
+    });
+  } catch (error) {
+    if (error instanceof M3VaultSubmissionFailure) throw error;
+    throw new M3VaultSubmissionFailure();
+  }
+}
+
+function submissionRecord(value: unknown, expected: M3VaultSubmissionInput): M3VaultSubmissionRecord {
+  try {
+    const row = exactObject(value, [
+      'operationId',
+      'chainId',
+      'owner',
+      'target',
+      'calldata',
+      'state',
+      'txHash',
+      'submittedAt',
+    ]);
+    const identity = submissionInput({
+      operationId: row.operationId,
+      chainId: row.chainId,
+      owner: row.owner,
+      target: row.target,
+      calldata: row.calldata,
+      txHash: row.txHash,
+    });
+    if (
+      identity.operationId !== expected.operationId ||
+      !sameAddress(identity.owner, expected.owner) ||
+      !sameAddress(identity.target, expected.target) ||
+      identity.calldata.toLowerCase() !== expected.calldata.toLowerCase() ||
+      identity.txHash.toLowerCase() !== expected.txHash.toLowerCase() ||
+      typeof row.state !== 'string' ||
+      !operationStates.has(row.state as M3VaultSubmissionRecord['state']) ||
+      typeof row.submittedAt !== 'string' ||
+      !Number.isFinite(Date.parse(row.submittedAt)) ||
+      new Date(row.submittedAt).toISOString() !== row.submittedAt
+    )
+      throw new M3VaultSubmissionFailure();
+    return Object.freeze({
+      ...identity,
+      state: row.state as M3VaultSubmissionRecord['state'],
+      submittedAt: row.submittedAt,
+    });
+  } catch (error) {
+    if (error instanceof M3VaultSubmissionFailure) throw error;
+    throw new M3VaultSubmissionFailure();
+  }
+}
+
 export class M3VaultApiClient {
   readonly #fetcher: typeof fetch;
 
@@ -176,6 +289,27 @@ export class M3VaultApiClient {
     } catch (error) {
       if (error instanceof M3VaultReadFailure) throw error;
       throw new M3VaultReadFailure();
+    }
+  }
+
+  async registerSubmission(input: M3VaultSubmissionInput): Promise<M3VaultSubmissionRecord> {
+    try {
+      const normalized = submissionInput(input);
+      const response = await this.#fetcher('/api/v1/chain/operations', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          'X-QuantPass-Demo': '1',
+        },
+        body: JSON.stringify(normalized),
+      });
+      if (response.status !== 202) throw new M3VaultSubmissionFailure();
+      return submissionRecord(await response.json(), normalized);
+    } catch (error) {
+      if (error instanceof M3VaultSubmissionFailure) throw error;
+      throw new M3VaultSubmissionFailure();
     }
   }
 }

@@ -57,7 +57,12 @@ async function path() {
 
 test('M3 runtime owns one persistent store/synchronizer lifecycle and records only exact Vault calldata', async () => {
   const dbPath = await path();
-  let runtime = new M3ChainRuntime({ dbPath, rpc: new InertRpc(), manifest });
+  let runtime = new M3ChainRuntime({
+    dbPath,
+    rpc: new InertRpc(),
+    manifest,
+    now: () => '2026-09-19T12:00:00.000Z',
+  });
   const calldata = encodeM3VaultCall('deposit(uint256)', [1_000_000n]);
   const submitted = runtime.recordSubmission({
     operationId: 'runtime-deposit-1',
@@ -66,7 +71,6 @@ test('M3 runtime owns one persistent store/synchronizer lifecycle and records on
     target: CONTRACT,
     calldata,
     txHash: TX,
-    submittedAt: '2026-09-19T12:00:00.000Z',
   });
   assert.equal(submitted.state, 'SUBMITTED');
   assert.equal(submitted.calldata, calldata);
@@ -78,7 +82,6 @@ test('M3 runtime owns one persistent store/synchronizer lifecycle and records on
       target: CONTRACT,
       calldata,
       txHash: TX,
-      submittedAt: '2026-09-19T12:00:00.000Z',
     }),
     submitted,
   );
@@ -91,7 +94,6 @@ test('M3 runtime owns one persistent store/synchronizer lifecycle and records on
         target: CONTRACT,
         calldata: encodeM3VaultCall('owner()', []),
         txHash: asTransactionHash(`0x${'bb'.repeat(32)}`),
-        submittedAt: '2026-09-19T12:00:00.000Z',
       }),
     /INVALID_M3_WALLET_SUBMISSION/,
   );
@@ -114,7 +116,6 @@ test('M3 runtime owns one persistent store/synchronizer lifecycle and records on
         target: CONTRACT,
         calldata,
         txHash: TX,
-        submittedAt: '2026-09-19T12:00:00.000Z',
       }),
     /OPERATION_IDENTITY_CONFLICT/,
   );

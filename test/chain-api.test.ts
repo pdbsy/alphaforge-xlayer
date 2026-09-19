@@ -11,6 +11,7 @@ import {
 } from '../packages/chain-adapter/src/manifest.ts';
 import type { ReadonlyRpc } from '../packages/chain-adapter/src/rpc.ts';
 import { asAddress, asBlockHash, asHexData, asTransactionHash } from '../packages/chain-adapter/src/types.ts';
+import { encodeM3VaultCall } from '../packages/chain-adapter/src/vault-abi.ts';
 
 const CHAIN_ID = 46_630;
 const OWNER = asAddress('0x1111111111111111111111111111111111111111');
@@ -224,4 +225,84 @@ test('Vault projection is unavailable before the first canonical synchronization
   const response = await app.inject({ url: `/api/v1/chain/vaults/${OWNER}`, headers });
   assert.equal(response.statusCode, 503);
   assert.equal(response.json().error, 'CHAIN_PROJECTION_UNAVAILABLE');
+});
+
+test('submission API accepts only pending identity and rejects forged state or conflicts', async (t) => {
+  const directory = await folder();
+  const runtime = new M3ChainRuntime({
+    dbPath: resolve(directory, 'chain.sqlite'),
+    rpc: new InertRpc(),
+    manifest,
+    now: () => '2026-09-20T00:00:00.000Z',
+  });
+  const { app } = await buildApp({
+    dbPath: resolve(directory, 'ledger.sqlite'),
+    env,
+    origin,
+    chainRuntime: runtime,
+  });
+  t.after(async () => app.close());
+  const body = {
+    operationId: 'submitted-via-api',
+    chainId: CHAIN_ID,
+    owner: OWNER,
+    target: CONTRACT,
+    calldata: encodeM3VaultCall('deposit(uint256)', [1_000_000n]),
+    txHash: TX_HASH,
+  };
+  const request = (payload: Record<string, unknown>) =>
+    app.inject({
+      method: 'POST',
+      url: '/api/v1/chain/operations',
+      headers: { ...headers, origin, 'x-quantpass-demo': '1' },
+      payload,
+    });
+  const created = await request(body);
+  assert.equal(created.statusCode, 202, created.body);
+  assert.deepEqual(created.json(), {
+    operationId: body.operationId,
+    chainId: CHAIN_ID,
+    owner: OWNER,
+    target: CONTRACT,
+    calldata: body.calldata,
+    state: 'SUBMITTED',
+    txHash: TX_HASH,
+    submittedAt: '2026-09-20T00:00:00.000Z',
+  });
+  assert.deepEqual((await request(body)).json(), created.json());
+
+  const conflict = await request({ ...body, txHash: asTransactionHash(`0x${'dd'.repeat(32)}`) });
+  assert.equal(conflict.statusCode, 409);
+  assert.equal(conflict.json().error, 'CHAIN_OPERATION_CONFLICT');
+
+  const duplicateTransaction = await request({ ...body, operationId: 'different-operation-id' });
+  assert.equal(duplicateTransaction.statusCode, 409, duplicateTransaction.body);
+  assert.equal(duplicateTransaction.json().error, 'CHAIN_OPERATION_CONFLICT');
+
+  const wrongOrigin = await app.inject({
+    method: 'POST',
+    url: '/api/v1/chain/operations',
+    headers: { ...headers, origin: 'http://localhost:9999', 'x-quantpass-demo': '1' },
+    payload: { ...body, operationId: 'wrong-origin' },
+  });
+  assert.equal(wrongOrigin.statusCode, 403);
+
+  const missingWriteHeader = await app.inject({
+    method: 'POST',
+    url: '/api/v1/chain/operations',
+    headers: { ...headers, origin },
+    payload: { ...body, operationId: 'missing-write-header' },
+  });
+  assert.equal(missingWriteHeader.statusCode, 403);
+
+  for (const forged of [
+    { ...body, state: 'CONFIRMED' },
+    { ...body, productReady: true },
+    { ...body, receipt: { status: 'SUCCESS' } },
+    { ...body, submittedAt: '2026-09-20T00:00:00.000Z' },
+  ]) {
+    const rejected = await request(forged);
+    assert.equal(rejected.statusCode, 400);
+    assert.equal(rejected.json().error, 'INVALID_REQUEST');
+  }
 });
