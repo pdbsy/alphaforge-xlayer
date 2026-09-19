@@ -34,6 +34,7 @@ When Macbeth01 supplies one immutable integration SHA, Macbeth05 will independen
 
 The existing deferred candidates retain these bounded retest conditions:
 
+- `AF-M3-05-FU-003`: bind operation and projection evidence to one canonical checkpoint or verifiable ancestry. A same-height mismatched block hash, a higher projection from an unproven competing fork, and records from different cache epochs must not produce `productReady`. A simple hash-equality rule is insufficient for a legitimate later projection; the composition must prove ancestry or provide an equivalent atomic canonical snapshot.
 - `AF-M3-05-FU-001`: if the integrated Pass/Vault code consumes a Test Venue quote or derives `minAmountOut` from it, prove the quote is treated as manipulable and an independent slippage bound fails closed. If the execution path remains outside the approved scope, retain the code-security limitation without claiming a completed execution flow.
 - `AF-M3-05-FU-002`: once the real entrypoint composes `ProductOperationEvidence`, contradictory lifecycle, receipt, reconciliation, or projection states must never display `READY`. Exercise malformed and non-atomic evidence at the actual call site.
 

@@ -64,6 +64,19 @@ The fixes were verified with the `codex-security:verify-fix` workflow against ex
 - Required check: malformed and non-atomic evidence must fail closed; contradictory failure fields can never display `READY`.
 - Evidence source: PR #16 replacement scan `ad808dec-fc29-41fb-ad91-fd7540cab616`, candidate `candidate-8e43751ee7355a25` (0 reportable findings; partial coverage because final composition is absent).
 
+### AF-M3-05-FU-003 — Product readiness does not bind projection block hash or canonical ancestry
+
+- Severity: unknown; current disposition `DEFERRED` with medium confidence.
+- Exact original source: Macbeth03 PR #17 head `9f87275dc6c328ff0be10c7238a966109372856d`.
+- Current static status: the same readiness logic remains at Macbeth03 head `20347ec22729346d617525d64dc76f58354b5f0d` and Macbeth04 stacked head `037c2b55f7eb03b80b60dd11f4b4c400fb9c1215`.
+- Location: `apps/web/src/strategy-adapter.ts:23-59`.
+- Evidence: `projectionState` compares stale state, chain, owner, contract, and block height but does not use `projection.blockHash` or prove that a later projection descends from the operation block. A confirmed, canonical, reconciled operation can therefore combine with an independently cached same-height or later competing-fork projection and produce `productReady`.
+- Current counterevidence: the backend's known-reorg path marks operations `REORGED` and deletes affected projections together. No concrete Account API/UI composition currently combines independently cached records; a same-checkpoint atomic read contract could prevent the mixed-fork input.
+- Re-evaluate when: the final API/cache composition and its canonical checkpoint or ancestry contract are available.
+- Required check: a same-height mismatched block hash and a higher unproven competing-fork projection must not become ready; records from different cache epochs must fail closed; a higher projection may become ready only with verifiable ancestry or an equivalent atomic canonical checkpoint.
+- Evidence source: PR #17 scan `f91656d0-9132-4bc0-b547-bcca503ecad3`, candidate `candidate-493db71e81bc7950`.
+- Verification status: **DEFERRED**. The 42/42 fix verification closed `AF-M3-05-SEC-001/002` but did not close this composition-dependent candidate.
+
 ## Evidence and admission gaps
 
 - PR #18's committed management receipt records Foundry, fuzz, invariant, and Slither as `NOT_RUN` because the approved toolchain was unavailable. This prevents an independent contract-test acceptance claim; it is not itself a vulnerability.
