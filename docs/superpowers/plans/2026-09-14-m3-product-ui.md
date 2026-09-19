@@ -94,7 +94,7 @@
 - [x] Map receipt success to `CHAIN_CONFIRMED`, reconciled chain evidence awaiting UI projection to `INDEXING`, and only `productReady=true` to `READY`.
 - [x] Fail closed for `REORGED`, `RECONCILIATION_FAILED`, reverted receipts and stale projections.
 - [x] Run 37 focused integration tests and the complete 435-test repository gate; retain the expected sandbox-only loopback failure and the successful loopback-capable rerun.
-- [ ] Regenerate source-bound management manifest R and Dashboard snapshot S, then verify the exact final head.
+- [x] Regenerate source-bound management manifest R and Dashboard snapshot S, then verify the exact final head.
 
 ## Deferred Integration Gates
 

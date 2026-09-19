@@ -3,9 +3,9 @@
 ## Current status
 
 - Current task: M3-04-PRODUCT-UI
-- Status: IN_PROGRESS — CHAIN EVIDENCE INTEGRATED; C/R/S REFRESH PENDING
+- Status: READY_FOR_REVIEW_WITH_HOSTED_ADMISSION_BLOCKER
 - Branch: macbeth04/M3-product-ui
-- Last known source commit: a49e648dbea9fd1ac451bf1352820625b3fa7e0e
+- Evidence: Latest exact source C, manifest R, snapshot S and candidate SHAs are maintained in Draft PR #16 to avoid a self-referential commit hash in this source file.
 - Blocker: Real Vault/Pass reads and writes await Macbeth02 ABI, authorization semantics and deployed Testnet manifest.
 - Last activity: 2026-09-19
 
@@ -76,18 +76,29 @@
 - Files changed by Macbeth04: `apps/web/src/m3-product-shell.ts`, `test/m3-product-ui.test.ts`, this log and the implementation plan. Macbeth03 files retain their original commits and authorship.
 - Tests run: 37 focused lifecycle/sync/wallet/UI tests; typecheck; lint; formatting; and `npm run check` with approved Node/npm.
 - Tests passed: 37/37 focused tests and 435/435 complete repository tests. The full loopback-capable run also passed secret, privacy, network, governance, supply-chain, threat, planning and Forum gates.
-- Tests failed: The first sandboxed full run had one HTTP timeout and three `127.0.0.1` `EPERM` failures; the identical elevated rerun passed all 435 tests. The run then stopped at `management:check` with `RECORDED_GIT_GRAPH_MISMATCH`, which is the expected signal to regenerate C/R/S after a source graph change.
+- Historical intermediate failures, resolved: The first sandboxed full run had one HTTP timeout and three `127.0.0.1` `EPERM` failures; the identical elevated rerun passed all 435 tests. The first post-merge run then stopped at `management:check` with `RECORDED_GIT_GRAPH_MISMATCH`; C/R/S regeneration resolved that local exact-head gate.
 - Truth boundary: `MINED` plus successful receipt may render `CHAIN_CONFIRMED`; strict backend `CONFIRMED` without the current UI projection renders `INDEXING`; only `productReady=true` renders `READY`. Reorg, reconciliation failure, reverted receipt and stale projection render `FAILED`.
 - Known limitations: No Vault/Pass owner-only ABI, deployed contract address or enabled asset action is available. All asset actions remain disabled and labeled `NOT IMPLEMENTED`.
 - Dependencies: Macbeth03 interface resolved; Macbeth02 Vault/Pass capability and deployment remain BLOCKED/NOT_RUN.
-- Next step: Commit this source record, generate manifest R and snapshot S through repository commands, verify the exact final head, push the Draft stacked branch and update PR #16.
+- Next step: After PR #17 reaches `master`, retarget Draft PR #16 to `master` and rerun hosted checks. No merge is authorized.
 
 ### 2026-09-19 — Stacked base evidence alignment
 
 - Task: M3-04-PRODUCT-UI
-- Status: IN_PROGRESS
+- Status: PASSED_WITH_HOSTED_ADMISSION_BLOCKER
 - Upstream base head: `9f87275dc6c328ff0be10c7238a966109372856d` from Draft PR #17.
 - Interface source: Unchanged at `b640489fccf704394eaf2721424652f167675148`; the two later upstream commits contain only generated management evidence.
 - What changed: Merged the final upstream evidence head so PR #16 can use `macbeth03/m3-chain-adapter` as its review base without a graph conflict.
 - Evidence handling: Generated-file conflicts kept the upstream base evidence. Macbeth04 will regenerate its own manifest and snapshot only through the repository commands; no generated PASS content is edited manually.
-- Next step: Treat this record and the merge as the new source C, then regenerate manifest R and snapshot S and rerun the exact-head gate.
+- Result: The stacked source was validated locally, C/R/S was regenerated through repository commands, and Draft PR #16 was updated without rewriting history.
+- Hosted blocker: Linux, Windows and macOS Engineering jobs stop before dependency installation because `tools/environment/observe.mjs` accepts pull-request admission only when `base.ref` is `master`; the intentional PR #17 stack therefore reports `history=BLOCKED`.
+- Next step: Preserve the Draft stack until PR #17 is integrated, then retarget to `master` and rerun hosted checks. Vault/Pass ABI and deployment remain BLOCKED/NOT_RUN.
+
+### 2026-09-19 — Documentation consistency closeout
+
+- Task: M3-04-PRODUCT-UI
+- Status: READY_FOR_REVIEW_WITH_HOSTED_ADMISSION_BLOCKER
+- What changed: Reconciled this log and the implementation plan with the completed local C/R/S flow and the actual hosted admission result reported by PR #16.
+- Evidence handling: This source-only correction becomes a new source C; manifest R and snapshot S are regenerated only through the repository commands.
+- Product behavior: Unchanged. No adapter, provider, ABI, deployment metadata or write capability changed.
+- Next step: Wait for the authorized upstream integration sequence; do not merge, deploy, sign or broadcast.
