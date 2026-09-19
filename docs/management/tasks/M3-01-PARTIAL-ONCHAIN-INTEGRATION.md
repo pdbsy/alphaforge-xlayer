@@ -95,3 +95,20 @@ Integrated Macbeth03 `77e2fe623326314c62ebe331d6357e6444aa58b1`: executable iner
 Manager found and reproduced two startup failures: initial RPC failure and restart while no common ancestor exists both stopped the product server. The correction keeps a validly configured product available, exposes sanitized last-sync-attempt status, and blocks stale indexed reads after failure. Configuration/storage construction failures remain fatal. Tests also cover recovery and later loss of access to a previously healthy cached projection. Initial red failures, an intermediate Fastify-hook placement failure, and corrected results are retained locally. Integrated typecheck and 111 chain/wallet/provenance tests passed.
 
 The worker's push of this source was rejected by automatic approval review because it could not establish trusted destination/export authorization. The confirmed target is the canonical repository and `macbeth03/m3-chain-adapter`; the worker has asked the user once and is waiting. Local intake does not assert remote source admission or bypass the rejected push.
+
+### Frontend source inspection pending identity decision
+
+Macbeth04 committed `484f1b5bfadc9ef444362c66a84d9682940da7ca` with the configured product runtime, but omitted Agent-ID/Task-ID metadata. The existing user exception covers only Macbeth02's `5270a6e`; it does not authorize rewriting this new commit. The worker was instructed to stop descendants and preserve its unresolved merge with 03. The manager has requested a separate one-commit metadata exception. This source has NOT been merged into the manager graph or represented as identity-admitted.
+
+To complete unaffected verification, the manager created an independent full clone at this exact source with its own lockfile-installed dependencies. Typecheck and 75 focused UI/wallet/Vault tests passed. Actual browser testing used the DEV-only transport fixture with the same production `createM3BrowserRuntime`, not the previous separate fixture runtime:
+
+- Wrong chain 1 was rejected; owner connected on mock chain 46630.
+- Deposit review requested finite AF-USDC allowance `1000001` and Pass allowance `1000001000000000000`, both to the fixed Vault spender. After each mocked approval, a fresh review observed the remaining requirement; both sufficient allowances led to deposit confirmation with exact AF-USDC base units.
+- Mock submission registration/evidence moved the product to soft-ready with finality unknown; a reorg removed readiness.
+- With indexed reads degraded, deposit was disabled while withdraw/close remained enabled through the direct provider reader and simulation. Both exit paths reached mock submission without requiring indexed API health.
+- `1.0000001` produced `EXCESS_PRECISION` with review still enabled; correcting the same dialog to `1.000001` reached confirmation.
+- Switching to a non-owner wallet disabled deposit/withdraw/close, including after reconnect.
+
+All wallet/provider/API transactions above are controlled mock objects and change no chain or funds. The standalone Vite preview's unrelated Local simulation API is not a running backend; this is not evidence of a clean full-stack live deployment. A minor non-owner degraded-message wording issue remains for a forward UI correction. The candidate still needs merge-conflict resolution with 03, final unified tests/C/R/S and remote identity admission after the pending decisions.
+
+At manager source `d9bf7ff`, the full Node suite passed 554 tests. The two current user questions concern exact 03 source publication and exact 04 metadata repair. No denied push is retried indirectly.
