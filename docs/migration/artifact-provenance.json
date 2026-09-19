@@ -1692,9 +1692,9 @@
       "source_commit": "136abc8aecd8d08ae39efa75d4ba3be35b7ef19f",
       "source_agent": "Macbeth03",
       "target_path": "apps/server/src/api-errors.ts",
-      "method": "selective source integration; shared-file resolution recorded in CONFLICTS.md; M3 chain evidence API adds one fixed not-found response",
+      "method": "selective source integration; shared-file resolution recorded in CONFLICTS.md; M3 chain evidence and canonical projection APIs add fixed public responses",
       "original_sha256": "f443db4ca178fcbcafc6763d20a21b97d9074f81559fcba321290b3d06872ef8",
-      "migrated_sha256": "1152a27d1afe7a5b18ce2e9c47f416487bc8bdcf292c8f92bb276ea3cef08038"
+      "migrated_sha256": "7010602f0a15e72beefc87e96c8aff89042dcbbee792f2e4eed03d6b0042e4dd"
     },
     {
       "source_repository": "pdbsy/quantpass",
@@ -1712,9 +1712,9 @@
       "source_commit": "136abc8aecd8d08ae39efa75d4ba3be35b7ef19f",
       "source_agent": "Macbeth03",
       "target_path": "apps/server/src/app.ts",
-      "method": "selective source integration; shared-file resolution recorded in CONFLICTS.md; M3 optionally composes the server-owned chain evidence route",
+      "method": "selective source integration; shared-file resolution recorded in CONFLICTS.md; M3 optionally composes the concrete same-process chain runtime and its read routes",
       "original_sha256": "1e190fd90786c8eac9dff5fa89acc461c1d8f8359bef5aa92c964d76d91cce55",
-      "migrated_sha256": "0dbc98654d690bdd125b6720ad135378f397c9abe7bd662a18054f67e9e6adb5"
+      "migrated_sha256": "135d5c4364f58dabd9533d54f21b9bc55d12ec69ee88c791f68e97dcac4eb5f9"
     },
     {
       "source_repository": "pdbsy/quantpass",

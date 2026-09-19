@@ -100,6 +100,13 @@ export class ChainSynchronizer {
       throw new ChainSyncFailure('CHAIN_ID_MISMATCH');
   }
 
+  async head(): Promise<ChainBlock> {
+    await this.#assertChain();
+    const head = await this.#rpc.block('latest');
+    if (!head) throw new ChainSyncFailure('CHAIN_HEAD_UNAVAILABLE');
+    return head;
+  }
+
   async #rewindIfNeeded(ownerToken: string): Promise<number> {
     const checkpoint = this.#store.checkpoint(this.#manifest.chainId, this.#manifest.contractAddress);
     if (!checkpoint) return 0;

@@ -1,10 +1,12 @@
 import type { FastifyInstance } from 'fastify';
 import { DomainError } from '../../../packages/domain/src/vault.ts';
-import { asAddress, sameAddress } from '../../../packages/chain-adapter/src/types.ts';
+import { asAddress, sameAddress, type Address } from '../../../packages/chain-adapter/src/types.ts';
 import type { ChainStore } from './chain-store.ts';
 
 export interface ChainEvidenceRoutesOptions {
   readonly store: ChainStore;
+  readonly chainId: number;
+  readonly contract: Address;
   readonly projectionKey: string;
 }
 
@@ -48,6 +50,41 @@ export function registerChainEvidenceRoutes(app: FastifyInstance, options: Chain
       const evidence = options.store.operationEvidence(operation.operationId, options.projectionKey);
       if (!evidence) throw new DomainError('CHAIN_OPERATION_NOT_FOUND');
       return { operationId: operation.operationId, ...evidence };
+    },
+  );
+  app.get<{ Params: { owner: string } }>(
+    '/api/v1/chain/vaults/:owner',
+    {
+      schema: {
+        params: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['owner'],
+          properties: { owner: addressSchema },
+        },
+      },
+    },
+    async (request) => {
+      const owner = asAddress(request.params.owner);
+      let projection;
+      try {
+        if (!options.store.checkpoint(options.chainId, options.contract))
+          throw new DomainError('CHAIN_PROJECTION_UNAVAILABLE');
+        projection = options.store.projection(
+          options.chainId,
+          owner,
+          options.contract,
+          options.projectionKey,
+        );
+      } catch (error) {
+        if (error instanceof DomainError) throw error;
+        throw new DomainError('CHAIN_PROJECTION_UNAVAILABLE');
+      }
+      if (!projection) throw new DomainError('CHAIN_PROJECTION_NOT_FOUND');
+      return {
+        ...projection,
+        blockNumber: projection.blockNumber.toString(),
+      };
     },
   );
 }

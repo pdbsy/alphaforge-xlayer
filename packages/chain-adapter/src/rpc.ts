@@ -81,12 +81,19 @@ export interface ChainCall {
   readonly data: HexData;
 }
 
+export interface CanonicalBlockReference {
+  readonly blockHash: BlockHash;
+  readonly requireCanonical: true;
+}
+
+export type ChainCallBlock = bigint | 'latest' | CanonicalBlockReference;
+
 export interface ReadonlyRpc {
   chainId(): Promise<number>;
   block(number: bigint | 'latest'): Promise<ChainBlock | null>;
   receipt(hash: TransactionHash): Promise<ChainReceipt | null>;
   logs(filter: ChainLogFilter): Promise<readonly ChainLog[]>;
-  call(request: ChainCall, block: bigint | 'latest'): Promise<HexData>;
+  call(request: ChainCall, block: ChainCallBlock): Promise<HexData>;
 }
 
 interface RpcOptions {
@@ -351,8 +358,26 @@ export class JsonRpcClient implements ReadonlyRpc {
     return Object.freeze(raw.map(parseLog));
   }
 
-  async call(request: ChainCall, block: bigint | 'latest'): Promise<HexData> {
-    const raw = await this.#request('eth_call', [request, block === 'latest' ? block : hexQuantity(block)]);
+  async call(request: ChainCall, block: ChainCallBlock): Promise<HexData> {
+    let reference: string | CanonicalBlockReference;
+    if (typeof block === 'bigint') reference = hexQuantity(block);
+    else if (block === 'latest') reference = block;
+    else {
+      if (
+        !block ||
+        block.requireCanonical !== true ||
+        Object.keys(block).length !== 2 ||
+        !Object.hasOwn(block, 'blockHash') ||
+        !Object.hasOwn(block, 'requireCanonical')
+      )
+        throw new RpcFailure('RPC_INVALID_REQUEST');
+      try {
+        reference = Object.freeze({ blockHash: asBlockHash(block.blockHash), requireCanonical: true });
+      } catch {
+        throw new RpcFailure('RPC_INVALID_REQUEST');
+      }
+    }
+    const raw = await this.#request('eth_call', [request, reference]);
     try {
       return asHexData(String(raw));
     } catch {

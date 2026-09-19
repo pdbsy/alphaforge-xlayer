@@ -348,6 +348,7 @@ interface OperationRow {
   tx_hash: string | null;
   owner_address: string;
   target_address: string;
+  calldata: string | null;
   state: string;
   submitted_at: string | null;
   block_number: number | null;
@@ -401,6 +402,9 @@ export class ChainStore {
           this.db.exec(
             readFileSync(new URL('../chain-migrations/005-transaction-index.sql', import.meta.url), 'utf8'),
           );
+          this.db.exec(
+            readFileSync(new URL('../chain-migrations/006-operation-calldata.sql', import.meta.url), 'utf8'),
+          );
           this.db.exec('COMMIT');
         } catch (error) {
           this.db.exec('ROLLBACK');
@@ -431,6 +435,9 @@ export class ChainStore {
           this.db.exec(
             readFileSync(new URL('../chain-migrations/005-transaction-index.sql', import.meta.url), 'utf8'),
           );
+          this.db.exec(
+            readFileSync(new URL('../chain-migrations/006-operation-calldata.sql', import.meta.url), 'utf8'),
+          );
           this.db.exec('COMMIT');
         } catch (error) {
           this.db.exec('ROLLBACK');
@@ -448,6 +455,9 @@ export class ChainStore {
           this.db.exec(
             readFileSync(new URL('../chain-migrations/005-transaction-index.sql', import.meta.url), 'utf8'),
           );
+          this.db.exec(
+            readFileSync(new URL('../chain-migrations/006-operation-calldata.sql', import.meta.url), 'utf8'),
+          );
           this.db.exec('COMMIT');
         } catch (error) {
           this.db.exec('ROLLBACK');
@@ -462,6 +472,9 @@ export class ChainStore {
           this.db.exec(
             readFileSync(new URL('../chain-migrations/005-transaction-index.sql', import.meta.url), 'utf8'),
           );
+          this.db.exec(
+            readFileSync(new URL('../chain-migrations/006-operation-calldata.sql', import.meta.url), 'utf8'),
+          );
           this.db.exec('COMMIT');
         } catch (error) {
           this.db.exec('ROLLBACK');
@@ -473,12 +486,26 @@ export class ChainStore {
           this.db.exec(
             readFileSync(new URL('../chain-migrations/005-transaction-index.sql', import.meta.url), 'utf8'),
           );
+          this.db.exec(
+            readFileSync(new URL('../chain-migrations/006-operation-calldata.sql', import.meta.url), 'utf8'),
+          );
           this.db.exec('COMMIT');
         } catch (error) {
           this.db.exec('ROLLBACK');
           throw error;
         }
-      } else if (version !== 5) {
+      } else if (version === 5) {
+        this.db.exec('BEGIN IMMEDIATE');
+        try {
+          this.db.exec(
+            readFileSync(new URL('../chain-migrations/006-operation-calldata.sql', import.meta.url), 'utf8'),
+          );
+          this.db.exec('COMMIT');
+        } catch (error) {
+          this.db.exec('ROLLBACK');
+          throw error;
+        }
+      } else if (version !== 6) {
         throw new Error('UNSUPPORTED_CHAIN_DATABASE');
       }
     } catch (error) {
@@ -978,6 +1005,7 @@ export class ChainStore {
       (previous.chainId !== operation.chainId ||
         !sameAddress(previous.owner, operation.owner) ||
         !sameAddress(previous.target, operation.target) ||
+        previous.calldata?.toLowerCase() !== operation.calldata?.toLowerCase() ||
         (previous.txHash &&
           operation.txHash &&
           previous.txHash.toLowerCase() !== operation.txHash.toLowerCase()))
@@ -986,8 +1014,8 @@ export class ChainStore {
     this.db
       .prepare(
         `INSERT INTO chain_transactions
-          (operation_id, chain_id, tx_hash, owner_address, target_address, state, submitted_at, block_number, block_hash, transaction_index, receipt_status, confirmations, replacement_tx_hash, canonical, reconciled, confirmed_at, error_code)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          (operation_id, chain_id, tx_hash, owner_address, target_address, calldata, state, submitted_at, block_number, block_hash, transaction_index, receipt_status, confirmations, replacement_tx_hash, canonical, reconciled, confirmed_at, error_code)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT(operation_id) DO UPDATE SET
           tx_hash = excluded.tx_hash, state = excluded.state, submitted_at = excluded.submitted_at,
           block_number = excluded.block_number, block_hash = excluded.block_hash,
@@ -1002,6 +1030,7 @@ export class ChainStore {
         operation.txHash?.toLowerCase() ?? null,
         normalizedAddress(operation.owner),
         normalizedAddress(operation.target),
+        operation.calldata?.toLowerCase() ?? null,
         operation.state,
         operation.submittedAt,
         operation.blockNumber === null ? null : safeNumber(operation.blockNumber),
@@ -1034,6 +1063,7 @@ export class ChainStore {
         chainId: row.chain_id,
         owner: asAddress(row.owner_address),
         target: asAddress(row.target_address),
+        calldata: row.calldata === null ? null : asHexData(row.calldata),
         state: row.state as TransactionState,
         txHash: row.tx_hash === null ? null : asTransactionHash(row.tx_hash),
         submittedAt: row.submitted_at,
@@ -1065,6 +1095,7 @@ export class ChainStore {
       operation.chainId !== expectedOperation.chainId ||
       !sameAddress(operation.owner, expectedOperation.owner) ||
       !sameAddress(operation.target, expectedOperation.target) ||
+      operation.calldata?.toLowerCase() !== expectedOperation.calldata?.toLowerCase() ||
       operation.txHash?.toLowerCase() !== expectedOperation.txHash?.toLowerCase()
     )
       throw new Error('OPERATION_IDENTITY_CONFLICT');

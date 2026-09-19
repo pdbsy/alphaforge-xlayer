@@ -1,4 +1,4 @@
-import type { Address, BlockHash, TransactionHash } from './types.ts';
+import { asHexData, type Address, type BlockHash, type HexData, type TransactionHash } from './types.ts';
 
 export type TransactionState =
   | 'AWAITING_SIGNATURE'
@@ -28,6 +28,7 @@ export interface ChainOperation {
   readonly chainId: number;
   readonly owner: Address;
   readonly target: Address;
+  readonly calldata: HexData | null;
   readonly state: TransactionState;
   readonly txHash: TransactionHash | null;
   readonly submittedAt: string | null;
@@ -108,12 +109,14 @@ export function createOperation(input: {
   readonly chainId: number;
   readonly owner: Address;
   readonly target: Address;
+  readonly calldata?: HexData;
   readonly state: 'AWAITING_SIGNATURE';
 }): ChainOperation {
   if (!validOperationId(input.operationId)) throw new Error('INVALID_OPERATION_ID');
   if (!Number.isSafeInteger(input.chainId) || input.chainId <= 0) throw new Error('INVALID_CHAIN_ID');
   return Object.freeze({
     ...input,
+    calldata: input.calldata === undefined ? null : asHexData(input.calldata),
     txHash: null,
     submittedAt: null,
     blockNumber: null,

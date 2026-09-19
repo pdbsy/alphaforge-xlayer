@@ -1,8 +1,8 @@
 # M3 Chain Adapter
 
-This document describes the ABI-independent M3 chain foundation implemented by Macbeth03. It is the integration contract for the first owner-authorized Vault/Pass vertical slice on Robinhood Chain Testnet.
+This document describes the M3 chain foundation and the locally compiled Vault review integration implemented by Macbeth03. It is the integration contract for the first owner-authorized Vault/Pass vertical slice on Robinhood Chain Testnet.
 
-The contract-specific slice is not wired yet. Macbeth02 published a review interface draft and listed selectors/topics in commit `135be1e1074436e2092487099f8376cc963b714f` on 2026-09-19. Its ABI regression coverage is still being strengthened, and the concrete `AlphaForgeVault` implementation, compiled implementation ABI, bytecode, ABI hash, deployment address, and deployment block are still in progress or unavailable. This adapter therefore does not treat the interface draft as encoding or deployment authority, contains no guessed Vault calldata or event rules, and has not broadcast a Testnet transaction.
+Macbeth02's published compiled local ABI handoff is commit `8afb96e4671b2ace5e59c99617c79b4bdca5b627`, implementation source `db620d68a635259f53f48c33defff4273237d372`, and published ABI SHA-256 `7be3e2be3897b634d47d3766f26b088994884a169fb8e39ffbd3b3cf2133669f`. It contains 25 function selectors and seven event topics. The adapter binds every selector/topic from that artifact, encodes the owner `deposit`, `withdraw`, and `close` actions, decodes all seven events, and reconciles custody events against exact contract views. The handoff remains `COMPILED LOCAL REVIEW DRAFT / NOT DEPLOYED`; no trusted deployment address, deployment block, manifest, RPC runtime, Testnet transaction, or broadcast exists.
 
 ## Current boundary
 
@@ -10,18 +10,18 @@ The current local simulator continues to use its existing API and SQLite ledger.
 
 | Area        | Implemented                                                                                                                                                                  | Pending contract integration                                                                                         |
 | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| Browser     | EIP-1193 account access, chain check, prepared action validation, preflight `eth_call`, `eth_sendTransaction`, rejection and response handling                                  | Owner-only action encoder and product UI wiring                                                                      |
-| Backend     | Stream-bounded read-only JSON-RPC, authenticated manifest validation, receipt tracking, sequential log indexing, reconciliation seam, persistent projections, reorg recovery, server evidence API | Reviewed ABI decoder, expected-event rules and contract-view reader                                                   |
-| Persistence | Independent transactions, blocks, events, indexed/projected checkpoints, sync health/ownership, and wallet-keyed projections                                                 | Production database location and operational retention policy                                                        |
+| Browser     | EIP-1193 account access, chain check, strict same-origin Vault projection client, exact Vault action encoding, exact preflight `eth_call`, session-safe submission, live AF-USDC/Pass allowance reads, and exact finite approval preparation | Macbeth04 product rendering and explicit approval/deposit sequencing                                                  |
+| Backend     | Bounded read-only JSON-RPC, manifest validation, deployment-aware runtime composition, concrete `M3ChainRuntime`, receipt tracking, all seven Vault event decoders, contract-view reconciliation, persistent projections, reorg recovery, and evidence/projection APIs | Operational configuration using a final reviewed manifest and deployed contract                                      |
+| Persistence | Independent transactions including immutable submitted calldata, blocks, events, indexed/projected checkpoints, sync health/ownership, and wallet-keyed projections             | Production database location and operational retention policy                                                        |
 | Testnet     | Exact Chain ID validation for `46630`                                                                                                                                        | Trusted deployed address, deployment block, manifest digest, runtime bytecode hash, RPC configuration, live evidence |
 
-There is no automatic fallback from a failed or incomplete Testnet composition to Local mode. No configuration switch currently enables Testnet writes.
+There is no automatic fallback from a failed or incomplete Testnet composition to Local mode. `composeM3ChainRuntime({ deploymentStatus: 'NOT_DEPLOYED' })` returns `null` without creating a database or RPC client. The `DEPLOYED` branch accepts only HTTPS RPC endpoints and validates the trusted manifest digest, expected address, `AlphaForgeVault`/`vault` identity, and exact reviewed ABI version before constructing the runtime. The current `main.ts` entry remains Local-only and does not enable Testnet reads or writes.
 
 ## Authority and data flow
 
 The browser requests the active account and verifies Chain ID immediately before it asks the wallet to submit. It sends only an opaque `PreparedAction` created by the trusted action preparer for the configured contract. Before wallet submission, it runs the exact `{ from, to, data, value }` as an `eth_call` at `latest`; a failed or malformed simulation returns `WALLET_SIMULATION_FAILED` and never reaches `eth_sendTransaction`. It then rechecks account, chain, and the monitored EIP-1193 session before asking for submission. During wallet confirmation it keeps the account, chain, and disconnect listeners active, then rechecks account and chain after the provider responds. A stable response transaction hash means `SUBMITTED` only. A changed or unverifiable post-submission session produces a non-retryable `SUBMISSION_AMBIGUOUS` result whose requested owner and chain are not represented as proven transaction identity.
 
-The backend uses its own RPC connection and trusted deployment manifest. It scans the configured contract from its deployment block, records normalized events in canonical order, verifies the receipt and expected event, performs any required contract read through the contract integration, and writes a reconstructable projection. It never receives or stores an owner private key and never signs an owner transaction.
+The backend uses its own RPC connection and trusted deployment manifest. `M3ChainRuntime` owns one `ChainStore`, `ChainSynchronizer`, and `M3VaultContractIntegration` lifecycle in the application process. It scans the configured contract from its deployment block, records normalized events in canonical order, verifies the receipt, submitted calldata, expected owner/amount event, resulting contract views, and the equality of `Vault.strategyId()` with `StrategyPass(pass).strategyId()`, then writes a reconstructable projection. Every Vault and StrategyPass view uses the indexed block hash through EIP-1898 with `requireCanonical: true`, so a same-height reorg cannot attach another fork's state to the indexed block. It never receives or stores an owner private key and never signs an owner transaction.
 
 The chain remains the source of truth. Frontend state, local storage, demo cookies, HTTP request bodies, and client-reported transaction status cannot make an operation canonical.
 
@@ -33,6 +33,7 @@ The transport-independent package is exported from `packages/chain-adapter/src/i
 - `ReadonlyRpc` exposes only chain ID, block, receipt, logs, and `eth_call`. `JsonRpcClient` provides bounded endpoint rotation, timeout, streaming response-size enforcement, strict response normalization, and sanitized failures.
 - `ChainOperation` and `transitionOperation` define the closed lifecycle and the evidence retained at each transition.
 - `ContractIntegration` isolates ABI-specific decoding, projection rebuilding, and transaction reconciliation from generic synchronization.
+- `M3_VAULT_REVIEW_ABI`, `encodeM3VaultCall`, `decodeM3VaultCalldata`, and `decodeM3VaultEvent` bind the exact compiled review selectors/topics. Known malformed events fail closed; unrelated topics are ignored.
 
 The backend surface is `ChainSynchronizer` and `ChainStore`:
 
@@ -41,6 +42,8 @@ The backend surface is `ChainSynchronizer` and `ChainStore`:
 - `recordReplacement` and `recordDropped` accept explicit backend evidence decisions; the indexer does not infer either result from elapsed time.
 - `operationEvidence(operationId, projectionKey)` reads the operation, current projection, sync checkpoint, and every canonical block from the operation through the checkpoint inside one SQLite read transaction. The backend verifies the full parent-hash ancestry and returns final product evidence. API/UI code receives that result and has no supported path for deriving readiness from independently cached operation or projection objects.
 - `GET /api/v1/chain/operations/:operationId/evidence?owner=0x…` exposes that server-computed evidence when a `ChainStore` and projection key are explicitly composed into the app. Unknown operations and owner mismatches share the same 404 response. The owner query only narrows public chain evidence; it is not account authentication or transaction authority. A degraded indexer returns conservative evidence with HTTP 200 so clients can display the recovery state without using a projection.
+- `M3ChainRuntime` supplies that route from the same store used by its synchronizer and exposes `GET /api/v1/chain/vaults/:owner` for browser-refresh recovery of a healthy canonical owner projection. Pending/degraded projections fail closed; the owner path is a public chain read, not demo-account authentication.
+- `composeM3ChainRuntime` is the deployment-aware server composition seam. `NOT_DEPLOYED` is inert. A `DEPLOYED` input must supply the expected manifest digest and address, exact ABI identity, an independent chain database path, and one or more bounded HTTPS RPC endpoints.
 
 The browser surface is `Eip1193Wallet`, `PreparedActionFactory`, and the discriminated `StrategyAdapter` direction:
 
@@ -48,6 +51,9 @@ The browser surface is `Eip1193Wallet`, `PreparedActionFactory`, and the discrim
 - `Eip1193Wallet` is composed with the reviewed factory's authority and checks that exact origin, the current account, exact chain, and trusted target before submitting. It requires account/chain/disconnect event support, keeps those listeners active across the provider request, rechecks the session after a response, and removes the listeners after every outcome. A different factory cannot submit arbitrary calldata even when it names the same contract.
 - `WalletSubmission` distinguishes proven `SUBMITTED` from `SUBMISSION_AMBIGUOUS`. The latter retains a returned hash when available, labels chain and owner as requested rather than proven, and has `retryable: false` so a transport-uncertain outcome cannot be sent again automatically.
 - `StrategyAdapter` keeps `local` and `robinhood-testnet` modes structurally distinct. It does not replace the current `ProductAdapter`.
+- `createM3VaultActionFactory` prepares exact zero-value `deposit(uint256)`, `withdraw(uint256)`, and `close()` calls for one configured Vault.
+- `readM3VaultDepositAuthorization` monitors account, chain, and disconnect events across the complete read, verifies the active owner and chain before and after the calls, reads `afUsdc()` and `pass()` from that Vault, and then reads both `allowance(owner, Vault)` values. Its two approval factories bind the queried owner, fix the target to those returned token addresses, fix the spender to the Vault, and fix the value to the exact finite requirement for this deposit. They do not accept another owner, arbitrary spenders, targets, or unlimited approval amounts. Approval submission uses a correspondingly configured `Eip1193Wallet`, so the same simulation and session checks apply.
+- `M3VaultApiClient.readSnapshot(owner)` reads only the same-origin canonical projection route and rejects a foreign owner, wrong chain, malformed block identity, noncanonical unsigned amounts, or a Strategy Pass identity that differs from the Vault strategy identity.
 
 ## Lifecycle and UI evidence
 
@@ -90,7 +96,7 @@ The chain database is physically separate from the Local simulator database. Mig
 - `chain_checkpoints`, keyed by chain and contract, containing both block number and block hash;
 - `product_projections`, keyed by chain, wallet owner, contract, and projection key.
 
-Migration `002-projection-checkpoint.sql` adds the independently committed projection block/hash and persisted synchronization health. Migration `003-sync-target.sql` binds an incomplete synchronization to the requested target block so a restart or lower-head request cannot reopen projection reads prematurely. Migration `004-sync-lease.sql` adds a database-level synchronization owner token. Migration `005-transaction-index.sql` persists the receipt transaction index alongside its block number and hash, completing the operation's receipt identity without discarding legacy rows. A newer equal/higher-head synchronization supersedes the prior owner, and every canonical write, projection commit, rollback, health transition, and lease release verifies that token in the same SQLite write transaction. Existing databases migrate in place; fresh databases apply all migrations in one transaction.
+Migration `002-projection-checkpoint.sql` adds the independently committed projection block/hash and persisted synchronization health. Migration `003-sync-target.sql` binds an incomplete synchronization to the requested target block so a restart or lower-head request cannot reopen projection reads prematurely. Migration `004-sync-lease.sql` adds a database-level synchronization owner token. Migration `005-transaction-index.sql` persists the receipt transaction index alongside its block number and hash. Migration `006-operation-calldata.sql` persists the immutable submitted Vault calldata used to select and verify the expected custody event. A newer equal/higher-head synchronization supersedes the prior owner, and every canonical write, projection commit, rollback, health transition, and lease release verifies that token in the same SQLite write transaction. Existing databases migrate in place; fresh databases apply all migrations in one transaction.
 
 Events are applied in block number, transaction index, and log index order. Re-reading an identical canonical block requires the exact same ordered event identities and payloads. Conflicting data for an existing event identity, or a same-count block replay with different event identities, fails closed. A displaced event can reappear on a new canonical block only when its event payload is unchanged.
 
@@ -112,25 +118,26 @@ The repository had no EVM client dependency at the start of M3. Three directions
 
 | Direction                     | Benefit                                                                                | Cost for the current slice                                                      | Decision                                              |
 | ----------------------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- | ----------------------------------------------------- |
-| Native JSON-RPC plus EIP-1193 | Small boundary, no supply-chain addition, straightforward fixtures, no ABI assumptions | Contract encoding and decoding must be injected                                 | Used for the ABI-independent foundation               |
-| viem                          | Strong typed contract calls, event decoding, EIP-1193 support                          | Adds a production dependency before the ABI and contract surface are frozen     | Re-evaluate when Macbeth02 publishes the reviewed ABI |
+| Native JSON-RPC plus EIP-1193 | Small boundary, no supply-chain addition, straightforward fixtures                     | The exact static ABI subset is maintained locally                               | Used for the foundation and compiled review ABI       |
+| viem                          | Strong typed contract calls, event decoding, EIP-1193 support                          | Adds a production dependency before the deployment artifact is finalized        | Re-evaluate with the final deployment artifact        |
 | ethers                        | Broad EVM support and established abstractions                                         | Adds another contract/provider abstraction before the required surface is known | Not added                                             |
 
 Only one stack is implemented. A later library decision must replace or implement the existing ports instead of introducing competing wallet paths, and it must be coordinated before changing the Macbeth04 bundle.
 
 ## Contract integration checklist
 
-When Macbeth02 publishes an immutable contract input, the integrating change must:
+Before deployment, the integrating change must:
 
 1. validate the first action against the approved owner-only Vault/Pass scope;
 2. pin the ABI/version and trusted deployment manifest, including runtime bytecode identity;
-3. implement the semantic action encoder through `PreparedActionFactory`;
-4. implement `ContractIntegration.decode`, `rebuildProjections`, and `reconcileOperation` with exact owner, amount, and view rules;
-5. add wrong-address, wrong-owner, wrong-amount, unexpected-event, and contract-view-mismatch fixtures;
+3. compare any later deployment artifact against all 25 published selectors and seven published topics already implemented;
+4. keep `ContractIntegration.decode`, `rebuildProjections`, and `reconcileOperation` aligned with exact owner, amount, and view rules;
+5. retain the wrong-owner, wrong-amount, malformed-event, unexpected-event, and contract-view-mismatch fixtures;
 6. add explicit fail-closed Testnet configuration without changing Local mode;
 7. preserve the frozen 3-block soft-readiness policy and 128-block recovery budget without relabeling either as finality;
 8. collect real chain ID, address, transaction hash, receipt, event, block hash, confirmation, and reconciled projection evidence.
+9. compose `M3ChainRuntime` through the deployment-aware factory and keep the Local-only `main.ts` unchanged until those inputs exist.
 
-The review interface draft records owner-only `deposit(uint256)`, `withdraw(uint256)`, `close()`, `rescueUntrackedToken(address)`, and `rescueNative()` selectors, but neither that list nor an asset transfer into PassLocker proves the final spender or execution semantics. The encoder, decoder, view reader, and expected-event rules must bind to the subsequent compiled Vault artifact, including exact caller/spender behavior, and the reviewed deployment manifest.
+The compiled review handoff says the Vault is the allowance spender for both AF-USDC and Pass, while PassLocker receives/accounted Pass already transferred by the Vault. The implemented allowance seam follows that rule and reads both token identities from the Vault instead of UI copy. This must still be rechecked against the final published artifact and reviewed deployment manifest before any Testnet use.
 
 Strategy execution, risk signing, venues, PnL settlement, mainnet, production keys, and wallet-link authentication remain outside this slice.
