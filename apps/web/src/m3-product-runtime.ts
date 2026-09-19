@@ -17,12 +17,37 @@ export interface M3ProductActionReview {
   readonly request: M3ProductActionRequest;
 }
 
+export type M3DepositApprovalKind = 'af-usdc' | 'pass';
+
+export interface M3DepositApprovalRequirement {
+  readonly kind: M3DepositApprovalKind;
+  readonly token: Address;
+  readonly spender: Address;
+  readonly requiredRaw: string;
+  readonly allowance: string;
+  readonly sufficient: boolean;
+}
+
+export interface M3DepositApprovalReview {
+  readonly owner: Address;
+  readonly vaultAddress: Address;
+  readonly request: Extract<M3ProductActionRequest, { readonly kind: 'deposit' }>;
+  readonly requirements: readonly [M3DepositApprovalRequirement, M3DepositApprovalRequirement];
+}
+
 export interface M3ProductRuntime {
   readonly snapshot: M3ProductChainPresentation;
   connect(): Promise<void>;
   refresh(): Promise<void>;
   reviewAction(request: M3ProductActionRequest): Promise<M3ProductActionReview>;
   confirmAction(review: M3ProductActionReview): Promise<WalletSubmission>;
+  reviewDepositApprovals?(
+    request: Extract<M3ProductActionRequest, { readonly kind: 'deposit' }>,
+  ): Promise<M3DepositApprovalReview>;
+  confirmDepositApproval?(
+    review: M3DepositApprovalReview,
+    kind: M3DepositApprovalKind,
+  ): Promise<WalletSubmission>;
   subscribe(listener: () => void): () => void;
 }
 

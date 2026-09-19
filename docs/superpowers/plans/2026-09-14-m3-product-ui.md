@@ -177,7 +177,7 @@
 - [x] State that two exact finite approvals to the configured Vault are required and that the current product UI has no approval flow. Do not expose unlimited approval or an arbitrary spender.
 - [x] Keep Withdraw and Close available through the verified exit simulation path, including reorg and degraded-indexer states.
 - [x] Re-run the real browser journey: wrong-chain rejection, chain 46630 owner/allowance reads, zero-allowance Soft Ready, exact `1.000001` AF-USDC Withdraw review/mock submission, reorg and degraded exit; verify empty warning/error console output.
-- [ ] Consume Macbeth03's amount-specific authorization/approval factories only after that source is committed and integrated. Its coordination handoff is not treated as an immutable dependency yet.
+- [x] Consume Macbeth03's committed amount-specific authorization/approval factories from source `0b94ecfd8c0c3b0d8f72da27bbd1c96ed914d1d5`; require exact finite AF-USDC and Pass approvals to the configured Vault.
 - [ ] Revalidate the published concrete Vault ABI artifact after its commit is locally available; deployment addresses, signing, broadcast and receipt evidence remain NOT_RUN.
 
 ## Task 12: Construct the production browser runtime at the formal product entry
@@ -190,7 +190,7 @@
 - [x] Render the explicit `NOT DEPLOYED` reason when no verified Vault address or deployment manifest exists.
 - [x] Fail closed with `WALLET_PROVIDER_UNAVAILABLE` when the browser has no injected provider, without RPC, signing or broadcast.
 - [x] Add injected-provider tests for wrong chain, correct chain, unavailable provider, closed reviews and zero submissions; retain the development fixture on the same boundary.
-- [ ] Consume Macbeth03's Vault client, calldata and amount-specific authorization factories after their immutable source is present in this checkout. The coordination handoff alone is not treated as integrated code.
+- [x] Consume Macbeth03's committed Vault client, calldata and amount-specific authorization factories while preserving its source history.
 - [ ] Configure live deployment data only after a reviewed manifest exists; deployment, live RPC, signing, Testnet broadcast, receipt confirmation and hosted CI remain NOT_RUN.
 
 ## Task 13: Keep chain dialog failures recoverable and isolated
@@ -203,3 +203,17 @@
 - [x] Treat a failed confirmation as consumed or potentially submitted: keep its control disabled, prohibit automatic retry, and require a new review after reconciliation when necessary.
 - [x] Describe development-fixture reads as mock provider reads instead of canonical live reads.
 - [x] Re-run the exact real-browser precision recovery path and verify the default production entry's `NOT DEPLOYED` state before source closeout.
+
+## Task 14: Complete the configured Vault product runtime
+
+**Files:** Modify the production browser runtime, Vault Web client, M3 product shell/dialog, formal product entry, development transport fixture, focused tests, package test registry and worker log; preserve Macbeth03 source `77e2fe623326314c62ebe331d6357e6444aa58b1` and live-reader source `46d0a27e5b3bac5fde904033b377f2091e4020cd`.
+
+- [x] Require manifest-bound chain ID, Vault address, deployment block, ABI version, manifest digest and runtime bytecode hash before enabling configured writes; keep the default product entry `NOT DEPLOYED` and closed.
+- [x] Read canonical owner/Vault state through Macbeth03's same-origin API and fall back to the hash-pinned direct provider reader only for degraded owner Withdraw/Close paths.
+- [x] Review and submit exact finite AF-USDC and Pass approvals one token at a time; fix each token, Vault spender and requested amount, and never expose unlimited approval.
+- [x] Generate collision-resistant browser operation IDs, register the exact operation/chain/owner/target/calldata/txHash tuple, and consume the canonical evidence endpoint without deriving readiness in the browser.
+- [x] Render SUBMITTED, CHAIN_CONFIRMED, INDEXING, READY/SOFT_READY, REORGED and degraded indexer states from backend evidence; do not automatically retry a possibly submitted transaction.
+- [x] Disable Deposit during API/indexer degradation while preserving direct-read owner Withdraw/Close simulation; identify non-owner wallets explicitly and keep every write disabled.
+- [x] Replace the old independent development runtime with mock provider/API transports passed to the same `createM3BrowserRuntime` factory, labeled as DEV-only with no real rights, funds or broadcast.
+- [x] Run red-first regressions, approved-toolchain typecheck/lint/format checks and focused integration tests; exercise the actual browser through precision correction, both approvals, Deposit, soft-ready, reorg, degraded Withdraw/Close, wrong network and non-owner paths.
+- [ ] Live RPC, wallet signing, Testnet broadcast, deployment, real receipt confirmation and hosted CI remain NOT_RUN pending their separate authorization and prerequisites.

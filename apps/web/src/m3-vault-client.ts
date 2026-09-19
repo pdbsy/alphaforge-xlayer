@@ -9,6 +9,7 @@ import {
   type HexData,
   type TransactionHash,
 } from '../../../packages/chain-adapter/src/types.ts';
+import type { ProductOperationEvidence } from '../../../packages/chain-adapter/src/reconciliation.ts';
 
 export class M3VaultReadFailure extends Error {
   readonly code = 'M3_VAULT_READ_FAILED' as const;
@@ -203,17 +204,34 @@ const operationStates = new Set<M3VaultSubmissionRecord['state']>([
   'RECONCILIATION_FAILED',
 ]);
 
+const lifecycleStates = new Set<ProductOperationEvidence['lifecycle']>([
+  'AWAITING_SIGNATURE',
+  'SUBMITTED',
+  'MINED',
+  'CONFIRMING',
+  'CONFIRMED',
+  'REJECTED',
+  'REVERTED',
+  'REPLACED',
+  'DROPPED',
+  'REORGED',
+  'RECONCILIATION_FAILED',
+]);
+
+function operationId(
+  value: unknown,
+  Failure: typeof M3VaultReadFailure | typeof M3VaultSubmissionFailure,
+): string {
+  if (typeof value !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/.test(value)) throw new Failure();
+  return value;
+}
+
 function submissionInput(value: unknown): M3VaultSubmissionInput {
   try {
     const row = exactObject(value, ['operationId', 'chainId', 'owner', 'target', 'calldata', 'txHash']);
-    if (
-      typeof row.operationId !== 'string' ||
-      !/^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/.test(row.operationId) ||
-      row.chainId !== 46_630
-    )
-      throw new M3VaultSubmissionFailure();
+    if (row.chainId !== 46_630) throw new M3VaultSubmissionFailure();
     return Object.freeze({
-      operationId: row.operationId,
+      operationId: operationId(row.operationId, M3VaultSubmissionFailure),
       chainId: 46_630,
       owner: asAddress(String(row.owner)),
       target: asAddress(String(row.target)),
@@ -270,6 +288,62 @@ function submissionRecord(value: unknown, expected: M3VaultSubmissionInput): M3V
   }
 }
 
+function operationEvidence(value: unknown, expectedOperationId: string): ProductOperationEvidence {
+  const row = exactObject(value, [
+    'operationId',
+    'lifecycle',
+    'receipt',
+    'receiptCanonical',
+    'confirmations',
+    'reconciliation',
+    'projection',
+    'chainStatus',
+    'l1Status',
+    'finalityStatus',
+    'indexerStatus',
+    'degradedReason',
+    'productReady',
+  ]);
+  if (
+    operationId(row.operationId, M3VaultReadFailure) !== expectedOperationId ||
+    typeof row.lifecycle !== 'string' ||
+    !lifecycleStates.has(row.lifecycle as ProductOperationEvidence['lifecycle']) ||
+    !['PENDING', 'SUCCESS', 'REVERTED'].includes(String(row.receipt)) ||
+    typeof row.receiptCanonical !== 'boolean' ||
+    !Number.isSafeInteger(row.confirmations) ||
+    Number(row.confirmations) < 0 ||
+    !['PENDING', 'MATCHED', 'FAILED'].includes(String(row.reconciliation)) ||
+    !['PENDING', 'READY', 'STALE'].includes(String(row.projection)) ||
+    !['PENDING', 'INCLUDED', 'SOFT_READY', 'REORGED', 'FAILED', 'UNKNOWN'].includes(
+      String(row.chainStatus),
+    ) ||
+    !['UNKNOWN', 'POSTED'].includes(String(row.l1Status)) ||
+    !['UNKNOWN', 'FINALIZED'].includes(String(row.finalityStatus)) ||
+    !['HEALTHY', 'SYNCING', 'DEGRADED'].includes(String(row.indexerStatus)) ||
+    !(
+      row.degradedReason === null ||
+      row.degradedReason === 'CHAIN_REORG_DEPTH_EXCEEDED' ||
+      row.degradedReason === 'CHAIN_REORG_NO_COMMON_ANCESTOR'
+    ) ||
+    typeof row.productReady !== 'boolean'
+  )
+    throw new M3VaultReadFailure();
+  return Object.freeze({
+    lifecycle: row.lifecycle as ProductOperationEvidence['lifecycle'],
+    receipt: row.receipt as ProductOperationEvidence['receipt'],
+    receiptCanonical: row.receiptCanonical,
+    confirmations: row.confirmations as number,
+    reconciliation: row.reconciliation as ProductOperationEvidence['reconciliation'],
+    projection: row.projection as ProductOperationEvidence['projection'],
+    chainStatus: row.chainStatus as ProductOperationEvidence['chainStatus'],
+    l1Status: row.l1Status as ProductOperationEvidence['l1Status'],
+    finalityStatus: row.finalityStatus as ProductOperationEvidence['finalityStatus'],
+    indexerStatus: row.indexerStatus as ProductOperationEvidence['indexerStatus'],
+    degradedReason: row.degradedReason as ProductOperationEvidence['degradedReason'],
+    productReady: row.productReady,
+  });
+}
+
 export class M3VaultApiClient {
   readonly #fetcher: typeof fetch;
 
@@ -310,6 +384,29 @@ export class M3VaultApiClient {
     } catch (error) {
       if (error instanceof M3VaultSubmissionFailure) throw error;
       throw new M3VaultSubmissionFailure();
+    }
+  }
+
+  async readOperationEvidence(
+    requestedOperationId: string,
+    owner: Address,
+  ): Promise<ProductOperationEvidence> {
+    try {
+      const normalizedOperationId = operationId(requestedOperationId, M3VaultReadFailure);
+      const normalizedOwner = asAddress(owner);
+      const response = await this.#fetcher(
+        `/api/v1/chain/operations/${normalizedOperationId}/evidence?owner=${normalizedOwner}`,
+        {
+          method: 'GET',
+          credentials: 'same-origin',
+          headers: { Accept: 'application/json' },
+        },
+      );
+      if (!response.ok) throw new M3VaultReadFailure();
+      return operationEvidence(await response.json(), normalizedOperationId);
+    } catch (error) {
+      if (error instanceof M3VaultReadFailure) throw error;
+      throw new M3VaultReadFailure();
     }
   }
 }

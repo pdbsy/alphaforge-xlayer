@@ -1852,9 +1852,9 @@
       "source_commit": "136abc8aecd8d08ae39efa75d4ba3be35b7ef19f",
       "source_agent": "Macbeth02",
       "target_path": "apps/web/src/product-ui.ts",
-      "method": "selective source integration; shared-file resolution recorded in CONFLICTS.md; later product extensions tracked by M3-04-PRODUCT-UI",
+      "method": "selective source integration; shared-file resolution recorded in CONFLICTS.md; M3-04-PRODUCT-UI adds the manifest-bound Vault runtime, finite approval review and canonical evidence readback",
       "original_sha256": "c094739b2c8308526a0d1470f72c32ac74de6c2157a3dcc0b0972584da755d38",
-      "migrated_sha256": "70a72447ed9b7a2587675fd806feb87e32c9d5584d1d6e60c66775f1601dd644"
+      "migrated_sha256": "56c01e81072d10088eef3011d317ff8e34b8e7bd1d1dd19548baf812c82f3ea2"
     },
     {
       "source_repository": "pdbsy/quantpass",

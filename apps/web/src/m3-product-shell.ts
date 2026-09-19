@@ -69,7 +69,7 @@ export interface DepositAuthorizationPresentation {
   readonly spender: string;
   readonly afUsdcAllowanceBaseUnits: string;
   readonly passAllowanceBaseUnits: string;
-  readonly approvalCapability: 'UNAVAILABLE';
+  readonly approvalCapability: 'UNAVAILABLE' | 'AVAILABLE';
 }
 
 export interface OnchainProductPresentation {
@@ -320,8 +320,9 @@ export function onchainActionEnabled(
       authorization.spender.toLowerCase() !== onchain.vaultAddress.toLowerCase() ||
       !validUnits(authorization.afUsdcAllowanceBaseUnits) ||
       !validUnits(authorization.passAllowanceBaseUnits) ||
-      BigInt(authorization.afUsdcAllowanceBaseUnits) === 0n ||
-      BigInt(authorization.passAllowanceBaseUnits) < 1_000_000_000_000n
+      (authorization.approvalCapability === 'UNAVAILABLE' &&
+        (BigInt(authorization.afUsdcAllowanceBaseUnits) === 0n ||
+          BigInt(authorization.passAllowanceBaseUnits) < 1_000_000_000_000n))
     )
       return false;
   }
@@ -347,14 +348,14 @@ function onchainActions(onchain: OnchainProductPresentation): string {
     .join('')}</div>`;
 }
 
-function unsupportedOnchainActions(): string {
-  return `<div class="inline-actions" aria-label="Unavailable Testnet actions">${[
-    'Buy Pass',
-    'Sell Pass',
-    'Approve',
-  ]
+function unsupportedOnchainActions(onchain: OnchainProductPresentation): string {
+  const approval =
+    onchain.depositAuthorization?.approvalCapability === 'AVAILABLE'
+      ? 'Approve · USE DEPOSIT REVIEW'
+      : 'Approve · NOT AVAILABLE';
+  return `<div class="inline-actions" aria-label="Unavailable Testnet actions">${['Buy Pass', 'Sell Pass']
     .map((label) => `<button class="outline-btn" disabled>${label} · NOT IMPLEMENTED</button>`)
-    .join('')}</div>`;
+    .join('')}<button class="outline-btn" disabled>${approval}</button></div>`;
 }
 
 function onchainCard(onchain: OnchainProductPresentation): string {
@@ -364,15 +365,21 @@ function onchainCard(onchain: OnchainProductPresentation): string {
       : 'NOT DEPLOYED — no verified Vault address or deployment manifest is configured.';
   const healthMessage =
     onchain.health === 'DEGRADED'
-      ? `INDEXER DEGRADED. Owner exit remains available through ${
-          onchain.exitPath === 'SIMULATION'
-            ? 'live RPC simulation'
-            : onchain.exitPath === 'LIVE_RPC'
-              ? 'live RPC'
-              : 'no verified exit path'
-        }.`
+      ? onchain.owner === 'NON_OWNER'
+        ? 'INDEXER DEGRADED. Current wallet is not the Vault owner; owner exits are unavailable.'
+        : onchain.owner === 'OWNER'
+          ? `INDEXER DEGRADED. Owner exit remains available through ${
+              onchain.exitPath === 'SIMULATION'
+                ? 'live RPC simulation'
+                : onchain.exitPath === 'LIVE_RPC'
+                  ? 'live RPC'
+                  : 'no verified exit path'
+            }.`
+          : 'INDEXER DEGRADED. Vault ownership is unknown; owner exits remain unavailable.'
       : onchain.health === 'LIVE'
-        ? 'Mock provider reads are active.'
+        ? onchain.writeMode === 'INJECTED_MOCK'
+          ? 'Mock provider reads are active.'
+          : 'Canonical Vault projection reads are active.'
         : 'Chain health is unavailable.';
   const writeMessage =
     onchain.writeMode === 'INJECTED_MOCK'
@@ -388,7 +395,11 @@ function onchainCard(onchain: OnchainProductPresentation): string {
         authorization.passAllowanceBaseUnits,
       )} base units</span></div><div><span>spender</span><span>${escapeHtml(
         authorization.spender,
-      )}</span></div></div></div><p>Deposit requires two exact finite approvals to the configured Vault. Approval flow is not implemented; infinite approval and arbitrary spenders are never used.</p>`
+      )}</span></div></div></div><p>Deposit requires two exact finite approvals to the configured Vault. ${
+        authorization.approvalCapability === 'AVAILABLE'
+          ? 'The approval flow is available from Deposit review.'
+          : 'Approval flow is not implemented.'
+      } Infinite approval and arbitrary spenders are never used.</p>`
     : '<p>Deposit allowances are unavailable. Deposit remains disabled until both AF-USDC and Pass allowances are read for the configured Vault.</p>';
   return `<article class="sketch-box"><span class="section-label">PASS + VAULT / TESTNET</span><h3>${escapeHtml(
     onchain.readiness.replaceAll('_', ' '),
@@ -398,7 +409,7 @@ function onchainCard(onchain: OnchainProductPresentation): string {
     healthMessage,
   )}</p><p>${escapeHtml(writeMessage)}</p>${depositAuthorization}${onchainActions(
     onchain,
-  )}${unsupportedOnchainActions()}</article>`;
+  )}${unsupportedOnchainActions(onchain)}</article>`;
 }
 
 const unavailableWallet: WalletPresentation = { status: 'DISCONNECTED' };

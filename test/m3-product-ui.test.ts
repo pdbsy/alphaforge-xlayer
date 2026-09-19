@@ -18,6 +18,15 @@ import {
   renderWalletStatus,
 } from '../apps/web/src/m3-product-shell.ts';
 
+const operationEvidenceDefaults = {
+  receiptCanonical: true,
+  chainStatus: 'INCLUDED' as const,
+  l1Status: 'UNKNOWN' as const,
+  finalityStatus: 'UNKNOWN' as const,
+  indexerStatus: 'HEALTHY' as const,
+  degradedReason: null,
+};
+
 test('page extension preserves product pages and prepends route-specific M3 shells', () => {
   let accountId: string | null = 'alice';
   const pages = extendM3ProductPages(
@@ -125,6 +134,7 @@ test('Macbeth03 operation evidence maps receipt success and product readback sep
     finalityStatus: 'UNKNOWN' as const,
     indexerStatus: 'HEALTHY' as const,
     degradedReason: null,
+
     receipt: 'SUCCESS' as const,
     confirmations: 1,
     reconciliation: 'PENDING' as const,
@@ -162,6 +172,7 @@ test('Macbeth03 operation evidence maps receipt success and product readback sep
 test('reorg, reconciliation failure and stale projection never map to READY', () => {
   const failures = [
     {
+      ...operationEvidenceDefaults,
       lifecycle: 'REORGED' as const,
       receiptCanonical: false,
       chainStatus: 'REORGED' as const,
@@ -176,6 +187,7 @@ test('reorg, reconciliation failure and stale projection never map to READY', ()
       productReady: false,
     },
     {
+      ...operationEvidenceDefaults,
       lifecycle: 'RECONCILIATION_FAILED' as const,
       receiptCanonical: true,
       chainStatus: 'FAILED' as const,
@@ -190,6 +202,7 @@ test('reorg, reconciliation failure and stale projection never map to READY', ()
       productReady: false,
     },
     {
+      ...operationEvidenceDefaults,
       lifecycle: 'CONFIRMED' as const,
       receiptCanonical: true,
       chainStatus: 'SOFT_READY' as const,
@@ -218,6 +231,7 @@ test('reorg, reconciliation failure and stale projection never map to READY', ()
 test('failure evidence takes precedence over a contradictory productReady flag', () => {
   const contradictoryFailures = [
     {
+      ...operationEvidenceDefaults,
       lifecycle: 'REORGED' as const,
       receiptCanonical: false,
       chainStatus: 'REORGED' as const,
@@ -232,6 +246,7 @@ test('failure evidence takes precedence over a contradictory productReady flag',
       productReady: true,
     },
     {
+      ...operationEvidenceDefaults,
       lifecycle: 'CONFIRMED' as const,
       receiptCanonical: true,
       chainStatus: 'SOFT_READY' as const,
@@ -246,6 +261,7 @@ test('failure evidence takes precedence over a contradictory productReady flag',
       productReady: true,
     },
     {
+      ...operationEvidenceDefaults,
       lifecycle: 'CONFIRMED' as const,
       receiptCanonical: true,
       chainStatus: 'SOFT_READY' as const,
@@ -260,6 +276,7 @@ test('failure evidence takes precedence over a contradictory productReady flag',
       productReady: true,
     },
     {
+      ...operationEvidenceDefaults,
       lifecycle: 'CONFIRMED' as const,
       receiptCanonical: true,
       chainStatus: 'SOFT_READY' as const,
@@ -449,6 +466,35 @@ test('a newly connected owner cannot deposit without both Vault-only token allow
   );
 });
 
+test('configured approval capability opens Deposit review while keeping exact allowance enforcement', () => {
+  const onchain = {
+    deployment: 'CONFIGURED' as const,
+    health: 'LIVE' as const,
+    readiness: 'FINALITY_UNKNOWN' as const,
+    owner: 'OWNER' as const,
+    writeMode: 'LIVE_AUTHORIZED' as const,
+    exitPath: 'SIMULATION' as const,
+    supportedActions: ['deposit', 'withdraw', 'close'] as const,
+    vaultAddress: '0x2222222222222222222222222222222222222222',
+    depositAuthorization: {
+      spender: '0x2222222222222222222222222222222222222222',
+      afUsdcAllowanceBaseUnits: '0',
+      passAllowanceBaseUnits: '0',
+      approvalCapability: 'AVAILABLE' as const,
+    },
+  };
+  const html = renderM3StrategyShell({
+    strategyId: 'trend',
+    contentProvenance: 'FIXTURE',
+    onchain,
+  });
+
+  assert.equal(onchainActionEnabled(onchain, 'deposit'), true);
+  assert.match(html, /Approve · USE DEPOSIT REVIEW/);
+  assert.match(html, /approval flow is available from Deposit review/i);
+  assert.doesNotMatch(html, /unlimited/i);
+});
+
 test('degraded indexer preserves owner withdraw and close through live RPC simulation', () => {
   const html = renderM3StrategyShell({
     strategyId: 'trend',
@@ -471,6 +517,26 @@ test('degraded indexer preserves owner withdraw and close through live RPC simul
   assert.match(html, /<button[^>]*data-chain-action="withdraw"[^>]*>Withdraw<\/button>/);
   assert.match(html, /<button[^>]*data-chain-action="close"[^>]*>Close<\/button>/);
   assert.match(html, /<button[^>]*data-chain-action="deposit"[^>]*disabled[^>]*>Deposit<\/button>/);
+});
+
+test('degraded indexer identifies a non-owner wallet without implying an owner exit path', () => {
+  const html = renderM3StrategyShell({
+    strategyId: 'trend',
+    contentProvenance: 'FIXTURE',
+    onchain: {
+      deployment: 'CONFIGURED',
+      health: 'DEGRADED',
+      readiness: 'FINALITY_UNKNOWN',
+      owner: 'NON_OWNER',
+      writeMode: 'DISABLED',
+      exitPath: 'UNAVAILABLE',
+      supportedActions: ['withdraw', 'close'],
+      vaultAddress: '0x2222222222222222222222222222222222222222',
+    },
+  });
+
+  assert.match(html, /Current wallet is not the Vault owner; owner exits are unavailable/);
+  assert.doesNotMatch(html, /Owner exit remains available/);
 });
 
 test('chain writes remain disabled without explicit write mode or wallet ownership', () => {

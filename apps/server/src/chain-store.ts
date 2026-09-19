@@ -1088,7 +1088,7 @@ export class ChainStore {
         ? this.operationByTransaction(operation.chainId, operation.txHash)
         : null;
       if (transaction && transaction.operationId !== operation.operationId)
-        throw new Error('OPERATION_IDENTITY_CONFLICT');
+        throw new Error('OPERATION_IDENTITY_CONFLICT', { cause: error });
       throw error;
     }
   }
