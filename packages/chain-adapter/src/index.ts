@@ -4,3 +4,4 @@ export * from './manifest.ts';
 export * from './policy.ts';
 export * from './rpc.ts';
 export * from './reconciliation.ts';
+export * from './vault-abi.ts';

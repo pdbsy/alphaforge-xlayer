@@ -139,14 +139,32 @@ test('read-only RPC uses only allowlisted methods and canonical quantity encodin
   const requests: { method: string; params: readonly unknown[] }[] = [];
   const transport: RpcTransport = async (_endpoint, request) => {
     requests.push({ method: request.method, params: request.params });
-    return { status: 200, body: JSON.stringify({ jsonrpc: '2.0', id: request.id, result: [] }) };
+    return {
+      status: 200,
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        id: request.id,
+        result: request.method === 'eth_call' ? '0x' : [],
+      }),
+    };
   };
   const rpc = new JsonRpcClient([ENDPOINT], { transport });
   await rpc.logs({ address: CONTRACT, fromBlock: 0n, toBlock: 16n, topics: [null] });
+  await rpc.call(
+    { to: CONTRACT, data: asHexData('0x1234') },
+    { blockHash: BLOCK_HASH, requireCanonical: true },
+  );
   assert.deepEqual(requests, [
     {
       method: 'eth_getLogs',
       params: [{ address: CONTRACT, fromBlock: '0x0', toBlock: '0x10', topics: [null] }],
+    },
+    {
+      method: 'eth_call',
+      params: [
+        { to: CONTRACT, data: '0x1234' },
+        { blockHash: BLOCK_HASH, requireCanonical: true },
+      ],
     },
   ]);
   assert.equal(Object.hasOwn(rpc, 'request'), false, 'raw arbitrary RPC must not be public');

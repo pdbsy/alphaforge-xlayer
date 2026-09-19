@@ -647,7 +647,7 @@ test('chain store refuses an unrelated database instead of mutating it', async (
 
 test('chain store migrates to sync leases and rejects forged confirmed operations', async () => {
   const store = new ChainStore(await databasePath());
-  assert.equal(store.db.prepare('PRAGMA user_version').get()?.user_version, 5);
+  assert.equal(store.db.prepare('PRAGMA user_version').get()?.user_version, 6);
   const submitted = transitionOperation(
     createOperation({
       operationId: 'forged-confirmed',
@@ -696,7 +696,7 @@ test('existing version-one chain database migrates without losing indexed eviden
   legacy.close();
 
   const store = new ChainStore(path);
-  assert.equal(store.db.prepare('PRAGMA user_version').get()?.user_version, 5);
+  assert.equal(store.db.prepare('PRAGMA user_version').get()?.user_version, 6);
   assert.deepEqual(store.checkpoint(CHAIN_ID, CONTRACT), {
     blockNumber: 100n,
     blockHash: BLOCK_100,
@@ -733,7 +733,7 @@ test('version-three incomplete targets remain authoritative after sync-lease mig
   legacy.close();
 
   const store = new ChainStore(path);
-  assert.equal(store.db.prepare('PRAGMA user_version').get()?.user_version, 5);
+  assert.equal(store.db.prepare('PRAGMA user_version').get()?.user_version, 6);
   assert.equal(store.syncTarget(CHAIN_ID, CONTRACT), 101n);
   assert.throws(
     () => store.claimSync(CHAIN_ID, CONTRACT, 100n, '00000000-0000-4000-8000-000000000001'),
