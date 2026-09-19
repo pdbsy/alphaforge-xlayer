@@ -1,293 +1,302 @@
-{
-  'rules':
-    [
-      {
-        'id': 'af.js-dynamic-eval',
-        'languages': ['javascript', 'typescript'],
-        'severity': 'ERROR',
-        'message': 'js dynamic eval',
-        'metadata': { 'category': 'security', 'confidence': 'MEDIUM' },
-        'pattern-either':
-          [
-            { 'pattern': 'eval(...)' },
-            { 'pattern': 'window.eval(...)' },
-            { 'pattern': 'globalThis.eval(...)' },
-          ],
-      },
-      {
-        'id': 'af.js-function-constructor',
-        'languages': ['javascript', 'typescript'],
-        'severity': 'ERROR',
-        'message': 'js function constructor',
-        'metadata': { 'category': 'security', 'confidence': 'MEDIUM' },
-        'pattern-either': [{ 'pattern': 'new Function(...)' }, { 'pattern': 'Function(...)' }],
-      },
-      {
-        'id': 'af.js-implied-eval',
-        'languages': ['javascript', 'typescript'],
-        'severity': 'ERROR',
-        'message': 'js implied eval',
-        'metadata': { 'category': 'security', 'confidence': 'MEDIUM' },
-        'pattern-either': [{ 'pattern': 'setTimeout("...", ...)' }, { 'pattern': 'setInterval("...", ...)' }],
-      },
-      {
-        'id': 'af.js-shell-enabled',
-        'languages': ['javascript', 'typescript'],
-        'severity': 'ERROR',
-        'message': 'js shell enabled',
-        'metadata': { 'category': 'security', 'confidence': 'MEDIUM' },
-        'pattern-either':
-          [
-            { 'pattern': 'spawn(..., { ..., shell: true, ... })' },
-            { 'pattern': 'spawnSync(..., { ..., shell: true, ... })' },
-            { 'pattern': 'execFile(..., { ..., shell: true, ... })' },
-            { 'pattern': 'execFileSync(..., { ..., shell: true, ... })' },
-          ],
-      },
-      {
-        'id': 'af.js-command-taint',
-        'languages': ['javascript', 'typescript'],
-        'severity': 'ERROR',
-        'message': 'js command taint',
-        'metadata': { 'category': 'security', 'confidence': 'MEDIUM' },
-        'mode': 'taint',
-        'pattern-sources':
-          [
-            { 'pattern': '$REQ.query' },
-            { 'pattern': '$REQ.body' },
-            { 'pattern': '$REQ.params' },
-            { 'pattern': 'location.search' },
-            { 'pattern': 'location.hash' },
-            { 'pattern': 'window.location.search' },
-          ],
-        'pattern-sinks': [{ 'pattern': 'exec($X, ...)' }, { 'pattern': 'execSync($X, ...)' }],
-      },
-      {
-        'id': 'af.js-sql-taint',
-        'languages': ['javascript', 'typescript'],
-        'severity': 'ERROR',
-        'message': 'js sql taint',
-        'metadata': { 'category': 'security', 'confidence': 'MEDIUM' },
-        'mode': 'taint',
-        'pattern-sources':
-          [
-            { 'pattern': '$REQ.query' },
-            { 'pattern': '$REQ.body' },
-            { 'pattern': '$REQ.params' },
-            { 'pattern': 'location.search' },
-            { 'pattern': 'location.hash' },
-            { 'pattern': 'window.location.search' },
-          ],
-        'pattern-sinks':
-          [
-            { 'pattern': '$DB.prepare($X, ...)' },
-            { 'pattern': '$DB.query($X, ...)' },
-            { 'pattern': '$DB.exec($X, ...)' },
-          ],
-      },
-      {
-        'id': 'af.js-path-taint',
-        'languages': ['javascript', 'typescript'],
-        'severity': 'ERROR',
-        'message': 'js path taint',
-        'metadata': { 'category': 'security', 'confidence': 'MEDIUM' },
-        'mode': 'taint',
-        'pattern-sources':
-          [
-            { 'pattern': '$REQ.query' },
-            { 'pattern': '$REQ.body' },
-            { 'pattern': '$REQ.params' },
-            { 'pattern': 'location.search' },
-            { 'pattern': 'location.hash' },
-            { 'pattern': 'window.location.search' },
-          ],
-        'pattern-sinks':
-          [
-            { 'pattern': 'readFile($X, ...)' },
-            { 'pattern': 'readFileSync($X, ...)' },
-            { 'pattern': 'writeFile($X, ...)' },
-            { 'pattern': 'writeFileSync($X, ...)' },
-          ],
-      },
-      {
-        'id': 'af.js-dom-taint',
-        'languages': ['javascript', 'typescript'],
-        'severity': 'ERROR',
-        'message': 'js dom taint',
-        'metadata': { 'category': 'security', 'confidence': 'MEDIUM' },
-        'mode': 'taint',
-        'pattern-sources':
-          [
-            { 'pattern': '$REQ.query' },
-            { 'pattern': '$REQ.body' },
-            { 'pattern': '$REQ.params' },
-            { 'pattern': 'location.search' },
-            { 'pattern': 'location.hash' },
-            { 'pattern': 'window.location.search' },
-          ],
-        'pattern-sinks':
-          [
-            { 'pattern': '$EL.innerHTML = $X' },
-            { 'pattern': '$EL.outerHTML = $X' },
-            { 'pattern': 'document.write($X, ...)' },
-          ],
-      },
-      {
-        'id': 'af.js-tls-verification',
-        'languages': ['javascript', 'typescript'],
-        'severity': 'ERROR',
-        'message': 'js tls verification',
-        'metadata': { 'category': 'security', 'confidence': 'MEDIUM' },
-        'pattern-either':
-          [
-            { 'pattern': '{ ..., rejectUnauthorized: false, ... }' },
-            { 'pattern': 'process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0"' },
-          ],
-      },
-      {
-        'id': 'af.js-weak-hash',
-        'languages': ['javascript', 'typescript'],
-        'severity': 'ERROR',
-        'message': 'js weak hash',
-        'metadata': { 'category': 'security', 'confidence': 'MEDIUM' },
-        'pattern-either':
-          [
-            { 'pattern': 'createHash("md5", ...)' },
-            { 'pattern': 'createHash("sha1", ...)' },
-            { 'pattern': 'crypto.createHash("md5", ...)' },
-            { 'pattern': 'crypto.createHash("sha1", ...)' },
-          ],
-      },
-      {
-        'id': 'af.js-wildcard-postmessage',
-        'languages': ['javascript', 'typescript'],
-        'severity': 'ERROR',
-        'message': 'js wildcard postmessage',
-        'metadata': { 'category': 'security', 'confidence': 'MEDIUM' },
-        'pattern': '$WIN.postMessage($MESSAGE, "*", ...)',
-      },
-      {
-        'id': 'af.js-jwt-none',
-        'languages': ['javascript', 'typescript'],
-        'severity': 'ERROR',
-        'message': 'js jwt none',
-        'metadata': { 'category': 'security', 'confidence': 'MEDIUM' },
-        'pattern': '$JWT.verify(..., { ..., algorithms: [..., "none", ...], ... })',
-      },
-      {
-        'id': 'af.py-dynamic-eval',
-        'languages': ['python'],
-        'severity': 'ERROR',
-        'message': 'py dynamic eval',
-        'metadata': { 'category': 'security', 'confidence': 'MEDIUM' },
-        'pattern-either': [{ 'pattern': 'eval(...)' }, { 'pattern': 'exec(...)' }],
-      },
-      {
-        'id': 'af.py-pickle-deserialization',
-        'languages': ['python'],
-        'severity': 'ERROR',
-        'message': 'py pickle deserialization',
-        'metadata': { 'category': 'security', 'confidence': 'MEDIUM' },
-        'pattern-either':
-          [
-            { 'pattern': 'pickle.loads(...)' },
-            { 'pattern': 'pickle.load(...)' },
-            { 'pattern': 'dill.loads(...)' },
-            { 'pattern': 'dill.load(...)' },
-          ],
-      },
-      {
-        'id': 'af.py-yaml-unsafe',
-        'languages': ['python'],
-        'severity': 'ERROR',
-        'message': 'py yaml unsafe',
-        'metadata': { 'category': 'security', 'confidence': 'MEDIUM' },
-        'patterns':
-          [{ 'pattern': 'yaml.load(...)' }, { 'pattern-not': 'yaml.load(..., Loader=yaml.SafeLoader, ...)' }],
-      },
-      {
-        'id': 'af.py-shell-enabled',
-        'languages': ['python'],
-        'severity': 'ERROR',
-        'message': 'py shell enabled',
-        'metadata': { 'category': 'security', 'confidence': 'MEDIUM' },
-        'pattern-either':
-          [
-            { 'pattern': 'subprocess.run(..., shell=True, ...)' },
-            { 'pattern': 'subprocess.Popen(..., shell=True, ...)' },
-            { 'pattern': 'subprocess.call(..., shell=True, ...)' },
-            { 'pattern': 'subprocess.check_output(..., shell=True, ...)' },
-          ],
-      },
-      {
-        'id': 'af.py-command-taint',
-        'languages': ['python'],
-        'severity': 'ERROR',
-        'message': 'py command taint',
-        'metadata': { 'category': 'security', 'confidence': 'MEDIUM' },
-        'mode': 'taint',
-        'pattern-sources':
-          [
-            { 'pattern': 'input(...)' },
-            { 'pattern': 'request.args' },
-            { 'pattern': 'request.form' },
-            { 'pattern': 'request.data' },
-          ],
-        'pattern-sinks': [{ 'pattern': 'os.system(...)' }, { 'pattern': 'os.popen(...)' }],
-      },
-      {
-        'id': 'af.py-tls-verification',
-        'languages': ['python'],
-        'severity': 'ERROR',
-        'message': 'py tls verification',
-        'metadata': { 'category': 'security', 'confidence': 'MEDIUM' },
-        'pattern-either':
-          [
-            { 'pattern': 'requests.$METHOD(..., verify=False, ...)' },
-            { 'pattern': 'httpx.$METHOD(..., verify=False, ...)' },
-            { 'pattern': 'ssl._create_unverified_context(...)' },
-          ],
-      },
-      {
-        'id': 'af.py-insecure-tempfile',
-        'languages': ['python'],
-        'severity': 'ERROR',
-        'message': 'py insecure tempfile',
-        'metadata': { 'category': 'security', 'confidence': 'MEDIUM' },
-        'pattern': 'tempfile.mktemp(...)',
-      },
-      {
-        'id': 'af.py-sql-interpolation',
-        'languages': ['python'],
-        'severity': 'ERROR',
-        'message': 'py sql interpolation',
-        'metadata': { 'category': 'security', 'confidence': 'MEDIUM' },
-        'pattern-either':
-          [
-            { 'pattern': '$CURSOR.execute(f"...", ...)' },
-            { 'pattern': '$CURSOR.execute("..." % $VALUES, ...)' },
-            { 'pattern': '$CURSOR.execute("...".format(...), ...)' },
-          ],
-      },
-      {
-        'id': 'af.py-unsafe-tar',
-        'languages': ['python'],
-        'severity': 'ERROR',
-        'message': 'py unsafe tar',
-        'metadata': { 'category': 'security', 'confidence': 'MEDIUM' },
-        'patterns':
-          [
-            { 'pattern': '$ARCHIVE.extractall(...)' },
-            { 'pattern-not': '$ARCHIVE.extractall(..., filter="data", ...)' },
-          ],
-      },
-      {
-        'id': 'af.py-weak-hash',
-        'languages': ['python'],
-        'severity': 'ERROR',
-        'message': 'py weak hash',
-        'metadata': { 'category': 'security', 'confidence': 'MEDIUM' },
-        'pattern-either': [{ 'pattern': 'hashlib.md5(...)' }, { 'pattern': 'hashlib.sha1(...)' }],
-      },
-    ],
-}
+rules:
+  - id: af.js-dynamic-eval
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: js dynamic eval
+    metadata:
+      category: security
+      confidence: MEDIUM
+    pattern-either:
+      - pattern: eval(...)
+      - pattern: window.eval(...)
+      - pattern: globalThis.eval(...)
+  - id: af.js-function-constructor
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: js function constructor
+    metadata:
+      category: security
+      confidence: MEDIUM
+    pattern-either:
+      - pattern: new Function(...)
+      - pattern: Function(...)
+  - id: af.js-implied-eval
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: js implied eval
+    metadata:
+      category: security
+      confidence: MEDIUM
+    pattern-either:
+      - pattern: setTimeout("...", ...)
+      - pattern: setInterval("...", ...)
+  - id: af.js-shell-enabled
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: js shell enabled
+    metadata:
+      category: security
+      confidence: MEDIUM
+    pattern-either:
+      - pattern: 'spawn(..., { ..., shell: true, ... })'
+      - pattern: 'spawnSync(..., { ..., shell: true, ... })'
+      - pattern: 'execFile(..., { ..., shell: true, ... })'
+      - pattern: 'execFileSync(..., { ..., shell: true, ... })'
+  - id: af.js-command-taint
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: js command taint
+    metadata:
+      category: security
+      confidence: MEDIUM
+    mode: taint
+    pattern-sources:
+      - pattern: $REQ.query
+      - pattern: $REQ.body
+      - pattern: $REQ.params
+      - pattern: location.search
+      - pattern: location.hash
+      - pattern: window.location.search
+    pattern-sinks:
+      - pattern: exec($X, ...)
+      - pattern: execSync($X, ...)
+  - id: af.js-sql-taint
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: js sql taint
+    metadata:
+      category: security
+      confidence: MEDIUM
+    mode: taint
+    pattern-sources:
+      - pattern: $REQ.query
+      - pattern: $REQ.body
+      - pattern: $REQ.params
+      - pattern: location.search
+      - pattern: location.hash
+      - pattern: window.location.search
+    pattern-sinks:
+      - pattern: $DB.prepare($X, ...)
+      - pattern: $DB.query($X, ...)
+      - pattern: $DB.exec($X, ...)
+  - id: af.js-path-taint
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: js path taint
+    metadata:
+      category: security
+      confidence: MEDIUM
+    mode: taint
+    pattern-sources:
+      - pattern: $REQ.query
+      - pattern: $REQ.body
+      - pattern: $REQ.params
+      - pattern: location.search
+      - pattern: location.hash
+      - pattern: window.location.search
+    pattern-sinks:
+      - pattern: readFile($X, ...)
+      - pattern: readFileSync($X, ...)
+      - pattern: writeFile($X, ...)
+      - pattern: writeFileSync($X, ...)
+  - id: af.js-dom-taint
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: js dom taint
+    metadata:
+      category: security
+      confidence: MEDIUM
+    mode: taint
+    pattern-sources:
+      - pattern: $REQ.query
+      - pattern: $REQ.body
+      - pattern: $REQ.params
+      - pattern: location.search
+      - pattern: location.hash
+      - pattern: window.location.search
+    pattern-sinks:
+      - pattern: $EL.innerHTML = $X
+      - pattern: $EL.outerHTML = $X
+      - pattern: document.write($X, ...)
+  - id: af.js-tls-verification
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: js tls verification
+    metadata:
+      category: security
+      confidence: MEDIUM
+    pattern-either:
+      - pattern: '{ ..., rejectUnauthorized: false, ... }'
+      - pattern: process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0"
+  - id: af.js-weak-hash
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: js weak hash
+    metadata:
+      category: security
+      confidence: MEDIUM
+    pattern-either:
+      - pattern: createHash("md5", ...)
+      - pattern: createHash("sha1", ...)
+      - pattern: crypto.createHash("md5", ...)
+      - pattern: crypto.createHash("sha1", ...)
+  - id: af.js-wildcard-postmessage
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: js wildcard postmessage
+    metadata:
+      category: security
+      confidence: MEDIUM
+    pattern: $WIN.postMessage($MESSAGE, "*", ...)
+  - id: af.js-jwt-none
+    languages:
+      - javascript
+      - typescript
+    severity: ERROR
+    message: js jwt none
+    metadata:
+      category: security
+      confidence: MEDIUM
+    pattern: '$JWT.verify(..., { ..., algorithms: [..., "none", ...], ... })'
+  - id: af.py-dynamic-eval
+    languages:
+      - python
+    severity: ERROR
+    message: py dynamic eval
+    metadata:
+      category: security
+      confidence: MEDIUM
+    pattern-either:
+      - pattern: eval(...)
+      - pattern: exec(...)
+  - id: af.py-pickle-deserialization
+    languages:
+      - python
+    severity: ERROR
+    message: py pickle deserialization
+    metadata:
+      category: security
+      confidence: MEDIUM
+    pattern-either:
+      - pattern: pickle.loads(...)
+      - pattern: pickle.load(...)
+      - pattern: dill.loads(...)
+      - pattern: dill.load(...)
+  - id: af.py-yaml-unsafe
+    languages:
+      - python
+    severity: ERROR
+    message: py yaml unsafe
+    metadata:
+      category: security
+      confidence: MEDIUM
+    patterns:
+      - pattern: yaml.load(...)
+      - pattern-not: yaml.load(..., Loader=yaml.SafeLoader, ...)
+  - id: af.py-shell-enabled
+    languages:
+      - python
+    severity: ERROR
+    message: py shell enabled
+    metadata:
+      category: security
+      confidence: MEDIUM
+    pattern-either:
+      - pattern: subprocess.run(..., shell=True, ...)
+      - pattern: subprocess.Popen(..., shell=True, ...)
+      - pattern: subprocess.call(..., shell=True, ...)
+      - pattern: subprocess.check_output(..., shell=True, ...)
+  - id: af.py-command-taint
+    languages:
+      - python
+    severity: ERROR
+    message: py command taint
+    metadata:
+      category: security
+      confidence: MEDIUM
+    mode: taint
+    pattern-sources:
+      - pattern: input(...)
+      - pattern: request.args
+      - pattern: request.form
+      - pattern: request.data
+    pattern-sinks:
+      - pattern: os.system(...)
+      - pattern: os.popen(...)
+  - id: af.py-tls-verification
+    languages:
+      - python
+    severity: ERROR
+    message: py tls verification
+    metadata:
+      category: security
+      confidence: MEDIUM
+    pattern-either:
+      - pattern: requests.$METHOD(..., verify=False, ...)
+      - pattern: httpx.$METHOD(..., verify=False, ...)
+      - pattern: ssl._create_unverified_context(...)
+  - id: af.py-insecure-tempfile
+    languages:
+      - python
+    severity: ERROR
+    message: py insecure tempfile
+    metadata:
+      category: security
+      confidence: MEDIUM
+    pattern: tempfile.mktemp(...)
+  - id: af.py-sql-interpolation
+    languages:
+      - python
+    severity: ERROR
+    message: py sql interpolation
+    metadata:
+      category: security
+      confidence: MEDIUM
+    pattern-either:
+      - pattern: $CURSOR.execute(f"...", ...)
+      - pattern: $CURSOR.execute("..." % $VALUES, ...)
+      - pattern: $CURSOR.execute("...".format(...), ...)
+  - id: af.py-unsafe-tar
+    languages:
+      - python
+    severity: ERROR
+    message: py unsafe tar
+    metadata:
+      category: security
+      confidence: MEDIUM
+    patterns:
+      - pattern: $ARCHIVE.extractall(...)
+      - pattern-not: $ARCHIVE.extractall(..., filter="data", ...)
+  - id: af.py-weak-hash
+    languages:
+      - python
+    severity: ERROR
+    message: py weak hash
+    metadata:
+      category: security
+      confidence: MEDIUM
+    pattern-either:
+      - pattern: hashlib.md5(...)
+      - pattern: hashlib.sha1(...)
