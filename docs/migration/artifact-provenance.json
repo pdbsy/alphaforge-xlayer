@@ -1258,9 +1258,9 @@
       "source_commit": "52c61def3604bd78d6523ba348cf296debf53bc5",
       "source_agent": "Macbeth01",
       "target_path": "tools/agent-forum.mjs",
-      "method": "selective import; canonical repository allowlist and dashboard link adapted; PR11 closeout defensive adaptation; PR11 review remediation: atomic product snapshot, identity lifecycle or bounded logical-message Forum as applicable",
+      "method": "selective import; canonical repository allowlist and dashboard link adapted; PR11 closeout defensive adaptation; PR11 review remediation: atomic product snapshot, identity lifecycle or bounded logical-message Forum as applicable; user-authorized Macbeth06 CI/gate role registration (2026-09-20), historical source identity unchanged",
       "original_sha256": "562111e0bc5badc25b53562f8113e5288860ed17d79b32cd94dd978457674359",
-      "migrated_sha256": "cfe80c14bd7b789627aa1c6f7ec5e69daa3cc4165b64651446c823cbd3c22362",
+      "migrated_sha256": "0b4ec2e7418a361d13fde41ff33e7cd27bc1fba743a5e31ab518bcc22cdb2539",
       "subsequent_adaptations": [
         {
           "task": "AF-M3-IDENTITY",
@@ -1276,9 +1276,9 @@
       "source_commit": "52c61def3604bd78d6523ba348cf296debf53bc5",
       "source_agent": "Macbeth01",
       "target_path": "tools/agent-forum-app.js",
-      "method": "selective import; canonical repository allowlist and dashboard link adapted; PR11 closeout defensive adaptation; PR11 review remediation: atomic product snapshot, identity lifecycle or bounded logical-message Forum as applicable",
+      "method": "selective import; canonical repository allowlist and dashboard link adapted; PR11 closeout defensive adaptation; PR11 review remediation: atomic product snapshot, identity lifecycle or bounded logical-message Forum as applicable; user-authorized Macbeth06 CI/gate role registration (2026-09-20), historical source identity unchanged",
       "original_sha256": "798d168b50b340ce4a3e73f4d2a4e68e1c33469edf02d5e52325f649e09b6bc6",
-      "migrated_sha256": "8156b249bf86d0f5a5678976f56cd4237ff87006811fa71d2cc37e55538b6740"
+      "migrated_sha256": "2788e38b53c585297ffa53aecee58115f72ac58d796dcb5bb60976ef35b5d68b"
     },
     {
       "source_repository": "pdbsy/quantpass",
@@ -1296,9 +1296,9 @@
       "source_commit": "52c61def3604bd78d6523ba348cf296debf53bc5",
       "source_agent": "Macbeth01",
       "target_path": "tools/agent-identity.mjs",
-      "method": "selective import; canonical repository allowlist and dashboard link adapted; reviewed PR11 closeout adaptation (see PR11-CLOSEOUT.md); PR11 review remediation: atomic product snapshot, identity lifecycle or bounded logical-message Forum as applicable",
+      "method": "selective import; canonical repository allowlist and dashboard link adapted; reviewed PR11 closeout adaptation (see PR11-CLOSEOUT.md); PR11 review remediation: atomic product snapshot, identity lifecycle or bounded logical-message Forum as applicable; user-authorized Macbeth06 CI/gate role registration (2026-09-20), historical source identity unchanged",
       "original_sha256": "f1b67a9cdb2ce0fa25c95d7927dbffda16cd5320d636891a9b60b721491395a6",
-      "migrated_sha256": "b6e54b99679da50abb44970fb08106983145ec53edefe2f8846db568118d44cd",
+      "migrated_sha256": "4ac390783fe996e0f3107fb3156e1bbffae1f211b0189f3ad8301be314048aeb",
       "subsequent_adaptations": [
         {
           "task": "AF-M3-IDENTITY",
@@ -1394,9 +1394,9 @@
       "source_commit": "52c61def3604bd78d6523ba348cf296debf53bc5",
       "source_agent": "Macbeth01",
       "target_path": "docs/management/agents/COMMON-PROTOCOL.md",
-      "method": "protocol import with current repository/authority preamble; reviewed PR11 closeout adaptation (see PR11-CLOSEOUT.md); PR11 review remediation: atomic product snapshot, identity lifecycle or bounded logical-message Forum as applicable",
+      "method": "protocol import with current repository/authority preamble; reviewed PR11 closeout adaptation (see PR11-CLOSEOUT.md); PR11 review remediation: atomic product snapshot, identity lifecycle or bounded logical-message Forum as applicable; user-authorized Macbeth06 CI/gate role registration (2026-09-20), historical source identity unchanged",
       "original_sha256": "9ac5209eb9777fdcec2697ae4180cda66526ac2f4d51f9e4e6255f7c3effd2b9",
-      "migrated_sha256": "e1fe01c7111bf26d8bc890ad012700e826992f4b5a20251ab6b2a3f1bdfcb44b",
+      "migrated_sha256": "91a7ebb21552d9a0832fa2c7dac019b835ed4c8f485abf07daf27704ea3bba04",
       "subsequent_adaptations": [
         {
           "task": "AF-M3-IDENTITY",
@@ -1550,9 +1550,9 @@
       "source_commit": "52c61def3604bd78d6523ba348cf296debf53bc5",
       "source_agent": "Macbeth01",
       "target_path": "docs/management/agents/registry.json",
-      "method": "registry migrated; historical confirmations reset for canonical repository",
+      "method": "registry migrated; historical confirmations reset for canonical repository; user-authorized Macbeth06 CI/gate role registration (2026-09-20), historical source identity unchanged",
       "original_sha256": "ecb05bfdcccf1abb036c4e4fdd16155e959ae706395020db4a1dac49e43f50b6",
-      "migrated_sha256": "8a0af7c5fc71e257d5217bdf74dd8ba20d781115e5c71fc3361ff76e91fea272",
+      "migrated_sha256": "855fe12cb2026a2fa4a4aa7eb0ddde82c20b321a36e84debdfa726315d093c12",
       "subsequent_adaptations": [
         {
           "task": "AF-M3-IDENTITY",
@@ -1630,9 +1630,9 @@
       "source_commit": "52c61def3604bd78d6523ba348cf296debf53bc5",
       "source_agent": "Macbeth01",
       "target_path": "test/agent-management.test.mjs",
-      "method": "selective source integration; shared-file resolution recorded in CONFLICTS.md; reviewed PR11 closeout adaptation (see PR11-CLOSEOUT.md); PR11 review remediation: atomic product snapshot, identity lifecycle or bounded logical-message Forum as applicable",
+      "method": "selective source integration; shared-file resolution recorded in CONFLICTS.md; reviewed PR11 closeout adaptation (see PR11-CLOSEOUT.md); PR11 review remediation: atomic product snapshot, identity lifecycle or bounded logical-message Forum as applicable; user-authorized Macbeth06 CI/gate role registration (2026-09-20), historical source identity unchanged",
       "original_sha256": "f5c916f2f10f3fbc2e31e89bce0cf041bf091cae876b20490eac7f87140ebc42",
-      "migrated_sha256": "440fb9e6a88688fd4bad1d0bf99211e44deaa791bae060409383a95942aa0703",
+      "migrated_sha256": "6471d437c7b743c619cb56d5058068468a2767c092ad34b033dec1e4d47b522b",
       "subsequent_adaptations": [
         {
           "task": "AF-M3-IDENTITY",

@@ -60,7 +60,7 @@ function owningAgent(value) {
   if (typeof value.pr_head_ref !== 'string' || typeof value.pr_title !== 'string')
     fail('PR ownership metadata is missing');
   const branchAgent = agentForBranch(value.pr_head_ref);
-  const title = value.pr_title.match(/^\[(Macbeth0[1-5])\]\[([A-Z0-9][A-Z0-9-]{1,79})\]\s+\S/);
+  const title = value.pr_title.match(/^\[(Macbeth0[1-6])\]\[([A-Z0-9][A-Z0-9-]{1,79})\]\s+\S/);
   if (!branchAgent || !title || !taskMatchesAgent(title[2], title[1]))
     fail('PR does not have a registered worker identity');
   if (branchAgent !== title[1]) fail('PR branch and title identities disagree');

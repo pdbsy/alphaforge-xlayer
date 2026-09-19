@@ -7,7 +7,7 @@ export const MANAGER_INTEGRATIONS = Object.freeze([
   }),
 ]);
 
-const AGENTS = [1, 2, 3, 4, 5].map((number) => `Macbeth0${number}`);
+const AGENTS = [1, 2, 3, 4, 5, 6].map((number) => `Macbeth0${number}`);
 const AGENT_SET = new Set(AGENTS);
 const WORKSPACE_STATUSES = new Set(['NOT_STARTED', 'CONFIG_PREPARED', 'WORKSPACE_PREPARED', 'BLOCKED']);
 const SESSION_STATUSES = new Set([
@@ -24,14 +24,14 @@ const LEGACY_TASK_PATTERN = /^AF-[A-Z0-9]+(?:-[A-Z0-9]+)*$/;
 
 export function agentForBranch(branch) {
   if (typeof branch !== 'string') return null;
-  const match = branch.match(/^(?:macbeth(0[1-5])|(0[2-5]))\//);
+  const match = branch.match(/^(?:macbeth(0[1-6])|(0[2-6]))\//);
   return match ? `Macbeth${match[1] ?? match[2]}` : null;
 }
 
 export function taskMatchesAgent(task, agentId) {
   if (typeof task !== 'string' || !AGENT_SET.has(agentId)) return false;
   if (LEGACY_TASK_PATTERN.test(task)) return true;
-  const match = task.match(/^M3-(0[1-5])-[A-Z0-9]+(?:-[A-Z0-9]+)*$/);
+  const match = task.match(/^M3-(0[1-6])-[A-Z0-9]+(?:-[A-Z0-9]+)*$/);
   return Boolean(match && `Macbeth${match[1]}` === agentId);
 }
 
@@ -46,8 +46,10 @@ export function validateRegistry(value) {
   assertPlainObject(value, 'registry');
   if (typeof value.protocol_version !== 'string' || !/^\d+\.\d+\.\d+$/.test(value.protocol_version))
     fail('invalid protocol_version');
-  if (!Array.isArray(value.agents) || value.agents.length !== AGENTS.length)
-    fail('registry must contain exactly five agents');
+  const count = { '1.0.0': 5, '1.1.0': 5, '1.2.0': 6 }[value.protocol_version];
+  if (!count) fail('unsupported protocol_version');
+  if (!Array.isArray(value.agents) || value.agents.length !== count)
+    fail(`registry must contain exactly ${count} agents for its protocol version`);
   const seen = new Set();
   const agents = value.agents.map((agent, index) => {
     assertPlainObject(agent, `agents[${index}]`);
