@@ -188,6 +188,47 @@ test('reorg, reconciliation failure and stale projection never map to READY', ()
   assert.equal(transactionPresentationFromEvidence(failures[2]!).errorCode, 'PROJECTION_STALE');
 });
 
+test('failure evidence takes precedence over a contradictory productReady flag', () => {
+  const contradictoryFailures = [
+    {
+      lifecycle: 'REORGED' as const,
+      receipt: 'SUCCESS' as const,
+      confirmations: 3,
+      reconciliation: 'MATCHED' as const,
+      projection: 'READY' as const,
+      productReady: true,
+    },
+    {
+      lifecycle: 'CONFIRMED' as const,
+      receipt: 'REVERTED' as const,
+      confirmations: 3,
+      reconciliation: 'MATCHED' as const,
+      projection: 'READY' as const,
+      productReady: true,
+    },
+    {
+      lifecycle: 'CONFIRMED' as const,
+      receipt: 'SUCCESS' as const,
+      confirmations: 3,
+      reconciliation: 'FAILED' as const,
+      projection: 'READY' as const,
+      productReady: true,
+    },
+    {
+      lifecycle: 'CONFIRMED' as const,
+      receipt: 'SUCCESS' as const,
+      confirmations: 3,
+      reconciliation: 'MATCHED' as const,
+      projection: 'STALE' as const,
+      productReady: true,
+    },
+  ];
+
+  for (const evidence of contradictoryFailures) {
+    assert.equal(transactionPresentationFromEvidence(evidence).status, 'FAILED');
+  }
+});
+
 test('wallet submission maps submitted evidence without claiming receipt success', () => {
   const txHash = asTransactionHash(`0x${'ab'.repeat(32)}`);
   assert.deepEqual(
