@@ -9,7 +9,7 @@
       "agent": "Macbeth02",
       "task": "M3-02-PROTOCOL",
       "branch": "macbeth02/M3-02-PROTOCOL",
-      "head": "d473f9df9eb5d1be41024b4b58ebc5ec4f5d9fcd"
+      "head": "135be1e1074436e2092487099f8376cc963b714f"
     },
     {
       "agent": "Macbeth03",
@@ -27,7 +27,7 @@
       "agent": "Macbeth05",
       "task": "AF-M3-05-INTEGRATION-ACCEPTANCE",
       "branch": "macbeth05/AF-M3-05-INTEGRATION-ACCEPTANCE",
-      "head": "1a7eab60b8ac93f8d0ee20068e7a22671e4197b3"
+      "head": "1cd8cf8fc95837270a8e050fdfb757e2e6b4ce75"
     },
     {
       "agent": "Macbeth01",
