@@ -25,17 +25,17 @@
 Files: `tools/agent-integration-identity.mjs`, `tools/check-agent-identity.mjs`, `test/agent-integration-identity.test.mjs`, `docs/management/agents/integrations/M3-01-PARTIAL-ONCHAIN-INTEGRATION.json`, agent registry/provenance/task record.
 
 - [x] Fetch canonical refs and inspect open PRs; record master versus unmerged candidate distinctly.
-- [ ] Add real-Git fixture controls for the new exact branch/task, preserving old branch behavior and negative repository/queue tests.
-- [ ] Observe failure, then replace the single exact closeout designation with a bounded two-entry task mapping. Keep canonical repo, fixed master, exact source graph and per-agent attribution checks. The new manifest registers prior closeout history as a Macbeth01 source plus all worker sources.
-- [ ] Run `node --test test/agent-integration-identity.test.mjs test/agent-identity-lifecycle.test.mjs test/agent-identity-bypass.test.mjs` under approved Node; commit with new task trailers and update provenance hashes.
+- [x] Add real-Git fixture controls for the new exact branch/task, preserving old branch behavior and negative repository/queue tests.
+- [x] Observe failure, then replace the single exact closeout designation with a bounded two-entry task mapping. Keep canonical repo, fixed master, exact source graph and per-agent attribution checks. The new manifest registers prior closeout history as a Macbeth01 source plus all worker sources.
+- [x] Run `node --test test/agent-integration-identity.test.mjs test/agent-identity-lifecycle.test.mjs test/agent-identity-bypass.test.mjs` under approved Node; commit with new task trailers and update provenance hashes.
 
 ### Task 2: GitHub security configuration (01; 05 independent assessment)
 
 Files: `.github/workflows/codeql.yml`, `docs/security/M3-GITHUB-SECURITY-CONFIGURATION.md`, nearest workflow policy tests if necessary.
 
-- [ ] Preserve exact logs and read-only API results for CodeQL, dependency graph/review, Actions defaults and ruleset.
-- [ ] Compare with official action documentation. Add only `jobs.analyze.permissions.actions: read` if the private-repository log and documented requirement confirm the missing permission; do not broaden defaults or change check names.
-- [ ] Distinguish security-feature entitlement from workflow syntax. Stop paid/visibility/org actions and document concrete blockers.
+- [x] Preserve exact logs and read-only API results for CodeQL, dependency graph/review, Actions defaults and ruleset.
+- [x] Compare with official action documentation. Add only `jobs.analyze.permissions.actions: read` if the private-repository log and documented requirement confirm the missing permission; do not broaden defaults or change check names.
+- [x] Distinguish security-feature entitlement from workflow syntax. Stop paid/visibility/org actions and document concrete blockers.
 - [ ] Run existing YAML/policy/security tests; push candidate and inspect actual hosted rerun. Compare required rules before/after.
 
 ### Task 3: Vault authority and accounting (02)

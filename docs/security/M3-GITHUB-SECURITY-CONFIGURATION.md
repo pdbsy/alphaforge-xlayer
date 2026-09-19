@@ -39,7 +39,7 @@ No repository-level setting has been mutated. Re-read these values after impleme
 
 ## Results and blockers
 
-The permissions patch needs a real new-head hosted run. Local YAML/policy tests do not establish a successful hosted scan. Even if metadata access succeeds, code-scanning feature availability is a separate gate.
+The initial permissions patch has a real hosted rerun recorded below. It repaired metadata access; code-scanning feature availability remains a separate gate. The final integrated candidate still requires its own hosted results.
 
 Code Security/Dependency Review availability is a merge blocker until the repository has the necessary pre-existing permitted entitlement or the user separately authorizes an appropriate account-level resolution. Do not purchase, enable paid features, modify visibility, add a token, skip uploads, replace jobs or remove required contexts to turn it green. Product implementation and offline validation continue independently.
 
@@ -48,3 +48,5 @@ Code Security/Dependency Review availability is a merge blocker until the reposi
 PR21 initial head `8fcb14bd8f34bdbd56565344cb4f65158c725614` ran [CodeQL 35452845916](https://github.com/pdbsy/quantpass-arbitrum-hackathon/actions/runs/35452845916). The former Actions run-metadata access error is no longer the terminal failure. After analysis and SARIF preparation, the run explicitly fails: `Please verify that the necessary features are enabled: Code scanning is not enabled for this repository`.
 
 This is direct evidence that the minimal metadata permission repair does not resolve the separate repository feature gate. `security-events: write` was already present and remains present; the generic permission hint accompanying the feature-denied response is not evidence to grant broader permissions. Dependency review [35452845922](https://github.com/pdbsy/quantpass-arbitrum-hackathon/actions/runs/35452845922) also remains failed. No paid feature was enabled and no repository setting was changed. Both required checks remain real merge blockers while implementation continues.
+
+Initial-head Engineering runs [35452842803](https://github.com/pdbsy/quantpass-arbitrum-hackathon/actions/runs/35452842803) (push) and [35452845871](https://github.com/pdbsy/quantpass-arbitrum-hackathon/actions/runs/35452845871) (pull request) completed successfully for all three contexts: `verify`, `verify-macos`, and `verify-windows`. These six successful jobs certify the initial manager head only; they do not replace final product-candidate verification.
