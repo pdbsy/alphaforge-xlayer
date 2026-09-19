@@ -416,6 +416,35 @@ test('a newly connected owner cannot deposit without both Vault-only token allow
   );
 });
 
+test('configured approval capability opens Deposit review while keeping exact allowance enforcement', () => {
+  const onchain = {
+    deployment: 'CONFIGURED' as const,
+    health: 'LIVE' as const,
+    readiness: 'FINALITY_UNKNOWN' as const,
+    owner: 'OWNER' as const,
+    writeMode: 'LIVE_AUTHORIZED' as const,
+    exitPath: 'SIMULATION' as const,
+    supportedActions: ['deposit', 'withdraw', 'close'] as const,
+    vaultAddress: '0x2222222222222222222222222222222222222222',
+    depositAuthorization: {
+      spender: '0x2222222222222222222222222222222222222222',
+      afUsdcAllowanceBaseUnits: '0',
+      passAllowanceBaseUnits: '0',
+      approvalCapability: 'AVAILABLE' as const,
+    },
+  };
+  const html = renderM3StrategyShell({
+    strategyId: 'trend',
+    contentProvenance: 'FIXTURE',
+    onchain,
+  });
+
+  assert.equal(onchainActionEnabled(onchain, 'deposit'), true);
+  assert.match(html, /Approve · USE DEPOSIT REVIEW/);
+  assert.match(html, /approval flow is available from Deposit review/i);
+  assert.doesNotMatch(html, /unlimited/i);
+});
+
 test('degraded indexer preserves owner withdraw and close through live RPC simulation', () => {
   const html = renderM3StrategyShell({
     strategyId: 'trend',

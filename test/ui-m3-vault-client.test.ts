@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { M3VaultApiClient, M3VaultReadFailure } from '../apps/web/src/m3-vault-client.ts';
-import { asAddress, asBlockHash, asHexData } from '../packages/chain-adapter/src/types.ts';
+import { asAddress, asBlockHash, asHexData, asTransactionHash } from '../packages/chain-adapter/src/types.ts';
+import { encodeM3VaultCall } from '../packages/chain-adapter/src/vault-abi.ts';
 
 const OWNER = asAddress('0x1111111111111111111111111111111111111111');
 const CONTRACT = asAddress('0x2222222222222222222222222222222222222222');
@@ -76,6 +77,116 @@ test('web Vault client rejects foreign owners, malformed state and unavailable p
     await assert.rejects(
       () => client.readSnapshot(OWNER),
       (error: unknown) => error instanceof M3VaultReadFailure && error.code === 'M3_VAULT_READ_FAILED',
+    );
+  }
+});
+
+test('web Vault client registers exact wallet submission identity through the same-origin API', async () => {
+  const calldata = encodeM3VaultCall('deposit(uint256)', [1_000_000n]);
+  const txHash = asTransactionHash(`0x${'bb'.repeat(32)}`);
+  const input = {
+    operationId: 'web-submission-1',
+    chainId: 46_630,
+    owner: OWNER,
+    target: CONTRACT,
+    calldata,
+    txHash,
+  } as const;
+  const response = {
+    ...input,
+    state: 'SUBMITTED',
+    submittedAt: '2026-09-20T00:00:00.000Z',
+  } as const;
+  const requests: Array<{ input: string; init: RequestInit | undefined }> = [];
+  const client = new M3VaultApiClient(async (request, init) => {
+    requests.push({ input: String(request), init });
+    return new Response(JSON.stringify(response), { status: 202 });
+  });
+
+  assert.deepEqual(await client.registerSubmission(input), response);
+  assert.deepEqual(requests, [
+    {
+      input: '/api/v1/chain/operations',
+      init: {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          'X-QuantPass-Demo': '1',
+        },
+        body: JSON.stringify(input),
+      },
+    },
+  ]);
+});
+
+test('web Vault client reads exact operation evidence for the registered owner', async () => {
+  const evidence = {
+    lifecycle: 'CONFIRMED',
+    receipt: 'SUCCESS',
+    receiptCanonical: true,
+    confirmations: 3,
+    reconciliation: 'MATCHED',
+    projection: 'READY',
+    chainStatus: 'SOFT_READY',
+    l1Status: 'UNKNOWN',
+    finalityStatus: 'UNKNOWN',
+    indexerStatus: 'HEALTHY',
+    degradedReason: null,
+    productReady: true,
+  } as const;
+  const client = new M3VaultApiClient(async (request, init) => {
+    assert.equal(String(request), `/api/v1/chain/operations/web-submission-1/evidence?owner=${OWNER}`);
+    assert.deepEqual(init, {
+      method: 'GET',
+      credentials: 'same-origin',
+      headers: { Accept: 'application/json' },
+    });
+    return new Response(JSON.stringify({ operationId: 'web-submission-1', ...evidence }), { status: 200 });
+  });
+
+  assert.deepEqual(await client.readOperationEvidence('web-submission-1', OWNER), evidence);
+});
+
+test('web Vault client rejects evidence with a conflicting operation id or extra authority', async () => {
+  for (const body of [
+    {
+      operationId: 'different-operation',
+      lifecycle: 'SUBMITTED',
+      receipt: 'PENDING',
+      receiptCanonical: false,
+      confirmations: 0,
+      reconciliation: 'PENDING',
+      projection: 'PENDING',
+      chainStatus: 'PENDING',
+      l1Status: 'UNKNOWN',
+      finalityStatus: 'UNKNOWN',
+      indexerStatus: 'SYNCING',
+      degradedReason: null,
+      productReady: false,
+    },
+    {
+      operationId: 'web-submission-1',
+      lifecycle: 'SUBMITTED',
+      receipt: 'PENDING',
+      receiptCanonical: false,
+      confirmations: 0,
+      reconciliation: 'PENDING',
+      projection: 'PENDING',
+      chainStatus: 'PENDING',
+      l1Status: 'UNKNOWN',
+      finalityStatus: 'UNKNOWN',
+      indexerStatus: 'SYNCING',
+      degradedReason: null,
+      productReady: false,
+      owner: OWNER,
+    },
+  ]) {
+    const client = new M3VaultApiClient(async () => new Response(JSON.stringify(body), { status: 200 }));
+    await assert.rejects(
+      () => client.readOperationEvidence('web-submission-1', OWNER),
+      /M3_VAULT_READ_FAILED/,
     );
   }
 });

@@ -1,8 +1,8 @@
 import { ProductAdapter, type ProductVault, type StrategySummary } from './product-adapter.ts';
 import type { CommandFields, CommandReview, CommandType } from './product-client.ts';
-import { createM3BrowserRuntime } from './m3-browser-runtime.ts';
+import { createM3BrowserRuntime, type M3BrowserDeploymentConfig } from './m3-browser-runtime.ts';
 import type { Eip1193Provider } from './chain-wallet.ts';
-import { runM3DialogAction } from './m3-product-dialog.ts';
+import { renderM3DepositApprovalDialog, runM3DialogAction } from './m3-product-dialog.ts';
 import { extendM3ProductPages, onchainActionEnabled } from './m3-product-shell.ts';
 import type { OnchainProductAction } from './m3-product-shell.ts';
 import {
@@ -11,6 +11,8 @@ import {
   sameM3ProductAction,
   type M3ProductActionRequest,
   type M3ProductActionReview,
+  type M3DepositApprovalKind,
+  type M3DepositApprovalReview,
   type M3ProductRuntime,
 } from './m3-product-runtime.ts';
 import { formatUnits, parseUnits } from '../../../packages/domain/src/money.ts';
@@ -23,6 +25,7 @@ interface Prototype {
     closeDialog: () => void;
   };
   m3OnchainRuntime?: M3ProductRuntime;
+  m3Deployment?: M3BrowserDeploymentConfig;
 }
 declare global {
   interface Window {
@@ -38,7 +41,10 @@ if (!onchainRuntime && import.meta.env.DEV && new URLSearchParams(location.searc
   onchainRuntime = fixture.runtime;
   fixtureModule.installM3InjectedRuntimeControls(fixture);
 }
-onchainRuntime ??= createM3BrowserRuntime(window.ethereum ? { provider: window.ethereum } : {});
+onchainRuntime ??= createM3BrowserRuntime({
+  ...(window.ethereum ? { provider: window.ethereum } : {}),
+  ...(AF.m3Deployment ? { deployment: AF.m3Deployment } : {}),
+});
 const adapter = new ProductAdapter();
 const client = adapter.client;
 const esc = (value: unknown) =>
@@ -300,6 +306,7 @@ interface OnchainDraft {
   readonly action: OnchainProductAction;
   readonly request?: M3ProductActionRequest;
   readonly review?: M3ProductActionReview;
+  readonly approval?: M3DepositApprovalReview;
 }
 let onchainDraft: OnchainDraft | null = null;
 function openOnchainAction(action: OnchainProductAction): void {
@@ -323,15 +330,28 @@ async function reviewOnchainAction(): Promise<void> {
   const amountInput = document.querySelector<HTMLInputElement>('dialog[open] [name="chainAmount"]');
   const request = parseM3ProductAction(onchainDraft.action, amountInput?.value);
   if (request.kind === 'deposit') {
-    const onchain = onchainRuntime.snapshot.onchain;
-    const authorization = onchain.depositAuthorization;
-    if (!onchain.vaultAddress || !authorization) throw Error('DEPOSIT_ALLOWANCES_UNAVAILABLE');
-    const check = depositAllowanceCheck(request, { vaultAddress: onchain.vaultAddress, ...authorization });
-    if (check.status === 'APPROVAL_REQUIRED')
-      throw Error(
-        `DEPOSIT_APPROVAL_REQUIRED_UNSUPPORTED: exact approvals to the Vault are required for ${check.required.afUsdcBaseUnits} AF-USDC base units and ${check.required.passBaseUnits} Pass base units. Infinite approval is not used.`,
-      );
-    if (check.status !== 'READY') throw Error('DEPOSIT_ALLOWANCES_UNAVAILABLE');
+    if (onchainRuntime.reviewDepositApprovals) {
+      const approval = await onchainRuntime.reviewDepositApprovals(request);
+      const required = approval.requirements.filter((requirement) => !requirement.sufficient);
+      if (required.length > 0) {
+        onchainDraft = { action: onchainDraft.action, request, approval };
+        AF.app.openDialog(renderM3DepositApprovalDialog(approval));
+        return;
+      }
+    } else {
+      const onchain = onchainRuntime.snapshot.onchain;
+      const authorization = onchain.depositAuthorization;
+      if (!onchain.vaultAddress || !authorization) throw Error('DEPOSIT_ALLOWANCES_UNAVAILABLE');
+      const check = depositAllowanceCheck(request, {
+        vaultAddress: onchain.vaultAddress,
+        ...authorization,
+      });
+      if (check.status === 'APPROVAL_REQUIRED')
+        throw Error(
+          `DEPOSIT_APPROVAL_REQUIRED_UNSUPPORTED: exact approvals to the Vault are required for ${check.required.afUsdcBaseUnits} AF-USDC base units and ${check.required.passBaseUnits} Pass base units. Infinite approval is not used.`,
+        );
+      if (check.status !== 'READY') throw Error('DEPOSIT_ALLOWANCES_UNAVAILABLE');
+    }
   }
   const review = await onchainRuntime.reviewAction(request);
   if (!sameM3ProductAction(request, review.request)) throw Error('CHAIN_ACTION_REVIEW_MISMATCH');
@@ -343,7 +363,7 @@ async function reviewOnchainAction(): Promise<void> {
 }
 document.addEventListener('click', (event) => {
   const target = (event.target as Element).closest<HTMLElement>(
-    '[data-product-login],[data-product-refresh],[data-product-retry],[data-product-dismiss],[data-product-command],[data-product-review],[data-product-confirm],[data-product-claim],[data-chain-connect],[data-chain-refresh],[data-chain-action],[data-chain-review],[data-chain-confirm]',
+    '[data-product-login],[data-product-refresh],[data-product-retry],[data-product-dismiss],[data-product-command],[data-product-review],[data-product-confirm],[data-product-claim],[data-chain-connect],[data-chain-refresh],[data-chain-action],[data-chain-review],[data-chain-confirm],[data-chain-approve]',
   );
   if (!target) return;
   event.preventDefault();
@@ -404,6 +424,21 @@ document.addEventListener('click', (event) => {
         target as HTMLButtonElement,
         async () => {
           await onchainRuntime.confirmAction(captured);
+          AF.app.closeDialog();
+        },
+        showOnchainDialogError,
+      );
+    } else if (target.hasAttribute('data-chain-approve')) {
+      if (!onchainRuntime?.confirmDepositApproval || !onchainDraft?.approval)
+        throw Error('DEPOSIT_APPROVAL_REVIEW_REQUIRED');
+      const approval = onchainDraft.approval;
+      const kind = target.dataset.chainApprove as M3DepositApprovalKind;
+      onchainDraft = null;
+      void runM3DialogAction(
+        'confirm',
+        target as HTMLButtonElement,
+        async () => {
+          await onchainRuntime.confirmDepositApproval!(approval, kind);
           AF.app.closeDialog();
         },
         showOnchainDialogError,

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { runM3DialogAction } from '../apps/web/src/m3-product-dialog.ts';
+import { asAddress } from '../packages/chain-adapter/src/types.ts';
+import { renderM3DepositApprovalDialog, runM3DialogAction } from '../apps/web/src/m3-product-dialog.ts';
 
 test('failed chain review shows its own error and restores the review control', async () => {
   const control = { disabled: false };
@@ -55,4 +56,39 @@ test('failed chain confirmation stays disabled and requires a fresh review', asy
   assert.match(message, /PROVIDER_RESULT_UNKNOWN/);
   assert.match(message, /Do not retry automatically/);
   assert.match(message, /new review/);
+});
+
+test('deposit approval dialog exposes only exact token-bound finite requirements', () => {
+  const owner = asAddress('0x1111111111111111111111111111111111111111');
+  const vault = asAddress('0x2222222222222222222222222222222222222222');
+  const html = renderM3DepositApprovalDialog({
+    owner,
+    vaultAddress: vault,
+    request: { kind: 'deposit', usdcBaseUnits: '1000001' },
+    requirements: [
+      {
+        kind: 'af-usdc',
+        token: asAddress('0x3333333333333333333333333333333333333333'),
+        spender: vault,
+        requiredRaw: '1000001',
+        allowance: '0',
+        sufficient: false,
+      },
+      {
+        kind: 'pass',
+        token: asAddress('0x4444444444444444444444444444444444444444'),
+        spender: vault,
+        requiredRaw: '1000001000000000000',
+        allowance: '0',
+        sufficient: false,
+      },
+    ],
+  });
+
+  assert.match(html, /data-chain-approve="af-usdc"/);
+  assert.match(html, /data-chain-approve="pass"/);
+  assert.match(html, /required 1000001/);
+  assert.match(html, /required 1000001000000000000/);
+  assert.equal((html.match(new RegExp(vault, 'g')) ?? []).length, 2);
+  assert.doesNotMatch(html, /unlimited|infinite/i);
 });
