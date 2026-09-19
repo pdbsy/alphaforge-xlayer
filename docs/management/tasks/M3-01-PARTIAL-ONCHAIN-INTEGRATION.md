@@ -74,3 +74,10 @@ The first merged typecheck caught references to removed private wallet methods; 
 Integrated Macbeth03 source `0b94ecfd8c0c3b0d8f72da27bbd1c96ed914d1d5`: exact Vault ABI/calldata/event decoding, hash-pinned canonical reads, persisted operation calldata, same-process runtime/projection read API, finite fixed-spender token approval preparation and browser read client. Manager independently recomputed Keccak for every signature from the published contract ABI: all 25 function selectors and seven event topics match the adapter table. Integrated typecheck and 130 chain/wallet/product/provenance tests passed.
 
 This source still needs executable startup composition, browser submission registration and configured product runtime before final acceptance. These are tracked implementation gaps, not deployment prerequisites to excuse missing code. The default unconfigured product page was also checked in the browser: NOT DEPLOYED, writes disabled, deposit/withdraw/close disabled and wallet connect available. No real wallet interaction was performed.
+
+
+### Explicit factory-owner regression (2026-09-20)
+
+Manager added the specification C-06 test-only factory scenario: a factory administered by BOB creates a Vault with explicit owner ALICE and creator CREATOR. BOB cannot withdraw or close the funded Vault, while ALICE can close normally. No production factory or authority was introduced. The complete locked contract gate subsequently passed 121 Solidity tests, 20 Python tests, all existing fuzz/invariants, compiled/published ABI equality and zero Slither detectors. The prior 120-test report remains valid for the earlier source; this forward test addition raises the current total by one.
+
+The integrated Node source `997be3f` passed 535 tests, typecheck, lint, formatting and production Web build. Final runtime/UI additions and final source C/R/S remain pending.

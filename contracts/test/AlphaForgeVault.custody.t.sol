@@ -17,6 +17,32 @@ interface VaultCustodyVm {
     function stopPrank() external;
 }
 
+// Test-only factory: administration does not confer control of created Vaults.
+contract VaultCustodyFactory {
+    address public immutable owner;
+
+    constructor(address owner_) {
+        owner = owner_;
+    }
+
+    function create(address vaultOwner, address creator, address[4] calldata tokens)
+        external
+        returns (AlphaForgeVault)
+    {
+        require(msg.sender == owner, "factory owner required");
+        return new AlphaForgeVault(
+            vaultOwner,
+            creator,
+            keccak256("trend"),
+            keccak256("ipfs://trend-v1"),
+            tokens[0],
+            tokens[1],
+            tokens[2],
+            tokens[3]
+        );
+    }
+}
+
 contract AlphaForgeVaultCustodyTest {
     VaultCustodyVm private constant VM =
         VaultCustodyVm(address(uint160(uint256(keccak256("hevm cheat code")))));
@@ -63,6 +89,29 @@ contract AlphaForgeVaultCustodyTest {
         require(locker.owner() == ALICE, "locker owner mismatch");
         require(locker.vault() == address(vault), "locker controller mismatch");
         require(address(locker.pass()) == address(pass), "locker pass mismatch");
+    }
+
+    function test_FactoryOwnerDoesNotAcquireVaultCustody() public {
+        VaultCustodyFactory factory = new VaultCustodyFactory(BOB);
+        VM.prank(BOB);
+        AlphaForgeVault created = factory.create(
+            ALICE, CREATOR, [address(pass), address(usdc), address(eth), address(btc)]
+        );
+        require(factory.owner() == BOB, "factory owner mismatch");
+        require(created.owner() == ALICE, "factory replaced explicit Vault owner");
+        require(created.owner() != address(factory), "factory became Vault owner");
+        _approveOwner(created);
+        VM.prank(ALICE);
+        created.deposit(1e6);
+        VM.startPrank(BOB);
+        (bool withdrew,) = address(created).call(abi.encodeCall(created.withdraw, (1e6)));
+        (bool closed,) = address(created).call(abi.encodeCall(created.close, ()));
+        VM.stopPrank();
+        require(!withdrew && !closed, "factory admin gained custody");
+        require(created.principalBasis() == 1e6, "factory admin changed principal");
+        VM.prank(ALICE);
+        created.close();
+        require(created.closed(), "explicit owner could not exit");
     }
 
     // Catches an artificial rule that rejects one address holding both valid roles.
