@@ -118,3 +118,12 @@ At manager source `d9bf7ff`, the full Node suite passed 554 tests. The two curre
 The user subsequently answered “允许” to the two pending decisions. Macbeth03 published exactly `77e2fe623326314c62ebe331d6357e6444aa58b1` by normal push to the canonical `macbeth03/m3-chain-adapter` branch; the manager fetched and verified that remote-tracking SHA. No force push was used. A later one-line lint correction is a separate unpublished source and is not covered by that exact-commit approval.
 
 Macbeth04 repaired only the message of unpublished `484f1b5bfadc9ef444362c66a84d9682940da7ca`, producing `d244474ff5b64b14f04c2eef459ff86fb879355f`. Manager readback confirms identical tree `bce88e4c6917f8588bdcfe68b0615845fd278ce6`, parent `3ff7b6f94782cba70d3061cdbab327dde43b90ed`, author name/email and author date `2026-09-20T01:53:35+08:00`. Original evidence remains at `refs/evidence/macbeth04/M3-04-PRODUCT-UI/original-484f1b5`. This exception does not authorize other history rewrites. The unfinished merge was preserved for forward conflict resolution; final source admission remains pending its completion and publication.
+
+
+### Unified configured runtime candidate
+
+Manager merge `2e2ccc1` integrates corrected Macbeth04 source `1645c590f3d5508338af03e83fee22bf6d263bd1`. The merge retains the manager's startup-failure recovery and wallet session recheck after final simulation. Package test registration remains the full union; the management collector keeps all new chain/UI tests. Incoming generated management artifacts were not adopted as proof of the unified source; final collection is still required.
+
+Typecheck, lint and 68 focused runtime/UI/startup/provenance tests passed. The full integrated Node suite passed 566/566. The incoming worker merge also contains the same error-cause preservation correction reported by 03; 03's separate `8ee2b6a` has not been pushed or imported. The non-owner degraded message now explicitly states that the current wallet is not the Vault owner.
+
+The complete contract gate was repeated locally with 121 Solidity tests, 20 Python tests, invariant/fuzz checks and compiled/published ABI equality passing. The final ruleset readback again matches the original protected master configuration. Final remote source admission, source/report/snapshot collection and exact-head hosted checks remain outstanding. Independent final QA remains BLOCKED, not replaced by these manager checks.

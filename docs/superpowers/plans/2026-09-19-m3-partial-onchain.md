@@ -56,17 +56,17 @@ Files: `packages/chain-adapter/src/`, `apps/server/src/chain-store.ts`, `chain-s
 - [x] Implement 128-bounded rollback/replay with durable degraded evidence and idempotent removed/reorged event handling.
 - [x] Consume exact 02 ABI for reads/calldata/events; compose `ChainStore.operationEvidence` through actual server API, without accepting browser-crafted READY evidence.
 - [x] Provide direct live state/simulation independently of the indexed API; startup retains product availability while failed indexed reads return unavailable. Final UI wiring is tracked in Task 5.
-- [x] Test actual API boundaries and the specified recovery cases; local source 77e2fe6 is integrated and communicated to 04. Remote source publication remains blocked by automatic approval review pending the user’s answer; this is not remote admission.
+- [x] Test actual API boundaries and the specified recovery cases; local source 77e2fe6 is integrated and communicated to 04. The user approved exact source publication; manager fetched and verified canonical remote 77e2fe6 on 2026-09-20.
 
 ### Task 5: Product flow and browser acceptance (04)
 
 Files: existing product shell/UI/adapter/wallet entry, browser integration tests and UI evidence document.
 
-- [ ] Reuse 03 provider/session and exact 02 ABI; bind connect/network/owner display and deposit/withdraw/close to the real product routes.
-- [ ] Test raw-integer amount conversion, wrong network/non-owner, simulation before submit, soft-ready/unknown/reorged/degraded presentation, clear mock labels.
-- [ ] Keep owner exit available through live state when projection is degraded. No server signature or Account owner override.
-- [ ] Exercise injected-provider full flow and real browser routes locally; write gate defaults closed without deployment config/authorization, no actual broadcast.
-- [ ] Report observed outcomes and exact code version; no static card or mock PnL counts as chain completion.
+- [x] Reuse 03 provider/session and exact 02 ABI; bind connect/network/owner display and deposit/withdraw/close to the real product routes.
+- [x] Test raw-integer amount conversion, wrong network/non-owner, simulation before submit, soft-ready/unknown/reorged/degraded presentation, clear mock labels.
+- [x] Keep owner exit available through live state when projection is degraded. No server signature or Account owner override.
+- [x] Exercise injected-provider full flow and real browser routes locally; write gate defaults closed without deployment config/authorization, no actual broadcast.
+- [x] Report observed outcomes and exact code version; no static card or mock PnL counts as chain completion.
 
 ### Task 6: Unified candidate, independent QA and PR (01/05)
 
