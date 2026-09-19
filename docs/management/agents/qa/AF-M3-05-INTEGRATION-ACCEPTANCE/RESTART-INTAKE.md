@@ -82,10 +82,12 @@ The manager coordination answers above are session task coordination, not public
 
 ## Next checkpoint
 
-Resume candidate-dependent work only after all of the following are available:
+This section now records progress against the original restart gates. Resume integrated candidate-dependent work only after the remaining conditions are available:
 
-1. Macbeth03 publishes a new exact head addressing the two reportable static findings.
-2. Macbeth01 designates one official combined candidate SHA containing the intended 02–04 content.
-3. Macbeth01 or the user freezes the acceptance scope and the accounting/ABI/owner/finality details needed by that scope.
-4. The approved Node/npm environment and isolated dependencies are available.
-5. Testnet work remains separate and requires a later explicit operation-level authorization.
+1. **Satisfied for focused retest:** Macbeth03 published `20347ec22729346d617525d64dc76f58354b5f0d`; both findings were independently verified fixed with 42/42 focused tests.
+2. **Pending:** Macbeth01 designates one official combined candidate SHA containing the intended 02–04 content.
+3. **Pending:** Macbeth01 or the user freezes the acceptance scope and the accounting/ABI/owner/finality details needed by that scope.
+4. **Satisfied for focused retest:** approved Node `24.21.0` and npm `11.19.1` ran in an isolated checkout; PR #16-on-fixed-PR #17 passed 71/71 focused tests.
+5. **Pending and separately gated:** Testnet work requires later explicit operation-level authorization.
+
+PR #16 also requires retargeting after PR #17 reaches `master` and a clean rerun of its required hosted checks. See the execution log for current exact heads and evidence.

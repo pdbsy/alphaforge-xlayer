@@ -1,6 +1,6 @@
 # Findings and follow-up
 
-## Reportable findings
+## Historical reportable findings — fixed on the replacement PR #17 head
 
 ### AF-M3-05-SEC-001 — Wallet context can change while submission is pending
 
@@ -18,7 +18,7 @@
 - Retest: mocked mid-request account and chain changes, including A → B → A, rejection, late hash, and confirmation reconciliation, on the new exact SHA.
 - Impact tags: `MERGE_BLOCKER` for PR #17/current adapter head; `OFFLINE_ACCEPTANCE_BLOCKER` for any common candidate containing it.
 - Evidence: Codex Security diff scan `f91656d0-9132-4bc0-b547-bcca503ecad3`; canonical finding `wallet-submission.context-race`, finding ID `csf_676eac01b5c6426c1dbfad18`, occurrence `occ_d7e3d20e6ff651efe39bf505`.
-- Verification status: static only. Dynamic reproduction is **NOT_RUN**.
+- Verification status: **FIXED** at PR #17 head `20347ec22729346d617525d64dc76f58354b5f0d`. Independent exact-head regression covered mid-request account/chain changes, A → B → A, provider uncertainty, and optional late hashes; 42/42 focused tests passed under Node `24.21.0` and npm `11.19.1`. Post-response context checks, provider event epochs, and `SUBMISSION_AMBIGUOUS` with `retryable: false` close the reported path.
 
 ### AF-M3-05-SEC-002 — A late parent mismatch can leave a partially committed projection healthy
 
@@ -36,9 +36,9 @@
 - Retest: a two-block fork-straddle test that commits the first fetched block and mismatches the next, followed by assertions for rollback or denied projection reads, then reconfirmation.
 - Impact tags: `MERGE_BLOCKER` for PR #17/current adapter head; `OFFLINE_ACCEPTANCE_BLOCKER` for any common candidate containing it.
 - Evidence: Codex Security diff scan `f91656d0-9132-4bc0-b547-bcca503ecad3`; canonical finding `indexer-sync.partial-commit`, finding ID `csf_d3eb78155bfb686b714b229c`, occurrence `occ_173ce85b95d7730dc2115a24`.
-- Verification status: static only. Dynamic reproduction is **NOT_RUN**.
+- Verification status: **FIXED** at PR #17 head `20347ec22729346d617525d64dc76f58354b5f0d`. Independent exact-head regression covered cross-fork parent mismatch, restart, and competing synchronizers; 42/42 focused tests passed. Persistent sync targets and owner leases prevent competing commits, projection reads require a healthy owned checkpoint, and health is restored only after the indexed/projected target is reached.
 
-Macbeth01 asked Macbeth03 to reproduce and repair both findings in the original adapter scope. A new SHA and evidence are pending. Old worker CI and the old scan must not be used to approve the replacement.
+The fixes were verified with the `codex-security:verify-fix` workflow against exact source `20347ec22729346d617525d64dc76f58354b5f0d`. This closes the two old finding paths only; it does not accept a combined product candidate or authorize Testnet.
 
 ## Deferred security candidates
 
@@ -56,16 +56,16 @@ Macbeth01 asked Macbeth03 to reproduce and repair both findings in the original 
 ### AF-M3-05-FU-002 — `productReady` precedes contradictory failure checks
 
 - Severity: potential Low; current disposition `FOLLOW_UP`.
-- Exact source: Macbeth04 PR #16 head `0e5fed1bb67b8cda25cd837b37e25a6c02731067` stacked on PR #17.
-- Location: `apps/web/src/m3-product-shell.ts:144-161`.
+- Exact source: Macbeth04 PR #16 head `037c2b55f7eb03b80b60dd11f4b4c400fb9c1215` stacked on fixed PR #17 head `20347ec22729346d617525d64dc76f58354b5f0d`.
+- Location: `apps/web/src/m3-product-shell.ts:164-181`.
 - Evidence: `transactionPresentationFromEvidence` immediately returns `READY` when `productReady` is true, before checking `REORGED`, reverted receipt, failed reconciliation, or stale projection.
 - Current counterevidence: the intended `operationEvidence` constructor creates a correlated frozen object, repository search finds no production caller of the presentation helper, and the real product entrypoint passes no transaction evidence at all.
 - Re-evaluate when: the final API/cache/UI composition supplies `ProductOperationEvidence`, especially if fields come from separate requests, caches, or decoded JSON.
 - Required check: malformed and non-atomic evidence must fail closed; contradictory failure fields can never display `READY`.
-- Evidence source: PR #16 scan `17767064-b4c0-4c60-84cd-9244455c215f`, candidate `candidate-0c4d0373ed546f00`.
+- Evidence source: PR #16 replacement scan `ad808dec-fc29-41fb-ad91-fd7540cab616`, candidate `candidate-8e43751ee7355a25` (0 reportable findings; partial coverage because final composition is absent).
 
 ## Evidence and admission gaps
 
 - PR #18's committed management receipt records Foundry, fuzz, invariant, and Slither as `NOT_RUN` because the approved toolchain was unavailable. This prevents an independent contract-test acceptance claim; it is not itself a vulnerability.
-- PR #16 has a failed hosted run `35435772149` for `verify`, `verify-windows`, and `verify-macos`; each stopped at history admission with `BLOCKED`. A separate parallel run succeeded. This is not a clean exact-head required-check acceptance record.
+- PR #16 head `037c2b55f7eb03b80b60dd11f4b4c400fb9c1215` has no clean hosted acceptance: all current `verify`, `verify-windows`, and `verify-macos` jobs stop at history admission because the stacked PR base is not `master`. They must be rerun after PR #17 reaches `master` and PR #16 is retargeted.
 - All three product PRs remain draft and unmerged. No deployment manifest or verified runtime bytecode exists.
