@@ -60,19 +60,58 @@ export function validateM3DeploymentTemplate(template) {
     }
   }
   requireCondition(
-    template.contracts.vault.interfaceStatus === 'BLOCKED_PENDING_USER_DECISIONS',
-    'Vault interface status must preserve the decision gate',
+    template.contracts.vault.interfaceStatus === 'IMPLEMENTED_LOCAL_ONLY',
+    'Vault interface must identify local implementation, not deployment',
+  );
+  const constructors = {
+    strategyPass: [
+      ['name_', 'string'],
+      ['symbol_', 'string'],
+      ['strategyId_', 'bytes32'],
+      ['fixedSupply_', 'uint256'],
+      ['recipient_', 'address'],
+    ],
+    vault: [
+      ['owner_', 'address'],
+      ['strategyCreator_', 'address'],
+      ['strategyId_', 'bytes32'],
+      ['strategyRef_', 'bytes32'],
+      ['pass_', 'address'],
+      ['afUsdc_', 'address'],
+      ['afEth_', 'address'],
+      ['afBtc_', 'address'],
+    ],
+  };
+  for (const [name, expected] of Object.entries(constructors)) {
+    const inputs = template.contracts[name].constructorInputs;
+    requireCondition(
+      Array.isArray(inputs) &&
+        JSON.stringify(inputs.map(({ name: field, type }) => [field, type])) === JSON.stringify(expected),
+      `contracts.${name} constructor shape must match the implemented ABI`,
+    );
+  }
+  requireCondition(
+    template.authorization === 'DIRECT_IMMUTABLE_OWNER' && !('eip712' in template),
+    'business signatures are excluded',
   );
   requireCondition(
-    template.contracts.vault.constructorInputs === null,
-    'Vault constructor inputs must remain unset until the ABI is frozen',
+    JSON.stringify(Object.keys(template.vaultConfig ?? {})) ===
+      JSON.stringify(['owner', 'strategyCreator', 'strategyId', 'strategyRef']),
+    'vaultConfig fields must match the direct immutable owner model',
   );
-
-  for (const field of ['deploymentBlock', 'deploymentTransactionHash', 'finalityBlocks', 'eventTopics']) {
+  for (const field of ['deploymentBlock', 'deploymentTransactionHash', 'eventTopics']) {
     requireCondition(template.indexing?.[field] === null, `indexing.${field} must remain null`);
   }
-  for (const value of Object.values(template.eip712 ?? {})) {
-    requireCondition(value === null, 'EIP-712 fields must remain null until the final structs are frozen');
+  requireCondition(
+    template.indexing?.finalityStatus === 'UNKNOWN' && !('finalityBlocks' in template.indexing),
+    'finality must remain unknown',
+  );
+  for (const field of ['softReadyDepth', 'reorgSearchLimit']) {
+    const value = template.indexing?.[field];
+    requireCondition(
+      Number.isSafeInteger(value) && value >= 1 && value <= 10_000,
+      `indexing.${field} must be a bounded configurable threshold`,
+    );
   }
   for (const [field, value] of Object.entries(template.vaultConfig ?? {})) {
     requireCondition(value === null, `vaultConfig.${field} must remain null`);

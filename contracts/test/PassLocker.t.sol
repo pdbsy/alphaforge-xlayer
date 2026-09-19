@@ -15,13 +15,14 @@ contract PassLockerTest {
     address private constant ALICE = address(0xA11CE);
     address private constant BOB = address(0xB0B);
     uint256 private constant SUPPLY = 100 ether;
+    bytes32 private constant STRATEGY_ID = keccak256("momentum");
 
     StrategyPass private pass;
     PassLocker private locker;
     PassLocker private attackLocker;
 
     function setUp() public {
-        pass = new StrategyPass("Alpha Momentum Pass", "AF-MOM", SUPPLY, ALICE);
+        pass = new StrategyPass("Alpha Momentum Pass", "AF-MOM", STRATEGY_ID, SUPPLY, ALICE);
         locker = new PassLocker(address(this), ALICE, pass);
     }
 

@@ -1,16 +1,17 @@
 # M3 Current ABI Draft
 
-- Status: **DRAFT / NOT FROZEN / NOT DEPLOYED**
+- Status: **COMPILED LOCAL REVIEW DRAFT / NOT DEPLOYED**
 - Agent: `Macbeth02`
 - Task: `M3-02-PROTOCOL`
 - Repository base: `7ecba357d5a19f387e86f578822af04a6261fed2`
-- Implementation through: `80ca592`
+- Implementation source: `db620d68a635259f53f48c33defff4273237d372`
 - Target chain for a separately authorized deployment: Robinhood Chain Testnet `46630`
 
-This document records only the locally implemented ABI-independent protocol pieces. It is an
-integration draft for review. It does not define a Vault address, deployment block, final ABI
-version, runtime bytecode hash, owner authorization ABI, risk permit ABI, or finalized deployment
-manifest. All addresses remain unset and every onchain operation remains `NOT_RUN`.
+This document records the locally compiled protocol pieces. The concrete Vault ABI is documented
+in `M3-VAULT-ABI-HANDOFF.md` and its accounting in `M3-PASS-VAULT-ACCOUNTING.md`. This remains an
+integration draft: it defines no Vault address, deployment block, deployment transaction, finality
+receipt, owner authorization ABI, risk permit ABI, or finalized deployment manifest. All addresses
+remain unset and every onchain operation remains `NOT_RUN`.
 
 ## Local toolchain boundary
 
@@ -47,11 +48,19 @@ draft until the Vault ABI handoff is reviewed and frozen.
 `StrategyPass` constructor:
 
 ```solidity
-constructor(string name_, string symbol_, uint256 fixedSupply_, address recipient_)
+constructor(
+    string name_,
+    string symbol_,
+    bytes32 strategyId_,
+    uint256 fixedSupply_,
+    address recipient_
+)
 ```
 
-The Pass uses 18 decimals. The constructor is its only mint path. One whole AF-USDC uses 6
-decimals, so the D1 capacity conversion is `usdcBaseUnits * 1e12` Pass base units.
+The Pass uses 18 decimals. The constructor is its only mint path and stores one immutable nonzero
+`strategyId`. One whole AF-USDC uses 6 decimals, so the D1 capacity conversion is
+`usdcBaseUnits * 1e12` Pass base units. Vault construction checks that its Strategy ID equals this
+onchain Pass identity.
 
 The test asset constructors are:
 
@@ -161,19 +170,17 @@ before calling the Adapter. `deadlineBlock` is an inclusive Robinhood Chain bloc
 Adapter and Venue reject the action when `block.number > deadlineBlock`. The Adapter has no
 `execute(address,bytes)`, raw calldata, arbitrary target, native-value, admin, or upgrade path.
 
-## Pending Vault boundary
+## Implemented Vault boundary
 
-The following remain deliberately undefined:
+The locally compiled Vault uses an explicit immutable owner, exact Pass capacity, profit-first
+withdrawal, tracked AF-ETH/AF-BTC position gates, loss-safe close, and post-close dust rescue.
+Locked Pass is reserved but does not count as an open investment position. Unsolicited assets do
+not change accounting or block close. Exact signatures, selectors, topics, errors, allowance
+spender rules, and constructor order are in `M3-VAULT-ABI-HANDOFF.md`.
 
-- partial withdrawal while AF-ETH or AF-BTC is present;
-- whether any non-USDC balance, including third-party dust, blocks partial withdrawal;
-- final owner authorization and risk permit EIP-712 schemas;
-- Vault methods, events, errors, state commitment, nonce domains, and state-version transitions;
-- deployed addresses and deployment evidence.
-
-The owner full in-kind exit must remain available while paused and must not depend on the risk
-signer. No dust threshold, price source, quote-based valuation, or ignored balance is assumed by
-this draft.
+No owner authorization or risk permit EIP-712 schema is added in this partial integration. There
+is no strategy runtime, pause role, risk signer, state-version transition, deployment address, or
+deployment evidence.
 
 ## Offline deployment manifest preparation
 
@@ -183,8 +190,7 @@ constructor schemas for the implemented local contracts, and null placeholders f
 constructor value, code hash, ABI hash, deployment block, transaction hash, finality value, event
 topic, EIP-712 field, and evidence reference.
 
-The Vault entry is explicitly `BLOCKED_PENDING_USER_DECISIONS`; its constructor inputs remain null
-until the pending precision, multi-asset withdrawal, concrete Owner, and owner-operation decisions
-are frozen. The template validator rejects premature deployment claims and any private-key,
-mnemonic, RPC, transaction-signing, or broadcast field. It performs no network access and emits no
-transaction.
+The deployment preparation template is updated separately by the M3 integrator after consuming
+the compiled source commit and artifact hashes. It must retain null addresses and onchain evidence,
+reject premature deployment claims and any private-key, mnemonic, RPC, transaction-signing, or
+broadcast field, perform no network access, and emit no transaction.

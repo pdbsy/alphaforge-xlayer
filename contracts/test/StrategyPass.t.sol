@@ -17,13 +17,16 @@ contract StrategyPassSpender {
 contract StrategyPassTest {
     Vm private constant VM = Vm(address(uint160(uint256(keccak256("hevm cheat code")))));
     uint256 private constant FIXED_SUPPLY = 100 ether;
+    bytes32 private constant STRATEGY_ID = keccak256("momentum");
     address private constant RECIPIENT = address(0xA11CE);
     address private constant BOB = address(0xB0B);
 
     StrategyPass private pass;
 
     function setUp() public {
-        pass = new StrategyPass("Alpha Momentum Pass", "AF-MOM", FIXED_SUPPLY, RECIPIENT);
+        pass = new StrategyPass(
+            "Alpha Momentum Pass", "AF-MOM", STRATEGY_ID, FIXED_SUPPLY, RECIPIENT
+        );
     }
 
     // Catches minting the wrong literal supply, minting to the deployer, or changing ERC-20 metadata.
@@ -31,6 +34,7 @@ contract StrategyPassTest {
         require(keccak256(bytes(pass.name())) == keccak256("Alpha Momentum Pass"), "wrong name");
         require(keccak256(bytes(pass.symbol())) == keccak256("AF-MOM"), "wrong symbol");
         require(pass.decimals() == 18, "wrong decimals");
+        require(pass.strategyId() == STRATEGY_ID, "wrong strategy id");
         require(pass.totalSupply() == FIXED_SUPPLY, "wrong supply");
         require(pass.balanceOf(RECIPIENT) == FIXED_SUPPLY, "wrong recipient balance");
         require(pass.balanceOf(address(this)) == 0, "deployer received supply");
@@ -69,8 +73,19 @@ contract StrategyPassTest {
 
     // Catches deployments that strand the immutable supply at the zero address.
     function test_ZeroRecipientDeploymentReverts() public {
-        try new StrategyPass("Invalid", "BAD", 1 ether, address(0)) returns (StrategyPass) {
+        try new StrategyPass("Invalid", "BAD", STRATEGY_ID, 1 ether, address(0)) returns (
+            StrategyPass
+        ) {
             revert("zero recipient accepted");
+        } catch { }
+    }
+
+    // Catches a Pass deployment without an authoritative onchain Strategy ID binding.
+    function test_ZeroStrategyIdDeploymentReverts() public {
+        try new StrategyPass("Invalid", "BAD", bytes32(0), 1 ether, RECIPIENT) returns (
+            StrategyPass
+        ) {
+            revert("zero strategy id accepted");
         } catch { }
     }
 

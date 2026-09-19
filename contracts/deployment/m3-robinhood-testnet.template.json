@@ -24,10 +24,31 @@
       "interfaceStatus": "IMPLEMENTED_LOCAL_ONLY",
       "address": null,
       "constructorInputs": [
-        { "name": "name_", "type": "string", "value": null },
-        { "name": "symbol_", "type": "string", "value": null },
-        { "name": "fixedSupply_", "type": "uint256", "value": null },
-        { "name": "recipient_", "type": "address", "value": null }
+        {
+          "name": "name_",
+          "type": "string",
+          "value": null
+        },
+        {
+          "name": "symbol_",
+          "type": "string",
+          "value": null
+        },
+        {
+          "name": "strategyId_",
+          "type": "bytes32",
+          "value": null
+        },
+        {
+          "name": "fixedSupply_",
+          "type": "uint256",
+          "value": null
+        },
+        {
+          "name": "recipient_",
+          "type": "address",
+          "value": null
+        }
       ],
       "creationCodeHash": null,
       "runtimeCodeHash": null,
@@ -38,8 +59,16 @@
       "interfaceStatus": "IMPLEMENTED_LOCAL_ONLY",
       "address": null,
       "constructorInputs": [
-        { "name": "fixedSupply_", "type": "uint256", "value": null },
-        { "name": "recipient_", "type": "address", "value": null }
+        {
+          "name": "fixedSupply_",
+          "type": "uint256",
+          "value": null
+        },
+        {
+          "name": "recipient_",
+          "type": "address",
+          "value": null
+        }
       ],
       "creationCodeHash": null,
       "runtimeCodeHash": null,
@@ -50,8 +79,16 @@
       "interfaceStatus": "IMPLEMENTED_LOCAL_ONLY",
       "address": null,
       "constructorInputs": [
-        { "name": "fixedSupply_", "type": "uint256", "value": null },
-        { "name": "recipient_", "type": "address", "value": null }
+        {
+          "name": "fixedSupply_",
+          "type": "uint256",
+          "value": null
+        },
+        {
+          "name": "recipient_",
+          "type": "address",
+          "value": null
+        }
       ],
       "creationCodeHash": null,
       "runtimeCodeHash": null,
@@ -62,8 +99,16 @@
       "interfaceStatus": "IMPLEMENTED_LOCAL_ONLY",
       "address": null,
       "constructorInputs": [
-        { "name": "fixedSupply_", "type": "uint256", "value": null },
-        { "name": "recipient_", "type": "address", "value": null }
+        {
+          "name": "fixedSupply_",
+          "type": "uint256",
+          "value": null
+        },
+        {
+          "name": "recipient_",
+          "type": "address",
+          "value": null
+        }
       ],
       "creationCodeHash": null,
       "runtimeCodeHash": null,
@@ -74,9 +119,21 @@
       "interfaceStatus": "IMPLEMENTED_LOCAL_ONLY",
       "address": null,
       "constructorInputs": [
-        { "name": "afUsdc_", "type": "address", "value": null },
-        { "name": "afEth_", "type": "address", "value": null },
-        { "name": "afBtc_", "type": "address", "value": null }
+        {
+          "name": "afUsdc_",
+          "type": "address",
+          "value": null
+        },
+        {
+          "name": "afEth_",
+          "type": "address",
+          "value": null
+        },
+        {
+          "name": "afBtc_",
+          "type": "address",
+          "value": null
+        }
       ],
       "creationCodeHash": null,
       "runtimeCodeHash": null,
@@ -87,10 +144,26 @@
       "interfaceStatus": "IMPLEMENTED_LOCAL_ONLY",
       "address": null,
       "constructorInputs": [
-        { "name": "venue_", "type": "address", "value": null },
-        { "name": "afUsdc_", "type": "address", "value": null },
-        { "name": "afEth_", "type": "address", "value": null },
-        { "name": "afBtc_", "type": "address", "value": null }
+        {
+          "name": "venue_",
+          "type": "address",
+          "value": null
+        },
+        {
+          "name": "afUsdc_",
+          "type": "address",
+          "value": null
+        },
+        {
+          "name": "afEth_",
+          "type": "address",
+          "value": null
+        },
+        {
+          "name": "afBtc_",
+          "type": "address",
+          "value": null
+        }
       ],
       "creationCodeHash": null,
       "runtimeCodeHash": null,
@@ -98,15 +171,50 @@
     },
     "vault": {
       "contractName": "AlphaForgeVault",
-      "interfaceStatus": "BLOCKED_PENDING_USER_DECISIONS",
-      "blockedBy": [
-        "AF-M3-DEC-PRECISION-01",
-        "AF-M3-DEC-WITHDRAW-01",
-        "AF-M3-DEC-OWNER-01",
-        "AF-M3-DEC-OWNER-OPS-01"
-      ],
+      "interfaceStatus": "IMPLEMENTED_LOCAL_ONLY",
       "address": null,
-      "constructorInputs": null,
+      "constructorInputs": [
+        {
+          "name": "owner_",
+          "type": "address",
+          "value": null
+        },
+        {
+          "name": "strategyCreator_",
+          "type": "address",
+          "value": null
+        },
+        {
+          "name": "strategyId_",
+          "type": "bytes32",
+          "value": null
+        },
+        {
+          "name": "strategyRef_",
+          "type": "bytes32",
+          "value": null
+        },
+        {
+          "name": "pass_",
+          "type": "address",
+          "value": null
+        },
+        {
+          "name": "afUsdc_",
+          "type": "address",
+          "value": null
+        },
+        {
+          "name": "afEth_",
+          "type": "address",
+          "value": null
+        },
+        {
+          "name": "afBtc_",
+          "type": "address",
+          "value": null
+        }
+      ],
       "creationCodeHash": null,
       "runtimeCodeHash": null,
       "abiHash": null
@@ -116,9 +224,21 @@
       "interfaceStatus": "IMPLEMENTED_LOCAL_ONLY",
       "address": null,
       "constructorInputs": [
-        { "name": "vault_", "type": "address", "value": null },
-        { "name": "owner_", "type": "address", "value": null },
-        { "name": "pass_", "type": "address", "value": null }
+        {
+          "name": "vault_",
+          "type": "address",
+          "value": null
+        },
+        {
+          "name": "owner_",
+          "type": "address",
+          "value": null
+        },
+        {
+          "name": "pass_",
+          "type": "address",
+          "value": null
+        }
       ],
       "creationCodeHash": null,
       "runtimeCodeHash": null,
@@ -127,33 +247,40 @@
   },
   "vaultConfig": {
     "owner": null,
+    "strategyCreator": null,
     "strategyId": null,
-    "strategyRef": null,
-    "riskSigner": null,
-    "pauseGuardian": null,
-    "policyHash": null
+    "strategyRef": null
   },
   "tokenMetadata": {
-    "strategyPass": { "symbol": null, "decimals": 18 },
-    "afUsdc": { "symbol": "AF-USDC", "decimals": 6 },
-    "afEth": { "symbol": "AF-ETH", "decimals": 18 },
-    "afBtc": { "symbol": "AF-BTC", "decimals": 18 }
-  },
-  "eip712": {
-    "vaultDomainName": null,
-    "vaultDomainVersion": null,
-    "ownerAuthorizationTypeHash": null,
-    "riskPermitTypeHash": null
+    "strategyPass": {
+      "symbol": null,
+      "decimals": 18
+    },
+    "afUsdc": {
+      "symbol": "AF-USDC",
+      "decimals": 6
+    },
+    "afEth": {
+      "symbol": "AF-ETH",
+      "decimals": 18
+    },
+    "afBtc": {
+      "symbol": "AF-BTC",
+      "decimals": 18
+    }
   },
   "indexing": {
     "deploymentBlock": null,
     "deploymentTransactionHash": null,
-    "finalityBlocks": null,
-    "eventTopics": null
+    "eventTopics": null,
+    "softReadyDepth": 3,
+    "reorgSearchLimit": 128,
+    "finalityStatus": "UNKNOWN"
   },
   "evidence": {
     "sourceRef": null,
     "manifestRef": null,
     "snapshotRef": null
-  }
+  },
+  "authorization": "DIRECT_IMMUTABLE_OWNER"
 }

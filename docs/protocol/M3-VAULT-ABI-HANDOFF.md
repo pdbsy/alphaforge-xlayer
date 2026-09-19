@@ -1,16 +1,18 @@
 # M3 Vault ABI Handoff
 
-- Status: **FROZEN REVIEW INTERFACE / IMPLEMENTATION IN PROGRESS / NOT DEPLOYED**
+- Status: **COMPILED LOCAL REVIEW DRAFT / NOT DEPLOYED**
 - Agent: `Macbeth02`
 - Task: `M3-02-PROTOCOL`, contributing to `M3-01-PARTIAL-ONCHAIN-INTEGRATION`
 - Branch: `macbeth02/M3-02-PROTOCOL`
 - Interface source: `contracts/src/interfaces/IAlphaForgeVault.sol`
+- Implementation source: `db620d68a635259f53f48c33defff4273237d372`
+- Published ABI: `contracts/deployment/abi/AlphaForgeVault.abi.json`
 - Target chain for a separately authorized future deployment: Robinhood Chain Testnet `46630`
 
-This handoff freezes the partial-onchain Vault interface requested by the user. It is compiled by
-the pinned Solidity `0.8.31` toolchain, but the concrete `AlphaForgeVault` implementation is still
-in progress. It supplies reviewable calldata and event identities to Macbeth03 and Macbeth04; it
-does not claim a deployed address, runtime bytecode, completed contract, or broadcast transaction.
+This handoff records the compiled partial-onchain Vault interface requested by the user. The
+concrete `AlphaForgeVault` is implemented and validated locally with the pinned Solidity `0.8.31`
+toolchain. It supplies reviewable calldata and event identities to Macbeth03 and Macbeth04; it
+does not claim a deployed address, deployment transaction, block, finality, or broadcast.
 
 ## Constructor
 
@@ -32,12 +34,19 @@ constructor(
 `owner_` is explicit and immutable; it is never inferred from the deployer or `msg.sender`.
 `strategyCreator_` is a separate immutable identity and receives no Vault custody permission.
 The four token addresses must be nonzero and distinct. Pass must report 18 decimals and AF-USDC
-must report 6 decimals. The constructor deploys one `PassLocker(address(this), owner_, pass_)`.
+must report 6 decimals. Pass must also expose an immutable `strategyId()` equal to `strategyId_`;
+otherwise construction reverts. The constructor deploys one
+`PassLocker(address(this), owner_, pass_)`.
 
 ## Owner custody mutations
 
 All recipients are fixed to the immutable owner. No method accepts a recipient, relayer,
 authorization signature, business nonce, arbitrary target, or calldata.
+
+For `deposit`, the owner grants both AF-USDC and Pass allowances to the **Vault address**. The
+Vault is the allowance spender: it calls `transferFrom(owner, Vault, usdcAmount)` for AF-USDC and
+`transferFrom(owner, PassLocker, passRaw)` for Pass. PassLocker records and releases Pass that it
+has already received; PassLocker is not the allowance spender.
 
 | Signature | Selector | Rule |
 | --- | --- | --- |
@@ -104,6 +113,7 @@ Both addresses in `UntrackedTokenRescued` are indexed. `NativeRescued.owner` is 
 | `ZeroAddress()` | `0xd92e233d` |
 | `DuplicateAsset(address)` | `0x437a40b1` |
 | `InvalidStrategyIdentity()` | `0xd4ce6f3d` |
+| `StrategyPassMismatch(address,bytes32,bytes32)` | `0xf73f4ac6` |
 | `UnexpectedDecimals(address,uint8,uint8)` | `0x91dfc113` |
 | `ZeroAmount()` | `0x1f2a2005` |
 | `VaultClosed()` | `0xdf23397a` |
@@ -132,8 +142,47 @@ Both addresses in `UntrackedTokenRescued` are indexed. `NativeRescued.owner` is 
 - Rescue runs only after close and only transfers untracked excess to the immutable owner. A failed
   rescue transaction cannot reverse the earlier close transaction.
 - Required AF-USDC settlement or Pass release failure reverts close atomically.
+- Pass unlock and release verify the immutable owner's actual balance increase; a token that
+  reports success but delivers less than the exact amount cannot clear the lock or close state.
+
+## Strategy Pass binding
+
+`StrategyPass` binds each fixed supply to one nonzero immutable Strategy ID onchain:
+
+```solidity
+constructor(
+    string name_,
+    string symbol_,
+    bytes32 strategyId_,
+    uint256 fixedSupply_,
+    address recipient_
+)
+```
+
+Its `strategyId()` selector is `0x492f4e18`. Vault construction proves
+`StrategyPass(pass_).strategyId() == strategyId_`; a deployment manifest or database label is not
+used as the authority for that relationship.
 
 ## Deployment status
 
 All contract addresses, deployment blocks, transaction hashes, ABI/runtime hashes, and finality
 evidence remain unset. No RPC, key, signing, deployment, initialization, or broadcast is included.
+
+## Compiled local artifact evidence
+
+The pinned compiler artifact was produced from source commit
+`db620d68a635259f53f48c33defff4273237d372`. Hashes use Keccak-256. ABI hashing uses the compiled
+ABI serialized as canonical JSON with sorted object keys and compact separators; bytecode hashing
+uses decoded creation/runtime bytes.
+
+| Evidence | Value |
+| --- | --- |
+| ABI Keccak-256 | `0x264b4498cf396008e4619664c59bf8d8eac0a04f04b80e760df3cfbc00846977` |
+| Creation bytecode Keccak-256 | `0x377b3ad4ed5a804d202d3461c2a6dc59045762351ce74086f7870a2def71b190` |
+| Runtime bytecode Keccak-256 | `0x84ba496c3b70467dda328768dc78e53820a94db9e19127b7d63f4b167f0c4908` |
+| Creation byte length | `18835` |
+| Runtime byte length | `11516` |
+
+The strict M3 Vault gate `bash contracts/script/check-m3-vault.sh` recompiles the source, runs the
+frozen interface and mutation tests, then validates constructor/functions/errors/events and
+compares the published ABI JSON byte-for-structure with the compiler artifact.
