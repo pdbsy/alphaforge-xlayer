@@ -19,7 +19,7 @@ Control Center 是一个只读、证据驱动的中文静态看板。它从仓�
 npm run management:checks
 ```
 
-这是完整证据采集，会把有界、脱敏且绑定 Git 命名分支、提交和精确 tree 的报告写入 `.checks/management/latest.json`；该清单需要和生成的看板一起纳入版本控制，逐项运行日志仍由 Git 忽略。采集只能从干净命名分支开始，并在每个检查后及发布清单前确认分支、提交、tree 和工作区均未变化；否则中止且保留上一份清单。原始清单必须与 `quick` 或 `full` 注册表完整、唯一且顺序一致，所绑定提交/tree 必须存在并属于严格验证的源分支祖先链；缺失、畸形、不完整、乱序、旁支提交、任意后续代码变更或伪造不可用检查状态都会失败关闭。不可用的 Foundry、fuzz、invariant 或 Slither 工具链必须保持 `NOT_RUN`，不能根据脚本存在推断为通过。
+这是完整证据采集，会把有界、脱敏且绑定 Git 命名分支、提交和精确 tree 的报告写入 `.checks/management/latest.json`；该清单需要和生成的看板一起纳入版本控制，逐项运行日志仍由 Git 忽略。采集只能从干净命名分支开始，并在每个检查后及发布清单前确认分支、提交、tree 和工作区均未变化；否则中止且保留上一份清单。原始清单必须与 `quick` 或 `full` 注册表完整、唯一且顺序一致，所绑定提交/tree 必须存在并属于严格验证的源分支祖先链；缺失、畸形、不完整、乱序、旁支提交、任意后续代码变更或伪造不可用检查状态都会失败关闭。尚未注册到管理采集器的 Foundry、fuzz、invariant 和 Slither 检查保持 `NOT_RUN`，原因是 `NOT_REGISTERED_IN_MANAGEMENT_COLLECTOR`。这些检查可以在独立的合约门禁中实际运行，其结果及源提交另行记录；不能根据脚本存在或其他来源报告把本采集器条目改为 PASS。历史 `APPROVED_TOOLCHAIN_NOT_AVAILABLE` 报告保留原始语义。
 
 仅需较快的本地证据时可运行：
 
@@ -67,7 +67,7 @@ npm run management:serve
 
 - `PASS` 表示版本化报告记录该命令在所绑定提交上通过；`management:check` 验证其结构和 Git 归属，但独立执行证明来自 GitHub 必需检查，而不是静态看板本身。
 - `BLOCKED` 表示存在阻塞或检查证据与快照提交不一致。
-- `NOT_RUN` 表示检查没有运行或批准的工具链不可用。
+- `NOT_RUN` 表示该采集条目没有运行；应结合原因区分未注册到采集器与历史工具链不可用。独立合约测试的结果不能代填这个条目。
 - `NOT_AVAILABLE` 表示可选来源不存在。
 - `DATA_SOURCE_ERROR` 表示来源存在但无法安全读取或验证。
 

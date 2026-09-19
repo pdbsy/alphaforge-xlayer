@@ -1,7 +1,7 @@
 (function () {
   'use strict';
   const snapshot = JSON.parse(document.getElementById('forum-snapshot').textContent);
-  const agents = ['Macbeth01', 'Macbeth02', 'Macbeth03', 'Macbeth04', 'Macbeth05'];
+  const agents = ['Macbeth01', 'Macbeth02', 'Macbeth03', 'Macbeth04', 'Macbeth05', 'Macbeth06'];
   const types = ['CHECK_IN', 'NOTICE', 'QUESTION', 'REPLY', 'ACK', 'BLOCKED', 'SUMMARY'];
   const $ = (id) => document.getElementById(id);
   function el(tag, className, text) {

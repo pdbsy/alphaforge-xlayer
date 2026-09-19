@@ -1,3 +1,9 @@
+> 2026-09-20 user assignment: Macbeth06 joins as the dedicated CI and merge-gate evidence worker, task `M3-06-CI-GATES`. See [its scope and limits](M3-06-CI-GATES.md). Protocol 1.2.0 registers six workers; older tables below remain historical. Macbeth01 retains integration ownership. This adds no independent GitHub approval or merge authority.
+
+> Current 2026-09-19 assignment: [M3-01-PARTIAL-ONCHAIN-INTEGRATION](../specs/M3-01-PARTIAL-ONCHAIN-INTEGRATION.md) freezes accounting, direct owner operations and configurable soft-ready 3 / reorg recovery 128. Macbeth01 integrates; Macbeth02–05 continue their existing protocol/adapter/UI/QA tasks. Current branch prefixes are `macbeth01/` through `macbeth05/`; numbered aliases below are historical compatibility, not instructions to rename current branches. Prior unanswered decision requests on these frozen points are superseded. Research uncertain issues from approved evidence before asking the user. No merge/deployment/broadcast authority.
+
+> 2026-09-19 update: Macbeth05 is registered as `AF-M3-05-INTEGRATION-ACCEPTANCE`, prefix `macbeth05/`. See [the current QA task record](AF-M3-05-INTEGRATION-ACCEPTANCE.md) for authority and candidate prerequisites. The dated 2026-09-14 tables below are historical; this update does not reassign other workers or imply completion.
+
 # AlphaForge M3 assignments and baseline receipts
 
 Recorded by Macbeth01 on 2026-09-14. Canonical repository: `pdbsy/quantpass-arbitrum-hackathon`.
@@ -12,15 +18,17 @@ The four receipts were delivered by the respective app tasks to Macbeth01 at the
 
 ## Current assignments
 
+Macbeth04 received a subsequent explicit implementation assignment. Its current task, fixed baseline and scope are recorded in [M3-04-PRODUCT-UI.md](M3-04-PRODUCT-UI.md); the earlier four audit receipts remain historical facts.
+
 | Agent | Task | Role | Current prefix | Execution state |
 | --- | --- | --- | --- | --- |
-| Macbeth01 | AF-M3-IDENTITY | Manager / Integrator | macbeth01/ | Implement and verify identity compatibility; prepare PR |
+| Macbeth01 | AF-M3-ASSIGNMENT-04 | Manager / Integrator | macbeth01/ | Register the newly authorized frontend task and fixed baseline |
 | Macbeth02 | M3-02-PROTOCOL | Protocol / Smart Contracts | 02/ | Implementation assigned; startup blocked until this alignment is integrated into master |
 | Macbeth03 | M3-03-AUDIT | Chain / Backend / Adapter | 03/ | Information/readiness audit completed; implementation awaits its own final assignment and interfaces |
-| Macbeth04 | M3-04-AUDIT | Product / Frontend | 04/ | Information/readiness audit completed; implementation awaits its own final assignment and interfaces |
+| Macbeth04 | M3-04-PRODUCT-UI | Product / Frontend | macbeth04/ | Implementation assigned; independent product shell can proceed, supported chain actions require 02/03 capabilities |
 | Macbeth05 | M3-05-AUDIT | QA / Security / Integration | 05/ | Information/readiness audit completed; M3 acceptance remains blocked |
 
-The user-supplied Macbeth02 protocol prompt explicitly requires registry prefix `02/`, task `M3-02-PROTOCOL`, and branch `02/protocol-m3` from the latest aligned origin/master; it forbids direct master edits and asks 02 to report mismatches to 01. The identity compatibility change satisfies the naming prerequisite, not the protocol's other acceptance conditions. 03–05 have not been granted implementation by this registry change.
+The user-supplied Macbeth02 protocol prompt explicitly requires registry prefix `02/`, task `M3-02-PROTOCOL`, and branch `02/protocol-m3` from the latest aligned origin/master; it forbids direct master edits and asks 02 to report mismatches to 01. The identity compatibility change satisfies the naming prerequisite, not the protocol's other acceptance conditions. This original identity alignment did not grant 03–05 implementation. The subsequent explicit user assignment now authorizes 04 within its separate implementation record; 03/05 scope is unchanged.
 
 ## Identity compatibility
 

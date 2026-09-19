@@ -1,5 +1,20 @@
 import { ProductAdapter, type ProductVault, type StrategySummary } from './product-adapter.ts';
 import type { CommandFields, CommandReview, CommandType } from './product-client.ts';
+import { createM3BrowserRuntime, type M3BrowserDeploymentConfig } from './m3-browser-runtime.ts';
+import type { Eip1193Provider } from './chain-wallet.ts';
+import { renderM3DepositApprovalDialog, runM3DialogAction } from './m3-product-dialog.ts';
+import { extendM3ProductPages, onchainActionEnabled } from './m3-product-shell.ts';
+import type { OnchainProductAction } from './m3-product-shell.ts';
+import {
+  depositAllowanceCheck,
+  parseM3ProductAction,
+  sameM3ProductAction,
+  type M3ProductActionRequest,
+  type M3ProductActionReview,
+  type M3DepositApprovalKind,
+  type M3DepositApprovalReview,
+  type M3ProductRuntime,
+} from './m3-product-runtime.ts';
 import { formatUnits, parseUnits } from '../../../packages/domain/src/money.ts';
 interface Prototype {
   strategies: { id: string }[];
@@ -9,13 +24,27 @@ interface Prototype {
     openDialog: (html: string) => void;
     closeDialog: () => void;
   };
+  m3OnchainRuntime?: M3ProductRuntime;
+  m3Deployment?: M3BrowserDeploymentConfig;
 }
 declare global {
   interface Window {
     AF: Prototype;
+    ethereum?: Eip1193Provider;
   }
 }
 const AF = window.AF;
+let onchainRuntime = AF.m3OnchainRuntime;
+if (!onchainRuntime && import.meta.env.DEV && new URLSearchParams(location.search).get('m3Fixture') === '1') {
+  const fixtureModule = await import('./m3-injected-runtime-fixture.ts');
+  const fixture = fixtureModule.createM3InjectedRuntimeFixture();
+  onchainRuntime = fixture.runtime;
+  fixtureModule.installM3InjectedRuntimeControls(fixture);
+}
+onchainRuntime ??= createM3BrowserRuntime({
+  ...(window.ethereum ? { provider: window.ethereum } : {}),
+  ...(AF.m3Deployment ? { deployment: AF.m3Deployment } : {}),
+});
 const adapter = new ProductAdapter();
 const client = adapter.client;
 const esc = (value: unknown) =>
@@ -162,11 +191,23 @@ function workspace(id: string): string {
 }
 const original = { ...AF.pages };
 AF.pages.market = () => catalogue() + original.market();
-AF.pages.account = (tab) => account() + original.account(tab);
-AF.pages.trade = (id) =>
-  AF.strategies.some((s) => s.id === id)
-    ? `<div class="wrap dialog-notice">MOCK / FIXTURE — synthetic charts and separate browser-only Pass exchange. No API vault mapping.</div>${original.trade(id)}`
-    : workspace(id);
+const productPages = extendM3ProductPages(
+  {
+    account: (tab) => account() + original.account(tab),
+    trade: (id) =>
+      AF.strategies.some((s) => s.id === id)
+        ? `<div class="wrap dialog-notice">MOCK / FIXTURE — synthetic charts and separate browser-only Pass exchange. No API vault mapping.</div>${original.trade(id)}`
+        : workspace(id),
+  },
+  {
+    accountId: () => adapter.snapshot.user,
+    contentProvenance: (id) =>
+      AF.strategies.some((strategy) => strategy.id === id) ? 'FIXTURE' : 'LOCAL SIMULATION',
+    ...(onchainRuntime ? { chain: () => onchainRuntime.snapshot } : {}),
+  },
+);
+AF.pages.account = productPages.account;
+AF.pages.trade = productPages.trade;
 function render(): void {
   const s = adapter.snapshot;
   status.innerHTML = `<div class="dialog-notice"><div class="inline-actions"><strong data-product-state role="status">${localError ? 'ERROR' : s.phase}</strong><span>API ${esc(s.user ?? 'no session')} · ${adapter.mode === 'v1' ? 'v1' : adapter.mode === 'legacy' ? 'legacy compatibility' : 'connecting'}</span><button class="text-link" data-product-login="alice" ${s.phase === 'LOADING' ? 'disabled' : ''}>Alice</button><button class="text-link" data-product-login="bob" ${s.phase === 'LOADING' ? 'disabled' : ''}>Bob</button><button class="text-link" data-product-refresh ${s.phase === 'LOADING' ? 'disabled' : ''}>Refresh API</button>${s.pending && !s.pending.rejection ? `<button class="outline-btn" data-product-retry ${adapter.retryAfterSeconds ? 'disabled' : ''}>Retry original request${adapter.retryAfterSeconds ? ` after ${adapter.retryAfterSeconds}s` : ''}</button>` : ''}${s.pending?.rejection ? '<button class="text-link" data-product-dismiss>Dismiss reviewed rejection</button>' : ''}</div>${localError || s.error ? `<p role="alert">${esc(localError ?? s.error)}</p>` : ''}${s.notice ? `<p>${esc(s.notice)}</p>` : ''}${s.pending ? `<p>Unresolved ${esc(s.pending.command.type)} · ${esc(s.pending.command.id)} · reviewed revision ${s.pending.command.expectedRevision}. No new command may be submitted.</p>` : ''}</div>`;
@@ -261,9 +302,68 @@ function reviewDraft(): void {
   );
 }
 let claimId: string | null = null;
+interface OnchainDraft {
+  readonly action: OnchainProductAction;
+  readonly request?: M3ProductActionRequest;
+  readonly review?: M3ProductActionReview;
+  readonly approval?: M3DepositApprovalReview;
+}
+let onchainDraft: OnchainDraft | null = null;
+function openOnchainAction(action: OnchainProductAction): void {
+  if (!onchainRuntime) throw Error('CHAIN_RUNTIME_UNAVAILABLE');
+  if (!onchainActionEnabled(onchainRuntime.snapshot.onchain, action)) throw Error('CHAIN_ACTION_UNAVAILABLE');
+  onchainDraft = { action };
+  const amount =
+    action === 'close'
+      ? '<p>Close returns protocol-accounted assets and remaining locked Pass to the immutable Vault owner.</p>'
+      : '<label>AF-USDC amount<input name="chainAmount" inputmode="decimal" autocomplete="off" autofocus></label>';
+  AF.app.openDialog(
+    `<span class="section-label">TESTNET / WALLET REVIEW</span><h2>Review ${esc(action)}.</h2>${amount}<p>Current wallet signature and contract authorization determine access. AlphaForge Account does not grant Vault ownership.</p><p data-product-dialog-error class="form-error" role="alert"></p><div class="inline-actions"><button class="primary-btn" data-chain-review>Read and simulate ↗</button><button class="text-link" data-close>Cancel</button></div>`,
+  );
+}
+function showOnchainDialogError(message: string): void {
+  const output = document.querySelector('[data-product-dialog-error]');
+  if (output) output.textContent = message;
+}
+async function reviewOnchainAction(): Promise<void> {
+  if (!onchainRuntime || !onchainDraft) throw Error('CHAIN_REVIEW_REQUIRED');
+  const amountInput = document.querySelector<HTMLInputElement>('dialog[open] [name="chainAmount"]');
+  const request = parseM3ProductAction(onchainDraft.action, amountInput?.value);
+  if (request.kind === 'deposit') {
+    if (onchainRuntime.reviewDepositApprovals) {
+      const approval = await onchainRuntime.reviewDepositApprovals(request);
+      const required = approval.requirements.filter((requirement) => !requirement.sufficient);
+      if (required.length > 0) {
+        onchainDraft = { action: onchainDraft.action, request, approval };
+        AF.app.openDialog(renderM3DepositApprovalDialog(approval));
+        return;
+      }
+    } else {
+      const onchain = onchainRuntime.snapshot.onchain;
+      const authorization = onchain.depositAuthorization;
+      if (!onchain.vaultAddress || !authorization) throw Error('DEPOSIT_ALLOWANCES_UNAVAILABLE');
+      const check = depositAllowanceCheck(request, {
+        vaultAddress: onchain.vaultAddress,
+        ...authorization,
+      });
+      if (check.status === 'APPROVAL_REQUIRED')
+        throw Error(
+          `DEPOSIT_APPROVAL_REQUIRED_UNSUPPORTED: exact approvals to the Vault are required for ${check.required.afUsdcBaseUnits} AF-USDC base units and ${check.required.passBaseUnits} Pass base units. Infinite approval is not used.`,
+        );
+      if (check.status !== 'READY') throw Error('DEPOSIT_ALLOWANCES_UNAVAILABLE');
+    }
+  }
+  const review = await onchainRuntime.reviewAction(request);
+  if (!sameM3ProductAction(request, review.request)) throw Error('CHAIN_ACTION_REVIEW_MISMATCH');
+  onchainDraft = { action: onchainDraft.action, request, review };
+  const amount = request.kind === 'close' ? 'No amount' : `${request.usdcBaseUnits} AF-USDC base units`;
+  AF.app.openDialog(
+    `<span class="section-label">TESTNET / LIVE SIMULATION PASSED</span><h2>Confirm ${esc(request.kind)}.</h2><div class="receipt"><div class="receipt-lines"><div><span>Wallet owner</span><span>${esc(review.owner)}</span></div><div><span>Operation</span><span>${esc(review.operationId)}</span></div><div><span>Amount</span><span>${esc(amount)}</span></div></div></div><p>The wallet will show the exact contract transaction. Submission is not success; AlphaForge waits for receipt and canonical readback.</p><p data-product-dialog-error class="form-error" role="alert"></p><div class="inline-actions"><button class="primary-btn" data-chain-confirm>Request wallet confirmation ↗</button><button class="text-link" data-close>Cancel</button></div>`,
+  );
+}
 document.addEventListener('click', (event) => {
   const target = (event.target as Element).closest<HTMLElement>(
-    '[data-product-login],[data-product-refresh],[data-product-retry],[data-product-dismiss],[data-product-command],[data-product-review],[data-product-confirm],[data-product-claim]',
+    '[data-product-login],[data-product-refresh],[data-product-retry],[data-product-dismiss],[data-product-command],[data-product-review],[data-product-confirm],[data-product-claim],[data-chain-connect],[data-chain-refresh],[data-chain-action],[data-chain-review],[data-chain-confirm],[data-chain-approve]',
   );
   if (!target) return;
   event.preventDefault();
@@ -297,6 +397,52 @@ document.addEventListener('click', (event) => {
       claimId = null;
       localError = null;
       openCommand(target.dataset.productCommand as CommandType);
+    } else if (target.hasAttribute('data-chain-connect')) {
+      if (!onchainRuntime) throw Error('CHAIN_RUNTIME_UNAVAILABLE');
+      void run(() => onchainRuntime.connect());
+    } else if (target.hasAttribute('data-chain-refresh')) {
+      if (!onchainRuntime) throw Error('CHAIN_RUNTIME_UNAVAILABLE');
+      void run(() => onchainRuntime.refresh());
+    } else if (target.hasAttribute('data-chain-action')) {
+      draft = null;
+      claimId = null;
+      localError = null;
+      openOnchainAction(target.dataset.chainAction as OnchainProductAction);
+    } else if (target.hasAttribute('data-chain-review')) {
+      void runM3DialogAction(
+        'review',
+        target as HTMLButtonElement,
+        reviewOnchainAction,
+        showOnchainDialogError,
+      );
+    } else if (target.hasAttribute('data-chain-confirm')) {
+      if (!onchainRuntime || !onchainDraft?.review) throw Error('CHAIN_REVIEW_REQUIRED');
+      const captured = onchainDraft.review;
+      onchainDraft = null;
+      void runM3DialogAction(
+        'confirm',
+        target as HTMLButtonElement,
+        async () => {
+          await onchainRuntime.confirmAction(captured);
+          AF.app.closeDialog();
+        },
+        showOnchainDialogError,
+      );
+    } else if (target.hasAttribute('data-chain-approve')) {
+      if (!onchainRuntime?.confirmDepositApproval || !onchainDraft?.approval)
+        throw Error('DEPOSIT_APPROVAL_REVIEW_REQUIRED');
+      const approval = onchainDraft.approval;
+      const kind = target.dataset.chainApprove as M3DepositApprovalKind;
+      onchainDraft = null;
+      void runM3DialogAction(
+        'confirm',
+        target as HTMLButtonElement,
+        async () => {
+          await onchainRuntime.confirmDepositApproval!(approval, kind);
+          AF.app.closeDialog();
+        },
+        showOnchainDialogError,
+      );
     } else if (target.hasAttribute('data-product-review')) reviewDraft();
     else if (target.hasAttribute('data-product-claim')) {
       draft = null;
@@ -345,9 +491,11 @@ document.addEventListener('change', (event) => {
 window.addEventListener('hashchange', () => {
   draft = null;
   claimId = null;
+  onchainDraft = null;
   void run(alignVault);
 });
 client.subscribe(() => render());
+onchainRuntime?.subscribe(() => render());
 void run(async () => {
   await client.refresh();
   await alignVault();

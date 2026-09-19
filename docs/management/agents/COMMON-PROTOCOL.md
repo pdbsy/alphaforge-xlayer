@@ -2,14 +2,14 @@
 
 # AlphaForge persistent worker protocol
 
-Protocol version: 1.1.0
+Protocol version: 1.2.0
 
 Setup task: AF-AGENT-SETUP  
 Default branch: `master`
 
 ## Identity and isolation
 
-The fixed workers are Macbeth01 through Macbeth05. Current prefixes are `macbeth01/`, `02/`, `03/`, `04/`, `05/`. Historical `macbeth02/` through `macbeth05/` remain valid provenance aliases for the same identities. Names and prefixes are case-sensitive.
+The registered workers are Macbeth01 through Macbeth06. The user added Macbeth06 for CI/gate verification on 2026-09-20; see [M3-06-CI-GATES.md](M3-06-CI-GATES.md). The registry selects each current task prefix. Protocol 1.2.0 accepts `macbeth01/`–`macbeth06/` and `02/`–`06/` as exact aliases of the corresponding worker. Historical 1.0.0/1.1.0 five-worker registry records remain valid historical inputs. Macbeth04's assignment explicitly uses `macbeth04/M3-product-ui`. Names and prefixes are case-sensitive.
 
 One Chat = One Worker. One Worker = One Worktree. One Task = One Branch. One Branch = One Pull Request.
 

@@ -8,6 +8,32 @@ import { validateCheckReport } from './schema.mjs';
 import { collectGitState as collectRepositoryGitState } from './sources.mjs';
 
 const unitTests = [
+  'test/ci-gates.test.mjs',
+  'test/security-scanners.test.mjs',
+  'test/chain-startup.test.ts',
+  'test/ui-m3-vault-live-reader.test.ts',
+  'test/chain-runtime.test.ts',
+  'test/chain-vault-abi.test.ts',
+  'test/chain-vault-integration.test.ts',
+  'test/ui-m3-vault-actions.test.ts',
+  'test/ui-m3-vault-allowance.test.ts',
+  'test/ui-m3-vault-client.test.ts',
+
+  'test/m3-product-runtime.test.ts',
+  'test/m3-chain-action-flow.test.ts',
+  'test/m3-injected-runtime.test.ts',
+  'test/m3-browser-runtime.test.ts',
+  'test/m3-product-dialog.test.ts',
+
+  'test/chain-api.test.ts',
+  'test/m3-product-ui.test.ts',
+  'test/chain-lifecycle.test.ts',
+  'test/chain-rpc-manifest.test.ts',
+  'test/chain-store.test.ts',
+  'test/chain-sync.test.ts',
+  'test/ui-chain-wallet.test.ts',
+  'test/m3-deployment-template.test.mjs',
+
   'test/security-model.test.ts',
   'test/engineering.test.ts',
   'test/robinhood-chain.test.ts',
@@ -38,6 +64,7 @@ const unitTests = [
   'test/agent-identity-bypass.test.mjs',
   'test/migration-provenance.test.mjs',
   'test/agent-identity-lifecycle.test.mjs',
+  'test/agent-integration-identity.test.mjs',
   'test/ui-product-adapter-races.test.ts',
 ];
 
@@ -50,7 +77,7 @@ function unavailable(id) {
     id,
     available: false,
     status: 'NOT_RUN',
-    reason: 'APPROVED_TOOLCHAIN_NOT_AVAILABLE',
+    reason: 'NOT_REGISTERED_IN_MANAGEMENT_COLLECTOR',
     profiles: Object.freeze(['quick', 'full']),
   });
 }

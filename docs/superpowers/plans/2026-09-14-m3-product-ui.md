@@ -1,0 +1,219 @@
+# AlphaForge M3 Product UI Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. In this session, execute inline because the repository instructions keep Darwin and additional workers inactive.
+
+**Goal:** Extend the warm AlphaForge product UI with a truthful pre-Strategy-Runtime product shell that can consume Macbeth03 chain projections when they exist, while clearly separating fixtures and local simulation from Robinhood Chain Testnet state.
+
+**Architecture:** Keep the protected prototype byte-identical and add a small, pure presentation module beside `product-ui.ts`. The module renders values supplied by a caller and never owns RPC, transaction, receipt, or readback transitions. It consumes Macbeth03's normalized `ProductOperationEvidence`, `WalletSubmission`, `BrowserWalletPort` and strategy-adapter contracts while keeping provider access, session validation and submission transitions in the shared chain adapter. The actual product entry constructs a production browser runtime over the existing EIP-1193 connection boundary and may accept one externally supplied runtime; without verified deployment metadata, real asset reads and writes remain disabled.
+
+**Tech Stack:** TypeScript, browser DOM, existing imported AlphaForge prototype, Node 24.21.0, npm 11.19.1, Node test runner; no new dependency.
+
+**Spec:** User attachment `pasted-text.txt` dated 2026-09-14, freezing D1 canonical `strategyId`, D2 the complete user path before Strategy Runtime, and D3 Macbeth03 ownership of chain transaction truth.
+
+## Global Constraints
+
+- Branch is `macbeth04/M3-product-ui` at canonical baseline `7ecba357d5a19f387e86f578822af04a6261fed2`.
+- Do not edit `apps/web/prototype/AlphaForge_v3_EN.html` or generated `apps/web/public` assets.
+- Do not add a wallet/EVM dependency, ABI, contract address, deployment metadata, transaction transition engine, or second chain adapter. A production entry may discover `window.ethereum` only through the existing EIP-1193 wallet boundary.
+- Use `ROBINHOOD_CHAIN_TESTNET` as the only frontend source for network name, chain ID and explorer base URL.
+- Alice/Bob and current API values remain visibly `LOCAL SIMULATION`; original charts remain visibly `FIXTURE`.
+- Keep Buy Pass, Sell Pass and Approve visible but disabled with `NOT IMPLEMENTED`. Deposit, Withdraw and Close may be enabled only when one injected runtime supplies a verified deployment, current wallet ownership, live simulation and an explicit write mode; the default product path keeps writes off.
+- Never present local command IDs, localStorage, SQLite revisions, fixture values, or static UI state as chain-confirmed evidence.
+- Treat `CHAIN_CONFIRMED` as receipt success and `READY` as receipt success plus required readback, but render only projections received from Macbeth03.
+- Strategy Runtime, venue execution, positions, fills and strategy-generated PnL remain `NOT IMPLEMENTED / FUTURE PHASE`.
+- Task-ID is `M3-04-PRODUCT-UI`. Macbeth01 fixed `trend` as the first canonical M3 product strategy; `core-flow-demo` and `satellite-flow-demo` remain isolated historical local identities.
+
+## Capability Classification
+
+| Class             | Current baseline capability                                                                                                                                                               |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| CAN IMPLEMENT NOW | Pure presentation; canonical network display; dynamic route/account projection; typed product runtime boundary; exact AF-USDC input; re-read/simulate/review/confirm action orchestration |
+| UI SHELL ONLY     | Wallet/network/transaction/Vault rendering from one injected Macbeth03-owned runtime; injected mock controls are visibly marked and hold no real rights                                   |
+| BLOCKED           | Live Pass/Vault state and writes until Macbeth02 completes the implementation/deployment manifest and Macbeth03 publishes the product runtime with live reads and simulation              |
+| NOT IMPLEMENTED   | Buy/Sell/Approve end-to-end capabilities and all Strategy Runtime/venue/order/position/PnL behavior                                                                                       |
+
+## Task 1: Add semantic presentation tests
+
+**Files:** Add `test/m3-product-ui.test.ts`; update `package.json` test list only after the focused test exists.
+
+**Interfaces:** Tests import pure presentation functions from `apps/web/src/m3-product-shell.ts`. The presentation input is immutable data supplied by a chain owner; it contains no provider or state-transition methods.
+
+- [x] Assert fixture and local-simulation provenance remain distinct from Testnet.
+- [x] Assert network name and chain ID come from `ROBINHOOD_CHAIN_TESTNET`.
+- [x] Assert unsupported asset actions stay visible, disabled and labeled `NOT IMPLEMENTED`.
+- [x] Assert wallet statuses and all frozen transaction lifecycle statuses have distinct, human-readable output.
+- [x] Assert `CHAIN_CONFIRMED` explicitly says readback is pending while `READY` says product state is updated.
+- [x] Assert unknown/untrusted text is escaped.
+- [x] Run the focused test and record the expected missing-module failure before implementation.
+
+## Task 2: Implement a read-only M3 product shell renderer
+
+**Files:** Add `apps/web/src/m3-product-shell.ts`.
+
+**Interfaces:** Export immutable wallet, network and transaction presentation types plus `renderM3StrategyShell(input)` and `renderM3AccountShell(input)`. These functions only map supplied values to escaped HTML. They do not connect wallets, derive transaction states, poll RPC, build explorer URLs for transactions, or mutate product state.
+
+- [x] Import `ROBINHOOD_CHAIN_TESTNET`; do not copy network constants.
+- [x] Render `trend` as the first canonical product strategy and keep historical local identities isolated.
+- [x] Render account identity and wallet identity as separate concepts.
+- [x] Render fixture/local/Testnet provenance labels on every data group.
+- [x] Render disabled roadmap actions and explicit dependency reasons.
+- [x] Render all frozen wallet/network/transaction status labels when provided by a future Macbeth03 projection.
+- [x] Keep the default public-baseline projection disconnected, idle, and unavailable.
+- [x] Run the focused test until it passes.
+
+## Task 3: Integrate through existing product extension points
+
+**Files:** Modify `apps/web/src/product-ui.ts`; extend `test/m3-product-ui.test.ts` or the existing UI build test.
+
+**Interfaces:** Prepend the M3 shell through `AF.pages.trade` and `AF.pages.account`. Preserve `AF.pages.*`, `AF.app.*`, the original page bodies and local ProductAdapter behavior.
+
+- [x] Add a failing pure page-extension test proving existing account/trade content is preserved.
+- [x] On original strategy routes, label original content `FIXTURE` and render the Testnet capability shell separately.
+- [x] On backend strategy routes and account data, label the existing API content `LOCAL SIMULATION`.
+- [x] Keep `/trade/:strategyId` as the single detail-route shape; do not add a Testnet-only page.
+- [x] Add the account wallet/network/asset shell while keeping current local account data separated.
+- [x] Run targeted UI, importer and build tests.
+
+## Task 4: Record evidence and close only the implemented phase
+
+**Files:** Add `docs/management/agents/logs/M3-04-PRODUCT-UI.md`; update this plan's checkboxes.
+
+- [x] Record Task, status, branch, exact commit, change rationale, files, tests, limitations, dependencies, decision requests and next step.
+- [x] Run typecheck, lint, format check, focused UI tests, full test suite and web build with the approved toolchain.
+- [x] Verify the protected prototype byte count and SHA-256 tests still pass.
+- [x] Request independent review before integration.
+- [x] Create small commits and Draft PR with Task-ID `M3-04-PRODUCT-UI`.
+
+## Task 5: Consume Macbeth03 normalized evidence
+
+**Files:** Modify `apps/web/src/m3-product-shell.ts` and `test/m3-product-ui.test.ts`; merge the exact Macbeth03 source history without copying its adapter.
+
+- [x] Fetch and verify immutable interface source `b640489fccf704394eaf2721424652f167675148` from Draft PR #17.
+- [x] Add failing tests for receipt success, strict confirmation, product projection, reorg, reconciliation failure and stale projection.
+- [x] Preserve the upstream history through a merge commit; do not create a second wallet, RPC or lifecycle adapter.
+- [x] Map receipt success to `CHAIN_CONFIRMED`, reconciled chain evidence awaiting UI projection to `INDEXING`, and only `productReady=true` to `READY`.
+- [x] Fail closed for `REORGED`, `RECONCILIATION_FAILED`, reverted receipts and stale projections.
+- [x] Run 37 focused integration tests and the complete 435-test repository gate; retain the expected sandbox-only loopback failure and the successful loopback-capable rerun.
+- [x] Regenerate source-bound management manifest R and Dashboard snapshot S, then verify the exact final head.
+
+## Deferred Integration Gates
+
+- Macbeth01: resolved Task-ID and first canonical strategy; AF-M3-CLOSEOUT now owns the `master`-based unified integration candidate and final hosted CI. Future product strategy assignments still require explicit decisions.
+- Macbeth02: reviewed ABI, deployed Testnet addresses, supported operations, authorization semantics, events and stable error behavior.
+- Macbeth03: normalized wallet/lifecycle/projection evidence is consumed from immutable source `b640489`; Vault/Pass ABI and deployment metadata remain blocked.
+- Macbeth05: acceptance validation for happy, rejection, wrong-network, failed, replaced, stale and readback-lag paths.
+
+## Task 6: Handle race-safe wallet submission results
+
+**Files:** Modify `apps/web/src/m3-product-shell.ts` and `test/m3-product-ui.test.ts`; consume Macbeth03 source `14ebe2c2c40d3292a95f56ec23b1328afc5f759c` and final dependency head `20347ec22729346d617525d64dc76f58354b5f0d`.
+
+- [x] Preserve Macbeth03's provider listener, session race and backend projection changes through the stacked merge history.
+- [x] Consume `WalletSubmission` directly; do not add another EIP-1193 provider or submission state owner.
+- [x] Keep `SUBMITTED` separate from receipt success and product readiness.
+- [x] Render `SUBMISSION_AMBIGUOUS` as a distinct non-ready status with the sanitized reason and optional transaction hash.
+- [x] Explicitly state that ambiguous submissions must not be retried automatically.
+- [x] Cover all four reasons: `SESSION_CHANGED`, `POST_SUBMISSION_CHECK_FAILED`, `PROVIDER_RESULT_UNKNOWN` and `LOCAL_EVIDENCE_INVALID`.
+- [x] Run the expanded 63-test lifecycle/store/sync/wallet/UI integration set, typecheck, lint and formatting.
+- Evidence closeout for this update follows the same source C → manifest R → snapshot S workflow; exact immutable SHAs are recorded in Draft PR #16.
+
+## Task 7: Fail closed on contradictory product evidence
+
+**Files:** Modify `apps/web/src/m3-product-shell.ts` and `test/m3-product-ui.test.ts`; record the independent review correction in the worker log.
+
+- [x] Add a failing regression for explicit failure evidence combined with `productReady=true`.
+- [x] Evaluate lifecycle, receipt, reconciliation and stale-projection failures before accepting product readiness.
+- [x] Keep the correction inside the pure presentation mapper without changing Macbeth03 ownership.
+- [x] Run the expanded 64-test lifecycle/store/sync/wallet/UI integration set.
+- [x] Verify the actual strategy and account entry routes in a real local browser, including reload recovery, disabled actions, fixture/live labels and console diagnostics.
+- Evidence closeout for this correction follows the source C → manifest R → snapshot S workflow; exact immutable SHAs are recorded in Draft PR #16.
+
+## Task 8: Consume canonical backend readiness evidence
+
+**Files:** Preserve Macbeth03 source `1023caf` and final head `588efa531b83548ffa7b1b01f976dfc49ff470b7`; update the UI evidence boundary without deriving readiness in the browser.
+
+- [x] Preserve Macbeth03's removal of browser-side raw operation/projection readiness derivation.
+- [x] Consume the final `ProductOperationEvidence` type through the Web adapter re-export.
+- [x] Keep `ChainStore.operationEvidence(operationId, projectionKey)` as the sole readiness computation owner.
+- [x] Retain failure-before-`productReady` defense for contradictory input crossing API/cache boundaries.
+- [x] Run the expanded 68-test lifecycle/store/sync/wallet/UI set.
+- [x] Re-run actual strategy/account browser acceptance on the exact integrated head.
+- Evidence closeout follows the source C → manifest R → snapshot S workflow; exact immutable SHAs are recorded in Draft PR #16.
+
+## Task 9: Add the partial on-chain product runtime seam
+
+**Files:** Add `apps/web/src/m3-product-runtime.ts`, `apps/web/src/m3-chain-action-flow.ts`, and focused tests; modify the product shell, actual product entry, strategy adapter types and worker log.
+
+- [x] Verify Macbeth02 review-interface commit `135be1e1074436e2092487099f8376cc963b714f`, retain its `NOT DEPLOYED / IMPLEMENTATION IN PROGRESS` boundary, and record that independent review still requires mutation-resistant comparison with the concrete compiled Vault artifact.
+- [x] Add red-first tests for soft-ready wording, unknown L1 finality, degraded/reorg owner exits, default-off writes and fresh chain state on both product routes.
+- [x] Consume wallet, network, transaction and contract presentation through one injected runtime in the existing `/trade/:strategyId` and Account pages.
+- [x] Reuse `BrowserWalletPort` and extend the existing Robinhood Testnet strategy-adapter seam with live simulation; do not add a provider, RPC client, receipt evaluator or second lifecycle owner.
+- [x] Re-read and simulate before review and again before wallet submission; bind reviews to one flow and one use, and clear the old session after a failed reconnect.
+- [x] Parse Deposit/Withdraw as exact AF-USDC six-decimal base units; reject zero, excess precision and noncanonical values; keep Close amount-free and recipient-free.
+- [x] Keep real product writes off when no runtime is injected. Allow an injected mock only with an explicit `INJECTED MOCK — no real rights or funds` label.
+- [x] In degraded/reorg states, disable Deposit and preserve owner Withdraw/Close only when the runtime exposes a live RPC or simulation exit path.
+- [ ] Consume the final Macbeth03 product runtime plus Macbeth02's mutation-resistant concrete artifact and verified deployment manifest when those sources are published; this remains BLOCKED rather than inferred.
+- [x] Run the final full repository gate and regenerate C/R/S evidence through the repository commands.
+- [ ] Publish the immutable candidate and request Macbeth05 review after remote push and agent messaging are explicitly authorized.
+
+## Task 10: Validate the injected-provider product journey in a real browser
+
+**Files:** Add `apps/web/src/m3-injected-runtime-fixture.ts` and `test/m3-injected-runtime.test.ts`; modify the development-only product entry and Vite asset middleware; update this plan and the worker log.
+
+- [x] Add a red-first injected-provider regression that uses the existing `Eip1193Wallet`, prepared-action authority and `M3ChainActionFlow` instead of introducing a second wallet path.
+- [x] Expose the fixture only in Vite development mode when `?m3Fixture=1` is explicit, and label it `INJECTED MOCK / NO REAL RIGHTS OR FUNDS / NO BROADCAST`.
+- [x] Exercise the actual `/trade/trend` product entry through wrong-network rejection, correct-network connection, immutable-owner and two-token allowance reads, blocked new-wallet Deposit, repeated exit simulation and mock Withdraw/Close submission.
+- [x] Verify soft-ready wording, reorg failure and indexer-degraded owner exit behavior; Deposit stays disabled in degraded/reorg states while Withdraw and Close remain available through simulation.
+- [x] Verify a clean browser page has no warning/error console entries and that the production application JavaScript contains no fixture marker, query switch, fixture class or draft selector.
+- [x] Keep live RPC, signing, broadcast, deployment and receipt confirmation NOT_RUN; the fixture returns a deterministic mock hash only.
+- [ ] Consume the final concrete Vault artifact and Macbeth03 runtime when published; draft selectors in this explicitly development-only fixture are not accepted deployment evidence.
+
+## Task 11: Fail closed on the two-token Deposit authorization boundary
+
+**Files:** Modify the M3 product presentation, runtime helper, injected provider fixture, actual product entry, focused tests and worker log.
+
+- [x] Read and display AF-USDC and Pass allowances for the configured Vault spender; fail closed when either value, the Vault or the spender is missing, malformed or mismatched.
+- [x] Derive required Pass raw units as exact `AF-USDC raw * 1e12`, with no rounding, and reject Deposit review when either finite allowance is below the exact requested amount.
+- [x] Keep a newly connected wallet with zero allowances unable to Deposit; do not inject mock pre-authorization.
+- [x] State that two exact finite approvals to the configured Vault are required and that the current product UI has no approval flow. Do not expose unlimited approval or an arbitrary spender.
+- [x] Keep Withdraw and Close available through the verified exit simulation path, including reorg and degraded-indexer states.
+- [x] Re-run the real browser journey: wrong-chain rejection, chain 46630 owner/allowance reads, zero-allowance Soft Ready, exact `1.000001` AF-USDC Withdraw review/mock submission, reorg and degraded exit; verify empty warning/error console output.
+- [x] Consume Macbeth03's committed amount-specific authorization/approval factories from source `0b94ecfd8c0c3b0d8f72da27bbd1c96ed914d1d5`; require exact finite AF-USDC and Pass approvals to the configured Vault.
+- [ ] Revalidate the published concrete Vault ABI artifact after its commit is locally available; deployment addresses, signing, broadcast and receipt evidence remain NOT_RUN.
+
+## Task 12: Construct the production browser runtime at the formal product entry
+
+**Files:** Add `apps/web/src/m3-browser-runtime.ts` and `test/m3-browser-runtime.test.ts`; modify the shared wallet boundary, M3 product shell, formal product entry, package test list and worker log.
+
+- [x] Construct a production runtime from the formal product entry even when no external `window.AF.m3OnchainRuntime` is supplied.
+- [x] Reuse one extracted `Eip1193WalletConnection` for ordinary connect and chain observation; keep `Eip1193Wallet` on that same provider boundary for submissions.
+- [x] Allow an injected EIP-1193 provider to connect and expose its wallet/chain state while the deployment remains `UNAVAILABLE`, write mode remains `DISABLED`, and every asset action remains disabled.
+- [x] Render the explicit `NOT DEPLOYED` reason when no verified Vault address or deployment manifest exists.
+- [x] Fail closed with `WALLET_PROVIDER_UNAVAILABLE` when the browser has no injected provider, without RPC, signing or broadcast.
+- [x] Add injected-provider tests for wrong chain, correct chain, unavailable provider, closed reviews and zero submissions; retain the development fixture on the same boundary.
+- [x] Consume Macbeth03's committed Vault client, calldata and amount-specific authorization factories while preserving its source history.
+- [ ] Configure live deployment data only after a reviewed manifest exists; deployment, live RPC, signing, Testnet broadcast, receipt confirmation and hosted CI remain NOT_RUN.
+
+## Task 13: Keep chain dialog failures recoverable and isolated
+
+**Files:** Add `apps/web/src/m3-product-dialog.ts` and `test/m3-product-dialog.test.ts`; modify the formal product entry, fixture wording, package test list and worker log.
+
+- [x] Add a red-first regression for an over-precision Withdraw review followed by a corrected exact amount.
+- [x] Show the exact chain review error inside its dialog and restore the Review control so corrected input can be submitted.
+- [x] Keep chain dialog failures out of the local API error channel.
+- [x] Treat a failed confirmation as consumed or potentially submitted: keep its control disabled, prohibit automatic retry, and require a new review after reconciliation when necessary.
+- [x] Describe development-fixture reads as mock provider reads instead of canonical live reads.
+- [x] Re-run the exact real-browser precision recovery path and verify the default production entry's `NOT DEPLOYED` state before source closeout.
+
+## Task 14: Complete the configured Vault product runtime
+
+**Files:** Modify the production browser runtime, Vault Web client, M3 product shell/dialog, formal product entry, development transport fixture, focused tests, package test registry and worker log; preserve Macbeth03 source `77e2fe623326314c62ebe331d6357e6444aa58b1` and live-reader source `46d0a27e5b3bac5fde904033b377f2091e4020cd`.
+
+- [x] Require manifest-bound chain ID, Vault address, deployment block, ABI version, manifest digest and runtime bytecode hash before enabling configured writes; keep the default product entry `NOT DEPLOYED` and closed.
+- [x] Read canonical owner/Vault state through Macbeth03's same-origin API and fall back to the hash-pinned direct provider reader only for degraded owner Withdraw/Close paths.
+- [x] Review and submit exact finite AF-USDC and Pass approvals one token at a time; fix each token, Vault spender and requested amount, and never expose unlimited approval.
+- [x] Generate collision-resistant browser operation IDs, register the exact operation/chain/owner/target/calldata/txHash tuple, and consume the canonical evidence endpoint without deriving readiness in the browser.
+- [x] Render SUBMITTED, CHAIN_CONFIRMED, INDEXING, READY/SOFT_READY, REORGED and degraded indexer states from backend evidence; do not automatically retry a possibly submitted transaction.
+- [x] Disable Deposit during API/indexer degradation while preserving direct-read owner Withdraw/Close simulation; identify non-owner wallets explicitly and keep every write disabled.
+- [x] Replace the old independent development runtime with mock provider/API transports passed to the same `createM3BrowserRuntime` factory, labeled as DEV-only with no real rights, funds or broadcast.
+- [x] Run red-first regressions, approved-toolchain typecheck/lint/format checks and focused integration tests; exercise the actual browser through precision correction, both approvals, Deposit, soft-ready, reorg, degraded Withdraw/Close, wrong network and non-owner paths.
+- [ ] Live RPC, wallet signing, Testnet broadcast, deployment, real receipt confirmation and hosted CI remain NOT_RUN pending their separate authorization and prerequisites.

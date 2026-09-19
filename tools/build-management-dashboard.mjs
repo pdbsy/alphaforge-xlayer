@@ -144,7 +144,14 @@ function validateRegisteredCheckReport(value) {
       requireCondition(['PASS', 'FAIL'].includes(actual.status), 'CHECK_REPORT_STATUS_INVALID');
     } else {
       requireCondition(actual.status === expected.status, 'CHECK_REPORT_STATUS_INVALID');
-      requireCondition(actual.reason === expected.reason, 'CHECK_REPORT_REASON_INVALID');
+      // Preserve the bytes and interpretation of reports collected before the reason correction.
+      const legacyUnregistered =
+        expected.reason === 'NOT_REGISTERED_IN_MANAGEMENT_COLLECTOR' &&
+        actual.reason === 'APPROVED_TOOLCHAIN_NOT_AVAILABLE';
+      requireCondition(
+        actual.reason === expected.reason || legacyUnregistered,
+        'CHECK_REPORT_REASON_INVALID',
+      );
       requireCondition(actual.exitCode === null, 'CHECK_REPORT_EXIT_CODE_INVALID');
     }
   }

@@ -43,17 +43,18 @@ ${body}
 [/AGENT-MESSAGE]`;
 }
 
-test('registry and bootstrap prompts preserve five unique fixed worker identities', async () => {
+test('registry and bootstrap prompts preserve the six assigned worker identities', async () => {
   const registry = JSON.parse(await read('docs/management/agents/registry.json'));
   const validated = validateRegistry(registry);
   assert.deepEqual(
     validated.agents.map(({ agent_id, branch_prefix }) => [agent_id, branch_prefix]),
     [
       ['Macbeth01', 'macbeth01/'],
-      ['Macbeth02', '02/'],
-      ['Macbeth03', '03/'],
-      ['Macbeth04', '04/'],
-      ['Macbeth05', '05/'],
+      ['Macbeth02', 'macbeth02/'],
+      ['Macbeth03', 'macbeth03/'],
+      ['Macbeth04', 'macbeth04/'],
+      ['Macbeth05', 'macbeth05/'],
+      ['Macbeth06', 'macbeth06/'],
     ],
   );
   for (const agent of validated.agents) {
@@ -63,6 +64,77 @@ test('registry and bootstrap prompts preserve five unique fixed worker identitie
       branchPrefix: agent.branch_prefix,
     });
   }
+});
+
+test('six-worker protocol rejects missing, unknown and cross-worker registrations', () => {
+  const valid = {
+    protocol_version: '1.2.0',
+    agents: [1, 2, 3, 4, 5, 6].map((n) => ({
+      agent_id: `Macbeth0${n}`,
+      branch_prefix: `macbeth0${n}/`,
+      workspace_status: 'CONFIG_PREPARED',
+      session_status: 'SESSION_CREATED',
+      self_confirmation: 'UNVERIFIED',
+      communication_status: 'UNVERIFIED',
+      current_task: n === 6 ? 'M3-06-CI-GATES' : 'NONE',
+      runtime_status: 'IDLE',
+    })),
+  };
+  assert.doesNotThrow(() => validateRegistry(valid));
+  assert.throws(() => validateRegistry({ ...valid, agents: valid.agents.slice(0, 5) }));
+  assert.throws(() => validateRegistry({ ...valid, protocol_version: '1.1.0' }));
+  for (const patch of [
+    { agent_id: 'Macbeth07' },
+    { branch_prefix: 'macbeth05/' },
+    { current_task: 'M3-05-CI-GATES' },
+  ]) {
+    const invalid = structuredClone(valid);
+    Object.assign(invalid.agents[5], patch);
+    assert.throws(() => validateRegistry(invalid));
+  }
+});
+
+test('CI worker provenance binds its own branch and task without allowing another identity', () => {
+  const input = {
+    branch: 'macbeth06/M3-06-CI-GATES',
+    prTitle: '[Macbeth06][M3-06-CI-GATES] Verify CI',
+    subject: '[Macbeth06][M3-06-CI-GATES] Verify CI',
+    body: 'Agent-ID: Macbeth06\nTask-ID: M3-06-CI-GATES',
+  };
+  assert.deepEqual(validateCommitIdentity(input), { agentId: 'Macbeth06', taskId: 'M3-06-CI-GATES' });
+  for (const patch of [
+    { branch: 'macbeth05/M3-06-CI-GATES' },
+    { branch: 'macbeth07/M3-06-CI-GATES' },
+    { body: 'Agent-ID: Macbeth06\nTask-ID: M3-05-CI-GATES' },
+    { subject: '[Macbeth05][M3-06-CI-GATES] Verify CI' },
+  ])
+    assert.throws(() => validateCommitIdentity({ ...input, ...patch }));
+});
+
+test('Forum routes an owned CI-worker report but rejects another worker impersonating it', () => {
+  const source = {
+    source_type: 'PR_DESCRIPTION',
+    source_url: github('/pull/22'),
+    pr_url: github('/pull/22'),
+    pr_number: 22,
+    pr_head_ref: 'macbeth06/M3-06-CI-GATES',
+    pr_title: '[Macbeth06][M3-06-CI-GATES] Verify CI',
+    pr_author: 'pdbsy',
+    github_author: 'pdbsy',
+    pr_head_repo: 'pdbsy/quantpass-arbitrum-hackathon',
+    text: message({
+      agent: 'Macbeth06',
+      to: 'Macbeth01',
+      thread: 'M3-06-CI-GATES',
+      relatedPr: github('/pull/22'),
+    }),
+    created_at: '2026-09-20T00:00:00.000Z',
+    updated_at: '2026-09-20T00:00:00.000Z',
+  };
+  const snapshot = buildForumSnapshot([source]);
+  assert.equal(snapshot.messages.length, 1);
+  assert.equal(snapshot.messages[0].agent, 'Macbeth06');
+  assert.equal(buildForumSnapshot([{ ...source, pr_head_ref: 'macbeth05/qa' }]).messages.length, 0);
 });
 
 test('registry rejects duplicate agents, unknown names and mismatched prefixes', () => {

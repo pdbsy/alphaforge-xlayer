@@ -1,0 +1,630 @@
+import {
+  asAddress,
+  asBlockHash,
+  asHexData,
+  sameAddress,
+  type Address,
+  type BlockHash,
+  type HexData,
+  type TransactionHash,
+} from '../../../packages/chain-adapter/src/types.ts';
+import { decodeM3VaultCalldata } from '../../../packages/chain-adapter/src/vault-abi.ts';
+import { ROBINHOOD_CHAIN_TESTNET } from '../../../packages/robinhood-chain/src/network.ts';
+import {
+  Eip1193Wallet,
+  Eip1193WalletConnection,
+  WalletFailure,
+  type Eip1193Provider,
+  type WalletSession,
+  type WalletSubmission,
+} from './chain-wallet.ts';
+import { M3ChainActionFlow, type M3ActionReview } from './m3-chain-action-flow.ts';
+import { transactionPresentationFromEvidence, type M3ProductChainPresentation } from './m3-product-shell.ts';
+import {
+  type M3DepositApprovalKind,
+  type M3DepositApprovalReview,
+  type M3ProductActionRequest,
+  type M3ProductActionReview,
+  type M3ProductRuntime,
+} from './m3-product-runtime.ts';
+import { createM3VaultActionFactory } from './m3-vault-actions.ts';
+import { readM3VaultDepositAuthorization, type M3DepositAuthorization } from './m3-vault-allowance.ts';
+import { M3VaultApiClient, type M3VaultSnapshot } from './m3-vault-client.ts';
+import { readM3VaultLiveSnapshot } from './m3-vault-live-reader.ts';
+import {
+  type ProductOperationEvidence,
+  type SimulatingRobinhoodTestnetStrategyAdapter,
+} from './strategy-adapter.ts';
+
+export interface M3BrowserDeploymentConfig {
+  readonly source: 'reviewed-deployment-manifest';
+  readonly chainId: 46_630;
+  readonly vaultAddress: Address;
+  readonly deploymentBlock: string;
+  readonly abiVersion: string;
+  readonly manifestDigest: BlockHash;
+  readonly runtimeBytecodeHash: BlockHash;
+}
+
+export interface M3VaultReader {
+  readSnapshot(owner: Address): Promise<M3VaultSnapshot>;
+  registerSubmission?(input: {
+    readonly operationId: string;
+    readonly chainId: 46_630;
+    readonly owner: Address;
+    readonly target: Address;
+    readonly calldata: HexData;
+    readonly txHash: TransactionHash;
+  }): Promise<unknown>;
+  readOperationEvidence?(operationId: string, owner: Address): Promise<ProductOperationEvidence>;
+}
+
+export interface M3BrowserRuntimeOptions {
+  readonly provider?: Eip1193Provider;
+  readonly deployment?: M3BrowserDeploymentConfig;
+  readonly vaultReader?: M3VaultReader;
+  readonly now?: () => string;
+  readonly transportProvenance?: 'DEV_MOCK';
+}
+
+const supportedActions = ['deposit', 'withdraw', 'close'] as const;
+type RuntimeSnapshot =
+  | { readonly source: 'CANONICAL'; readonly value: M3VaultSnapshot }
+  | { readonly source: 'LIVE_EXIT'; readonly value: M3VaultSnapshot };
+
+interface PendingOperation {
+  readonly operationId: string;
+  readonly owner: Address;
+  readonly txHash: TransactionHash;
+}
+
+function operationId(kind: M3ProductActionRequest['kind'] | `approve-${M3DepositApprovalKind}`): string {
+  if (!globalThis.crypto?.randomUUID) throw new Error('M3_OPERATION_ID_UNAVAILABLE');
+  const value = `m3-${kind}-${globalThis.crypto.randomUUID().replaceAll('-', '')}`;
+  if (!/^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/.test(value)) throw new Error('INVALID_OPERATION_ID');
+  return value;
+}
+
+function validDeployment(value: M3BrowserDeploymentConfig | undefined): M3BrowserDeploymentConfig | null {
+  if (!value) return null;
+  if (
+    value.source !== 'reviewed-deployment-manifest' ||
+    value.chainId !== ROBINHOOD_CHAIN_TESTNET.chainId ||
+    !/^(0|[1-9][0-9]*)$/.test(value.deploymentBlock) ||
+    !/^[A-Za-z][A-Za-z0-9._-]{0,63}$/.test(value.abiVersion)
+  )
+    throw new Error('INVALID_M3_DEPLOYMENT_CONFIG');
+  return Object.freeze({
+    ...value,
+    vaultAddress: asAddress(value.vaultAddress),
+    manifestDigest: asBlockHash(value.manifestDigest),
+    runtimeBytecodeHash: asBlockHash(value.runtimeBytecodeHash),
+  });
+}
+
+function initialSnapshot(deployment: M3BrowserDeploymentConfig | null): M3ProductChainPresentation {
+  const snapshot: M3ProductChainPresentation = {
+    wallet: { status: 'DISCONNECTED' },
+    network: { status: 'UNAVAILABLE' },
+    transaction: { status: 'IDLE' },
+    onchain: deployment
+      ? {
+          deployment: 'CONFIGURED',
+          health: 'UNAVAILABLE',
+          readiness: 'UNKNOWN',
+          owner: 'UNKNOWN',
+          writeMode: 'DISABLED',
+          exitPath: 'UNAVAILABLE',
+          supportedActions,
+          vaultAddress: deployment.vaultAddress,
+        }
+      : {
+          deployment: 'UNAVAILABLE',
+          health: 'UNAVAILABLE',
+          readiness: 'UNKNOWN',
+          owner: 'UNKNOWN',
+          writeMode: 'DISABLED',
+          exitPath: 'UNAVAILABLE',
+          supportedActions: [],
+        },
+  };
+  return Object.freeze(snapshot);
+}
+
+function productAction(request: M3ProductActionRequest, operationId: string) {
+  return request.kind === 'close'
+    ? ({ operationId, type: 'close' } as const)
+    : ({ operationId, type: request.kind, usdcBaseUnits: request.usdcBaseUnits } as const);
+}
+
+class M3BrowserRuntime implements M3ProductRuntime {
+  readonly #provider: Eip1193Provider | null;
+  readonly #deployment: M3BrowserDeploymentConfig | null;
+  readonly #reader: M3VaultReader | null;
+  readonly #connection: Eip1193WalletConnection | null;
+  readonly #flow: M3ChainActionFlow<RuntimeSnapshot, M3ProductActionRequest, never> | null;
+  readonly #listeners = new Set<() => void>();
+  readonly #actionReviews = new WeakMap<M3ProductActionReview, M3ActionReview>();
+  readonly #approvalReviews = new WeakMap<M3DepositApprovalReview, M3DepositAuthorization>();
+  readonly #now: () => string;
+  readonly #writeMode: 'INJECTED_MOCK' | 'LIVE_AUTHORIZED';
+  #pendingOperation: PendingOperation | null = null;
+  #session: WalletSession | null = null;
+  #snapshot: M3ProductChainPresentation;
+
+  constructor(options: M3BrowserRuntimeOptions) {
+    this.#provider = options.provider ?? null;
+    this.#deployment = validDeployment(options.deployment);
+    this.#reader = this.#deployment ? (options.vaultReader ?? new M3VaultApiClient()) : null;
+    this.#connection = this.#provider
+      ? new Eip1193WalletConnection(this.#provider, ROBINHOOD_CHAIN_TESTNET.chainId)
+      : null;
+    this.#now = options.now ?? (() => new Date().toISOString());
+    this.#writeMode = options.transportProvenance === 'DEV_MOCK' ? 'INJECTED_MOCK' : 'LIVE_AUTHORIZED';
+    this.#snapshot = initialSnapshot(this.#deployment);
+
+    if (this.#provider && this.#deployment && this.#reader) {
+      const factory = createM3VaultActionFactory({
+        chainId: this.#deployment.chainId,
+        target: this.#deployment.vaultAddress,
+      });
+      const wallet = new Eip1193Wallet(this.#provider, {
+        chainId: this.#deployment.chainId,
+        target: this.#deployment.vaultAddress,
+        actionAuthority: factory.authority,
+        now: this.#now,
+      });
+      const adapter: SimulatingRobinhoodTestnetStrategyAdapter<
+        RuntimeSnapshot,
+        M3ProductActionRequest,
+        never
+      > = {
+        mode: 'robinhood-testnet',
+        readSnapshot: ({ wallet: owner }) => {
+          if (!owner) return Promise.reject(new Error('WALLET_CONNECTION_REQUIRED'));
+          return this.#readFlowSnapshot(owner);
+        },
+        async observeOperation(): Promise<never> {
+          throw new Error('M3_OPERATION_OBSERVATION_NOT_REQUESTED');
+        },
+        prepareAction: async (request, context) =>
+          factory.prepare(productAction(request, operationId(request.kind)), context.owner),
+        simulateAction: async (prepared, context) => {
+          if (
+            context.snapshot.source === 'LIVE_EXIT' &&
+            decodeM3VaultCalldata(prepared.data)?.kind === 'DEPOSIT'
+          )
+            return { ok: false, errorCode: 'M3_CANONICAL_PROJECTION_REQUIRED' } as const;
+          try {
+            const result = await this.#provider!.request({
+              method: 'eth_call',
+              params: [
+                {
+                  from: prepared.owner,
+                  to: prepared.target,
+                  data: prepared.data,
+                  value: `0x${prepared.value.toString(16)}`,
+                },
+                'latest',
+              ],
+            });
+            asHexData(String(result));
+            return { ok: true } as const;
+          } catch {
+            return { ok: false, errorCode: 'M3_LIVE_SIMULATION_FAILED' } as const;
+          }
+        },
+        submitAction: async (prepared, port) => {
+          const submission = await port.submit(prepared);
+          if (submission.state !== 'SUBMITTED') return submission;
+          try {
+            if (!this.#reader?.registerSubmission) throw new Error('M3_SUBMISSION_REGISTRATION_UNAVAILABLE');
+            await this.#reader.registerSubmission({
+              operationId: prepared.operationId,
+              chainId: this.#deployment!.chainId,
+              owner: prepared.owner,
+              target: prepared.target,
+              calldata: prepared.data,
+              txHash: submission.txHash,
+            });
+            this.#pendingOperation = Object.freeze({
+              operationId: prepared.operationId,
+              owner: prepared.owner,
+              txHash: submission.txHash,
+            });
+            return submission;
+          } catch {
+            return Object.freeze({
+              operationId: prepared.operationId,
+              requestedChainId: prepared.chainId,
+              requestedOwner: prepared.owner,
+              target: prepared.target,
+              state: 'SUBMISSION_AMBIGUOUS',
+              txHash: submission.txHash,
+              observedAt: this.#now(),
+              reason: 'LOCAL_EVIDENCE_INVALID',
+              retryable: false,
+            });
+          }
+        },
+      };
+      this.#flow = new M3ChainActionFlow(adapter, wallet);
+    } else {
+      this.#flow = null;
+    }
+  }
+
+  get snapshot(): M3ProductChainPresentation {
+    return this.#snapshot;
+  }
+
+  #publish(snapshot: M3ProductChainPresentation): void {
+    this.#snapshot = Object.freeze(snapshot);
+    for (const listener of this.#listeners) listener();
+  }
+
+  async #readCanonicalSnapshot(owner: Address): Promise<M3VaultSnapshot> {
+    if (!this.#reader || !this.#deployment) throw new Error('M3_DEPLOYMENT_NOT_CONFIGURED');
+    const snapshot = await this.#reader.readSnapshot(owner);
+    if (
+      snapshot.chainId !== this.#deployment.chainId ||
+      !sameAddress(snapshot.contract, this.#deployment.vaultAddress) ||
+      !sameAddress(snapshot.owner, owner) ||
+      !sameAddress(snapshot.state.owner, owner)
+    )
+      throw new Error('M3_VAULT_SNAPSHOT_MISMATCH');
+    return snapshot;
+  }
+
+  async #readLiveExitSnapshot(): Promise<RuntimeSnapshot> {
+    if (!this.#provider || !this.#deployment) throw new Error('M3_LIVE_EXIT_READ_UNAVAILABLE');
+    return Object.freeze({
+      source: 'LIVE_EXIT',
+      value: await readM3VaultLiveSnapshot(this.#provider, {
+        chainId: this.#deployment.chainId,
+        vaultAddress: this.#deployment.vaultAddress,
+      }),
+    });
+  }
+
+  async #readFlowSnapshot(owner: Address): Promise<RuntimeSnapshot> {
+    try {
+      return Object.freeze({ source: 'CANONICAL', value: await this.#readCanonicalSnapshot(owner) });
+    } catch {
+      return this.#readLiveExitSnapshot();
+    }
+  }
+
+  #presentation(
+    session: WalletSession,
+    snapshot: RuntimeSnapshot,
+    authorization?: M3DepositAuthorization,
+  ): M3ProductChainPresentation {
+    const contractOwner = snapshot.value.owner;
+    const vaultAddress = snapshot.value.contract;
+    const owner = sameAddress(contractOwner, session.account);
+    const live = snapshot.source === 'CANONICAL';
+    const closed = snapshot.value.state.closed;
+    return {
+      wallet: { status: 'CONNECTED', address: session.account },
+      network: { status: 'CORRECT', chainId: session.chainId },
+      transaction: this.#snapshot.transaction,
+      onchain: {
+        deployment: 'CONFIGURED',
+        health: live ? 'LIVE' : 'DEGRADED',
+        readiness: 'FINALITY_UNKNOWN',
+        owner: owner ? 'OWNER' : 'NON_OWNER',
+        vaultClosed: closed,
+        writeMode: owner && !closed ? this.#writeMode : 'DISABLED',
+        exitPath: owner && !closed ? 'SIMULATION' : 'UNAVAILABLE',
+        supportedActions: closed ? [] : live ? supportedActions : (['withdraw', 'close'] as const),
+        vaultAddress,
+        ...(authorization && !closed
+          ? {
+              depositAuthorization: {
+                spender: authorization.summary.vault,
+                afUsdcAllowanceBaseUnits: authorization.summary.usdcAllowance,
+                passAllowanceBaseUnits: authorization.summary.passAllowance,
+                approvalCapability: 'AVAILABLE' as const,
+              },
+            }
+          : {}),
+      },
+    };
+  }
+
+  async #authorization(session: WalletSession, usdcBaseUnits: string): Promise<M3DepositAuthorization> {
+    if (!this.#provider || !this.#deployment) throw new Error('M3_DEPLOYMENT_NOT_CONFIGURED');
+    return readM3VaultDepositAuthorization(this.#provider, {
+      chainId: this.#deployment.chainId,
+      vault: this.#deployment.vaultAddress,
+      owner: session.account,
+      usdcBaseUnits,
+    });
+  }
+
+  async #connectedPresentation(
+    session: WalletSession,
+    snapshot: RuntimeSnapshot,
+  ): Promise<M3ProductChainPresentation> {
+    if (snapshot.source === 'LIVE_EXIT') return this.#presentation(session, snapshot);
+    try {
+      return this.#presentation(session, snapshot, await this.#authorization(session, '1'));
+    } catch {
+      return this.#presentation(session, snapshot);
+    }
+  }
+
+  async connect(): Promise<void> {
+    if (!this.#connection) {
+      const error = new Error('WALLET_PROVIDER_UNAVAILABLE');
+      this.#publish({
+        ...this.#snapshot,
+        wallet: { status: 'DISCONNECTED', errorCode: error.message },
+        network: { status: 'UNAVAILABLE' },
+      });
+      throw error;
+    }
+    this.#session = null;
+    this.#publish({ ...this.#snapshot, wallet: { status: 'CONNECTING' } });
+    try {
+      if (this.#flow) {
+        const connected = await this.#flow.connect();
+        this.#session = connected.session;
+        this.#publish(await this.#connectedPresentation(connected.session, connected.snapshot));
+      } else {
+        const session = await this.#connection.connect();
+        this.#session = session;
+        this.#publish({
+          ...this.#snapshot,
+          wallet: { status: 'CONNECTED', address: session.account },
+          network: { status: 'CORRECT', chainId: session.chainId },
+        });
+      }
+    } catch (error) {
+      const code = error instanceof WalletFailure ? error.code : 'WALLET_REQUEST_FAILED';
+      let observed = null;
+      try {
+        observed = await this.#connection.observe();
+      } catch {
+        // The original sanitized wallet error remains authoritative.
+      }
+      this.#publish({
+        ...this.#snapshot,
+        wallet: {
+          status: code === 'WALLET_REJECTED' ? 'CONNECTION_REJECTED' : 'DISCONNECTED',
+          ...(observed ? { address: observed.account } : {}),
+          errorCode: code,
+        },
+        network: observed
+          ? {
+              status: observed.chainId === ROBINHOOD_CHAIN_TESTNET.chainId ? 'CORRECT' : 'WRONG',
+              chainId: observed.chainId,
+            }
+          : { status: code === 'WALLET_WRONG_CHAIN' ? 'WRONG' : 'UNAVAILABLE' },
+      });
+      throw error;
+    }
+  }
+
+  async refresh(): Promise<void> {
+    if (!this.#connection) return;
+    const observed = await this.#connection.observe();
+    if (!observed) {
+      this.#session = null;
+      this.#publish({
+        ...this.#snapshot,
+        wallet: { status: 'DISCONNECTED', errorCode: 'WALLET_DISCONNECTED' },
+        network: { status: 'UNAVAILABLE' },
+      });
+      return;
+    }
+    if (this.#session && !sameAddress(observed.account, this.#session.account)) {
+      this.#session = null;
+      this.#publish({
+        ...this.#snapshot,
+        wallet: { status: 'ACCOUNT_CHANGED', address: observed.account },
+        network: {
+          status: observed.chainId === ROBINHOOD_CHAIN_TESTNET.chainId ? 'CORRECT' : 'WRONG',
+          chainId: observed.chainId,
+        },
+        onchain: { ...this.#snapshot.onchain, owner: 'UNKNOWN', writeMode: 'DISABLED' },
+      });
+      return;
+    }
+    if (observed.chainId !== ROBINHOOD_CHAIN_TESTNET.chainId) {
+      this.#publish({
+        ...this.#snapshot,
+        wallet: { status: 'CONNECTED', address: observed.account },
+        network: { status: 'WRONG', chainId: observed.chainId },
+        onchain: { ...this.#snapshot.onchain, owner: 'UNKNOWN', writeMode: 'DISABLED' },
+      });
+      return;
+    }
+    if (this.#deployment && this.#reader && this.#session) {
+      let snapshot = await this.#readFlowSnapshot(this.#session.account);
+      let presentation = await this.#connectedPresentation(this.#session, snapshot);
+      const pending = this.#pendingOperation;
+      if (
+        pending &&
+        sameAddress(pending.owner, this.#session.account) &&
+        this.#reader.readOperationEvidence
+      ) {
+        try {
+          const evidence = await this.#reader.readOperationEvidence(pending.operationId, pending.owner);
+          if (evidence.indexerStatus === 'DEGRADED' && snapshot.source !== 'LIVE_EXIT') {
+            snapshot = await this.#readLiveExitSnapshot();
+            presentation = await this.#connectedPresentation(this.#session, snapshot);
+          }
+          presentation = {
+            ...presentation,
+            transaction: transactionPresentationFromEvidence(evidence, pending.txHash),
+            onchain: {
+              ...presentation.onchain,
+              health: evidence.indexerStatus === 'DEGRADED' ? 'DEGRADED' : presentation.onchain.health,
+              readiness:
+                evidence.chainStatus === 'SOFT_READY'
+                  ? 'SOFT_READY'
+                  : evidence.chainStatus === 'REORGED'
+                    ? 'REORGED'
+                    : 'FINALITY_UNKNOWN',
+            },
+          };
+        } catch {
+          try {
+            snapshot = await this.#readLiveExitSnapshot();
+            presentation = {
+              ...(await this.#connectedPresentation(this.#session, snapshot)),
+              transaction: this.#snapshot.transaction,
+            };
+          } catch {
+            presentation = {
+              ...presentation,
+              onchain: { ...presentation.onchain, health: 'DEGRADED' },
+            };
+          }
+        }
+      }
+      this.#publish(presentation);
+    } else {
+      this.#publish({
+        ...this.#snapshot,
+        wallet: { status: 'CONNECTED', address: observed.account },
+        network: {
+          status: observed.chainId === ROBINHOOD_CHAIN_TESTNET.chainId ? 'CORRECT' : 'WRONG',
+          chainId: observed.chainId,
+        },
+      });
+    }
+  }
+
+  async reviewDepositApprovals(
+    request: Extract<M3ProductActionRequest, { readonly kind: 'deposit' }>,
+  ): Promise<M3DepositApprovalReview> {
+    const session = this.#session;
+    if (!session || !this.#deployment) throw new Error('WALLET_CONNECTION_REQUIRED');
+    const snapshot = await this.#readCanonicalSnapshot(session.account);
+    const authorization = await this.#authorization(session, request.usdcBaseUnits);
+    this.#publish(
+      this.#presentation(session, Object.freeze({ source: 'CANONICAL', value: snapshot }), authorization),
+    );
+    const requirements: M3DepositApprovalReview['requirements'] = [
+      Object.freeze({
+        kind: 'af-usdc' as const,
+        token: authorization.usdcApproval.token,
+        spender: authorization.usdcApproval.spender,
+        requiredRaw: authorization.usdcApproval.requiredRaw,
+        allowance: authorization.usdcApproval.allowance,
+        sufficient: authorization.usdcApproval.sufficient,
+      }),
+      Object.freeze({
+        kind: 'pass' as const,
+        token: authorization.passApproval.token,
+        spender: authorization.passApproval.spender,
+        requiredRaw: authorization.passApproval.requiredRaw,
+        allowance: authorization.passApproval.allowance,
+        sufficient: authorization.passApproval.sufficient,
+      }),
+    ];
+    const review: M3DepositApprovalReview = Object.freeze({
+      owner: session.account,
+      vaultAddress: this.#deployment.vaultAddress,
+      request,
+      requirements: Object.freeze(requirements),
+    });
+    this.#approvalReviews.set(review, authorization);
+    return review;
+  }
+
+  async confirmDepositApproval(
+    review: M3DepositApprovalReview,
+    kind: M3DepositApprovalKind,
+  ): Promise<WalletSubmission> {
+    const authorization = this.#approvalReviews.get(review);
+    if (!authorization || !this.#provider || !this.#deployment)
+      throw new Error('INVALID_DEPOSIT_APPROVAL_REVIEW');
+    this.#approvalReviews.delete(review);
+    const requirement = kind === 'af-usdc' ? authorization.usdcApproval : authorization.passApproval;
+    if (requirement.sufficient) throw new Error('DEPOSIT_APPROVAL_ALREADY_SUFFICIENT');
+    const wallet = new Eip1193Wallet(this.#provider, {
+      chainId: this.#deployment.chainId,
+      target: requirement.token,
+      actionAuthority: requirement.factory.authority,
+      now: this.#now,
+    });
+    const prepared = requirement.factory.prepare(
+      { operationId: operationId(`approve-${kind}`) },
+      review.owner,
+    );
+    this.#publish({ ...this.#snapshot, transaction: { status: 'WALLET_PENDING' } });
+    const submission = await wallet.submit(prepared);
+    this.#publish({
+      ...this.#snapshot,
+      transaction:
+        submission.state === 'SUBMITTED'
+          ? { status: 'SUBMITTED', txHash: submission.txHash }
+          : {
+              status: 'SUBMISSION_AMBIGUOUS',
+              ...(submission.txHash ? { txHash: submission.txHash } : {}),
+              errorCode: submission.reason,
+            },
+    });
+    return submission;
+  }
+
+  async reviewAction(request: M3ProductActionRequest): Promise<M3ProductActionReview> {
+    if (!this.#flow || !this.#session) throw new Error('M3_DEPLOYMENT_NOT_CONFIGURED');
+    if (request.kind === 'deposit') {
+      const snapshot = await this.#readCanonicalSnapshot(this.#session.account);
+      const authorization = await this.#authorization(this.#session, request.usdcBaseUnits);
+      this.#publish(
+        this.#presentation(
+          this.#session,
+          Object.freeze({ source: 'CANONICAL', value: snapshot }),
+          authorization,
+        ),
+      );
+      if (!authorization.usdcApproval.sufficient || !authorization.passApproval.sufficient)
+        throw new Error('DEPOSIT_APPROVAL_REQUIRED');
+    }
+    this.#publish({ ...this.#snapshot, transaction: { status: 'WALLET_APPROVAL_REQUIRED' } });
+    const internal = await this.#flow.review(request);
+    const review = Object.freeze({
+      operationId: internal.operationId,
+      owner: internal.owner,
+      request,
+    });
+    this.#actionReviews.set(review, internal);
+    return review;
+  }
+
+  async confirmAction(review: M3ProductActionReview): Promise<WalletSubmission> {
+    if (!this.#flow) throw new Error('M3_DEPLOYMENT_NOT_CONFIGURED');
+    const internal = this.#actionReviews.get(review);
+    if (!internal) throw new Error('INVALID_PRODUCT_REVIEW');
+    this.#actionReviews.delete(review);
+    this.#publish({ ...this.#snapshot, transaction: { status: 'WALLET_PENDING' } });
+    const submission = await this.#flow.confirm(internal);
+    this.#publish({
+      ...this.#snapshot,
+      transaction:
+        submission.state === 'SUBMITTED'
+          ? { status: 'SUBMITTED', txHash: submission.txHash }
+          : {
+              status: 'SUBMISSION_AMBIGUOUS',
+              ...(submission.txHash ? { txHash: submission.txHash } : {}),
+              errorCode: submission.reason,
+            },
+    });
+    return submission;
+  }
+
+  subscribe(listener: () => void): () => void {
+    this.#listeners.add(listener);
+    return () => this.#listeners.delete(listener);
+  }
+}
+
+export function createM3BrowserRuntime(options: M3BrowserRuntimeOptions): M3ProductRuntime {
+  return new M3BrowserRuntime(options);
+}

@@ -1,3 +1,4 @@
+import { validateCIGateWorkflows } from './ci/workflow-contract.mjs';
 import { createHash } from 'node:crypto';
 import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
@@ -316,21 +317,29 @@ const workflowProfiles = new Map([
         ['verify', readContents],
         ['verify-windows', readContents],
         ['verify-macos', readContents],
+        ['contracts-m3-macos', readContents],
+        ['source-policy-js', readContents],
+        ['dependency-delta-audit', readContents],
+        ['semgrep-ce', readContents],
+        ['osv-scanner', readContents],
+        ['gitleaks', readContents],
       ]),
     },
   ],
   [
     '.github/workflows/dependency-review.yml',
     {
-      events: ['pull_request'],
+      events: ['workflow_dispatch'],
       jobs: new Map([['dependency-review', readContents]]),
     },
   ],
   [
     '.github/workflows/codeql.yml',
     {
-      events: ['push', 'pull_request', 'schedule', 'workflow_dispatch'],
-      jobs: new Map([['analyze', { contents: 'read', packages: 'read', 'security-events': 'write' }]]),
+      events: ['workflow_dispatch'],
+      jobs: new Map([
+        ['analyze', { contents: 'read', actions: 'read', packages: 'read', 'security-events': 'write' }],
+      ]),
     },
   ],
 ]);
@@ -570,6 +579,7 @@ export async function checkSupplyChain(options = {}) {
   for (const name of workflows) {
     const text = await readFile(resolve(workflowsPath, name), 'utf8');
     validateWorkflowText(`.github/workflows/${name}`, text, policy);
+    if (name === 'ci.yml') validateCIGateWorkflows(text);
   }
   if (options.write) {
     await mkdir(dirname(sbomPath), { recursive: true });

@@ -16,7 +16,13 @@ UPSTREAM = ROOT / 'node_modules/@openzeppelin/contracts'
 def derive_source(data, entry):
     if hashlib.sha256(data).hexdigest() != entry['originalSha256']:
         raise ValueError('Original checksum mismatch: ' + entry['path'])
-    if entry['pragma'] not in ('pragma solidity ^0.8.20;', 'pragma solidity >=0.4.16;'):
+    supported_pragmas = {
+        'pragma solidity ^0.8.20;',
+        'pragma solidity >=0.4.16;',
+        'pragma solidity >=0.6.2;',
+        'pragma solidity >=0.8.4;',
+    }
+    if entry['pragma'] not in supported_pragmas:
         raise ValueError('Unsupported pragma constraint')
     old = entry['pragma'].encode()
     if data.count(old) != 1 or b'\n' + old + b'\n' not in data:
@@ -68,8 +74,23 @@ def materialize(upstream, target, entries, license_data):
     return expected
 
 
+def project_sources(root=ROOT):
+    source_root = root / 'src'
+    reject_symlinks(source_root)
+    sources = {}
+    for path in sorted(source_root.rglob('*.sol')):
+        reject_symlinks(path)
+        if not path.is_file():
+            raise ValueError('Nonregular project source')
+        name = path.relative_to(root).as_posix()
+        sources[name] = {'content': path.read_text()}
+    if not sources:
+        raise ValueError('No project Solidity sources')
+    return sources
+
+
 def compile_outputs(dependency, entries):
-    sources = {'src/VaultIntentPreview.sol': {'content': (ROOT / 'src/VaultIntentPreview.sol').read_text()}}
+    sources = project_sources()
     for entry in entries:
         sources['@openzeppelin/contracts/' + entry['path']] = {'content': (dependency / entry['path']).read_text()}
     request = {'language': 'Solidity', 'sources': sources, 'settings': {
@@ -83,8 +104,8 @@ def compile_outputs(dependency, entries):
     if any(error['severity'] == 'error' for error in output.get('errors', [])):
         raise ValueError('Dependency equivalence compilation failed')
     contracts = output.get('contracts', {})
-    if not contracts.get('src/VaultIntentPreview.sol', {}).get('VaultIntentPreview', {}).get('evm', {}).get('bytecode', {}).get('object'):
-        raise ValueError('No preview creation bytecode to compare')
+    if not all(name in contracts for name in project_sources()):
+        raise ValueError('Missing project compilation output')
     return contracts
 
 
@@ -97,16 +118,21 @@ def verify_equivalence(original, derived):
 
 def verify_forge_output():
     entries = json.loads((ROOT / 'openzeppelin-pragma-pins.json').read_text())['files']
-    expected = compile_outputs(TARGET, entries)['src/VaultIntentPreview.sol']['VaultIntentPreview']
-    actual = json.loads((ROOT / '../.checks/af-chain01/out/VaultIntentPreview.sol/VaultIntentPreview.json').read_text())
-    # Forge reorders ABI entries; compare complete entries in canonical order.
-    expected['abi'] = sorted(expected['abi'], key=lambda entry: json.dumps(entry, sort_keys=True))
-    actual_abi = sorted(actual['abi'], key=lambda entry: json.dumps(entry, sort_keys=True))
-    verify_equivalence(expected, {'abi': actual_abi, 'evm': {
-        'bytecode': {'object': actual['bytecode']['object'].removeprefix('0x')},
-        'deployedBytecode': {'object': actual['deployedBytecode']['object'].removeprefix('0x')}
-    }})
-    print('Forge preview ABI and creation/runtime bytecode match verified dependency comparison')
+    expected_outputs = compile_outputs(TARGET, entries)
+    compared = 0
+    for source_name in project_sources():
+        for contract_name, expected in expected_outputs[source_name].items():
+            artifact = ROOT / '../.checks/af-chain01/out' / Path(source_name).name / f'{contract_name}.json'
+            actual = json.loads(artifact.read_text())
+            # Forge reorders ABI entries; compare complete entries in canonical order.
+            expected_abi = sorted(expected['abi'], key=lambda entry: json.dumps(entry, sort_keys=True))
+            actual_abi = sorted(actual['abi'], key=lambda entry: json.dumps(entry, sort_keys=True))
+            verify_equivalence({'abi': expected_abi, 'evm': expected['evm']}, {'abi': actual_abi, 'evm': {
+                'bytecode': {'object': actual['bytecode']['object'].removeprefix('0x')},
+                'deployedBytecode': {'object': actual['deployedBytecode']['object'].removeprefix('0x')}
+            }})
+            compared += 1
+    print(f'{compared} Forge project contracts match verified dependency comparison')
 
 
 def prepare():
@@ -130,4 +156,4 @@ def prepare():
     directory = ROOT / '../.checks/af-chain01/evidence'
     directory.mkdir(parents=True, exist_ok=True)
     (directory / 'dependency-equivalence.json').write_text(json.dumps(evidence, indent=2) + '\n')
-    print('Pinned dependency: 10 pragma-only changes; original/derived ABI and bytecode identical')
+    print(f'Pinned dependency: {len(entries)} pragma-only changes; original/derived ABI and bytecode identical')

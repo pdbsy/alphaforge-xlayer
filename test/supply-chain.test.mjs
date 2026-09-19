@@ -282,3 +282,14 @@ test('removed Intel macOS job is outside the reviewed workflow profile', () => {
     /unknown job|unapproved job/,
   );
 });
+
+test('private CodeQL job has only read access to Actions metadata', async () => {
+  const path = '.github/workflows/codeql.yml';
+  const text = await readFile(new URL('../.github/workflows/codeql.yml', import.meta.url), 'utf8');
+  assert.match(text, /^ {6}actions: read$/m);
+  assert.doesNotThrow(() => validateWorkflowText(path, text, policy));
+  assert.throws(
+    () => validateWorkflowText(path, text.replace('      actions: read', '      actions: write'), policy),
+    /Invalid supply-chain state/,
+  );
+});

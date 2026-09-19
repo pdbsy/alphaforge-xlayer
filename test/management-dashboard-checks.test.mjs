@@ -40,7 +40,7 @@ function clock(...values) {
   return () => instants.shift() ?? new Date(values.at(-1));
 }
 
-test('check registry has unique fixed commands and explicit unavailable toolchains', () => {
+test('check registry has unique fixed commands and explicit unregistered checks', () => {
   const ids = CHECK_REGISTRY.map((check) => check.id);
   assert.equal(new Set(ids).size, ids.length);
   assert.deepEqual(ids, [
@@ -70,7 +70,7 @@ test('check registry has unique fixed commands and explicit unavailable toolchai
       assert.ok(Number.isInteger(check.timeoutMs) && check.timeoutMs > 0);
     } else {
       assert.equal(check.status, 'NOT_RUN');
-      assert.equal(check.reason, 'APPROVED_TOOLCHAIN_NOT_AVAILABLE');
+      assert.equal(check.reason, 'NOT_REGISTERED_IN_MANAGEMENT_COLLECTOR');
       assert.equal('file' in check, false);
       assert.equal('args' in check, false);
     }
@@ -169,7 +169,7 @@ test('unavailable checks stay NOT_RUN without invoking a process', async () => {
   });
   assert.equal(result.record.status, 'NOT_RUN');
   assert.equal(result.record.exitCode, null);
-  assert.equal(result.record.reason, 'APPROVED_TOOLCHAIN_NOT_AVAILABLE');
+  assert.equal(result.record.reason, 'NOT_REGISTERED_IN_MANAGEMENT_COLLECTOR');
   assert.equal(processCalls, 0);
 });
 

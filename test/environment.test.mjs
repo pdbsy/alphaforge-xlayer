@@ -101,6 +101,21 @@ test('admission rejects wrong tools, architecture, registry, TLS, omission and h
   }
 });
 
+test('new CI gates are admitted only on their assigned native platform', () => {
+  for (const [job, platform, arch] of [
+    ['contracts-m3-macos', 'darwin', 'arm64'],
+    ['source-policy-js', 'linux', 'x64'],
+    ['dependency-delta-audit', 'linux', 'x64'],
+    ['semgrep-ce', 'linux', 'x64'],
+    ['osv-scanner', 'linux', 'x64'],
+    ['gitleaks', 'linux', 'x64'],
+  ]) {
+    const candidate = { ...observation(), job, platform, arch, nativeArch: arch };
+    assert.equal(evaluate(inputs(), candidate, 'ci').exitCode, 0);
+    assert.equal(evaluate(inputs(), { ...candidate, platform: 'win32' }, 'ci').exitCode, 1);
+  }
+});
+
 test('missing history is BLOCKED; developer dirt is diagnostic only; contracts remain NOT_RUN', () => {
   let o = observation();
   o.historyValid = false;
