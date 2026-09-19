@@ -12,6 +12,8 @@ import { apiError } from './api-errors.ts';
 import { view, accountView } from './product-views.ts';
 
 import { registerProductRoutes } from './product-routes.ts';
+import { registerChainEvidenceRoutes } from './chain-routes.ts';
+import type { M3ChainRuntime } from './m3-chain-runtime.ts';
 import { idSchema, amountSchema, limitSchema } from './api-schema.ts';
 
 export { STRATEGIES } from './strategy-catalog.ts';
@@ -49,6 +51,7 @@ export async function buildApp(options: {
   env: Readonly<Record<string, string | undefined>>;
   origin: string;
   webRoot?: string;
+  chainRuntime?: M3ChainRuntime;
 }) {
   readConfig(options.env);
   const origin = new URL(options.origin);
@@ -72,6 +75,7 @@ export async function buildApp(options: {
   };
   app.addHook('onClose', async () => {
     store.close();
+    options.chainRuntime?.close();
   });
   await app.register(cookie);
   app.addHook('onRequest', async (request, reply) => {
@@ -286,6 +290,7 @@ export async function buildApp(options: {
       },
     );
   registerProductRoutes(app, store, session);
+  if (options.chainRuntime) registerChainEvidenceRoutes(app, options.chainRuntime.chainEvidence);
   if (options.webRoot)
     await app.register(staticFiles, {
       root: options.webRoot,

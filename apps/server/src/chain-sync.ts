@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type { ChainStore, IndexedChainEvent } from './chain-store.ts';
 import { transitionOperation, type ChainOperation } from '../../../packages/chain-adapter/src/lifecycle.ts';
 import type { DeploymentManifest } from '../../../packages/chain-adapter/src/manifest.ts';
+import { m3ChainSyncPolicy, type ChainSyncPolicy } from '../../../packages/chain-adapter/src/policy.ts';
 import type { ContractIntegration } from '../../../packages/chain-adapter/src/reconciliation.ts';
 import type { ChainBlock, ChainLog, ReadonlyRpc } from '../../../packages/chain-adapter/src/rpc.ts';
 import { sameAddress, sameHash, type TransactionHash } from '../../../packages/chain-adapter/src/types.ts';
@@ -14,6 +15,7 @@ export type ChainSyncFailureCode =
   | 'CHAIN_SYNC_TARGET_BEHIND'
   | 'CHAIN_SYNC_SUPERSEDED'
   | 'CHAIN_REORG_DEPTH_EXCEEDED'
+  | 'CHAIN_REORG_NO_COMMON_ANCESTOR'
   | 'CHAIN_BLOCK_UNAVAILABLE'
   | 'CHAIN_BLOCK_MISMATCH'
   | 'CHAIN_LOG_MISMATCH'
@@ -37,9 +39,8 @@ export interface ChainSynchronizerOptions {
   readonly store: ChainStore;
   readonly manifest: DeploymentManifest;
   readonly integration: ContractIntegration;
-  readonly confirmationDepth: number;
+  readonly policy: ChainSyncPolicy;
   readonly maxBlocksPerSync?: number;
-  readonly maxReorgDepth: number;
   readonly now?: () => string;
 }
 
@@ -75,9 +76,9 @@ export class ChainSynchronizer {
   readonly #store: ChainStore;
   readonly #manifest: DeploymentManifest;
   readonly #integration: ContractIntegration;
-  readonly #confirmationDepth: number;
+  readonly #softReadyDepth: number;
   readonly #maxBlocksPerSync: number;
-  readonly #maxReorgDepth: number;
+  readonly #reorgSearchLimit: number;
   readonly #now: () => string;
   #syncTail: Promise<void> = Promise.resolve();
 
@@ -86,15 +87,24 @@ export class ChainSynchronizer {
     this.#store = options.store;
     this.#manifest = options.manifest;
     this.#integration = options.integration;
-    this.#confirmationDepth = safePolicy(options.confirmationDepth, 10_000);
+    if (!options.policy) throw new Error('INVALID_CHAIN_SYNC_POLICY');
+    const policy = m3ChainSyncPolicy(options.policy);
+    this.#softReadyDepth = policy.softReadyDepth;
     this.#maxBlocksPerSync = safePolicy(options.maxBlocksPerSync ?? 2_000, 100_000);
-    this.#maxReorgDepth = safePolicy(options.maxReorgDepth, 10_000);
+    this.#reorgSearchLimit = policy.reorgSearchLimit;
     this.#now = options.now ?? (() => new Date().toISOString());
   }
 
   async #assertChain(): Promise<void> {
     if ((await this.#rpc.chainId()) !== this.#manifest.chainId)
       throw new ChainSyncFailure('CHAIN_ID_MISMATCH');
+  }
+
+  async head(): Promise<ChainBlock> {
+    await this.#assertChain();
+    const head = await this.#rpc.block('latest');
+    if (!head) throw new ChainSyncFailure('CHAIN_HEAD_UNAVAILABLE');
+    return head;
   }
 
   async #rewindIfNeeded(ownerToken: string): Promise<number> {
@@ -106,7 +116,7 @@ export class ChainSynchronizer {
 
     let candidate = checkpoint.blockNumber - 1n;
     let searched = 1;
-    while (candidate >= this.#manifest.deploymentBlock && searched <= this.#maxReorgDepth) {
+    while (candidate >= this.#manifest.deploymentBlock && searched <= this.#reorgSearchLimit) {
       const local = this.#store.canonicalBlock(
         this.#manifest.chainId,
         this.#manifest.contractAddress,
@@ -125,22 +135,18 @@ export class ChainSynchronizer {
       candidate--;
       searched++;
     }
-    if (candidate >= this.#manifest.deploymentBlock) {
-      this.#store.markSyncUnhealthy(
-        this.#manifest.chainId,
-        this.#manifest.contractAddress,
-        'CHAIN_REORG_DEPTH_EXCEEDED',
-        null,
-        ownerToken,
-      );
-      throw new ChainSyncFailure('CHAIN_REORG_DEPTH_EXCEEDED');
-    }
-    return this.#store.rollbackFromBlock(
+    const failure =
+      candidate >= this.#manifest.deploymentBlock
+        ? 'CHAIN_REORG_DEPTH_EXCEEDED'
+        : 'CHAIN_REORG_NO_COMMON_ANCESTOR';
+    this.#store.markSyncUnhealthy(
       this.#manifest.chainId,
       this.#manifest.contractAddress,
-      this.#manifest.deploymentBlock,
+      failure,
+      null,
       ownerToken,
-    ).blocks;
+    );
+    throw new ChainSyncFailure(failure);
   }
 
   #decodeLogs(logs: readonly ChainLog[], block: ChainBlock): readonly IndexedChainEvent[] {
@@ -354,6 +360,7 @@ export class ChainSynchronizer {
               state: 'REVERTED',
               blockNumber: receipt.blockNumber,
               blockHash: receipt.blockHash,
+              transactionIndex: receipt.transactionIndex,
               receiptStatus: 'REVERTED',
               errorCode: 'TRANSACTION_REVERTED',
             }
@@ -361,6 +368,7 @@ export class ChainSynchronizer {
               state: 'MINED',
               blockNumber: receipt.blockNumber,
               blockHash: receipt.blockHash,
+              transactionIndex: receipt.transactionIndex,
               receiptStatus: 'SUCCESS',
             },
       );
@@ -396,7 +404,7 @@ export class ChainSynchronizer {
     const confirmationBigInt = latest.number - receipt.blockNumber + 1n;
     const confirmations = toCount(confirmationBigInt);
     operation = transitionOperation(operation, { state: 'CONFIRMING', confirmations, reconciled: true });
-    if (confirmations >= this.#confirmationDepth) {
+    if (confirmations >= this.#softReadyDepth) {
       operation = transitionOperation(operation, {
         state: 'CONFIRMED',
         confirmations,

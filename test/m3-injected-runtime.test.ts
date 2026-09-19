@@ -37,7 +37,7 @@ test('injected runtime drives wrong-network, owner read, mock submit and recover
   const submissionRequest = fixture.providerRequests.find(
     (request) => request.method === 'eth_sendTransaction',
   );
-  assert.equal(actionCalls.length, 2);
+  assert.equal(actionCalls.length, 3);
   assert.equal(allowanceCalls.length, 6);
   assert.equal(
     (submissionRequest?.params?.[0] as { readonly data?: unknown } | undefined)?.data,

@@ -18,6 +18,15 @@ import {
   renderWalletStatus,
 } from '../apps/web/src/m3-product-shell.ts';
 
+const operationEvidenceDefaults = {
+  receiptCanonical: true,
+  chainStatus: 'INCLUDED' as const,
+  l1Status: 'UNKNOWN' as const,
+  finalityStatus: 'UNKNOWN' as const,
+  indexerStatus: 'HEALTHY' as const,
+  degradedReason: null,
+};
+
 test('page extension preserves product pages and prepends route-specific M3 shells', () => {
   let accountId: string | null = 'alice';
   const pages = extendM3ProductPages(
@@ -119,6 +128,7 @@ test('every frozen transaction status has distinct human-readable output', () =>
 
 test('Macbeth03 operation evidence maps receipt success and product readback separately', () => {
   const base = {
+    ...operationEvidenceDefaults,
     receipt: 'SUCCESS' as const,
     confirmations: 1,
     reconciliation: 'PENDING' as const,
@@ -154,6 +164,7 @@ test('Macbeth03 operation evidence maps receipt success and product readback sep
 test('reorg, reconciliation failure and stale projection never map to READY', () => {
   const failures = [
     {
+      ...operationEvidenceDefaults,
       lifecycle: 'REORGED' as const,
       receipt: 'SUCCESS' as const,
       confirmations: 3,
@@ -162,6 +173,7 @@ test('reorg, reconciliation failure and stale projection never map to READY', ()
       productReady: false,
     },
     {
+      ...operationEvidenceDefaults,
       lifecycle: 'RECONCILIATION_FAILED' as const,
       receipt: 'SUCCESS' as const,
       confirmations: 3,
@@ -170,6 +182,7 @@ test('reorg, reconciliation failure and stale projection never map to READY', ()
       productReady: false,
     },
     {
+      ...operationEvidenceDefaults,
       lifecycle: 'CONFIRMED' as const,
       receipt: 'SUCCESS' as const,
       confirmations: 3,
@@ -192,6 +205,7 @@ test('reorg, reconciliation failure and stale projection never map to READY', ()
 test('failure evidence takes precedence over a contradictory productReady flag', () => {
   const contradictoryFailures = [
     {
+      ...operationEvidenceDefaults,
       lifecycle: 'REORGED' as const,
       receipt: 'SUCCESS' as const,
       confirmations: 3,
@@ -200,6 +214,7 @@ test('failure evidence takes precedence over a contradictory productReady flag',
       productReady: true,
     },
     {
+      ...operationEvidenceDefaults,
       lifecycle: 'CONFIRMED' as const,
       receipt: 'REVERTED' as const,
       confirmations: 3,
@@ -208,6 +223,7 @@ test('failure evidence takes precedence over a contradictory productReady flag',
       productReady: true,
     },
     {
+      ...operationEvidenceDefaults,
       lifecycle: 'CONFIRMED' as const,
       receipt: 'SUCCESS' as const,
       confirmations: 3,
@@ -216,6 +232,7 @@ test('failure evidence takes precedence over a contradictory productReady flag',
       productReady: true,
     },
     {
+      ...operationEvidenceDefaults,
       lifecycle: 'CONFIRMED' as const,
       receipt: 'SUCCESS' as const,
       confirmations: 3,

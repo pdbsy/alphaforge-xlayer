@@ -1,4 +1,4 @@
-import type { Address, BlockHash, TransactionHash } from './types.ts';
+import { asHexData, type Address, type BlockHash, type HexData, type TransactionHash } from './types.ts';
 
 export type TransactionState =
   | 'AWAITING_SIGNATURE'
@@ -28,11 +28,13 @@ export interface ChainOperation {
   readonly chainId: number;
   readonly owner: Address;
   readonly target: Address;
+  readonly calldata: HexData | null;
   readonly state: TransactionState;
   readonly txHash: TransactionHash | null;
   readonly submittedAt: string | null;
   readonly blockNumber: bigint | null;
   readonly blockHash: BlockHash | null;
+  readonly transactionIndex: number | null;
   readonly receiptStatus: 'SUCCESS' | 'REVERTED' | null;
   readonly confirmations: number;
   readonly replacementTxHash: TransactionHash | null;
@@ -49,12 +51,14 @@ export type OperationTransition =
       readonly state: 'MINED';
       readonly blockNumber: bigint;
       readonly blockHash: BlockHash;
+      readonly transactionIndex?: number;
       readonly receiptStatus: 'SUCCESS';
     }
   | {
       readonly state: 'REVERTED';
       readonly blockNumber: bigint;
       readonly blockHash: BlockHash;
+      readonly transactionIndex?: number;
       readonly receiptStatus: 'REVERTED';
       readonly errorCode: 'TRANSACTION_REVERTED';
     }
@@ -105,16 +109,19 @@ export function createOperation(input: {
   readonly chainId: number;
   readonly owner: Address;
   readonly target: Address;
+  readonly calldata?: HexData;
   readonly state: 'AWAITING_SIGNATURE';
 }): ChainOperation {
   if (!validOperationId(input.operationId)) throw new Error('INVALID_OPERATION_ID');
   if (!Number.isSafeInteger(input.chainId) || input.chainId <= 0) throw new Error('INVALID_CHAIN_ID');
   return Object.freeze({
     ...input,
+    calldata: input.calldata === undefined ? null : asHexData(input.calldata),
     txHash: null,
     submittedAt: null,
     blockNumber: null,
     blockHash: null,
+    transactionIndex: null,
     receiptStatus: null,
     confirmations: 0,
     replacementTxHash: null,
@@ -132,13 +139,26 @@ export function transitionOperation(current: ChainOperation, update: OperationTr
       if (!validTime(update.submittedAt)) throw new Error('INVALID_SUBMITTED_AT');
       return Object.freeze({ ...current, ...update, errorCode: null });
     case 'REJECTED':
-    case 'DROPPED':
       return Object.freeze({ ...current, ...update, canonical: false, reconciled: false, confirmedAt: null });
-    case 'MINED':
-      if (update.blockNumber < 0n) throw new Error('INVALID_BLOCK_NUMBER');
+    case 'DROPPED':
       return Object.freeze({
         ...current,
         ...update,
+        canonical: false,
+        reconciled: false,
+        confirmedAt: null,
+      });
+    case 'MINED':
+      if (update.blockNumber < 0n) throw new Error('INVALID_BLOCK_NUMBER');
+      if (
+        update.transactionIndex !== undefined &&
+        (!Number.isSafeInteger(update.transactionIndex) || update.transactionIndex < 0)
+      )
+        throw new Error('INVALID_TRANSACTION_INDEX');
+      return Object.freeze({
+        ...current,
+        ...update,
+        transactionIndex: update.transactionIndex ?? null,
         confirmations: 0,
         canonical: true,
         reconciled: false,
@@ -147,9 +167,15 @@ export function transitionOperation(current: ChainOperation, update: OperationTr
       });
     case 'REVERTED':
       if (update.blockNumber < 0n) throw new Error('INVALID_BLOCK_NUMBER');
+      if (
+        update.transactionIndex !== undefined &&
+        (!Number.isSafeInteger(update.transactionIndex) || update.transactionIndex < 0)
+      )
+        throw new Error('INVALID_TRANSACTION_INDEX');
       return Object.freeze({
         ...current,
         ...update,
+        transactionIndex: update.transactionIndex ?? null,
         confirmations: 0,
         canonical: true,
         reconciled: false,

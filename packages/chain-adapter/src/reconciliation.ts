@@ -11,9 +11,15 @@ import type { Address, BlockHash, HexData } from './types.ts';
 export interface ProductOperationEvidence {
   readonly lifecycle: ChainOperation['state'];
   readonly receipt: 'PENDING' | 'SUCCESS' | 'REVERTED';
+  readonly receiptCanonical: boolean;
   readonly confirmations: number;
   readonly reconciliation: 'PENDING' | 'MATCHED' | 'FAILED';
   readonly projection: 'PENDING' | 'READY' | 'STALE';
+  readonly chainStatus: 'PENDING' | 'INCLUDED' | 'SOFT_READY' | 'REORGED' | 'FAILED' | 'UNKNOWN';
+  readonly l1Status: 'UNKNOWN' | 'POSTED';
+  readonly finalityStatus: 'UNKNOWN' | 'FINALIZED';
+  readonly indexerStatus: 'HEALTHY' | 'SYNCING' | 'DEGRADED';
+  readonly degradedReason: 'CHAIN_REORG_DEPTH_EXCEEDED' | 'CHAIN_REORG_NO_COMMON_ANCESTOR' | null;
   readonly productReady: boolean;
 }
 

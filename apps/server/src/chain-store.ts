@@ -33,7 +33,8 @@ export interface ChainCheckpoint {
 
 export interface ChainSyncHealth {
   readonly healthy: boolean;
-  readonly error: 'CHAIN_REORG_DEPTH_EXCEEDED' | 'CHAIN_SYNC_INCOMPLETE' | null;
+  readonly error:
+    'CHAIN_REORG_DEPTH_EXCEEDED' | 'CHAIN_REORG_NO_COMMON_ANCESTOR' | 'CHAIN_SYNC_INCOMPLETE' | null;
 }
 
 export interface ProductProjection {
@@ -87,12 +88,21 @@ function validTime(value: string | null): boolean {
 
 function validateOperationEvidence(operation: ChainOperation): void {
   const submitted = operation.txHash !== null && validTime(operation.submittedAt);
+  const transactionIndexValid =
+    operation.transactionIndex === null ||
+    (Number.isSafeInteger(operation.transactionIndex) && operation.transactionIndex >= 0);
   const noBlock =
-    operation.blockNumber === null && operation.blockHash === null && operation.receiptStatus === null;
+    operation.blockNumber === null &&
+    operation.blockHash === null &&
+    operation.transactionIndex === null &&
+    operation.receiptStatus === null;
   const successfulBlock =
     operation.blockNumber !== null && operation.blockHash !== null && operation.receiptStatus === 'SUCCESS';
   const revertedBlock =
     operation.blockNumber !== null && operation.blockHash !== null && operation.receiptStatus === 'REVERTED';
+  const pendingOrDisplacedReceipt =
+    (noBlock && operation.confirmations === 0) ||
+    (operation.blockNumber !== null && operation.blockHash !== null && operation.receiptStatus !== null);
   const basePending = operation.confirmedAt === null && !operation.canonical && !operation.reconciled;
   let valid = false;
   switch (operation.state) {
@@ -168,7 +178,7 @@ function validateOperationEvidence(operation: ChainOperation): void {
     case 'REPLACED':
       valid =
         submitted &&
-        noBlock &&
+        pendingOrDisplacedReceipt &&
         operation.replacementTxHash !== null &&
         basePending &&
         operation.errorCode === 'TRANSACTION_REPLACED';
@@ -176,7 +186,7 @@ function validateOperationEvidence(operation: ChainOperation): void {
     case 'DROPPED':
       valid =
         submitted &&
-        noBlock &&
+        pendingOrDisplacedReceipt &&
         operation.replacementTxHash === null &&
         basePending &&
         operation.errorCode === 'TRANSACTION_DROPPED';
@@ -202,7 +212,7 @@ function validateOperationEvidence(operation: ChainOperation): void {
         ['EVENT_EVIDENCE_MISMATCH', 'CONTRACT_STATE_MISMATCH'].includes(operation.errorCode ?? '');
       break;
   }
-  if (!valid) throw new Error('INVALID_OPERATION_EVIDENCE');
+  if (!valid || !transactionIndexValid) throw new Error('INVALID_OPERATION_EVIDENCE');
 }
 
 function safeNumber(value: bigint, code = 'CHAIN_BLOCK_NUMBER_UNSUPPORTED'): number {
@@ -338,10 +348,12 @@ interface OperationRow {
   tx_hash: string | null;
   owner_address: string;
   target_address: string;
+  calldata: string | null;
   state: string;
   submitted_at: string | null;
   block_number: number | null;
   block_hash: string | null;
+  transaction_index: number | null;
   receipt_status: string | null;
   confirmations: number;
   replacement_tx_hash: string | null;
@@ -387,6 +399,12 @@ export class ChainStore {
           this.db.exec(
             readFileSync(new URL('../chain-migrations/004-sync-lease.sql', import.meta.url), 'utf8'),
           );
+          this.db.exec(
+            readFileSync(new URL('../chain-migrations/005-transaction-index.sql', import.meta.url), 'utf8'),
+          );
+          this.db.exec(
+            readFileSync(new URL('../chain-migrations/006-operation-calldata.sql', import.meta.url), 'utf8'),
+          );
           this.db.exec('COMMIT');
         } catch (error) {
           this.db.exec('ROLLBACK');
@@ -414,6 +432,12 @@ export class ChainStore {
           this.db.exec(
             readFileSync(new URL('../chain-migrations/004-sync-lease.sql', import.meta.url), 'utf8'),
           );
+          this.db.exec(
+            readFileSync(new URL('../chain-migrations/005-transaction-index.sql', import.meta.url), 'utf8'),
+          );
+          this.db.exec(
+            readFileSync(new URL('../chain-migrations/006-operation-calldata.sql', import.meta.url), 'utf8'),
+          );
           this.db.exec('COMMIT');
         } catch (error) {
           this.db.exec('ROLLBACK');
@@ -428,6 +452,12 @@ export class ChainStore {
           this.db.exec(
             readFileSync(new URL('../chain-migrations/004-sync-lease.sql', import.meta.url), 'utf8'),
           );
+          this.db.exec(
+            readFileSync(new URL('../chain-migrations/005-transaction-index.sql', import.meta.url), 'utf8'),
+          );
+          this.db.exec(
+            readFileSync(new URL('../chain-migrations/006-operation-calldata.sql', import.meta.url), 'utf8'),
+          );
           this.db.exec('COMMIT');
         } catch (error) {
           this.db.exec('ROLLBACK');
@@ -439,12 +469,43 @@ export class ChainStore {
           this.db.exec(
             readFileSync(new URL('../chain-migrations/004-sync-lease.sql', import.meta.url), 'utf8'),
           );
+          this.db.exec(
+            readFileSync(new URL('../chain-migrations/005-transaction-index.sql', import.meta.url), 'utf8'),
+          );
+          this.db.exec(
+            readFileSync(new URL('../chain-migrations/006-operation-calldata.sql', import.meta.url), 'utf8'),
+          );
           this.db.exec('COMMIT');
         } catch (error) {
           this.db.exec('ROLLBACK');
           throw error;
         }
-      } else if (version !== 4) {
+      } else if (version === 4) {
+        this.db.exec('BEGIN IMMEDIATE');
+        try {
+          this.db.exec(
+            readFileSync(new URL('../chain-migrations/005-transaction-index.sql', import.meta.url), 'utf8'),
+          );
+          this.db.exec(
+            readFileSync(new URL('../chain-migrations/006-operation-calldata.sql', import.meta.url), 'utf8'),
+          );
+          this.db.exec('COMMIT');
+        } catch (error) {
+          this.db.exec('ROLLBACK');
+          throw error;
+        }
+      } else if (version === 5) {
+        this.db.exec('BEGIN IMMEDIATE');
+        try {
+          this.db.exec(
+            readFileSync(new URL('../chain-migrations/006-operation-calldata.sql', import.meta.url), 'utf8'),
+          );
+          this.db.exec('COMMIT');
+        } catch (error) {
+          this.db.exec('ROLLBACK');
+          throw error;
+        }
+      } else if (version !== 6) {
         throw new Error('UNSUPPORTED_CHAIN_DATABASE');
       }
     } catch (error) {
@@ -576,7 +637,7 @@ export class ChainStore {
     if (
       (row.sync_healthy === 1 && row.sync_error === null && row.sync_target_block_number === null) ||
       (row.sync_healthy === 0 &&
-        row.sync_error === 'CHAIN_REORG_DEPTH_EXCEEDED' &&
+        ['CHAIN_REORG_DEPTH_EXCEEDED', 'CHAIN_REORG_NO_COMMON_ANCESTOR'].includes(row.sync_error ?? '') &&
         row.sync_target_block_number === null) ||
       (row.sync_healthy === 0 &&
         row.sync_error === 'CHAIN_SYNC_INCOMPLETE' &&
@@ -625,7 +686,7 @@ export class ChainStore {
               )
               .run(error, id, address);
       if (result.changes !== 1) throw new Error('CHAIN_CHECKPOINT_NOT_FOUND');
-      if (error === 'CHAIN_REORG_DEPTH_EXCEEDED' && ownerToken !== null)
+      if (error !== 'CHAIN_SYNC_INCOMPLETE' && ownerToken !== null)
         this.db
           .prepare(
             'DELETE FROM chain_sync_leases WHERE chain_id = ? AND contract_address = ? AND owner_token = ?',
@@ -944,6 +1005,7 @@ export class ChainStore {
       (previous.chainId !== operation.chainId ||
         !sameAddress(previous.owner, operation.owner) ||
         !sameAddress(previous.target, operation.target) ||
+        previous.calldata?.toLowerCase() !== operation.calldata?.toLowerCase() ||
         (previous.txHash &&
           operation.txHash &&
           previous.txHash.toLowerCase() !== operation.txHash.toLowerCase()))
@@ -952,12 +1014,13 @@ export class ChainStore {
     this.db
       .prepare(
         `INSERT INTO chain_transactions
-          (operation_id, chain_id, tx_hash, owner_address, target_address, state, submitted_at, block_number, block_hash, receipt_status, confirmations, replacement_tx_hash, canonical, reconciled, confirmed_at, error_code)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          (operation_id, chain_id, tx_hash, owner_address, target_address, calldata, state, submitted_at, block_number, block_hash, transaction_index, receipt_status, confirmations, replacement_tx_hash, canonical, reconciled, confirmed_at, error_code)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT(operation_id) DO UPDATE SET
           tx_hash = excluded.tx_hash, state = excluded.state, submitted_at = excluded.submitted_at,
           block_number = excluded.block_number, block_hash = excluded.block_hash,
-          receipt_status = excluded.receipt_status, confirmations = excluded.confirmations,
+          transaction_index = excluded.transaction_index, receipt_status = excluded.receipt_status,
+          confirmations = excluded.confirmations,
           replacement_tx_hash = excluded.replacement_tx_hash, canonical = excluded.canonical,
           reconciled = excluded.reconciled, confirmed_at = excluded.confirmed_at, error_code = excluded.error_code`,
       )
@@ -967,10 +1030,12 @@ export class ChainStore {
         operation.txHash?.toLowerCase() ?? null,
         normalizedAddress(operation.owner),
         normalizedAddress(operation.target),
+        operation.calldata?.toLowerCase() ?? null,
         operation.state,
         operation.submittedAt,
         operation.blockNumber === null ? null : safeNumber(operation.blockNumber),
         operation.blockHash?.toLowerCase() ?? null,
+        operation.transactionIndex,
         operation.receiptStatus,
         operation.confirmations,
         operation.replacementTxHash?.toLowerCase() ?? null,
@@ -998,11 +1063,13 @@ export class ChainStore {
         chainId: row.chain_id,
         owner: asAddress(row.owner_address),
         target: asAddress(row.target_address),
+        calldata: row.calldata === null ? null : asHexData(row.calldata),
         state: row.state as TransactionState,
         txHash: row.tx_hash === null ? null : asTransactionHash(row.tx_hash),
         submittedAt: row.submitted_at,
         blockNumber: row.block_number === null ? null : BigInt(row.block_number),
         blockHash: row.block_hash === null ? null : asBlockHash(row.block_hash),
+        transactionIndex: row.transaction_index,
         receiptStatus: row.receipt_status as 'SUCCESS' | 'REVERTED' | null,
         confirmations: row.confirmations,
         replacementTxHash:
@@ -1028,6 +1095,7 @@ export class ChainStore {
       operation.chainId !== expectedOperation.chainId ||
       !sameAddress(operation.owner, expectedOperation.owner) ||
       !sameAddress(operation.target, expectedOperation.target) ||
+      operation.calldata?.toLowerCase() !== expectedOperation.calldata?.toLowerCase() ||
       operation.txHash?.toLowerCase() !== expectedOperation.txHash?.toLowerCase()
     )
       throw new Error('OPERATION_IDENTITY_CONFLICT');
@@ -1221,7 +1289,7 @@ export class ChainStore {
     const healthValid =
       (row.sync_healthy === 1 && row.sync_error === null && row.sync_target_block_number === null) ||
       (row.sync_healthy === 0 &&
-        row.sync_error === 'CHAIN_REORG_DEPTH_EXCEEDED' &&
+        ['CHAIN_REORG_DEPTH_EXCEEDED', 'CHAIN_REORG_NO_COMMON_ANCESTOR'].includes(row.sync_error ?? '') &&
         row.sync_target_block_number === null) ||
       (row.sync_healthy === 0 &&
         row.sync_error === 'CHAIN_SYNC_INCOMPLETE' &&
@@ -1263,10 +1331,20 @@ export class ChainStore {
       }
       const reconciliation =
         operation.state === 'RECONCILIATION_FAILED' ? 'FAILED' : operation.reconciled ? 'MATCHED' : 'PENDING';
+      const health = this.syncHealth(operation.chainId, operation.target);
+      const indexedCheckpoint = this.checkpoint(operation.chainId, operation.target);
+      const indexerStatus: ProductOperationEvidence['indexerStatus'] =
+        indexedCheckpoint === null
+          ? 'SYNCING'
+          : health.healthy
+            ? 'HEALTHY'
+            : health.error !== 'CHAIN_SYNC_INCOMPLETE'
+              ? 'DEGRADED'
+              : 'SYNCING';
       let projectionMilestone: ProductOperationEvidence['projection'] = 'PENDING';
-      if (operation.state === 'REORGED') {
+      if (operation.state === 'REORGED' || indexerStatus === 'DEGRADED') {
         projectionMilestone = 'STALE';
-      } else {
+      } else if (indexerStatus === 'HEALTHY') {
         const projection = this.projection(
           operation.chainId,
           operation.owner,
@@ -1274,7 +1352,7 @@ export class ChainStore {
           projectionKey,
         );
         if (projection) {
-          const checkpoint = this.checkpoint(operation.chainId, operation.target);
+          const checkpoint = indexedCheckpoint;
           let canonicalAncestry =
             operation.canonical &&
             operation.blockNumber !== null &&
@@ -1339,17 +1417,49 @@ export class ChainStore {
         }
       }
 
+      let chainStatus: ProductOperationEvidence['chainStatus'];
+      switch (operation.state) {
+        case 'AWAITING_SIGNATURE':
+        case 'SUBMITTED':
+          chainStatus = 'PENDING';
+          break;
+        case 'MINED':
+        case 'CONFIRMING':
+          chainStatus = 'INCLUDED';
+          break;
+        case 'CONFIRMED':
+          chainStatus = 'SOFT_READY';
+          break;
+        case 'REORGED':
+          chainStatus = 'REORGED';
+          break;
+        case 'REJECTED':
+        case 'REVERTED':
+        case 'REPLACED':
+        case 'DROPPED':
+        case 'RECONCILIATION_FAILED':
+          chainStatus = 'FAILED';
+          break;
+      }
+
       const evidence = Object.freeze({
         lifecycle: operation.state,
         receipt: operation.receiptStatus ?? 'PENDING',
+        receiptCanonical: operation.receiptStatus !== null && operation.canonical,
         confirmations: operation.confirmations,
         reconciliation,
         projection: projectionMilestone,
+        chainStatus,
+        l1Status: 'UNKNOWN',
+        finalityStatus: 'UNKNOWN',
+        indexerStatus,
+        degradedReason: health.error === 'CHAIN_SYNC_INCOMPLETE' ? null : health.error,
         productReady:
           operation.state === 'CONFIRMED' &&
           operation.canonical &&
           reconciliation === 'MATCHED' &&
-          projectionMilestone === 'READY',
+          projectionMilestone === 'READY' &&
+          indexerStatus === 'HEALTHY',
       }) satisfies ProductOperationEvidence;
       this.db.exec('COMMIT');
       return evidence;

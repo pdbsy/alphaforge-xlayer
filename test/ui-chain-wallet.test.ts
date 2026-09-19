@@ -21,8 +21,12 @@ class ProviderFixture implements Eip1193Provider {
   readonly requests: Eip1193Request[] = [];
   readonly listeners = new Map<string, Set<(value: unknown) => void>>();
   readonly sendStarted = Promise.withResolvers<void>();
+  readonly simulationStarted = Promise.withResolvers<void>();
   accounts: readonly string[] = [OWNER];
   chainId = '0xb626';
+  simulationResult: unknown = '0x';
+  simulationResponse: Promise<unknown> | null = null;
+  simulationError: unknown = null;
   sendResult: unknown = TX_HASH;
   sendResponse: Promise<unknown> | null = null;
   sendError: unknown = null;
@@ -51,6 +55,12 @@ class ProviderFixture implements Eip1193Provider {
     this.requests.push(input);
     if (input.method === 'eth_requestAccounts' || input.method === 'eth_accounts') return this.accounts;
     if (input.method === 'eth_chainId') return this.chainId;
+    if (input.method === 'eth_call') {
+      this.simulationStarted.resolve();
+      if (this.simulationError) throw this.simulationError;
+      if (this.simulationResponse) return this.simulationResponse;
+      return this.simulationResult;
+    }
     if (input.method === 'eth_sendTransaction') {
       this.sendStarted.resolve();
       if (this.sendError) throw this.sendError;
@@ -214,6 +224,9 @@ test('wallet verifies account and chain again immediately before submission', as
   assert.deepEqual(provider.methods, [
     'eth_accounts',
     'eth_chainId',
+    'eth_call',
+    'eth_accounts',
+    'eth_chainId',
     'eth_sendTransaction',
     'eth_accounts',
     'eth_chainId',
@@ -228,11 +241,62 @@ test('wallet verifies account and chain again immediately before submission', as
     submittedAt: '2026-09-14T12:00:00.000Z',
   });
   assert.deepEqual(provider.requests[2], {
+    method: 'eth_call',
+    params: [{ from: OWNER, to: CONTRACT, data: '0x123400', value: '0x0' }, 'latest'],
+  });
+  assert.deepEqual(provider.requests[5], {
     method: 'eth_sendTransaction',
     params: [{ from: OWNER, to: CONTRACT, data: '0x123400', value: '0x0' }],
   });
   assert.equal('ownerId' in result, false);
   assert.equal('demoIdentity' in result, false);
+});
+
+test('wallet fails closed when preflight simulation rejects or returns malformed data', async () => {
+  const provider = new ProviderFixture();
+  const wallet = new Eip1193Wallet(provider, {
+    chainId: CHAIN_ID,
+    target: CONTRACT,
+    actionAuthority: factory.authority,
+  });
+  const prepared = factory.prepare({ amount: '06' }, OWNER);
+  provider.simulationError = { code: -32_000, message: 'private provider detail' };
+  await assert.rejects(
+    () => wallet.submit(prepared),
+    (error: unknown) =>
+      error instanceof WalletFailure &&
+      error.code === 'WALLET_SIMULATION_FAILED' &&
+      !error.message.includes('private'),
+  );
+  assert.equal(provider.methods.includes('eth_sendTransaction'), false);
+
+  provider.simulationError = null;
+  provider.simulationResult = 'not-hex';
+  await assert.rejects(
+    () => wallet.submit(prepared),
+    (error: unknown) => error instanceof WalletFailure && error.code === 'WALLET_SIMULATION_FAILED',
+  );
+  assert.equal(provider.methods.includes('eth_sendTransaction'), false);
+});
+
+test('wallet rechecks account and chain after simulation before asking for submission', async () => {
+  const provider = new ProviderFixture();
+  const simulated = Promise.withResolvers<unknown>();
+  provider.simulationResponse = simulated.promise;
+  const wallet = new Eip1193Wallet(provider, {
+    chainId: CHAIN_ID,
+    target: CONTRACT,
+    actionAuthority: factory.authority,
+  });
+  const pending = wallet.submit(factory.prepare({ amount: '07' }, OWNER));
+  await provider.simulationStarted.promise;
+  provider.accounts = [OTHER_OWNER];
+  simulated.resolve('0x');
+  await assert.rejects(
+    () => pending,
+    (error: unknown) => error instanceof WalletFailure && error.code === 'WALLET_ACCOUNT_CHANGED',
+  );
+  assert.equal(provider.methods.includes('eth_sendTransaction'), false);
 });
 
 test('changed account, changed chain and forged prepared data fail before submission', async () => {

@@ -30,6 +30,7 @@ export type WalletFailureCode =
   | 'WALLET_REJECTED'
   | 'WALLET_INVALID_RESPONSE'
   | 'WALLET_REQUEST_FAILED'
+  | 'WALLET_SIMULATION_FAILED'
   | 'UNTRUSTED_PREPARED_ACTION';
 
 export class WalletFailure extends Error {
@@ -319,18 +320,34 @@ export class Eip1193Wallet implements BrowserWalletPort {
       if (current.chainId !== this.#chainId) throw new WalletFailure('WALLET_WRONG_CHAIN');
       if (session.changed) throw new WalletFailure('WALLET_SESSION_CHANGED');
 
+      const transaction = Object.freeze({
+        from: prepared.owner,
+        to: prepared.target,
+        data: prepared.data,
+        value: `0x${prepared.value.toString(16)}`,
+      });
+      try {
+        const simulated = await this.#provider.request({
+          method: 'eth_call',
+          params: [transaction, 'latest'],
+        });
+        asHexData(String(simulated));
+      } catch {
+        throw new WalletFailure('WALLET_SIMULATION_FAILED');
+      }
+
+      const preSubmitSession = await this.#connection.observe();
+      if (!preSubmitSession) throw new WalletFailure('WALLET_DISCONNECTED');
+      if (!sameAddress(preSubmitSession.account, prepared.owner))
+        throw new WalletFailure('WALLET_ACCOUNT_CHANGED');
+      if (preSubmitSession.chainId !== this.#chainId) throw new WalletFailure('WALLET_WRONG_CHAIN');
+      if (session.changed) throw new WalletFailure('WALLET_SESSION_CHANGED');
+
       let result: unknown;
       try {
         result = await this.#provider.request({
           method: 'eth_sendTransaction',
-          params: [
-            {
-              from: prepared.owner,
-              to: prepared.target,
-              data: prepared.data,
-              value: `0x${prepared.value.toString(16)}`,
-            },
-          ],
+          params: [transaction],
         });
       } catch (error) {
         if (rejected(error)) throw new WalletFailure('WALLET_REJECTED');
