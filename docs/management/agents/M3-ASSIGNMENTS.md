@@ -1,3 +1,5 @@
+> 2026-09-19 update: Macbeth05 is registered as `AF-M3-05-INTEGRATION-ACCEPTANCE`, prefix `macbeth05/`. See [the current QA task record](AF-M3-05-INTEGRATION-ACCEPTANCE.md) for authority and candidate prerequisites. The dated 2026-09-14 tables below are historical; this update does not reassign other workers or imply completion.
+
 # AlphaForge M3 assignments and baseline receipts
 
 Recorded by Macbeth01 on 2026-09-14. Canonical repository: `pdbsy/quantpass-arbitrum-hackathon`.
