@@ -50,3 +50,7 @@ PR21 initial head `8fcb14bd8f34bdbd56565344cb4f65158c725614` ran [CodeQL 3545284
 This is direct evidence that the minimal metadata permission repair does not resolve the separate repository feature gate. `security-events: write` was already present and remains present; the generic permission hint accompanying the feature-denied response is not evidence to grant broader permissions. Dependency review [35452845922](https://github.com/pdbsy/quantpass-arbitrum-hackathon/actions/runs/35452845922) also remains failed. No paid feature was enabled and no repository setting was changed. Both required checks remain real merge blockers while implementation continues.
 
 Initial-head Engineering runs [35452842803](https://github.com/pdbsy/quantpass-arbitrum-hackathon/actions/runs/35452842803) (push) and [35452845871](https://github.com/pdbsy/quantpass-arbitrum-hackathon/actions/runs/35452845871) (pull request) completed successfully for all three contexts: `verify`, `verify-macos`, and `verify-windows`. These six successful jobs certify the initial manager head only; they do not replace final product-candidate verification.
+
+## Protection readback during integration (2026-09-20 Asia/Shanghai)
+
+The manager re-read ruleset 22507334 from GitHub and compared `id`, `name`, `target`, `enforcement`, `conditions`, `rules`, and `bypass_actors` with the pre-change API response. All fields matched. The five strict required contexts and their integration ID 15368 remain unchanged, as do review, history, deletion and force-update protections. No setting write occurred.
