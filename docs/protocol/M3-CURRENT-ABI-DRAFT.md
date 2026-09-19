@@ -9,8 +9,8 @@
 
 This document records only the locally implemented ABI-independent protocol pieces. It is an
 integration draft for review. It does not define a Vault address, deployment block, final ABI
-version, runtime bytecode hash, owner authorization ABI, risk permit ABI, or deployment manifest.
-All addresses remain unset and every onchain operation remains `NOT_RUN`.
+version, runtime bytecode hash, owner authorization ABI, risk permit ABI, or finalized deployment
+manifest. All addresses remain unset and every onchain operation remains `NOT_RUN`.
 
 ## Local toolchain boundary
 
@@ -174,3 +174,17 @@ The following remain deliberately undefined:
 The owner full in-kind exit must remain available while paused and must not depend on the risk
 signer. No dust threshold, price source, quote-based valuation, or ignored balance is assumed by
 this draft.
+
+## Offline deployment manifest preparation
+
+`contracts/deployment/m3-robinhood-testnet.template.json` is a machine-readable preparation
+template, not deployment evidence. It records chain ID `46630`, the locked local toolchain, exact
+constructor schemas for the implemented local contracts, and null placeholders for every address,
+constructor value, code hash, ABI hash, deployment block, transaction hash, finality value, event
+topic, EIP-712 field, and evidence reference.
+
+The Vault entry is explicitly `BLOCKED_PENDING_USER_DECISIONS`; its constructor inputs remain null
+until the pending precision, multi-asset withdrawal, concrete Owner, and owner-operation decisions
+are frozen. The template validator rejects premature deployment claims and any private-key,
+mnemonic, RPC, transaction-signing, or broadcast field. It performs no network access and emits no
+transaction.
