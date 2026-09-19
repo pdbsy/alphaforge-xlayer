@@ -6,7 +6,14 @@
 - Repository base: `7ecba357d5a19f387e86f578822af04a6261fed2`
 - Interface commit: `135be1e1074436e2092487099f8376cc963b714f`
 - Implementation source commit C: `db620d68a635259f53f48c33defff4273237d372`
+- ABI evidence commit: `ee54fe8f9d5eb469338b81629a3dd1c4fb879f18`
 - Deployment status: `NOT_DEPLOYED`
+
+The source commit was a metadata-only repair of the unpushed local object
+`5270a6eb5ec5a9b061285fa2a56d2ef98de500d9`: tree, parent, author identity, author date, and source
+bytes are unchanged; only the required `Agent-ID` and `Task-ID` trailers were added. Macbeth01
+will publish the original object at tag `evidence/macbeth02-m3-02-pre-trailer-5270a6e` so both
+objects remain independently inspectable.
 
 ## Delivered contract boundary
 
