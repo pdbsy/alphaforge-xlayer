@@ -286,7 +286,7 @@ test('removed Intel macOS job is outside the reviewed workflow profile', () => {
 test('private CodeQL job has only read access to Actions metadata', async () => {
   const path = '.github/workflows/codeql.yml';
   const text = await readFile(new URL('../.github/workflows/codeql.yml', import.meta.url), 'utf8');
-  assert.match(text, /      actions: read/);
+  assert.match(text, /^ {6}actions: read$/m);
   assert.doesNotThrow(() => validateWorkflowText(path, text, policy));
   assert.throws(
     () => validateWorkflowText(path, text.replace('      actions: read', '      actions: write'), policy),
