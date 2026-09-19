@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { asAddress, asBlockHash, type Address, type BlockHash } from './types.ts';
 
 export interface DeploymentManifestExpectation {
@@ -7,17 +8,24 @@ export interface DeploymentManifestExpectation {
   readonly contractAddress?: Address;
 }
 
-export interface DeploymentManifest {
+declare const validatedDeploymentManifest: unique symbol;
+
+export interface DeploymentManifestDocument {
   readonly schemaVersion: 1;
   readonly environment: 'robinhood-chain-testnet';
   readonly chainId: 46_630;
   readonly contractName: string;
   readonly contractType: string;
   readonly contractAddress: Address;
-  readonly deploymentBlock: bigint;
+  readonly deploymentBlock: string;
   readonly abiVersion: string;
-  readonly manifestDigest: BlockHash;
   readonly runtimeBytecodeHash: BlockHash;
+}
+
+export interface DeploymentManifest extends Omit<DeploymentManifestDocument, 'deploymentBlock'> {
+  readonly deploymentBlock: bigint;
+  readonly manifestDigest: BlockHash;
+  readonly [validatedDeploymentManifest]: true;
 }
 
 const fields = new Set([
@@ -36,6 +44,27 @@ const identifier = /^[A-Za-z][A-Za-z0-9._-]{0,63}$/;
 
 function invalid(): never {
   throw new Error('INVALID_DEPLOYMENT_MANIFEST');
+}
+
+function canonicalDocument(input: DeploymentManifestDocument): DeploymentManifestDocument {
+  return {
+    schemaVersion: input.schemaVersion,
+    environment: input.environment,
+    chainId: input.chainId,
+    contractName: input.contractName,
+    contractType: input.contractType,
+    contractAddress: input.contractAddress,
+    deploymentBlock: input.deploymentBlock,
+    abiVersion: input.abiVersion,
+    runtimeBytecodeHash: input.runtimeBytecodeHash,
+  };
+}
+
+export function deploymentManifestDigest(input: DeploymentManifestDocument): BlockHash {
+  const digest = createHash('sha256')
+    .update(JSON.stringify(canonicalDocument(input)), 'utf8')
+    .digest('hex');
+  return asBlockHash(`0x${digest}`);
 }
 
 export function validateDeploymentManifest(
@@ -64,6 +93,18 @@ export function validateDeploymentManifest(
     const contractAddress = asAddress(String(value.contractAddress));
     const manifestDigest = asBlockHash(String(value.manifestDigest));
     const runtimeBytecodeHash = asBlockHash(String(value.runtimeBytecodeHash));
+    const computedDigest = deploymentManifestDigest({
+      schemaVersion: 1,
+      environment: expected.environment,
+      chainId: expected.chainId,
+      contractName: value.contractName,
+      contractType: value.contractType,
+      contractAddress,
+      deploymentBlock: value.deploymentBlock,
+      abiVersion: value.abiVersion,
+      runtimeBytecodeHash,
+    });
+    if (manifestDigest.toLowerCase() !== computedDigest.toLowerCase()) return invalid();
     if (manifestDigest.toLowerCase() !== expected.manifestDigest.toLowerCase()) return invalid();
     if (expected.contractAddress && contractAddress.toLowerCase() !== expected.contractAddress.toLowerCase())
       return invalid();
@@ -78,7 +119,7 @@ export function validateDeploymentManifest(
       abiVersion: value.abiVersion,
       manifestDigest,
       runtimeBytecodeHash,
-    });
+    }) as DeploymentManifest;
   } catch {
     return invalid();
   }

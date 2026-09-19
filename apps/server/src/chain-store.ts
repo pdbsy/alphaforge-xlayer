@@ -29,6 +29,11 @@ export interface ChainCheckpoint {
   readonly blockHash: BlockHash;
 }
 
+export interface ChainSyncHealth {
+  readonly healthy: boolean;
+  readonly error: 'CHAIN_REORG_DEPTH_EXCEEDED' | null;
+}
+
 export interface ProductProjection {
   readonly chainId: number;
   readonly owner: Address;
@@ -71,6 +76,130 @@ const errorCodes = new Set<OperationErrorCode>([
 ]);
 const receiptStatuses = new Set(['SUCCESS', 'REVERTED']);
 const namePattern = /^[A-Za-z][A-Za-z0-9._-]{0,127}$/;
+
+function validTime(value: string | null): boolean {
+  return value !== null && Number.isFinite(Date.parse(value));
+}
+
+function validateOperationEvidence(operation: ChainOperation): void {
+  const submitted = operation.txHash !== null && validTime(operation.submittedAt);
+  const noBlock =
+    operation.blockNumber === null && operation.blockHash === null && operation.receiptStatus === null;
+  const successfulBlock =
+    operation.blockNumber !== null && operation.blockHash !== null && operation.receiptStatus === 'SUCCESS';
+  const revertedBlock =
+    operation.blockNumber !== null && operation.blockHash !== null && operation.receiptStatus === 'REVERTED';
+  const basePending = operation.confirmedAt === null && !operation.canonical && !operation.reconciled;
+  let valid = false;
+  switch (operation.state) {
+    case 'AWAITING_SIGNATURE':
+      valid =
+        operation.txHash === null &&
+        operation.submittedAt === null &&
+        noBlock &&
+        operation.confirmations === 0 &&
+        operation.replacementTxHash === null &&
+        basePending &&
+        operation.errorCode === null;
+      break;
+    case 'SUBMITTED':
+      valid =
+        submitted &&
+        noBlock &&
+        operation.confirmations === 0 &&
+        operation.replacementTxHash === null &&
+        basePending &&
+        operation.errorCode === null;
+      break;
+    case 'MINED':
+      valid =
+        submitted &&
+        successfulBlock &&
+        operation.confirmations === 0 &&
+        operation.replacementTxHash === null &&
+        operation.canonical &&
+        !operation.reconciled &&
+        operation.confirmedAt === null &&
+        operation.errorCode === null;
+      break;
+    case 'CONFIRMING':
+      valid =
+        submitted &&
+        successfulBlock &&
+        operation.replacementTxHash === null &&
+        operation.canonical &&
+        operation.confirmedAt === null &&
+        operation.errorCode === null;
+      break;
+    case 'CONFIRMED':
+      valid =
+        submitted &&
+        successfulBlock &&
+        operation.replacementTxHash === null &&
+        operation.canonical &&
+        operation.reconciled &&
+        validTime(operation.confirmedAt) &&
+        operation.errorCode === null;
+      break;
+    case 'REJECTED':
+      valid =
+        operation.txHash === null &&
+        operation.submittedAt === null &&
+        noBlock &&
+        operation.confirmations === 0 &&
+        operation.replacementTxHash === null &&
+        basePending &&
+        operation.errorCode === 'WALLET_REJECTED';
+      break;
+    case 'REVERTED':
+      valid =
+        submitted &&
+        revertedBlock &&
+        operation.replacementTxHash === null &&
+        operation.canonical &&
+        !operation.reconciled &&
+        operation.confirmedAt === null &&
+        operation.errorCode === 'TRANSACTION_REVERTED';
+      break;
+    case 'REPLACED':
+      valid =
+        submitted &&
+        noBlock &&
+        operation.replacementTxHash !== null &&
+        basePending &&
+        operation.errorCode === 'TRANSACTION_REPLACED';
+      break;
+    case 'DROPPED':
+      valid =
+        submitted &&
+        noBlock &&
+        operation.replacementTxHash === null &&
+        basePending &&
+        operation.errorCode === 'TRANSACTION_DROPPED';
+      break;
+    case 'REORGED':
+      valid =
+        submitted &&
+        operation.blockNumber !== null &&
+        operation.blockHash !== null &&
+        operation.receiptStatus !== null &&
+        operation.replacementTxHash === null &&
+        basePending &&
+        operation.errorCode === 'CHAIN_REORG';
+      break;
+    case 'RECONCILIATION_FAILED':
+      valid =
+        submitted &&
+        successfulBlock &&
+        operation.replacementTxHash === null &&
+        operation.canonical &&
+        !operation.reconciled &&
+        operation.confirmedAt === null &&
+        ['EVENT_EVIDENCE_MISMATCH', 'CONTRACT_STATE_MISMATCH'].includes(operation.errorCode ?? '');
+      break;
+  }
+  if (!valid) throw new Error('INVALID_OPERATION_EVIDENCE');
+}
 
 function safeNumber(value: bigint, code = 'CHAIN_BLOCK_NUMBER_UNSUPPORTED'): number {
   if (value < 0n || value > BigInt(Number.MAX_SAFE_INTEGER)) throw new Error(code);
@@ -230,12 +359,34 @@ export class ChainStore {
           this.db.exec(
             readFileSync(new URL('../chain-migrations/001-chain-projection.sql', import.meta.url), 'utf8'),
           );
+          this.db.exec(
+            readFileSync(
+              new URL('../chain-migrations/002-projection-checkpoint.sql', import.meta.url),
+              'utf8',
+            ),
+          );
           this.db.exec('COMMIT');
         } catch (error) {
           this.db.exec('ROLLBACK');
           throw error;
         }
-      } else if (version !== 1 || JSON.stringify(tables) !== JSON.stringify(expectedTables)) {
+      } else if (JSON.stringify(tables) !== JSON.stringify(expectedTables)) {
+        throw new Error('UNSUPPORTED_CHAIN_DATABASE');
+      } else if (version === 1) {
+        this.db.exec('BEGIN IMMEDIATE');
+        try {
+          this.db.exec(
+            readFileSync(
+              new URL('../chain-migrations/002-projection-checkpoint.sql', import.meta.url),
+              'utf8',
+            ),
+          );
+          this.db.exec('COMMIT');
+        } catch (error) {
+          this.db.exec('ROLLBACK');
+          throw error;
+        }
+      } else if (version !== 2) {
         throw new Error('UNSUPPORTED_CHAIN_DATABASE');
       }
     } catch (error) {
@@ -258,6 +409,60 @@ export class ChainStore {
     return row
       ? Object.freeze({ blockNumber: BigInt(row.block_number), blockHash: asBlockHash(row.block_hash) })
       : null;
+  }
+
+  projectionCheckpoint(valueChainId: number, contract: Address): ChainCheckpoint | null {
+    const row = this.db
+      .prepare(
+        'SELECT projected_block_number, projected_block_hash FROM chain_checkpoints WHERE chain_id = ? AND contract_address = ?',
+      )
+      .get(chainId(valueChainId), normalizedAddress(contract)) as
+      { projected_block_number: number | null; projected_block_hash: string | null } | undefined;
+    if (!row) return null;
+    if ((row.projected_block_number === null) !== (row.projected_block_hash === null))
+      throw new Error('CORRUPT_CHAIN_DATABASE');
+    return row.projected_block_number === null
+      ? null
+      : Object.freeze({
+          blockNumber: BigInt(row.projected_block_number),
+          blockHash: asBlockHash(row.projected_block_hash!),
+        });
+  }
+
+  syncHealth(valueChainId: number, contract: Address): ChainSyncHealth {
+    const row = this.db
+      .prepare(
+        'SELECT sync_healthy, sync_error FROM chain_checkpoints WHERE chain_id = ? AND contract_address = ?',
+      )
+      .get(chainId(valueChainId), normalizedAddress(contract)) as
+      { sync_healthy: number; sync_error: string | null } | undefined;
+    if (!row) return Object.freeze({ healthy: true, error: null });
+    if (
+      (row.sync_healthy === 1 && row.sync_error === null) ||
+      (row.sync_healthy === 0 && row.sync_error === 'CHAIN_REORG_DEPTH_EXCEEDED')
+    )
+      return Object.freeze({
+        healthy: row.sync_healthy === 1,
+        error: row.sync_error as ChainSyncHealth['error'],
+      });
+    throw new Error('CORRUPT_CHAIN_DATABASE');
+  }
+
+  markSyncUnhealthy(valueChainId: number, contract: Address, error: 'CHAIN_REORG_DEPTH_EXCEEDED'): void {
+    const result = this.db
+      .prepare(
+        'UPDATE chain_checkpoints SET sync_healthy = 0, sync_error = ? WHERE chain_id = ? AND contract_address = ?',
+      )
+      .run(error, chainId(valueChainId), normalizedAddress(contract));
+    if (result.changes !== 1) throw new Error('CHAIN_CHECKPOINT_NOT_FOUND');
+  }
+
+  markSyncHealthy(valueChainId: number, contract: Address): void {
+    this.db
+      .prepare(
+        'UPDATE chain_checkpoints SET sync_healthy = 1, sync_error = NULL WHERE chain_id = ? AND contract_address = ?',
+      )
+      .run(chainId(valueChainId), normalizedAddress(contract));
   }
 
   canonicalBlock(valueChainId: number, contract: Address, blockNumber: bigint): ChainBlock | null {
@@ -311,6 +516,23 @@ export class ChainStore {
           existingBlock.log_count !== sorted.length
         )
           throw new Error('CHAIN_BLOCK_CONFLICT');
+        const existingEvents = this.db
+          .prepare(
+            'SELECT * FROM chain_events WHERE chain_id = ? AND contract_address = ? AND block_number = ? AND canonical = 1 ORDER BY transaction_index, log_index',
+          )
+          .all(id, address, blockNumber) as unknown as EventRow[];
+        if (existingEvents.length !== sorted.length) throw new Error('CHAIN_BLOCK_CONFLICT');
+        for (const [index, row] of existingEvents.entries()) {
+          const decoded = this.decodeEvent(row);
+          const supplied = sorted[index]!;
+          if (
+            decoded.transactionHash.toLowerCase() !== supplied.transactionHash.toLowerCase() ||
+            decoded.logIndex !== supplied.logIndex
+          )
+            throw new Error('CHAIN_BLOCK_CONFLICT');
+          if (eventFingerprint(decoded) !== eventFingerprint(supplied))
+            throw new Error('CHAIN_EVENT_CONFLICT');
+        }
       } else if (
         current &&
         (block.number !== current.blockNumber + 1n ||
@@ -462,6 +684,7 @@ export class ChainStore {
   }
 
   saveOperation(operation: ChainOperation): void {
+    validateOperationEvidence(operation);
     if (!/^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/.test(operation.operationId))
       throw new Error('INVALID_OPERATION_ID');
     const previous = this.operation(operation.operationId);
@@ -563,12 +786,82 @@ export class ChainStore {
       );
   }
 
+  commitProjections(
+    valueChainId: number,
+    contract: Address,
+    block: ChainBlock,
+    projections: readonly ProductProjection[],
+  ): void {
+    const id = chainId(valueChainId);
+    const address = normalizedAddress(contract);
+    const blockNumber = safeNumber(block.number);
+    const canonical = this.canonicalBlock(id, contract, block.number);
+    const checkpoint = this.checkpoint(id, contract);
+    if (
+      !canonical ||
+      canonical.hash.toLowerCase() !== block.hash.toLowerCase() ||
+      !checkpoint ||
+      checkpoint.blockNumber !== block.number ||
+      checkpoint.blockHash.toLowerCase() !== block.hash.toLowerCase()
+    )
+      throw new Error('PROJECTION_BLOCK_NOT_CANONICAL');
+    const keys = new Set<string>();
+    for (const projection of projections) {
+      if (
+        projection.chainId !== id ||
+        !sameAddress(projection.contract, contract) ||
+        projection.blockNumber > block.number ||
+        !namePattern.test(projection.projectionKey)
+      )
+        throw new Error('INVALID_PROJECTION');
+      const projectionBlock = this.canonicalBlock(id, contract, projection.blockNumber);
+      if (!projectionBlock || projectionBlock.hash.toLowerCase() !== projection.blockHash.toLowerCase())
+        throw new Error('PROJECTION_BLOCK_NOT_CANONICAL');
+      const key = `${normalizedAddress(projection.owner)}:${projection.projectionKey}`;
+      if (keys.has(key)) throw new Error('DUPLICATE_PROJECTION');
+      keys.add(key);
+      boundedJson(projection.state);
+    }
+
+    this.db.exec('BEGIN IMMEDIATE');
+    try {
+      this.db
+        .prepare('DELETE FROM product_projections WHERE chain_id = ? AND contract_address = ?')
+        .run(id, address);
+      const insert = this.db.prepare(
+        'INSERT INTO product_projections (chain_id, owner_address, contract_address, projection_key, block_number, block_hash, state_json) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      );
+      for (const projection of projections) {
+        insert.run(
+          id,
+          normalizedAddress(projection.owner),
+          address,
+          projection.projectionKey,
+          safeNumber(projection.blockNumber),
+          projection.blockHash.toLowerCase(),
+          boundedJson(projection.state),
+        );
+      }
+      const updated = this.db
+        .prepare(
+          'UPDATE chain_checkpoints SET projected_block_number = ?, projected_block_hash = ? WHERE chain_id = ? AND contract_address = ? AND block_number = ? AND block_hash = ?',
+        )
+        .run(blockNumber, block.hash.toLowerCase(), id, address, blockNumber, block.hash.toLowerCase());
+      if (updated.changes !== 1) throw new Error('CHAIN_CHECKPOINT_CHANGED');
+      this.db.exec('COMMIT');
+    } catch (error) {
+      if (this.db.isTransaction) this.db.exec('ROLLBACK');
+      throw error;
+    }
+  }
+
   projection(
     valueChainId: number,
     owner: Address,
     contract: Address,
     projectionKey: string,
   ): ProductProjection | null {
+    if (!this.syncHealth(valueChainId, contract).healthy) throw new Error('CHAIN_SYNC_UNHEALTHY');
     const row = this.db
       .prepare(
         'SELECT block_number, block_hash, state_json FROM product_projections WHERE chain_id = ? AND owner_address = ? AND contract_address = ? AND projection_key = ?',
@@ -622,10 +915,8 @@ export class ChainStore {
         )
         .run(id, address, number).changes;
       const projections = this.db
-        .prepare(
-          'DELETE FROM product_projections WHERE chain_id = ? AND contract_address = ? AND block_number >= ?',
-        )
-        .run(id, address, number).changes;
+        .prepare('DELETE FROM product_projections WHERE chain_id = ? AND contract_address = ?')
+        .run(id, address).changes;
       const previous = this.db
         .prepare(
           'SELECT block_number, block_hash FROM chain_blocks WHERE chain_id = ? AND contract_address = ? AND canonical = 1 ORDER BY block_number DESC LIMIT 1',
@@ -634,7 +925,7 @@ export class ChainStore {
       if (previous) {
         this.db
           .prepare(
-            'UPDATE chain_checkpoints SET block_number = ?, block_hash = ? WHERE chain_id = ? AND contract_address = ?',
+            'UPDATE chain_checkpoints SET block_number = ?, block_hash = ?, projected_block_number = NULL, projected_block_hash = NULL WHERE chain_id = ? AND contract_address = ?',
           )
           .run(previous.block_number, previous.block_hash, id, address);
       } else {

@@ -25,7 +25,10 @@ import {
   type TransactionHash,
 } from '../packages/chain-adapter/src/types.ts';
 import { createOperation, transitionOperation } from '../packages/chain-adapter/src/lifecycle.ts';
-import type { DeploymentManifest } from '../packages/chain-adapter/src/manifest.ts';
+import {
+  deploymentManifestDigest,
+  validateDeploymentManifest,
+} from '../packages/chain-adapter/src/manifest.ts';
 
 const CHAIN_ID = 46_630;
 const CONTRACT = asAddress('0x2222222222222222222222222222222222222222');
@@ -40,18 +43,27 @@ const HASH_101 = asBlockHash(`0x${'11'.repeat(32)}`);
 const HASH_101_ALT = asBlockHash(`0x${'12'.repeat(32)}`);
 const HASH_102 = asBlockHash(`0x${'13'.repeat(32)}`);
 
-const manifest: DeploymentManifest = Object.freeze({
+const manifestBody = {
   schemaVersion: 1,
   environment: 'robinhood-chain-testnet',
   chainId: CHAIN_ID,
   contractName: 'AlphaForgeVault',
   contractType: 'vault',
   contractAddress: CONTRACT,
-  deploymentBlock: 100n,
+  deploymentBlock: '100',
   abiVersion: 'm3-owner-v1',
-  manifestDigest: asBlockHash(`0x${'66'.repeat(32)}`),
   runtimeBytecodeHash: asBlockHash(`0x${'77'.repeat(32)}`),
-});
+} as const;
+const manifestDigest = deploymentManifestDigest(manifestBody);
+const manifest = validateDeploymentManifest(
+  { ...manifestBody, manifestDigest },
+  {
+    environment: 'robinhood-chain-testnet',
+    chainId: CHAIN_ID,
+    manifestDigest,
+    contractAddress: CONTRACT,
+  },
+);
 
 function block(
   number: bigint,
@@ -360,5 +372,75 @@ test('projection rebuild failure removes the partially indexed canonical block',
   await assert.rejects(() => sync.syncTo(100n), { code: 'PROJECTION_REBUILD_FAILED' });
   assert.equal(store.checkpoint(CHAIN_ID, CONTRACT), null);
   assert.equal(store.canonicalEvents(CHAIN_ID, CONTRACT).length, 0);
+  store.close();
+});
+
+test('restart rebuilds a projection when a block checkpoint committed before projection commit', async () => {
+  const rpc = new FixtureRpc();
+  rpc.blocks.set(100n, block(100n, HASH_100, HASH_99));
+  const store = new ChainStore(await databasePath());
+  const raw = log(TX_A, 100n, HASH_100);
+  const decoded = integration.decode(raw)!;
+  store.recordCanonicalBlock(CHAIN_ID, CONTRACT, rpc.blocks.get(100n)!, [
+    { ...raw, chainId: CHAIN_ID, ...decoded },
+  ]);
+  assert.equal(store.projectionCheckpoint(CHAIN_ID, CONTRACT), null);
+  const sync = new ChainSynchronizer({ rpc, store, manifest, integration, confirmationDepth: 1 });
+  assert.deepEqual(await sync.syncTo(100n), { scannedBlocks: 0, insertedEvents: 0, reorgedBlocks: 0 });
+  assert.deepEqual(store.projectionCheckpoint(CHAIN_ID, CONTRACT), {
+    blockNumber: 100n,
+    blockHash: HASH_100,
+  });
+  assert.deepEqual(store.projection(CHAIN_ID, OWNER, CONTRACT, 'trend-vault')?.state, {
+    principal: '1000000',
+    strategyId: 'trend',
+  });
+  store.close();
+});
+
+test('temporarily unavailable checkpoint block does not trigger destructive reorg rollback', async () => {
+  const rpc = new FixtureRpc();
+  rpc.blocks.set(100n, block(100n, HASH_100, HASH_99));
+  rpc.receipts.set(TX_A, receipt(TX_A, 100n, HASH_100));
+  const store = new ChainStore(await databasePath());
+  const sync = new ChainSynchronizer({ rpc, store, manifest, integration, confirmationDepth: 1 });
+  await sync.syncTo(100n);
+  rpc.blocks.delete(100n);
+  rpc.blocks.set(101n, block(101n, HASH_101, HASH_100));
+  rpc.head = 101n;
+  await assert.rejects(() => sync.syncTo(101n), { code: 'CHAIN_BLOCK_UNAVAILABLE' });
+  assert.deepEqual(store.checkpoint(CHAIN_ID, CONTRACT), {
+    blockNumber: 100n,
+    blockHash: HASH_100,
+  });
+  assert.notEqual(store.projection(CHAIN_ID, OWNER, CONTRACT, 'trend-vault'), null);
+  store.close();
+});
+
+test('reorg beyond the configured search bound marks projections unhealthy', async () => {
+  const rpc = new FixtureRpc();
+  rpc.blocks.set(100n, block(100n, HASH_100, HASH_99));
+  rpc.blocks.set(101n, block(101n, HASH_101, HASH_100));
+  rpc.blocks.set(102n, block(102n, HASH_102, HASH_101));
+  rpc.receipts.set(TX_A, receipt(TX_A, 100n, HASH_100));
+  rpc.head = 102n;
+  const store = new ChainStore(await databasePath());
+  const sync = new ChainSynchronizer({
+    rpc,
+    store,
+    manifest,
+    integration,
+    confirmationDepth: 1,
+    maxReorgDepth: 1,
+  });
+  await sync.syncTo(102n);
+  rpc.blocks.set(101n, block(101n, HASH_101_ALT, HASH_100));
+  rpc.blocks.set(102n, block(102n, asBlockHash(`0x${'14'.repeat(32)}`), HASH_101_ALT));
+  await assert.rejects(() => sync.syncTo(102n), { code: 'CHAIN_REORG_DEPTH_EXCEEDED' });
+  assert.deepEqual(store.syncHealth(CHAIN_ID, CONTRACT), {
+    healthy: false,
+    error: 'CHAIN_REORG_DEPTH_EXCEEDED',
+  });
+  assert.throws(() => store.projection(CHAIN_ID, OWNER, CONTRACT, 'trend-vault'), /CHAIN_SYNC_UNHEALTHY/);
   store.close();
 });

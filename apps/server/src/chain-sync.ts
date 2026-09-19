@@ -100,7 +100,8 @@ export class ChainSynchronizer {
     const checkpoint = this.#store.checkpoint(this.#manifest.chainId, this.#manifest.contractAddress);
     if (!checkpoint) return 0;
     const remoteCheckpoint = await this.#rpc.block(checkpoint.blockNumber);
-    if (remoteCheckpoint && sameHash(remoteCheckpoint.hash, checkpoint.blockHash)) return 0;
+    if (!remoteCheckpoint) throw new ChainSyncFailure('CHAIN_BLOCK_UNAVAILABLE');
+    if (sameHash(remoteCheckpoint.hash, checkpoint.blockHash)) return 0;
 
     let candidate = checkpoint.blockNumber - 1n;
     let searched = 1;
@@ -111,6 +112,7 @@ export class ChainSynchronizer {
         candidate,
       );
       const remote = await this.#rpc.block(candidate);
+      if (!remote) throw new ChainSyncFailure('CHAIN_BLOCK_UNAVAILABLE');
       if (local && remote && sameHash(local.hash, remote.hash)) {
         return this.#store.rollbackFromBlock(
           this.#manifest.chainId,
@@ -121,7 +123,14 @@ export class ChainSynchronizer {
       candidate--;
       searched++;
     }
-    if (candidate >= this.#manifest.deploymentBlock) throw new ChainSyncFailure('CHAIN_REORG_DEPTH_EXCEEDED');
+    if (candidate >= this.#manifest.deploymentBlock) {
+      this.#store.markSyncUnhealthy(
+        this.#manifest.chainId,
+        this.#manifest.contractAddress,
+        'CHAIN_REORG_DEPTH_EXCEEDED',
+      );
+      throw new ChainSyncFailure('CHAIN_REORG_DEPTH_EXCEEDED');
+    }
     return this.#store.rollbackFromBlock(
       this.#manifest.chainId,
       this.#manifest.contractAddress,
@@ -150,6 +159,52 @@ export class ChainSynchronizer {
     }
   }
 
+  async #rebuildProjection(block: ChainBlock): Promise<void> {
+    const projections = await this.#integration.rebuildProjections({
+      rpc: this.#rpc,
+      manifest: this.#manifest,
+      events: this.#store.canonicalEvents(this.#manifest.chainId, this.#manifest.contractAddress),
+      block,
+    });
+    this.#store.commitProjections(
+      this.#manifest.chainId,
+      this.#manifest.contractAddress,
+      block,
+      projections.map((projection) => ({
+        ...projection,
+        chainId: this.#manifest.chainId,
+        contract: this.#manifest.contractAddress,
+      })),
+    );
+  }
+
+  async #recoverProjection(): Promise<void> {
+    const checkpoint = this.#store.checkpoint(this.#manifest.chainId, this.#manifest.contractAddress);
+    if (!checkpoint) return;
+    const projected = this.#store.projectionCheckpoint(
+      this.#manifest.chainId,
+      this.#manifest.contractAddress,
+    );
+    if (
+      projected &&
+      projected.blockNumber === checkpoint.blockNumber &&
+      sameHash(projected.blockHash, checkpoint.blockHash)
+    )
+      return;
+    const block = this.#store.canonicalBlock(
+      this.#manifest.chainId,
+      this.#manifest.contractAddress,
+      checkpoint.blockNumber,
+    );
+    if (!block || !sameHash(block.hash, checkpoint.blockHash))
+      throw new ChainSyncFailure('PROJECTION_REBUILD_FAILED');
+    try {
+      await this.#rebuildProjection(block);
+    } catch {
+      throw new ChainSyncFailure('PROJECTION_REBUILD_FAILED');
+    }
+  }
+
   async syncTo(head: bigint): Promise<ChainSyncResult> {
     await this.#assertChain();
     if (head < this.#manifest.deploymentBlock) throw new ChainSyncFailure('CHAIN_HEAD_BEFORE_DEPLOYMENT');
@@ -158,9 +213,13 @@ export class ChainSynchronizer {
     if (remoteHead.number !== head) throw new ChainSyncFailure('CHAIN_BLOCK_MISMATCH');
 
     const reorgedBlocks = await this.#rewindIfNeeded();
+    await this.#recoverProjection();
     const checkpoint = this.#store.checkpoint(this.#manifest.chainId, this.#manifest.contractAddress);
     const start = checkpoint ? checkpoint.blockNumber + 1n : this.#manifest.deploymentBlock;
-    if (start > head) return { scannedBlocks: 0, insertedEvents: 0, reorgedBlocks };
+    if (start > head) {
+      this.#store.markSyncHealthy(this.#manifest.chainId, this.#manifest.contractAddress);
+      return { scannedBlocks: 0, insertedEvents: 0, reorgedBlocks };
+    }
     const count = toCount(head - start + 1n);
     if (count > this.#maxBlocksPerSync) throw new ChainSyncFailure('CHAIN_SYNC_RANGE_EXCEEDED');
 
@@ -185,19 +244,13 @@ export class ChainSynchronizer {
         events,
       ).insertedEvents;
       try {
-        this.#putProjections(
-          await this.#integration.rebuildProjections({
-            rpc: this.#rpc,
-            manifest: this.#manifest,
-            events: this.#store.canonicalEvents(this.#manifest.chainId, this.#manifest.contractAddress),
-            block: current,
-          }),
-        );
+        await this.#rebuildProjection(current);
       } catch {
         this.#store.rollbackFromBlock(this.#manifest.chainId, this.#manifest.contractAddress, number);
         throw new ChainSyncFailure('PROJECTION_REBUILD_FAILED');
       }
     }
+    this.#store.markSyncHealthy(this.#manifest.chainId, this.#manifest.contractAddress);
     return { scannedBlocks: count, insertedEvents, reorgedBlocks };
   }
 

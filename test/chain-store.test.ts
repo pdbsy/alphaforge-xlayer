@@ -1,11 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { mkdir, mkdtemp } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { ChainStore, type IndexedChainEvent } from '../apps/server/src/chain-store.ts';
 import { asAddress, asBlockHash, asHexData, asTransactionHash } from '../packages/chain-adapter/src/types.ts';
 import { createOperation, transitionOperation } from '../packages/chain-adapter/src/lifecycle.ts';
+import type { ChainOperation } from '../packages/chain-adapter/src/lifecycle.ts';
 
 const CHAIN_ID = 46_630;
 const CONTRACT = asAddress('0x2222222222222222222222222222222222222222');
@@ -95,6 +97,18 @@ test('conflicting duplicate identity fails without changing canonical evidence',
   assert.throws(
     () => store.recordCanonicalBlock(CHAIN_ID, CONTRACT, block, [event({ data: asHexData('0xffff') })]),
     /CHAIN_EVENT_CONFLICT/,
+  );
+  assert.deepEqual(store.canonicalEvents(CHAIN_ID, CONTRACT), [event()]);
+  store.close();
+});
+
+test('same block and event count cannot replay a different canonical event set', async () => {
+  const store = new ChainStore(await databasePath());
+  const block = { number: 100n, hash: BLOCK_100, parentHash: BLOCK_99, timestamp: 1_000n };
+  store.recordCanonicalBlock(CHAIN_ID, CONTRACT, block, [event()]);
+  assert.throws(
+    () => store.recordCanonicalBlock(CHAIN_ID, CONTRACT, block, [event({ transactionHash: TX_B })]),
+    /CHAIN_BLOCK_CONFLICT/,
   );
   assert.deepEqual(store.canonicalEvents(CHAIN_ID, CONTRACT), [event()]);
   store.close();
@@ -267,4 +281,65 @@ test('chain store refuses an unrelated database instead of mutating it', async (
     ['unrelated'],
   );
   reopened.close();
+});
+
+test('chain store migrates to projection-aware checkpoints and rejects forged confirmed operations', async () => {
+  const store = new ChainStore(await databasePath());
+  assert.equal(store.db.prepare('PRAGMA user_version').get()?.user_version, 2);
+  const submitted = transitionOperation(
+    createOperation({
+      operationId: 'forged-confirmed',
+      chainId: CHAIN_ID,
+      owner: OWNER_A,
+      target: CONTRACT,
+      state: 'AWAITING_SIGNATURE',
+    }),
+    { state: 'SUBMITTED', txHash: TX_A, submittedAt: '2026-09-14T12:00:00.000Z' },
+  );
+  const forged = {
+    ...submitted,
+    state: 'CONFIRMED',
+    blockNumber: 100n,
+    blockHash: BLOCK_100,
+    receiptStatus: null,
+    confirmations: 3,
+    canonical: true,
+    reconciled: true,
+    confirmedAt: '2026-09-14T12:01:00.000Z',
+  } as ChainOperation;
+  assert.throws(() => store.saveOperation(forged), /INVALID_OPERATION_EVIDENCE/);
+  assert.equal(store.operation('forged-confirmed'), null);
+  store.close();
+});
+
+test('existing version-one chain database migrates without losing indexed evidence', async () => {
+  const path = await databasePath();
+  const legacy = new DatabaseSync(path);
+  legacy.exec(
+    readFileSync(
+      new URL('../apps/server/chain-migrations/001-chain-projection.sql', import.meta.url),
+      'utf8',
+    ),
+  );
+  legacy
+    .prepare(
+      'INSERT INTO chain_blocks (chain_id, contract_address, block_number, block_hash, parent_hash, block_timestamp, log_count, canonical) VALUES (?, ?, ?, ?, ?, ?, 0, 1)',
+    )
+    .run(CHAIN_ID, CONTRACT.toLowerCase(), 100, BLOCK_100.toLowerCase(), BLOCK_99.toLowerCase(), '1000');
+  legacy
+    .prepare(
+      'INSERT INTO chain_checkpoints (chain_id, contract_address, block_number, block_hash) VALUES (?, ?, ?, ?)',
+    )
+    .run(CHAIN_ID, CONTRACT.toLowerCase(), 100, BLOCK_100.toLowerCase());
+  legacy.close();
+
+  const store = new ChainStore(path);
+  assert.equal(store.db.prepare('PRAGMA user_version').get()?.user_version, 2);
+  assert.deepEqual(store.checkpoint(CHAIN_ID, CONTRACT), {
+    blockNumber: 100n,
+    blockHash: BLOCK_100,
+  });
+  assert.equal(store.projectionCheckpoint(CHAIN_ID, CONTRACT), null);
+  assert.deepEqual(store.syncHealth(CHAIN_ID, CONTRACT), { healthy: true, error: null });
+  store.close();
 });

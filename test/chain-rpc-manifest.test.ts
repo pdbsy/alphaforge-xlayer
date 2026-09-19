@@ -1,10 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import {
   validateDeploymentManifest,
   type DeploymentManifestExpectation,
 } from '../packages/chain-adapter/src/manifest.ts';
-import { JsonRpcClient, RpcFailure, type RpcTransport } from '../packages/chain-adapter/src/rpc.ts';
+import {
+  createFetchTransport,
+  JsonRpcClient,
+  RpcFailure,
+  type RpcTransport,
+} from '../packages/chain-adapter/src/rpc.ts';
 import { asAddress, asBlockHash, asHexData, asTransactionHash } from '../packages/chain-adapter/src/types.ts';
 
 const CONTRACT = asAddress('0x2222222222222222222222222222222222222222');
@@ -12,11 +18,10 @@ const OWNER = asAddress('0x1111111111111111111111111111111111111111');
 const TX_HASH = asTransactionHash(`0x${'33'.repeat(32)}`);
 const BLOCK_HASH = asBlockHash(`0x${'44'.repeat(32)}`);
 const PARENT_HASH = asBlockHash(`0x${'55'.repeat(32)}`);
-const DIGEST = asBlockHash(`0x${'66'.repeat(32)}`);
 const RUNTIME_HASH = asBlockHash(`0x${'77'.repeat(32)}`);
 const ENDPOINT = 'https://rpc.testnet.chain.robinhood.com';
 
-const manifestInput = {
+const manifestBody = {
   schemaVersion: 1,
   environment: 'robinhood-chain-testnet',
   chainId: 46_630,
@@ -25,9 +30,10 @@ const manifestInput = {
   contractAddress: CONTRACT,
   deploymentBlock: '100',
   abiVersion: 'm3-owner-v1',
-  manifestDigest: DIGEST,
   runtimeBytecodeHash: RUNTIME_HASH,
 };
+const DIGEST = asBlockHash(`0x${createHash('sha256').update(JSON.stringify(manifestBody)).digest('hex')}`);
+const manifestInput = { ...manifestBody, manifestDigest: DIGEST };
 const expected: DeploymentManifestExpectation = {
   environment: 'robinhood-chain-testnet',
   chainId: 46_630,
@@ -45,6 +51,9 @@ test('deployment manifest is accepted only when exact trusted identity matches',
     { ...manifestInput, manifestDigest: BLOCK_HASH },
     { ...manifestInput, deploymentBlock: '-1' },
     { ...manifestInput, contractAddress: OWNER },
+    { ...manifestInput, contractName: 'OtherVault' },
+    { ...manifestInput, deploymentBlock: '101' },
+    { ...manifestInput, runtimeBytecodeHash: BLOCK_HASH },
     { ...manifestInput, unexpected: true },
   ]) {
     const expectation =
@@ -203,4 +212,29 @@ test('RPC errors never expose endpoint paths, query credentials or transport det
       return true;
     },
   );
+});
+
+test('default fetch transport stops reading once the response byte budget is exceeded', async () => {
+  let cancelled = false;
+  const body = new ReadableStream<Uint8Array>({
+    pull(controller) {
+      controller.enqueue(new Uint8Array(80));
+    },
+    cancel() {
+      cancelled = true;
+    },
+  });
+  const fetcher: typeof fetch = async () => new Response(body, { status: 200 });
+  const transport = createFetchTransport(fetcher);
+  await assert.rejects(
+    () =>
+      transport(
+        ENDPOINT,
+        { jsonrpc: '2.0', id: 1, method: 'eth_chainId', params: [] },
+        AbortSignal.timeout(1_000),
+        128,
+      ),
+    (error: unknown) => error instanceof RpcFailure && error.code === 'RPC_RESPONSE_TOO_LARGE',
+  );
+  assert.equal(cancelled, true);
 });

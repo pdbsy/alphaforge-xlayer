@@ -25,6 +25,7 @@ export type RpcTransport = (
   endpoint: string,
   request: RpcRequest,
   signal: AbortSignal,
+  maxResponseBytes: number,
 ) => Promise<RpcTransportResponse>;
 
 export class RpcFailure extends Error {
@@ -95,16 +96,56 @@ interface RpcOptions {
   readonly maxResponseBytes?: number;
 }
 
-const defaultTransport: RpcTransport = async (endpoint, request, signal) => {
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    redirect: 'error',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(request),
-    signal,
-  });
-  return { status: response.status, body: await response.text() };
-};
+async function boundedResponseBody(response: Response, maximumBytes: number): Promise<string> {
+  const contentLength = response.headers.get('content-length');
+  if (contentLength && /^\d+$/.test(contentLength) && BigInt(contentLength) > BigInt(maximumBytes))
+    throw new RpcFailure('RPC_RESPONSE_TOO_LARGE');
+  if (!response.body) return '';
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > maximumBytes) {
+        await reader.cancel();
+        throw new RpcFailure('RPC_RESPONSE_TOO_LARGE');
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  const bytes = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  try {
+    return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+  } catch {
+    throw new RpcFailure('RPC_INVALID_RESPONSE');
+  }
+}
+
+export function createFetchTransport(fetcher: typeof fetch = fetch): RpcTransport {
+  return async (endpoint, request, signal, maxResponseBytes) => {
+    const response = await fetcher(endpoint, {
+      method: 'POST',
+      redirect: 'error',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(request),
+      signal,
+    });
+    if (response.status < 200 || response.status >= 300) return { status: response.status, body: '' };
+    return { status: response.status, body: await boundedResponseBody(response, maxResponseBytes) };
+  };
+}
+
+const defaultTransport = createFetchTransport();
 
 function endpoint(value: string): string {
   let url: URL;
@@ -242,8 +283,14 @@ export class JsonRpcClient implements ReadonlyRpc {
       const signal = AbortSignal.timeout(this.#timeoutMs);
       let response: RpcTransportResponse;
       try {
-        response = await this.#transport(this.#endpoints[attempt % this.#endpoints.length]!, request, signal);
-      } catch {
+        response = await this.#transport(
+          this.#endpoints[attempt % this.#endpoints.length]!,
+          request,
+          signal,
+          this.#maxResponseBytes,
+        );
+      } catch (error) {
+        if (error instanceof RpcFailure && !error.retryable) throw error;
         if (attempt + 1 < this.#maxAttempts) continue;
         throw new RpcFailure('RPC_UNAVAILABLE', true);
       }

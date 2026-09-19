@@ -8,12 +8,12 @@ The contract-specific slice is not wired yet. Macbeth02 confirmed on 2026-09-14 
 
 The current local simulator continues to use its existing API and SQLite ledger. The new chain adapter is separate and inactive until an explicit Robinhood Testnet composition supplies all required inputs.
 
-| Area        | Implemented                                                                                                                                             | Pending contract integration                                                                                         |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| Browser     | EIP-1193 account access, chain check, prepared action validation, `eth_sendTransaction`, rejection and response handling                                | Owner-only action encoder and product UI wiring                                                                      |
-| Backend     | Bounded read-only JSON-RPC, manifest validation, receipt tracking, sequential log indexing, reconciliation seam, persistent projections, reorg recovery | Reviewed ABI decoder, expected-event rules, contract-view reader, service/API composition                            |
-| Persistence | Independent transactions, blocks, events, checkpoints, and wallet-keyed projections                                                                     | Production database location and operational retention policy                                                        |
-| Testnet     | Exact Chain ID validation for `46630`                                                                                                                   | Trusted deployed address, deployment block, manifest digest, runtime bytecode hash, RPC configuration, live evidence |
+| Area        | Implemented                                                                                                                                                                  | Pending contract integration                                                                                         |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Browser     | EIP-1193 account access, chain check, prepared action validation, `eth_sendTransaction`, rejection and response handling                                                     | Owner-only action encoder and product UI wiring                                                                      |
+| Backend     | Stream-bounded read-only JSON-RPC, authenticated manifest validation, receipt tracking, sequential log indexing, reconciliation seam, persistent projections, reorg recovery | Reviewed ABI decoder, expected-event rules, contract-view reader, service/API composition                            |
+| Persistence | Independent transactions, blocks, events, indexed/projected checkpoints, sync health, and wallet-keyed projections                                                           | Production database location and operational retention policy                                                        |
+| Testnet     | Exact Chain ID validation for `46630`                                                                                                                                        | Trusted deployed address, deployment block, manifest digest, runtime bytecode hash, RPC configuration, live evidence |
 
 There is no automatic fallback from a failed or incomplete Testnet composition to Local mode. No configuration switch currently enables Testnet writes.
 
@@ -29,8 +29,8 @@ The chain remains the source of truth. Frontend state, local storage, demo cooki
 
 The transport-independent package is exported from `packages/chain-adapter/src/index.ts`:
 
-- `validateDeploymentManifest` accepts exactly the trusted environment, Chain ID, digest, and optional expected contract address. The manifest also binds the deployment block, ABI version, and runtime bytecode hash.
-- `ReadonlyRpc` exposes only chain ID, block, receipt, logs, and `eth_call`. `JsonRpcClient` provides bounded endpoint rotation, timeout, response-size limits, strict response normalization, and sanitized failures.
+- `validateDeploymentManifest` accepts exactly the trusted environment, Chain ID, digest, and optional expected contract address. The trusted SHA-256 digest is recomputed over the canonical manifest document, so it binds the contract identity, deployment block, ABI version, and runtime bytecode hash. Only validated manifests can be supplied to the synchronizer.
+- `ReadonlyRpc` exposes only chain ID, block, receipt, logs, and `eth_call`. `JsonRpcClient` provides bounded endpoint rotation, timeout, streaming response-size enforcement, strict response normalization, and sanitized failures.
 - `ChainOperation` and `transitionOperation` define the closed lifecycle and the evidence retained at each transition.
 - `ContractIntegration` isolates ABI-specific decoding, projection rebuilding, and transaction reconciliation from generic synchronization.
 
@@ -79,11 +79,13 @@ The chain database is physically separate from the Local simulator database. Mig
 - `chain_checkpoints`, keyed by chain and contract, containing both block number and block hash;
 - `product_projections`, keyed by chain, wallet owner, contract, and projection key.
 
-Events are applied in block number, transaction index, and log index order. Re-reading an identical canonical event is a no-op. Conflicting data for an existing event identity fails closed. A displaced event can reappear on a new canonical block only when its event payload is unchanged.
+Migration `002-projection-checkpoint.sql` adds the independently committed projection block/hash and persisted synchronization health. Existing version-one databases migrate in place; fresh databases apply both migrations in one transaction.
 
-On a checkpoint mismatch, the synchronizer searches backward within the configured reorg bound. It marks displaced blocks and events non-canonical, changes affected operations to `REORGED`, removes projections at or after the fork, rewinds the checkpoint, and replays the new branch. Projection rebuild failure removes the partially indexed block instead of leaving a canonical checkpoint without a corresponding projection.
+Events are applied in block number, transaction index, and log index order. Re-reading an identical canonical block requires the exact same ordered event identities and payloads. Conflicting data for an existing event identity, or a same-count block replay with different event identities, fails closed. A displaced event can reappear on a new canonical block only when its event payload is unchanged.
 
-A backend restart resumes from the persisted block number and hash. Destroying the chain database loses only the cache: a new database can replay from the trusted deployment block and reconstruct canonical events and projections. Browser local storage and submission history are not recovery dependencies.
+On a concrete checkpoint hash mismatch, the synchronizer searches backward within the configured reorg bound. A missing RPC block is treated as provider unavailability and never mutates local canonical evidence. For a bounded reorg, the synchronizer marks displaced blocks and events non-canonical, changes affected operations to `REORGED`, clears projections, rewinds the indexed checkpoint, and deterministically rebuilds the new branch. A reorg deeper than policy persists an unhealthy state and projection reads fail closed until canonical recovery succeeds.
+
+Each projection rebuild atomically replaces the contract's projection set and advances its projected checkpoint. If a process stops after the indexed checkpoint commits but before projection commit, the next synchronization detects the checkpoint gap and rebuilds before reporting success. A rebuild failure for the block currently being indexed removes that partially indexed block; a restart recovery failure retains canonical evidence so it can be retried. Destroying the chain database loses only the cache: a new database can replay from the trusted deployment block and reconstruct canonical events and projections. Browser local storage and submission history are not recovery dependencies.
 
 ## Account and wallet separation
 
