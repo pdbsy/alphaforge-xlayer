@@ -112,3 +112,9 @@ To complete unaffected verification, the manager created an independent full clo
 All wallet/provider/API transactions above are controlled mock objects and change no chain or funds. The standalone Vite preview's unrelated Local simulation API is not a running backend; this is not evidence of a clean full-stack live deployment. A minor non-owner degraded-message wording issue remains for a forward UI correction. The candidate still needs merge-conflict resolution with 03, final unified tests/C/R/S and remote identity admission after the pending decisions.
 
 At manager source `d9bf7ff`, the full Node suite passed 554 tests. The two current user questions concern exact 03 source publication and exact 04 metadata repair. No denied push is retried indirectly.
+
+### Approved source publication and second metadata exception
+
+The user subsequently answered “允许” to the two pending decisions. Macbeth03 published exactly `77e2fe623326314c62ebe331d6357e6444aa58b1` by normal push to the canonical `macbeth03/m3-chain-adapter` branch; the manager fetched and verified that remote-tracking SHA. No force push was used. A later one-line lint correction is a separate unpublished source and is not covered by that exact-commit approval.
+
+Macbeth04 repaired only the message of unpublished `484f1b5bfadc9ef444362c66a84d9682940da7ca`, producing `d244474ff5b64b14f04c2eef459ff86fb879355f`. Manager readback confirms identical tree `bce88e4c6917f8588bdcfe68b0615845fd278ce6`, parent `3ff7b6f94782cba70d3061cdbab327dde43b90ed`, author name/email and author date `2026-09-20T01:53:35+08:00`. Original evidence remains at `refs/evidence/macbeth04/M3-04-PRODUCT-UI/original-484f1b5`. This exception does not authorize other history rewrites. The unfinished merge was preserved for forward conflict resolution; final source admission remains pending its completion and publication.
