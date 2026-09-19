@@ -126,3 +126,14 @@
 - [x] Run the expanded 64-test lifecycle/store/sync/wallet/UI integration set.
 - [x] Verify the actual strategy and account entry routes in a real local browser, including reload recovery, disabled actions, fixture/live labels and console diagnostics.
 - Evidence closeout for this correction follows the source C → manifest R → snapshot S workflow; exact immutable SHAs are recorded in Draft PR #16.
+
+## Task 8: Consume canonical backend readiness evidence
+
+**Files:** Preserve Macbeth03 source `1023caf` and final head `588efa531b83548ffa7b1b01f976dfc49ff470b7`; update the UI evidence boundary without deriving readiness in the browser.
+
+- [x] Preserve Macbeth03's removal of browser-side raw operation/projection readiness derivation.
+- [x] Consume the final `ProductOperationEvidence` type through the Web adapter re-export.
+- [x] Keep `ChainStore.operationEvidence(operationId, projectionKey)` as the sole readiness computation owner.
+- [x] Retain failure-before-`productReady` defense for contradictory input crossing API/cache boundaries.
+- [x] Run the expanded 68-test lifecycle/store/sync/wallet/UI set.
+- Evidence closeout follows the source C → manifest R → snapshot S workflow; exact immutable SHAs are recorded in Draft PR #16.

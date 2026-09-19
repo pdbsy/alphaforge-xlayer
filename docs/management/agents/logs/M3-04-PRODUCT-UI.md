@@ -138,3 +138,14 @@
 - Browser diagnostics: No browser warning or error entries were observed after navigating and reloading both routes.
 - Limitation: This is offline browser acceptance only. Live Pass/Vault reads and supported actions remain blocked on the reviewed Macbeth02 ABI/deployment and Macbeth03 integration; no Testnet result is claimed.
 - Integration handoff: AF-M3-CLOSEOUT supersedes the earlier instruction to wait for PR #17 to merge first. Macbeth01 may include this exact candidate in its own `master`-based integration PR while preserving Worker history; PR #16 remains Draft and unmerged.
+
+### 2026-09-19 — Canonical backend readiness evidence boundary
+
+- Task: M3-04-PRODUCT-UI
+- Status: READY_FOR_CLOSEOUT_INTEGRATION_WITH_STACKED_PR_ADMISSION_BLOCKER
+- Upstream source: Macbeth03 source `1023caf` and final dependency head `588efa531b83548ffa7b1b01f976dfc49ff470b7`.
+- What changed: Preserved Macbeth03's removal of the browser-side `operationEvidence` derivation. The Web adapter now only re-exports the final `ProductOperationEvidence` type; `READY` is computed by `ChainStore.operationEvidence(operationId, projectionKey)` inside one canonical SQLite snapshot.
+- Product boundary: Macbeth04 continues to consume only the final evidence object. The UI does not combine raw operations and projections or reconstruct canonical ancestry. Its defensive failure-before-`productReady` mapping remains in place for malformed or contradictory API/cache input.
+- Tests: The expanded lifecycle/store/sync/wallet/UI set passes 68/68, including canonical-snapshot readiness, competing fork/hash rejection, bounded ancestry failure and contradictory frontend evidence.
+- Ownership: No provider, RPC, state transition, database write, ABI, calldata, signing, broadcast or automatic retry behavior was added by Macbeth04.
+- Evidence handling: This integration record becomes the new source C. Macbeth04 manifest R and snapshot S are regenerated only through repository commands.
