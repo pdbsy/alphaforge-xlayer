@@ -39,7 +39,7 @@ export interface ChainSynchronizerOptions {
   readonly integration: ContractIntegration;
   readonly confirmationDepth: number;
   readonly maxBlocksPerSync?: number;
-  readonly maxReorgDepth?: number;
+  readonly maxReorgDepth: number;
   readonly now?: () => string;
 }
 
@@ -88,7 +88,7 @@ export class ChainSynchronizer {
     this.#integration = options.integration;
     this.#confirmationDepth = safePolicy(options.confirmationDepth, 10_000);
     this.#maxBlocksPerSync = safePolicy(options.maxBlocksPerSync ?? 2_000, 100_000);
-    this.#maxReorgDepth = safePolicy(options.maxReorgDepth ?? 128, 10_000);
+    this.#maxReorgDepth = safePolicy(options.maxReorgDepth, 10_000);
     this.#now = options.now ?? (() => new Date().toISOString());
   }
 
