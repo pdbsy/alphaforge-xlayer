@@ -83,6 +83,9 @@ export function validateInputs(i) {
       verify: { platform: 'linux', arch: 'x64', label: 'ubuntu-24.04' },
       'verify-windows': { platform: 'win32', arch: 'x64', label: 'windows-2025' },
       'verify-macos': { platform: 'darwin', arch: 'arm64', label: 'macos-15' },
+      'contracts-m3-macos': { platform: 'darwin', arch: 'arm64', label: 'macos-15' },
+      'source-policy-js': { platform: 'linux', arch: 'x64', label: 'ubuntu-24.04' },
+      'dependency-delta-audit': { platform: 'linux', arch: 'x64', label: 'ubuntu-24.04' },
     }),
   );
   requireInput(
