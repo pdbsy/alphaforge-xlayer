@@ -152,4 +152,5 @@
 - [x] Keep real product writes off when no runtime is injected. Allow an injected mock only with an explicit `INJECTED MOCK — no real rights or funds` label.
 - [x] In degraded/reorg states, disable Deposit and preserve owner Withdraw/Close only when the runtime exposes a live RPC or simulation exit path.
 - [ ] Consume the final Macbeth03 product runtime plus Macbeth02's mutation-resistant concrete artifact and verified deployment manifest when those sources are published; this remains BLOCKED rather than inferred.
-- [ ] Run the final full repository gate, regenerate C/R/S evidence and request Macbeth05 review of the immutable candidate.
+- [x] Run the final full repository gate and regenerate C/R/S evidence through the repository commands.
+- [ ] Publish the immutable candidate and request Macbeth05 review after remote push and agent messaging are explicitly authorized.
