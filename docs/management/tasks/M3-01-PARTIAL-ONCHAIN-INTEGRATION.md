@@ -32,3 +32,9 @@ The starting source includes 02 `d473f9df9eb5d1be41024b4b58ebc5ec4f5d9fcd`, 03 `
 ## Current result
 
 Implementation in progress. Prior candidate greens are baseline evidence only. No merge, deployment, live chain initialization or transaction is authorized. Required security-feature licensing and organization-level changes stay blocked if encountered.
+
+## Initial manager checkpoint and audited interface intake
+
+Draft PR21 is the current delivery PR. Initial head `8fcb14bd8f34bdbd56565344cb4f65158c725614` passed local `npm run check` with 483/483 tests; those results certify manager preparation only. CodeQL's real post-permission run now fails specifically because code scanning is not enabled, as documented in the GitHub configuration audit.
+
+The published protocol interface `135be1e1074436e2092487099f8376cc963b714f` and independent matrix `1cd8cf8fc95837270a8e050fdfb757e2e6b4ce75` have been inspected and merged preserving authors. The interface's original test was too weak to certify an ABI freeze: 05 demonstrated that incompatible mutations could retain 3/3 PASS. This is an interface review draft until 02 supplies exact selector/error/event/constructor artifact assertions and the concrete implementation. The current integration does not claim Vault custody is already implemented.

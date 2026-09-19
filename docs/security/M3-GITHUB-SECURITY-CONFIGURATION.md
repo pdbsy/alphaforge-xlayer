@@ -42,3 +42,9 @@ No repository-level setting has been mutated. Re-read these values after impleme
 The permissions patch needs a real new-head hosted run. Local YAML/policy tests do not establish a successful hosted scan. Even if metadata access succeeds, code-scanning feature availability is a separate gate.
 
 Code Security/Dependency Review availability is a merge blocker until the repository has the necessary pre-existing permitted entitlement or the user separately authorizes an appropriate account-level resolution. Do not purchase, enable paid features, modify visibility, add a token, skip uploads, replace jobs or remove required contexts to turn it green. Product implementation and offline validation continue independently.
+
+## Actual hosted verification after the minimal permission repair
+
+PR21 initial head `8fcb14bd8f34bdbd56565344cb4f65158c725614` ran [CodeQL 35452845916](https://github.com/pdbsy/quantpass-arbitrum-hackathon/actions/runs/35452845916). The former Actions run-metadata access error is no longer the terminal failure. After analysis and SARIF preparation, the run explicitly fails: `Please verify that the necessary features are enabled: Code scanning is not enabled for this repository`.
+
+This is direct evidence that the minimal metadata permission repair does not resolve the separate repository feature gate. `security-events: write` was already present and remains present; the generic permission hint accompanying the feature-denied response is not evidence to grant broader permissions. Dependency review [35452845922](https://github.com/pdbsy/quantpass-arbitrum-hackathon/actions/runs/35452845922) also remains failed. No paid feature was enabled and no repository setting was changed. Both required checks remain real merge blockers while implementation continues.
