@@ -50,8 +50,8 @@ test('registry and bootstrap prompts preserve five unique fixed worker identitie
     validated.agents.map(({ agent_id, branch_prefix }) => [agent_id, branch_prefix]),
     [
       ['Macbeth01', 'macbeth01/'],
-      ['Macbeth02', '02/'],
-      ['Macbeth03', '03/'],
+      ['Macbeth02', 'macbeth02/'],
+      ['Macbeth03', 'macbeth03/'],
       ['Macbeth04', 'macbeth04/'],
       ['Macbeth05', 'macbeth05/'],
     ],

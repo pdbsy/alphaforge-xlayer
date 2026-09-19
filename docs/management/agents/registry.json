@@ -17,7 +17,7 @@
     },
     {
       "agent_id": "Macbeth02",
-      "branch_prefix": "02/",
+      "branch_prefix": "macbeth02/",
       "workspace_status": "WORKSPACE_PREPARED",
       "session_status": "SELF_CONFIRMED",
       "self_confirmation": "VERIFIED",
@@ -27,12 +27,12 @@
     },
     {
       "agent_id": "Macbeth03",
-      "branch_prefix": "03/",
+      "branch_prefix": "macbeth03/",
       "workspace_status": "WORKSPACE_PREPARED",
       "session_status": "SELF_CONFIRMED",
       "self_confirmation": "VERIFIED",
       "communication_status": "UNVERIFIED",
-      "current_task": "M3-03-AUDIT",
+      "current_task": "M3-03-ADAPTER",
       "runtime_status": "BLOCKED"
     },
     {

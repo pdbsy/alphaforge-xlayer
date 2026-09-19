@@ -1,3 +1,5 @@
+> Current 2026-09-19 assignment: [M3-01-PARTIAL-ONCHAIN-INTEGRATION](../specs/M3-01-PARTIAL-ONCHAIN-INTEGRATION.md) freezes accounting, direct owner operations and configurable soft-ready 3 / reorg recovery 128. Macbeth01 integrates; Macbeth02–05 continue their existing protocol/adapter/UI/QA tasks. Current branch prefixes are `macbeth01/` through `macbeth05/`; numbered aliases below are historical compatibility, not instructions to rename current branches. Prior unanswered decision requests on these frozen points are superseded. Research uncertain issues from approved evidence before asking the user. No merge/deployment/broadcast authority.
+
 > 2026-09-19 update: Macbeth05 is registered as `AF-M3-05-INTEGRATION-ACCEPTANCE`, prefix `macbeth05/`. See [the current QA task record](AF-M3-05-INTEGRATION-ACCEPTANCE.md) for authority and candidate prerequisites. The dated 2026-09-14 tables below are historical; this update does not reassign other workers or imply completion.
 
 # AlphaForge M3 assignments and baseline receipts

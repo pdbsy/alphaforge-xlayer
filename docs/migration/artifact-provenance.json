@@ -1456,13 +1456,19 @@
       "target_path": "docs/management/agents/bootstrap/Macbeth02.md",
       "method": "protocol import with current repository/authority preamble",
       "original_sha256": "28773702ff4544e828035e76c166ff35b61eeddbfbf3690a77e6fb1dd67508c9",
-      "migrated_sha256": "68059612195a9ca14ba0a64222bf61ea8c3b6cbf860c57a704ee22fd6452aca7",
+      "migrated_sha256": "13906a9157c2627b4c47e029e4a22b0272b7641c1165f70549e6a634c2936be5",
       "subsequent_adaptations": [
         {
           "task": "AF-M3-IDENTITY",
           "base_commit": "45e80f921df2d3f9172ddbbc8e6ab37c327107e7",
           "previous_sha256": "95a75fab26ea9b2e6a74e0f1ee6f3276bd826194bf223679d5c1cba703fcaecd",
           "reason": "M3 worker identity and assignment compatibility; original migration source is preserved."
+        },
+        {
+          "task": "M3-01-PARTIAL-ONCHAIN-INTEGRATION",
+          "base_commit": "3915c48dc25c4763f8b47b4b93834ae20113a9dd",
+          "previous_sha256": "68059612195a9ca14ba0a64222bf61ea8c3b6cbf860c57a704ee22fd6452aca7",
+          "reason": "Align current worker bootstrap and assignment metadata with explicitly required Macbeth branch prefixes; preserve historical aliases and evidence."
         }
       ]
     },
@@ -1474,13 +1480,19 @@
       "target_path": "docs/management/agents/bootstrap/Macbeth03.md",
       "method": "protocol import with current repository/authority preamble",
       "original_sha256": "22747392888ddd5bbc8145ebadc8006aa0c8041f226625b4fe5be6524f656f4d",
-      "migrated_sha256": "eea3ce9ffc4ec5baf3b920334f1513a1690142cb5ab92153a23c0656f1d2891f",
+      "migrated_sha256": "ac1a07f086c902eb3f7cd9b5e9ebc79a7d9dca38716e48aee7a2571bd527b1cc",
       "subsequent_adaptations": [
         {
           "task": "AF-M3-IDENTITY",
           "base_commit": "45e80f921df2d3f9172ddbbc8e6ab37c327107e7",
           "previous_sha256": "794d5e3f499ce31b0ba923e44e74d3b3fb747bb01054b596e128e2b39b4bea90",
           "reason": "M3 worker identity and assignment compatibility; original migration source is preserved."
+        },
+        {
+          "task": "M3-01-PARTIAL-ONCHAIN-INTEGRATION",
+          "base_commit": "3915c48dc25c4763f8b47b4b93834ae20113a9dd",
+          "previous_sha256": "eea3ce9ffc4ec5baf3b920334f1513a1690142cb5ab92153a23c0656f1d2891f",
+          "reason": "Align current worker bootstrap and assignment metadata with explicitly required Macbeth branch prefixes; preserve historical aliases and evidence."
         }
       ]
     },
@@ -1540,7 +1552,7 @@
       "target_path": "docs/management/agents/registry.json",
       "method": "registry migrated; historical confirmations reset for canonical repository",
       "original_sha256": "ecb05bfdcccf1abb036c4e4fdd16155e959ae706395020db4a1dac49e43f50b6",
-      "migrated_sha256": "b1babae3a2497eaf7303d2ecc8745a4b844c5a2b6f80c4cfa64e38c5633dc7a9",
+      "migrated_sha256": "8a0af7c5fc71e257d5217bdf74dd8ba20d781115e5c71fc3361ff76e91fea272",
       "subsequent_adaptations": [
         {
           "task": "AF-M3-IDENTITY",
@@ -1583,6 +1595,12 @@
           "base_commit": "919505b45572916a3868ecf355691fb09fa1e2c3",
           "previous_sha256": "14818c3b193fb5878ea5f56821e90b2d6cf6e4d7a656dbfe1ecfbe84d2c5690f",
           "reason": "Register explicitly assigned partial-onchain integration while preserving bounded source admission and repair job-scoped private CodeQL metadata-read permission."
+        },
+        {
+          "task": "M3-01-PARTIAL-ONCHAIN-INTEGRATION",
+          "base_commit": "3915c48dc25c4763f8b47b4b93834ae20113a9dd",
+          "previous_sha256": "b1babae3a2497eaf7303d2ecc8745a4b844c5a2b6f80c4cfa64e38c5633dc7a9",
+          "reason": "Align current worker bootstrap and assignment metadata with explicitly required Macbeth branch prefixes; preserve historical aliases and evidence."
         }
       ]
     },
@@ -1614,7 +1632,7 @@
       "target_path": "test/agent-management.test.mjs",
       "method": "selective source integration; shared-file resolution recorded in CONFLICTS.md; reviewed PR11 closeout adaptation (see PR11-CLOSEOUT.md); PR11 review remediation: atomic product snapshot, identity lifecycle or bounded logical-message Forum as applicable",
       "original_sha256": "f5c916f2f10f3fbc2e31e89bce0cf041bf091cae876b20490eac7f87140ebc42",
-      "migrated_sha256": "205012371ae9632225b8c9ff7faba08852376128a608a08869f6fc9ee19f12a0",
+      "migrated_sha256": "440fb9e6a88688fd4bad1d0bf99211e44deaa791bae060409383a95942aa0703",
       "subsequent_adaptations": [
         {
           "task": "AF-M3-IDENTITY",
@@ -1639,6 +1657,12 @@
           "base_commit": "5efd4c628386d50c41615c83714ccfbc451f67d3",
           "previous_sha256": "e0a9c46de394710a30ff047a05959e9bf64364d22ff5df0c14b46731fe9bf019",
           "reason": "Combine worker registration and bootstrap expectations while retaining original source adaptations."
+        },
+        {
+          "task": "M3-01-PARTIAL-ONCHAIN-INTEGRATION",
+          "base_commit": "3915c48dc25c4763f8b47b4b93834ae20113a9dd",
+          "previous_sha256": "205012371ae9632225b8c9ff7faba08852376128a608a08869f6fc9ee19f12a0",
+          "reason": "Align current worker bootstrap and assignment metadata with explicitly required Macbeth branch prefixes; preserve historical aliases and evidence."
         }
       ]
     },
