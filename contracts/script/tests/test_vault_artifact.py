@@ -6,7 +6,7 @@ import sys
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from check_vault_artifact import EXPECTED_ABI, validate_vault_abi
+from check_vault_artifact import EXPECTED_ABI, validate_published_abi, validate_vault_abi
 
 
 class VaultArtifactTests(unittest.TestCase):
@@ -58,6 +58,19 @@ class VaultArtifactTests(unittest.TestCase):
         deposit['inputs'][0]['type'] = 'uint128'
         with self.assertRaisesRegex(ValueError, 'functions'):
             validate_vault_abi(abi)
+
+    def test_published_abi_must_equal_compiler_artifact(self):
+        import json
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            artifact = root / 'artifact.json'
+            published = root / 'published.json'
+            artifact.write_text(json.dumps({'abi': EXPECTED_ABI}))
+            published.write_text(json.dumps(EXPECTED_ABI[:-1]))
+            with self.assertRaisesRegex(ValueError, 'Published'):
+                validate_published_abi(artifact, published)
 
 
 if __name__ == '__main__':

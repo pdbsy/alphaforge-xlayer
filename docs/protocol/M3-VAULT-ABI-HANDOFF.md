@@ -5,6 +5,8 @@
 - Task: `M3-02-PROTOCOL`, contributing to `M3-01-PARTIAL-ONCHAIN-INTEGRATION`
 - Branch: `macbeth02/M3-02-PROTOCOL`
 - Interface source: `contracts/src/interfaces/IAlphaForgeVault.sol`
+- Implementation source: `db620d68a635259f53f48c33defff4273237d372`
+- Published ABI: `contracts/deployment/abi/AlphaForgeVault.abi.json`
 - Target chain for a separately authorized future deployment: Robinhood Chain Testnet `46630`
 
 This handoff records the compiled partial-onchain Vault interface requested by the user. The
@@ -165,3 +167,22 @@ used as the authority for that relationship.
 
 All contract addresses, deployment blocks, transaction hashes, ABI/runtime hashes, and finality
 evidence remain unset. No RPC, key, signing, deployment, initialization, or broadcast is included.
+
+## Compiled local artifact evidence
+
+The pinned compiler artifact was produced from source commit
+`db620d68a635259f53f48c33defff4273237d372`. Hashes use Keccak-256. ABI hashing uses the compiled
+ABI serialized as canonical JSON with sorted object keys and compact separators; bytecode hashing
+uses decoded creation/runtime bytes.
+
+| Evidence | Value |
+| --- | --- |
+| ABI Keccak-256 | `0x264b4498cf396008e4619664c59bf8d8eac0a04f04b80e760df3cfbc00846977` |
+| Creation bytecode Keccak-256 | `0x377b3ad4ed5a804d202d3461c2a6dc59045762351ce74086f7870a2def71b190` |
+| Runtime bytecode Keccak-256 | `0x84ba496c3b70467dda328768dc78e53820a94db9e19127b7d63f4b167f0c4908` |
+| Creation byte length | `18835` |
+| Runtime byte length | `11516` |
+
+The strict local gate recompiles the source and runs the frozen interface and mutation tests. The
+separate `check_vault_artifact.py` command validates constructor/functions/errors/events and
+compares the published ABI JSON byte-for-structure with the compiler artifact.

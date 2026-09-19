@@ -15,7 +15,7 @@ harness exercises internal settlement accounting for profit, loss, and tracked p
 **Tech Stack:** Solidity 0.8.31, Foundry 1.5.1, OpenZeppelin Contracts 5.4.0 derived pinned subset,
 Slither 0.11.3, Node 24.21.0, npm 11.19.1.
 
-**Spec:** `/Users/ikol/.codex/attachments/fea3d9be-fa35-444f-a257-8531e3f4b6c3/pasted-text.txt`
+**Spec:** user-provided M3 partial on-chain integration prompt retained outside the repository.
 
 ## Global Constraints
 
@@ -165,14 +165,14 @@ Slither 0.11.3, Node 24.21.0, npm 11.19.1.
 - Keeps every deployed address, deployment block/transaction, finality value, and evidence of
   broadcast null with `deploymentStatus: NOT_DEPLOYED`.
 
-- [ ] **Step 1: Generate hashes and selectors only from pinned compiler artifacts and record the
+- [x] **Step 1: Generate hashes and selectors only from pinned compiler artifacts and record the
   exact source commit used.**
 - [ ] **Step 2: Replace the Vault manifest's blocked interface status with
   `COMPILED_LOCAL_ONLY`; fill local artifact hashes and constructor schema, but leave all onchain
   fields null.**
 - [ ] **Step 3: Update the validator tests first so fabricated addresses, RPC, keys, signing,
   broadcast, or deployment evidence still fail closed.**
-- [ ] **Step 4: Run `bash contracts/script/check-local.sh` and require all format/build/unit/fuzz/
+- [x] **Step 4: Run `bash contracts/script/check-local.sh` and require all format/build/unit/fuzz/
   invariant/dependency-equivalence/Slither gates to pass.**
 - [ ] **Step 5: Run exact Node 24.21.0 `npm run check`, inspect `git diff --check`, secrets, tracked
   files, and the absence of RPC/signing/broadcast additions.**

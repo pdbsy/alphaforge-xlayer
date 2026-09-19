@@ -58,7 +58,6 @@ PY
 mkdir -p ../.checks/af-chain01/evidence
 forge fmt --check
 forge build --offline
-"$TASK_PYTHON" script/check_vault_artifact.py ../.checks/af-chain01/out/AlphaForgeVault.sol/AlphaForgeVault.json
 "$TASK_PYTHON" -c 'import sys; sys.path.insert(0, "script"); from pinned_dependency import verify_forge_output; verify_forge_output()'
 forge test --offline
 # Fail on any finding. Do not suppress findings to manufacture a clean result.

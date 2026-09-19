@@ -211,10 +211,23 @@ def validate_vault_artifact(path):
     if not isinstance(abi, list):
         raise ValueError('AlphaForgeVault artifact has no ABI list')
     validate_vault_abi(abi)
+    return abi
+
+
+def validate_published_abi(artifact_path, published_path):
+    compiled = validate_vault_artifact(artifact_path)
+    published = json.loads(Path(published_path).read_text())
+    if published != compiled:
+        raise ValueError('Published AlphaForgeVault ABI differs from compiler artifact')
 
 
 if __name__ == '__main__':
-    if len(sys.argv) != 2:
-        raise SystemExit('usage: check_vault_artifact.py <AlphaForgeVault.json>')
-    validate_vault_artifact(sys.argv[1])
+    if len(sys.argv) not in (2, 3):
+        raise SystemExit(
+            'usage: check_vault_artifact.py <AlphaForgeVault.json> [published-abi.json]'
+        )
+    if len(sys.argv) == 3:
+        validate_published_abi(sys.argv[1], sys.argv[2])
+    else:
+        validate_vault_artifact(sys.argv[1])
     print('AlphaForgeVault ABI matches frozen M3 interface')

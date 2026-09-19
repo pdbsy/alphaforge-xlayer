@@ -4,7 +4,7 @@
 - Agent: `Macbeth02`
 - Task: `M3-02-PROTOCOL`
 - Repository base: `7ecba357d5a19f387e86f578822af04a6261fed2`
-- Implementation source: recorded after commit in `M3-PROTOCOL-WORKLOG.md`
+- Implementation source: `db620d68a635259f53f48c33defff4273237d372`
 - Target chain for a separately authorized deployment: Robinhood Chain Testnet `46630`
 
 This document records the locally compiled protocol pieces. The concrete Vault ABI is documented
