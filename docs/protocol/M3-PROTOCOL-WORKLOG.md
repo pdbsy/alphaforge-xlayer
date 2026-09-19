@@ -32,10 +32,11 @@ Vault's `transferFrom` and verifies exact owner receipt on unlock and release.
 Pinned inputs: Forge `1.5.1`, solc `0.8.31`, OpenZeppelin Contracts `5.4.0`, EVM `paris`, optimizer
 off, via-IR off, CBOR metadata off, bytecode metadata hash disabled.
 
-The tracked ABI export is `contracts/deployment/abi/AlphaForgeVault.abi.json`. After the strict
-contract gate compiles the source, the separate artifact command compares this export with
-`.checks/af-chain01/out/AlphaForgeVault.sol/AlphaForgeVault.json`. Hashes use Keccak-256; ABI hashes
-use canonical compact JSON with sorted object keys.
+The tracked ABI export is `contracts/deployment/abi/AlphaForgeVault.abi.json`. The M3 Vault gate
+`bash contracts/script/check-m3-vault.sh` first runs the repository's immutable historical
+`check-local.sh`, then requires the artifact checker to compare this export with
+`.checks/af-chain01/out/AlphaForgeVault.sol/AlphaForgeVault.json` in a clean Python environment.
+Hashes use Keccak-256; ABI hashes use canonical compact JSON with sorted object keys.
 
 | Contract | ABI | Creation bytecode | Runtime bytecode |
 | --- | --- | --- | --- |
@@ -53,16 +54,19 @@ PassLocker(address,address,address)
 
 ## Verification
 
-`bash contracts/script/check-local.sh` passed on the source tree with:
+`bash contracts/script/check-m3-vault.sh` passed on the source tree with:
 
 - 20 Python dependency and ABI mutation tests;
 - 120 Solidity unit, fuzz, and invariant tests;
 - Vault interface selector/topic/error checks;
 - constructor/event/indexed-field compiler artifact checks;
-- published ABI/compiler artifact equality via
-  `check_vault_artifact.py <compiler-artifact> <published-abi>`;
+- mandatory published ABI/compiler artifact equality after the compiler build;
 - verified original/derived OpenZeppelin equivalence across 23 pragma-only files;
 - Slither `--fail-pedantic` with no detector exclusion and zero findings.
+
+A mutation run removed one entry from the published ABI, invoked the complete
+`check-m3-vault.sh` wrapper, and observed exit `1` with the explicit compiler-artifact mismatch;
+the original ABI bytes were restored before the working tree was inspected.
 
 The Vault-specific set contains 53 cases, including 256-run fuzz tests and five invariants at
 64 runs × 32 calls. Mutation evidence rejects a `uint256`→`uint128` parameter change, removed

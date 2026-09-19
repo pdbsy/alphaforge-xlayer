@@ -172,7 +172,7 @@ Slither 0.11.3, Node 24.21.0, npm 11.19.1.
   fields null.**
 - [ ] **Step 3: Update the validator tests first so fabricated addresses, RPC, keys, signing,
   broadcast, or deployment evidence still fail closed.**
-- [x] **Step 4: Run `bash contracts/script/check-local.sh` and require all format/build/unit/fuzz/
+- [x] **Step 4: Run `bash contracts/script/check-m3-vault.sh` and require all format/build/unit/fuzz/
   invariant/dependency-equivalence/Slither gates to pass.**
 - [ ] **Step 5: Run exact Node 24.21.0 `npm run check`, inspect `git diff --check`, secrets, tracked
   files, and the absence of RPC/signing/broadcast additions.**

@@ -183,6 +183,6 @@ uses decoded creation/runtime bytes.
 | Creation byte length | `18835` |
 | Runtime byte length | `11516` |
 
-The strict local gate recompiles the source and runs the frozen interface and mutation tests. The
-separate `check_vault_artifact.py` command validates constructor/functions/errors/events and
+The strict M3 Vault gate `bash contracts/script/check-m3-vault.sh` recompiles the source, runs the
+frozen interface and mutation tests, then validates constructor/functions/errors/events and
 compares the published ABI JSON byte-for-structure with the compiler artifact.
