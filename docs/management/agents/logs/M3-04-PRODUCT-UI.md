@@ -81,3 +81,13 @@
 - Known limitations: No Vault/Pass owner-only ABI, deployed contract address or enabled asset action is available. All asset actions remain disabled and labeled `NOT IMPLEMENTED`.
 - Dependencies: Macbeth03 interface resolved; Macbeth02 Vault/Pass capability and deployment remain BLOCKED/NOT_RUN.
 - Next step: Commit this source record, generate manifest R and snapshot S through repository commands, verify the exact final head, push the Draft stacked branch and update PR #16.
+
+### 2026-09-19 — Stacked base evidence alignment
+
+- Task: M3-04-PRODUCT-UI
+- Status: IN_PROGRESS
+- Upstream base head: `9f87275dc6c328ff0be10c7238a966109372856d` from Draft PR #17.
+- Interface source: Unchanged at `b640489fccf704394eaf2721424652f167675148`; the two later upstream commits contain only generated management evidence.
+- What changed: Merged the final upstream evidence head so PR #16 can use `macbeth03/m3-chain-adapter` as its review base without a graph conflict.
+- Evidence handling: Generated-file conflicts kept the upstream base evidence. Macbeth04 will regenerate its own manifest and snapshot only through the repository commands; no generated PASS content is edited manually.
+- Next step: Treat this record and the merge as the new source C, then regenerate manifest R and snapshot S and rerun the exact-head gate.
