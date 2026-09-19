@@ -4,7 +4,7 @@
 
 **Goal:** Extend the warm AlphaForge product UI with a truthful pre-Strategy-Runtime product shell that can consume Macbeth03 chain projections when they exist, while clearly separating fixtures and local simulation from Robinhood Chain Testnet state.
 
-**Architecture:** Keep the protected prototype byte-identical and add a small, pure presentation module beside `product-ui.ts`. The module renders values supplied by a caller and never owns wallet, RPC, transaction, receipt, or readback transitions. It consumes Macbeth03's normalized `ProductOperationEvidence`, `WalletSubmission`, `BrowserWalletPort` and strategy-adapter contracts while keeping provider access, session listeners and lifecycle transitions in the shared chain adapter. The actual product entry accepts one injected Macbeth03-owned runtime; without that runtime and verified deployment metadata, real asset reads and writes remain disabled.
+**Architecture:** Keep the protected prototype byte-identical and add a small, pure presentation module beside `product-ui.ts`. The module renders values supplied by a caller and never owns RPC, transaction, receipt, or readback transitions. It consumes Macbeth03's normalized `ProductOperationEvidence`, `WalletSubmission`, `BrowserWalletPort` and strategy-adapter contracts while keeping provider access, session validation and submission transitions in the shared chain adapter. The actual product entry constructs a production browser runtime over the existing EIP-1193 connection boundary and may accept one externally supplied runtime; without verified deployment metadata, real asset reads and writes remain disabled.
 
 **Tech Stack:** TypeScript, browser DOM, existing imported AlphaForge prototype, Node 24.21.0, npm 11.19.1, Node test runner; no new dependency.
 
@@ -14,7 +14,7 @@
 
 - Branch is `macbeth04/M3-product-ui` at canonical baseline `7ecba357d5a19f387e86f578822af04a6261fed2`.
 - Do not edit `apps/web/prototype/AlphaForge_v3_EN.html` or generated `apps/web/public` assets.
-- Do not add a wallet/EVM dependency, provider integration, ABI, contract address, deployment metadata, transaction transition engine, or second chain adapter.
+- Do not add a wallet/EVM dependency, ABI, contract address, deployment metadata, transaction transition engine, or second chain adapter. A production entry may discover `window.ethereum` only through the existing EIP-1193 wallet boundary.
 - Use `ROBINHOOD_CHAIN_TESTNET` as the only frontend source for network name, chain ID and explorer base URL.
 - Alice/Bob and current API values remain visibly `LOCAL SIMULATION`; original charts remain visibly `FIXTURE`.
 - Keep Buy Pass, Sell Pass and Approve visible but disabled with `NOT IMPLEMENTED`. Deposit, Withdraw and Close may be enabled only when one injected runtime supplies a verified deployment, current wallet ownership, live simulation and an explicit write mode; the default product path keeps writes off.
@@ -179,3 +179,27 @@
 - [x] Re-run the real browser journey: wrong-chain rejection, chain 46630 owner/allowance reads, zero-allowance Soft Ready, exact `1.000001` AF-USDC Withdraw review/mock submission, reorg and degraded exit; verify empty warning/error console output.
 - [ ] Consume Macbeth03's amount-specific authorization/approval factories only after that source is committed and integrated. Its coordination handoff is not treated as an immutable dependency yet.
 - [ ] Revalidate the published concrete Vault ABI artifact after its commit is locally available; deployment addresses, signing, broadcast and receipt evidence remain NOT_RUN.
+
+## Task 12: Construct the production browser runtime at the formal product entry
+
+**Files:** Add `apps/web/src/m3-browser-runtime.ts` and `test/m3-browser-runtime.test.ts`; modify the shared wallet boundary, M3 product shell, formal product entry, package test list and worker log.
+
+- [x] Construct a production runtime from the formal product entry even when no external `window.AF.m3OnchainRuntime` is supplied.
+- [x] Reuse one extracted `Eip1193WalletConnection` for ordinary connect and chain observation; keep `Eip1193Wallet` on that same provider boundary for submissions.
+- [x] Allow an injected EIP-1193 provider to connect and expose its wallet/chain state while the deployment remains `UNAVAILABLE`, write mode remains `DISABLED`, and every asset action remains disabled.
+- [x] Render the explicit `NOT DEPLOYED` reason when no verified Vault address or deployment manifest exists.
+- [x] Fail closed with `WALLET_PROVIDER_UNAVAILABLE` when the browser has no injected provider, without RPC, signing or broadcast.
+- [x] Add injected-provider tests for wrong chain, correct chain, unavailable provider, closed reviews and zero submissions; retain the development fixture on the same boundary.
+- [ ] Consume Macbeth03's Vault client, calldata and amount-specific authorization factories after their immutable source is present in this checkout. The coordination handoff alone is not treated as integrated code.
+- [ ] Configure live deployment data only after a reviewed manifest exists; deployment, live RPC, signing, Testnet broadcast, receipt confirmation and hosted CI remain NOT_RUN.
+
+## Task 13: Keep chain dialog failures recoverable and isolated
+
+**Files:** Add `apps/web/src/m3-product-dialog.ts` and `test/m3-product-dialog.test.ts`; modify the formal product entry, fixture wording, package test list and worker log.
+
+- [x] Add a red-first regression for an over-precision Withdraw review followed by a corrected exact amount.
+- [x] Show the exact chain review error inside its dialog and restore the Review control so corrected input can be submitted.
+- [x] Keep chain dialog failures out of the local API error channel.
+- [x] Treat a failed confirmation as consumed or potentially submitted: keep its control disabled, prohibit automatic retry, and require a new review after reconciliation when necessary.
+- [x] Describe development-fixture reads as mock provider reads instead of canonical live reads.
+- [x] Re-run the exact real-browser precision recovery path and verify the default production entry's `NOT DEPLOYED` state before source closeout.

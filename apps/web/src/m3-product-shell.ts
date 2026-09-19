@@ -347,7 +347,21 @@ function onchainActions(onchain: OnchainProductPresentation): string {
     .join('')}</div>`;
 }
 
+function unsupportedOnchainActions(): string {
+  return `<div class="inline-actions" aria-label="Unavailable Testnet actions">${[
+    'Buy Pass',
+    'Sell Pass',
+    'Approve',
+  ]
+    .map((label) => `<button class="outline-btn" disabled>${label} · NOT IMPLEMENTED</button>`)
+    .join('')}</div>`;
+}
+
 function onchainCard(onchain: OnchainProductPresentation): string {
+  const deploymentMessage =
+    onchain.deployment === 'CONFIGURED'
+      ? 'Verified deployment metadata is configured.'
+      : 'NOT DEPLOYED — no verified Vault address or deployment manifest is configured.';
   const healthMessage =
     onchain.health === 'DEGRADED'
       ? `INDEXER DEGRADED. Owner exit remains available through ${
@@ -358,7 +372,7 @@ function onchainCard(onchain: OnchainProductPresentation): string {
               : 'no verified exit path'
         }.`
       : onchain.health === 'LIVE'
-        ? 'Canonical chain reads are live.'
+        ? 'Mock provider reads are active.'
         : 'Chain health is unavailable.';
   const writeMessage =
     onchain.writeMode === 'INJECTED_MOCK'
@@ -378,9 +392,13 @@ function onchainCard(onchain: OnchainProductPresentation): string {
     : '<p>Deposit allowances are unavailable. Deposit remains disabled until both AF-USDC and Pass allowances are read for the configured Vault.</p>';
   return `<article class="sketch-box"><span class="section-label">PASS + VAULT / TESTNET</span><h3>${escapeHtml(
     onchain.readiness.replaceAll('_', ' '),
-  )}</h3><p>${escapeHtml(readinessMessages[onchain.readiness])}</p><p>${escapeHtml(
+  )}</h3><p><strong>Deployment</strong> · ${escapeHtml(deploymentMessage)}</p><p>${escapeHtml(
+    readinessMessages[onchain.readiness],
+  )}</p><p>${escapeHtml(
     healthMessage,
-  )}</p><p>${escapeHtml(writeMessage)}</p>${depositAuthorization}${onchainActions(onchain)}</article>`;
+  )}</p><p>${escapeHtml(writeMessage)}</p>${depositAuthorization}${onchainActions(
+    onchain,
+  )}${unsupportedOnchainActions()}</article>`;
 }
 
 const unavailableWallet: WalletPresentation = { status: 'DISCONNECTED' };

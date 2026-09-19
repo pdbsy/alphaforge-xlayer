@@ -153,6 +153,11 @@ export interface BrowserWalletPort {
   submit(prepared: PreparedAction): Promise<WalletSubmission>;
 }
 
+export interface BrowserWalletConnectionPort {
+  connect(): Promise<WalletSession>;
+  observe(): Promise<WalletSession | null>;
+}
+
 interface WalletOptions {
   readonly chainId: number;
   readonly target: Address;
@@ -182,27 +187,24 @@ function rejected(error: unknown): boolean {
   return Boolean(error && typeof error === 'object' && 'code' in error && error.code === 4001);
 }
 
-export class Eip1193Wallet implements BrowserWalletPort {
+function validProvider(provider: Eip1193Provider): Eip1193Provider {
+  if (
+    !provider ||
+    typeof provider.request !== 'function' ||
+    typeof provider.on !== 'function' ||
+    typeof provider.removeListener !== 'function'
+  )
+    throw new Error('INVALID_EIP1193_PROVIDER');
+  return provider;
+}
+
+export class Eip1193WalletConnection implements BrowserWalletConnectionPort {
   readonly #provider: Eip1193Provider;
   readonly #chainId: number;
-  readonly #target: Address;
-  readonly #actionAuthority: PreparedActionAuthority;
-  readonly #now: () => string;
 
-  constructor(provider: Eip1193Provider, options: WalletOptions) {
-    if (
-      !provider ||
-      typeof provider.request !== 'function' ||
-      typeof provider.on !== 'function' ||
-      typeof provider.removeListener !== 'function'
-    )
-      throw new Error('INVALID_EIP1193_PROVIDER');
-    this.#provider = provider;
-    this.#chainId = validChainId(options.chainId);
-    this.#target = asAddress(options.target);
-    if (!trustedAuthorities.has(options.actionAuthority)) throw new Error('INVALID_ACTION_AUTHORITY');
-    this.#actionAuthority = options.actionAuthority;
-    this.#now = options.now ?? (() => new Date().toISOString());
+  constructor(provider: Eip1193Provider, chainId: number) {
+    this.#provider = validProvider(provider);
+    this.#chainId = validChainId(chainId);
   }
 
   async #accounts(method: 'eth_accounts' | 'eth_requestAccounts'): Promise<readonly Address[]> {
@@ -224,12 +226,44 @@ export class Eip1193Wallet implements BrowserWalletPort {
     }
   }
 
+  async #session(method: 'eth_accounts' | 'eth_requestAccounts'): Promise<WalletSession | null> {
+    const accounts = await this.#accounts(method);
+    if (!accounts[0]) return null;
+    return Object.freeze({ account: accounts[0], chainId: await this.#currentChainId() });
+  }
+
   async connect(): Promise<WalletSession> {
-    const accounts = await this.#accounts('eth_requestAccounts');
-    if (!accounts[0]) throw new WalletFailure('WALLET_DISCONNECTED');
-    const chainId = await this.#currentChainId();
-    if (chainId !== this.#chainId) throw new WalletFailure('WALLET_WRONG_CHAIN');
-    return Object.freeze({ account: accounts[0], chainId });
+    const session = await this.#session('eth_requestAccounts');
+    if (!session) throw new WalletFailure('WALLET_DISCONNECTED');
+    if (session.chainId !== this.#chainId) throw new WalletFailure('WALLET_WRONG_CHAIN');
+    return session;
+  }
+
+  observe(): Promise<WalletSession | null> {
+    return this.#session('eth_accounts');
+  }
+}
+
+export class Eip1193Wallet implements BrowserWalletPort {
+  readonly #provider: Eip1193Provider;
+  readonly #connection: Eip1193WalletConnection;
+  readonly #chainId: number;
+  readonly #target: Address;
+  readonly #actionAuthority: PreparedActionAuthority;
+  readonly #now: () => string;
+
+  constructor(provider: Eip1193Provider, options: WalletOptions) {
+    this.#provider = validProvider(provider);
+    this.#chainId = validChainId(options.chainId);
+    this.#connection = new Eip1193WalletConnection(provider, this.#chainId);
+    this.#target = asAddress(options.target);
+    if (!trustedAuthorities.has(options.actionAuthority)) throw new Error('INVALID_ACTION_AUTHORITY');
+    this.#actionAuthority = options.actionAuthority;
+    this.#now = options.now ?? (() => new Date().toISOString());
+  }
+
+  async connect(): Promise<WalletSession> {
+    return this.#connection.connect();
   }
 
   #ambiguous(
@@ -280,10 +314,10 @@ export class Eip1193Wallet implements BrowserWalletPort {
         }
         registeredEvents.push(event);
       }
-      const accounts = await this.#accounts('eth_accounts');
-      if (!accounts[0]) throw new WalletFailure('WALLET_DISCONNECTED');
-      if (!sameAddress(accounts[0], prepared.owner)) throw new WalletFailure('WALLET_ACCOUNT_CHANGED');
-      if ((await this.#currentChainId()) !== this.#chainId) throw new WalletFailure('WALLET_WRONG_CHAIN');
+      const current = await this.#connection.observe();
+      if (!current) throw new WalletFailure('WALLET_DISCONNECTED');
+      if (!sameAddress(current.account, prepared.owner)) throw new WalletFailure('WALLET_ACCOUNT_CHANGED');
+      if (current.chainId !== this.#chainId) throw new WalletFailure('WALLET_WRONG_CHAIN');
       if (session.changed) throw new WalletFailure('WALLET_SESSION_CHANGED');
 
       const transaction = Object.freeze({
@@ -302,11 +336,10 @@ export class Eip1193Wallet implements BrowserWalletPort {
         throw new WalletFailure('WALLET_SIMULATION_FAILED');
       }
 
-      const preSubmitAccounts = await this.#accounts('eth_accounts');
-      if (!preSubmitAccounts[0]) throw new WalletFailure('WALLET_DISCONNECTED');
-      if (!sameAddress(preSubmitAccounts[0], prepared.owner))
-        throw new WalletFailure('WALLET_ACCOUNT_CHANGED');
-      if ((await this.#currentChainId()) !== this.#chainId) throw new WalletFailure('WALLET_WRONG_CHAIN');
+      const preSubmit = await this.#connection.observe();
+      if (!preSubmit) throw new WalletFailure('WALLET_DISCONNECTED');
+      if (!sameAddress(preSubmit.account, prepared.owner)) throw new WalletFailure('WALLET_ACCOUNT_CHANGED');
+      if (preSubmit.chainId !== this.#chainId) throw new WalletFailure('WALLET_WRONG_CHAIN');
       if (session.changed) throw new WalletFailure('WALLET_SESSION_CHANGED');
 
       let result: unknown;
@@ -330,13 +363,12 @@ export class Eip1193Wallet implements BrowserWalletPort {
 
       let sessionMatches = false;
       try {
-        const currentAccounts = await this.#accounts('eth_accounts');
-        const currentChainId = await this.#currentChainId();
+        const current = await this.#connection.observe();
         sessionMatches =
           !session.changed &&
-          Boolean(currentAccounts[0]) &&
-          sameAddress(currentAccounts[0]!, prepared.owner) &&
-          currentChainId === this.#chainId;
+          Boolean(current) &&
+          sameAddress(current!.account, prepared.owner) &&
+          current!.chainId === this.#chainId;
       } catch {
         sessionMatches = false;
       }

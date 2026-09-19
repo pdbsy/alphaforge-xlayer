@@ -11,6 +11,8 @@ const unitTests = [
   'test/m3-product-runtime.test.ts',
   'test/m3-chain-action-flow.test.ts',
   'test/m3-injected-runtime.test.ts',
+  'test/m3-browser-runtime.test.ts',
+  'test/m3-product-dialog.test.ts',
 
   'test/chain-api.test.ts',
   'test/m3-product-ui.test.ts',

@@ -1,5 +1,8 @@
 import { ProductAdapter, type ProductVault, type StrategySummary } from './product-adapter.ts';
 import type { CommandFields, CommandReview, CommandType } from './product-client.ts';
+import { createM3BrowserRuntime } from './m3-browser-runtime.ts';
+import type { Eip1193Provider } from './chain-wallet.ts';
+import { runM3DialogAction } from './m3-product-dialog.ts';
 import { extendM3ProductPages, onchainActionEnabled } from './m3-product-shell.ts';
 import type { OnchainProductAction } from './m3-product-shell.ts';
 import {
@@ -24,6 +27,7 @@ interface Prototype {
 declare global {
   interface Window {
     AF: Prototype;
+    ethereum?: Eip1193Provider;
   }
 }
 const AF = window.AF;
@@ -34,6 +38,7 @@ if (!onchainRuntime && import.meta.env.DEV && new URLSearchParams(location.searc
   onchainRuntime = fixture.runtime;
   fixtureModule.installM3InjectedRuntimeControls(fixture);
 }
+onchainRuntime ??= createM3BrowserRuntime(window.ethereum ? { provider: window.ethereum } : {});
 const adapter = new ProductAdapter();
 const client = adapter.client;
 const esc = (value: unknown) =>
@@ -309,6 +314,10 @@ function openOnchainAction(action: OnchainProductAction): void {
     `<span class="section-label">TESTNET / WALLET REVIEW</span><h2>Review ${esc(action)}.</h2>${amount}<p>Current wallet signature and contract authorization determine access. AlphaForge Account does not grant Vault ownership.</p><p data-product-dialog-error class="form-error" role="alert"></p><div class="inline-actions"><button class="primary-btn" data-chain-review>Read and simulate ↗</button><button class="text-link" data-close>Cancel</button></div>`,
   );
 }
+function showOnchainDialogError(message: string): void {
+  const output = document.querySelector('[data-product-dialog-error]');
+  if (output) output.textContent = message;
+}
 async function reviewOnchainAction(): Promise<void> {
   if (!onchainRuntime || !onchainDraft) throw Error('CHAIN_REVIEW_REQUIRED');
   const amountInput = document.querySelector<HTMLInputElement>('dialog[open] [name="chainAmount"]');
@@ -380,17 +389,25 @@ document.addEventListener('click', (event) => {
       localError = null;
       openOnchainAction(target.dataset.chainAction as OnchainProductAction);
     } else if (target.hasAttribute('data-chain-review')) {
-      target.setAttribute('disabled', '');
-      void run(reviewOnchainAction);
+      void runM3DialogAction(
+        'review',
+        target as HTMLButtonElement,
+        reviewOnchainAction,
+        showOnchainDialogError,
+      );
     } else if (target.hasAttribute('data-chain-confirm')) {
       if (!onchainRuntime || !onchainDraft?.review) throw Error('CHAIN_REVIEW_REQUIRED');
-      target.setAttribute('disabled', '');
       const captured = onchainDraft.review;
       onchainDraft = null;
-      void run(async () => {
-        await onchainRuntime.confirmAction(captured);
-        AF.app.closeDialog();
-      });
+      void runM3DialogAction(
+        'confirm',
+        target as HTMLButtonElement,
+        async () => {
+          await onchainRuntime.confirmAction(captured);
+          AF.app.closeDialog();
+        },
+        showOnchainDialogError,
+      );
     } else if (target.hasAttribute('data-product-review')) reviewDraft();
     else if (target.hasAttribute('data-product-claim')) {
       draft = null;
