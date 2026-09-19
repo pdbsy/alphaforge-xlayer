@@ -1,7 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { M3VaultApiClient, M3VaultReadFailure } from '../apps/web/src/m3-vault-client.ts';
-import { asAddress, asBlockHash, asHexData } from '../packages/chain-adapter/src/types.ts';
+import {
+  M3VaultApiClient,
+  M3VaultReadFailure,
+  M3VaultSubmissionFailure,
+} from '../apps/web/src/m3-vault-client.ts';
+import { asAddress, asBlockHash, asHexData, asTransactionHash } from '../packages/chain-adapter/src/types.ts';
+import { encodeM3VaultCall } from '../packages/chain-adapter/src/vault-abi.ts';
 
 const OWNER = asAddress('0x1111111111111111111111111111111111111111');
 const CONTRACT = asAddress('0x2222222222222222222222222222222222222222');
@@ -78,4 +83,76 @@ test('web Vault client rejects foreign owners, malformed state and unavailable p
       (error: unknown) => error instanceof M3VaultReadFailure && error.code === 'M3_VAULT_READ_FAILED',
     );
   }
+});
+
+test('web Vault client registers only exact wallet submission identity through the same-origin API', async () => {
+  const calldata = encodeM3VaultCall('deposit(uint256)', [1_000_000n]);
+  const txHash = asTransactionHash(`0x${'bb'.repeat(32)}`);
+  const input = {
+    operationId: 'web-submission-1',
+    chainId: 46_630,
+    owner: OWNER,
+    target: CONTRACT,
+    calldata,
+    txHash,
+  } as const;
+  const response = {
+    ...input,
+    state: 'SUBMITTED',
+    submittedAt: '2026-09-20T00:00:00.000Z',
+  } as const;
+  const requests: Array<{ input: string; init: RequestInit | undefined }> = [];
+  const client = new M3VaultApiClient(async (request, init) => {
+    requests.push({ input: String(request), init });
+    return new Response(JSON.stringify(response), { status: 202 });
+  });
+  assert.deepEqual(await client.registerSubmission(input), response);
+  assert.deepEqual(requests, [
+    {
+      input: '/api/v1/chain/operations',
+      init: {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          'X-QuantPass-Demo': '1',
+        },
+        body: JSON.stringify(input),
+      },
+    },
+  ]);
+});
+
+test('web Vault submission client rejects extra input authority and conflicting responses', async () => {
+  const input = {
+    operationId: 'web-submission-2',
+    chainId: 46_630,
+    owner: OWNER,
+    target: CONTRACT,
+    calldata: encodeM3VaultCall('close()', []),
+    txHash: asTransactionHash(`0x${'cc'.repeat(32)}`),
+  } as const;
+  const client = new M3VaultApiClient(
+    async () =>
+      new Response(
+        JSON.stringify({
+          ...input,
+          owner: CREATOR,
+          state: 'SUBMITTED',
+          submittedAt: '2026-09-20T00:00:00.000Z',
+        }),
+        { status: 202 },
+      ),
+  );
+  await assert.rejects(
+    () => client.registerSubmission({ ...input, productReady: true } as typeof input),
+    (error: unknown) =>
+      error instanceof M3VaultSubmissionFailure && error.code === 'M3_VAULT_SUBMISSION_FAILED',
+  );
+  await assert.rejects(
+    () => client.registerSubmission(input),
+    (error: unknown) =>
+      error instanceof M3VaultSubmissionFailure && error.code === 'M3_VAULT_SUBMISSION_FAILED',
+  );
 });

@@ -46,6 +46,27 @@ function event(overrides: Partial<IndexedChainEvent> = {}): IndexedChainEvent {
   };
 }
 
+test('transaction identity conflicts use a fixed store error', async () => {
+  const store = new ChainStore(await databasePath());
+  const submitted = transitionOperation(
+    createOperation({
+      operationId: 'transaction-owner',
+      chainId: CHAIN_ID,
+      owner: OWNER_A,
+      target: CONTRACT,
+      state: 'AWAITING_SIGNATURE',
+    }),
+    { state: 'SUBMITTED', txHash: TX_A, submittedAt: '2026-09-20T00:00:00.000Z' },
+  );
+  store.saveOperation(submitted);
+  assert.throws(
+    () => store.saveOperation({ ...submitted, operationId: 'transaction-collision' }),
+    /OPERATION_IDENTITY_CONFLICT/,
+  );
+  assert.equal(store.operationByTransaction(CHAIN_ID, TX_A)?.operationId, 'transaction-owner');
+  store.close();
+});
+
 test('duplicate chain event observation is idempotent across restart', async () => {
   const path = await databasePath();
   let store = new ChainStore(path);

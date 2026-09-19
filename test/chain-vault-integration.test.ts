@@ -230,7 +230,7 @@ test('Vault integration rejects a Pass whose onchain strategy identity differs f
   );
 });
 
-test('deposit reconciliation binds calldata, owner, amount and resulting contract state', async () => {
+test('deposit reconciliation binds calldata, owner, amount and canonical block contract identity', async () => {
   const rpc = new ViewRpc();
   const integration = new M3VaultContractIntegration();
   const operation = submitted(encodeM3VaultCall('deposit(uint256)', [1_000_000n]));
@@ -279,7 +279,7 @@ test('deposit reconciliation binds calldata, owner, amount and resulting contrac
     { status: 'MISMATCH', errorCode: 'EVENT_EVIDENCE_MISMATCH' },
   );
 
-  rpc.principalBasis = 999_999n;
+  rpc.passStrategyId = asHexData(`0x${'ff'.repeat(32)}`);
   assert.deepEqual(
     await integration.reconcileOperation({
       rpc,
@@ -290,6 +290,46 @@ test('deposit reconciliation binds calldata, owner, amount and resulting contrac
       block,
     }),
     { status: 'MISMATCH', errorCode: 'CONTRACT_STATE_MISMATCH' },
+  );
+});
+
+test('earlier same-block deposit and withdraw reconcile from their events after a later close', async () => {
+  const rpc = new ViewRpc();
+  rpc.principalBasis = 0n;
+  rpc.trackedUsdcBalance = 0n;
+  rpc.closed = true;
+  const integration = new M3VaultContractIntegration();
+  assert.deepEqual(
+    await integration.reconcileOperation({
+      rpc,
+      manifest,
+      operation: submitted(encodeM3VaultCall('deposit(uint256)', [1_000_000n])),
+      receipt: receipt(),
+      events: [depositedEvent()],
+      block,
+    }),
+    { status: 'MATCH' },
+  );
+  assert.deepEqual(
+    await integration.reconcileOperation({
+      rpc,
+      manifest,
+      operation: submitted(encodeM3VaultCall('withdraw(uint256)', [600n])),
+      receipt: receipt(),
+      events: [
+        event('Withdrawn', {
+          owner: OWNER,
+          usdcAmount: '600',
+          profitAmount: '100',
+          principalAmount: '500',
+          passRawUnlocked: '500000000000000',
+          principalBasis: '500',
+          trackedUsdcBalance: '500',
+        }),
+      ],
+      block,
+    }),
+    { status: 'MATCH' },
   );
 });
 

@@ -1,5 +1,6 @@
 import { ChainStore } from './chain-store.ts';
 import { ChainSynchronizer } from './chain-sync.ts';
+import type { ChainSyncResult } from './chain-sync.ts';
 import { M3_VAULT_PROJECTION_KEY, M3VaultContractIntegration } from './m3-vault-integration.ts';
 import {
   createOperation,
@@ -30,7 +31,15 @@ export interface ObservedWalletSubmission {
   readonly target: Address;
   readonly calldata: HexData;
   readonly txHash: TransactionHash;
-  readonly submittedAt: string;
+}
+
+export interface M3ChainRuntimeDependencies {
+  readonly createRpc?: (endpoints: readonly string[]) => ReadonlyRpc;
+}
+
+export interface M3RuntimeSyncResult extends ChainSyncResult {
+  readonly trackedOperations: number;
+  readonly trackingFailures: number;
 }
 
 export type M3ChainRuntimeDeployment =
@@ -62,6 +71,10 @@ export class M3ChainRuntime {
   readonly manifest: DeploymentManifest;
   readonly chainEvidence: ChainEvidenceRoutesOptions;
   #closed = false;
+  #lastSyncAttempt: 'NOT_RUN' | 'SUCCEEDED' | 'FAILED' = 'NOT_RUN';
+  readonly #now: () => string;
+  readonly #maxBlocksPerSync: number;
+  #operationCursor: string | null = null;
 
   constructor(options: {
     readonly dbPath: string;
@@ -73,6 +86,8 @@ export class M3ChainRuntime {
   }) {
     assertM3VaultManifest(options.manifest);
     const policy = m3ChainSyncPolicy(options.policy);
+    this.#now = options.now ?? (() => new Date().toISOString());
+    this.#maxBlocksPerSync = options.maxBlocksPerSync ?? 2_000;
     this.manifest = options.manifest;
     this.store = new ChainStore(options.dbPath);
     try {
@@ -94,6 +109,11 @@ export class M3ChainRuntime {
       chainId: options.manifest.chainId,
       contract: options.manifest.contractAddress,
       projectionKey: M3_VAULT_PROJECTION_KEY,
+      syncStatus: () => ({
+        lastAttempt: this.#lastSyncAttempt,
+        errorCode: this.#lastSyncAttempt === 'FAILED' ? ('M3_INDEXER_SYNC_FAILED' as const) : null,
+      }),
+      recordSubmission: (input: ObservedWalletSubmission) => this.recordSubmission(input),
     });
   }
 
@@ -116,6 +136,8 @@ export class M3ChainRuntime {
         throw new Error('OPERATION_IDENTITY_CONFLICT');
       return existing;
     }
+    const transaction = this.store.operationByTransaction(input.chainId, input.txHash);
+    if (transaction) throw new Error('OPERATION_IDENTITY_CONFLICT');
     const operation = transitionOperation(
       createOperation({
         operationId: input.operationId,
@@ -125,15 +147,52 @@ export class M3ChainRuntime {
         calldata: input.calldata,
         state: 'AWAITING_SIGNATURE',
       }),
-      { state: 'SUBMITTED', txHash: input.txHash, submittedAt: input.submittedAt },
+      { state: 'SUBMITTED', txHash: input.txHash, submittedAt: this.#now() },
     );
     this.store.saveOperation(operation);
     return operation;
   }
 
-  async syncToHead() {
+  async syncToHead(): Promise<M3RuntimeSyncResult> {
+    try {
+      const result = await this.#syncToHead();
+      this.#lastSyncAttempt = 'SUCCEEDED';
+      return result;
+    } catch (error) {
+      this.#lastSyncAttempt = 'FAILED';
+      throw error;
+    }
+  }
+
+  async #syncToHead(): Promise<M3RuntimeSyncResult> {
     const head = await this.synchronizer.head();
-    return this.synchronizer.syncTo(head.number);
+    const checkpoint = this.store.checkpoint(this.manifest.chainId, this.manifest.contractAddress);
+    const start = checkpoint ? checkpoint.blockNumber + 1n : this.manifest.deploymentBlock;
+    const boundedHead =
+      start <= head.number
+        ? start + BigInt(this.#maxBlocksPerSync) - 1n < head.number
+          ? start + BigInt(this.#maxBlocksPerSync) - 1n
+          : head.number
+        : head.number;
+    const result = await this.synchronizer.syncTo(boundedHead, head.number);
+    if (boundedHead < head.number)
+      return Object.freeze({ ...result, trackedOperations: 0, trackingFailures: 0 });
+    const operations = this.store.trackableOperationIds(
+      this.manifest.chainId,
+      this.manifest.contractAddress,
+      100,
+      this.#operationCursor,
+    );
+    let trackingFailures = 0;
+    for (const operationId of operations) {
+      try {
+        await this.synchronizer.trackOperation(operationId, head);
+      } catch {
+        trackingFailures++;
+      }
+    }
+    if (operations.length > 0) this.#operationCursor = operations.at(-1)!;
+    return Object.freeze({ ...result, trackedOperations: operations.length, trackingFailures });
   }
 
   close(): void {
@@ -143,7 +202,10 @@ export class M3ChainRuntime {
   }
 }
 
-export function composeM3ChainRuntime(input: M3ChainRuntimeDeployment): M3ChainRuntime | null {
+export function composeM3ChainRuntime(
+  input: M3ChainRuntimeDeployment,
+  dependencies: M3ChainRuntimeDependencies = {},
+): M3ChainRuntime | null {
   if (input.deploymentStatus === 'NOT_DEPLOYED') return null;
   const manifest = validateDeploymentManifest(input.manifestDocument, {
     environment: 'robinhood-chain-testnet',
@@ -152,7 +214,9 @@ export function composeM3ChainRuntime(input: M3ChainRuntimeDeployment): M3ChainR
     contractAddress: input.expectedContractAddress,
   });
   assertM3VaultManifest(manifest);
-  const rpc = new JsonRpcClient(input.rpcEndpoints);
+  const rpc = dependencies.createRpc
+    ? dependencies.createRpc(input.rpcEndpoints)
+    : new JsonRpcClient(input.rpcEndpoints);
   return new M3ChainRuntime({
     dbPath: input.dbPath,
     rpc,
