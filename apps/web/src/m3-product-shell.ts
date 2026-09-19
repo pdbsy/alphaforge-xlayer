@@ -1,4 +1,5 @@
 import { ROBINHOOD_CHAIN_TESTNET } from '../../../packages/robinhood-chain/src/network.ts';
+import type { ProductOperationEvidence } from './strategy-adapter.ts';
 
 export const M3_CANONICAL_STRATEGY_ID = 'trend' as const;
 
@@ -115,8 +116,9 @@ const transactionMessages: Record<TransactionStatus, string> = {
   WALLET_PENDING: 'Waiting for wallet confirmation.',
   SUBMITTED: 'Transaction submitted. Waiting for an RPC receipt.',
   CONFIRMING: 'Transaction is confirming on-chain.',
-  CHAIN_CONFIRMED: 'Transaction confirmed on-chain. AlphaForge is syncing the latest state.',
-  INDEXING: 'Receipt confirmed. Waiting for readback and the product projection.',
+  CHAIN_CONFIRMED:
+    'Transaction receipt succeeded on-chain. AlphaForge is waiting for canonical reconciliation and product readback.',
+  INDEXING: 'Canonical chain evidence is reconciled. Waiting for the current product projection.',
   READY: 'Transaction and readback complete. The AlphaForge product state is updated.',
   FAILED: 'Transaction did not reach a ready product state.',
 };
@@ -131,6 +133,44 @@ export function renderNetworkStatus(status: NetworkStatus): string {
 
 export function renderTransactionStatus(status: TransactionStatus): string {
   return transactionMessages[status];
+}
+
+const failedTransaction = (errorCode: string, txHash?: string): TransactionPresentation => ({
+  status: 'FAILED',
+  ...(txHash ? { txHash } : {}),
+  errorCode,
+});
+
+export function transactionPresentationFromEvidence(
+  evidence: ProductOperationEvidence,
+  txHash?: string,
+): TransactionPresentation {
+  if (evidence.productReady) return { status: 'READY', ...(txHash ? { txHash } : {}) };
+
+  if (
+    evidence.lifecycle === 'REJECTED' ||
+    evidence.lifecycle === 'REVERTED' ||
+    evidence.lifecycle === 'REPLACED' ||
+    evidence.lifecycle === 'DROPPED' ||
+    evidence.lifecycle === 'REORGED' ||
+    evidence.lifecycle === 'RECONCILIATION_FAILED'
+  )
+    return failedTransaction(evidence.lifecycle, txHash);
+  if (evidence.receipt === 'REVERTED') return failedTransaction('TRANSACTION_REVERTED', txHash);
+  if (evidence.reconciliation === 'FAILED') return failedTransaction('RECONCILIATION_FAILED', txHash);
+  if (evidence.projection === 'STALE') return failedTransaction('PROJECTION_STALE', txHash);
+
+  const status: TransactionStatus =
+    evidence.lifecycle === 'AWAITING_SIGNATURE'
+      ? 'WALLET_APPROVAL_REQUIRED'
+      : evidence.lifecycle === 'SUBMITTED'
+        ? 'SUBMITTED'
+        : evidence.lifecycle === 'MINED' && evidence.receipt === 'SUCCESS'
+          ? 'CHAIN_CONFIRMED'
+          : evidence.lifecycle === 'CONFIRMED'
+            ? 'INDEXING'
+            : 'CONFIRMING';
+  return { status, ...(txHash ? { txHash } : {}) };
 }
 
 function errorDetails(value: { readonly errorCode?: string; readonly errorMessage?: string }): string {

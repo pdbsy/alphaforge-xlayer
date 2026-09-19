@@ -108,8 +108,8 @@ test('every frozen transaction status has distinct human-readable output', () =>
   const messages = TRANSACTION_STATUSES.map((status) => renderTransactionStatus(status));
 
   assert.equal(new Set(messages).size, TRANSACTION_STATUSES.length);
-  assert.match(renderTransactionStatus('CHAIN_CONFIRMED'), /confirmed on-chain/i);
-  assert.match(renderTransactionStatus('CHAIN_CONFIRMED'), /sync/i);
+  assert.match(renderTransactionStatus('CHAIN_CONFIRMED'), /receipt succeeded on-chain/i);
+  assert.match(renderTransactionStatus('CHAIN_CONFIRMED'), /reconciliation/i);
   assert.match(renderTransactionStatus('READY'), /product state is updated/i);
   assert.doesNotMatch(renderTransactionStatus('READY'), /waiting for readback/i);
 });
@@ -123,10 +123,9 @@ test('Macbeth03 operation evidence maps receipt success and product readback sep
     productReady: false,
   };
 
-  assert.deepEqual(
-    transactionPresentationFromEvidence({ ...base, lifecycle: 'MINED' }),
-    { status: 'CHAIN_CONFIRMED' },
-  );
+  assert.deepEqual(transactionPresentationFromEvidence({ ...base, lifecycle: 'MINED' }), {
+    status: 'CHAIN_CONFIRMED',
+  });
   assert.deepEqual(
     transactionPresentationFromEvidence({
       ...base,
@@ -182,12 +181,9 @@ test('reorg, reconciliation failure and stale projection never map to READY', ()
     assert.equal(presentation.status, 'FAILED');
     assert.notEqual(presentation.status, 'READY');
   }
-  assert.equal(transactionPresentationFromEvidence(failures[0]).errorCode, 'REORGED');
-  assert.equal(
-    transactionPresentationFromEvidence(failures[1]).errorCode,
-    'RECONCILIATION_FAILED',
-  );
-  assert.equal(transactionPresentationFromEvidence(failures[2]).errorCode, 'PROJECTION_STALE');
+  assert.equal(transactionPresentationFromEvidence(failures[0]!).errorCode, 'REORGED');
+  assert.equal(transactionPresentationFromEvidence(failures[1]!).errorCode, 'RECONCILIATION_FAILED');
+  assert.equal(transactionPresentationFromEvidence(failures[2]!).errorCode, 'PROJECTION_STALE');
 });
 
 test('presentation escapes route, account, address and error text', () => {
