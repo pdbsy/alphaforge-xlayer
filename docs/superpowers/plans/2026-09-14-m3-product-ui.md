@@ -98,7 +98,7 @@
 
 ## Deferred Integration Gates
 
-- Macbeth01: resolved Task-ID and first canonical strategy; future product strategy assignments still require explicit decisions.
+- Macbeth01: resolved Task-ID and first canonical strategy; AF-M3-CLOSEOUT now owns the `master`-based unified integration candidate and final hosted CI. Future product strategy assignments still require explicit decisions.
 - Macbeth02: reviewed ABI, deployed Testnet addresses, supported operations, authorization semantics, events and stable error behavior.
 - Macbeth03: normalized wallet/lifecycle/projection evidence is consumed from immutable source `b640489`; Vault/Pass ABI and deployment metadata remain blocked.
 - Macbeth05: acceptance validation for happy, rejection, wrong-network, failed, replaced, stale and readback-lag paths.

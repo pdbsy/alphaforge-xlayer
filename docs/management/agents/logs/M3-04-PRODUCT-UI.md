@@ -3,10 +3,10 @@
 ## Current status
 
 - Current task: M3-04-PRODUCT-UI
-- Status: READY_FOR_REVIEW_WITH_HOSTED_ADMISSION_BLOCKER
+- Status: READY_FOR_CLOSEOUT_INTEGRATION_WITH_STACKED_PR_ADMISSION_BLOCKER
 - Branch: macbeth04/M3-product-ui
 - Evidence: Latest exact source C, manifest R, snapshot S and candidate SHAs are maintained in Draft PR #16 to avoid a self-referential commit hash in this source file.
-- Blocker: Real Vault/Pass reads and writes await Macbeth02 ABI, authorization semantics and deployed Testnet manifest.
+- Blocker: Real Vault/Pass reads and writes await the reviewed Macbeth02 ABI/deployment and Macbeth03 integration. PR #16 itself remains blocked by stacked-PR admission; Macbeth01 owns the authorized `master`-based closeout integration candidate.
 - Last activity: 2026-09-19
 
 ## Activity log
@@ -137,3 +137,4 @@
 - Fixture boundary: Synthetic price, holdings and trade sections remain explicitly `DEMO`, `FIXTURE`, `LOCAL` or `NOT LIVE`; no local value is presented as Testnet evidence.
 - Browser diagnostics: No browser warning or error entries were observed after navigating and reloading both routes.
 - Limitation: This is offline browser acceptance only. Live Pass/Vault reads and supported actions remain blocked on the reviewed Macbeth02 ABI/deployment and Macbeth03 integration; no Testnet result is claimed.
+- Integration handoff: AF-M3-CLOSEOUT supersedes the earlier instruction to wait for PR #17 to merge first. Macbeth01 may include this exact candidate in its own `master`-based integration PR while preserving Worker history; PR #16 remains Draft and unmerged.
