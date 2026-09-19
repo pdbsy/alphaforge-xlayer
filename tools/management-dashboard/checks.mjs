@@ -38,6 +38,7 @@ const unitTests = [
   'test/agent-identity-bypass.test.mjs',
   'test/migration-provenance.test.mjs',
   'test/agent-identity-lifecycle.test.mjs',
+  'test/agent-integration-identity.test.mjs',
   'test/ui-product-adapter-races.test.ts',
 ];
 

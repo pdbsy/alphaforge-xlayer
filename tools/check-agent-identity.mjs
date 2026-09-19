@@ -55,6 +55,20 @@ export function check() {
     base = agentForBranch(branch) ? git('merge-base', 'origin/master', head) : git('rev-parse', `${head}^`);
   }
   const prTitle = argument('pr-title') || pull?.title || null;
+  if (branch === 'macbeth01/AF-M3-CLOSEOUT') {
+    const exactHead = git('rev-parse', '--verify', `${head}^{commit}`);
+    return import('./agent-integration-identity.mjs').then(({ verifyManagerIntegration }) => {
+      const result = verifyManagerIntegration(root, {
+        branch,
+        head: exactHead,
+        prTitle,
+        pullBase: pull?.base ?? null,
+      });
+      console.log(
+        `Integration identity: ${result.verified} records verified; ${result.imported} original source records and ${result.manager} manager records`,
+      );
+    });
+  }
   const commits = commitsInRange(base, head);
   const result = validateCommitSetIdentity({
     branch,
@@ -71,7 +85,7 @@ export function check() {
 }
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
-    check();
+    await check();
   } catch (error) {
     console.error(error.message);
     process.exitCode = 1;

@@ -1334,13 +1334,19 @@
       "target_path": "tools/check-agent-identity.mjs",
       "method": "selective import; canonical repository allowlist and dashboard link adapted; PR11 review remediation: atomic product snapshot, identity lifecycle or bounded logical-message Forum as applicable",
       "original_sha256": "d3cebb25a3334804f336e867a92c00e60d71cfb20e11191a5469fdbad24d6e3e",
-      "migrated_sha256": "f96f0ec50b2a781b7950eb15ed37e53cc21a6b8bcb94456ab0cf9ef7507faefe",
+      "migrated_sha256": "b4c0b3a0d1dc22c25ff29440113d31262a18fcac043eda16980b9b43d6a29041",
       "subsequent_adaptations": [
         {
           "task": "AF-M3-IDENTITY",
           "base_commit": "45e80f921df2d3f9172ddbbc8e6ab37c327107e7",
           "previous_sha256": "291f18a1a461a446e54a4c8a968e0e065d0971bfd98c723611e44f83e0fb19b0",
           "reason": "M3 worker identity and assignment compatibility; original migration source is preserved."
+        },
+        {
+          "task": "AF-M3-CLOSEOUT",
+          "base_commit": "7ecba357d5a19f387e86f578822af04a6261fed2",
+          "previous_sha256": "f96f0ec50b2a781b7950eb15ed37e53cc21a6b8bcb94456ab0cf9ef7507faefe",
+          "reason": "User-approved bounded manager integration identity and closeout task registration; original sources preserved."
         }
       ]
     },
@@ -1498,13 +1504,19 @@
       "target_path": "docs/management/agents/registry.json",
       "method": "registry migrated; historical confirmations reset for canonical repository",
       "original_sha256": "ecb05bfdcccf1abb036c4e4fdd16155e959ae706395020db4a1dac49e43f50b6",
-      "migrated_sha256": "9eb6236235ed0740e31d9c8ff026b7c6910e7bc209a2cbb3b77c8c0af5823252",
+      "migrated_sha256": "07da4ac10c274386c20aa792503e90fc7428e87d310d87a48edb3b8f72e55c25",
       "subsequent_adaptations": [
         {
           "task": "AF-M3-IDENTITY",
           "base_commit": "45e80f921df2d3f9172ddbbc8e6ab37c327107e7",
           "previous_sha256": "3e748b89ca406eca21a2e7d0e2c5e9f5c3b6feceeb502477d8f50e7341be7fb1",
           "reason": "M3 worker identity and assignment compatibility; original migration source is preserved."
+        },
+        {
+          "task": "AF-M3-CLOSEOUT",
+          "base_commit": "7ecba357d5a19f387e86f578822af04a6261fed2",
+          "previous_sha256": "9eb6236235ed0740e31d9c8ff026b7c6910e7bc209a2cbb3b77c8c0af5823252",
+          "reason": "User-approved bounded manager integration identity and closeout task registration; original sources preserved."
         }
       ]
     },
