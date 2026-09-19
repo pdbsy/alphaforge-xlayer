@@ -330,7 +330,9 @@ const workflowProfiles = new Map([
     '.github/workflows/codeql.yml',
     {
       events: ['push', 'pull_request', 'schedule', 'workflow_dispatch'],
-      jobs: new Map([['analyze', { contents: 'read', packages: 'read', 'security-events': 'write' }]]),
+      jobs: new Map([
+        ['analyze', { contents: 'read', actions: 'read', packages: 'read', 'security-events': 'write' }],
+      ]),
     },
   ],
 ]);

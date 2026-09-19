@@ -357,3 +357,72 @@ test('ordinary queued change after an already integrated base remains admissible
     }),
   );
 });
+
+function partialIntegration(t) {
+  const s = fixture(t);
+  const oldHead = s.git('rev-parse', 'HEAD');
+  s.git('update-ref', `refs/remotes/origin/${branch}`, oldHead);
+  const newBranch = 'macbeth01/m3-partial-onchain-integration';
+  const task = 'M3-01-PARTIAL-ONCHAIN-INTEGRATION';
+  s.git('switch', '-qc', newBranch);
+  const manifest = {
+    ...s.manifest,
+    branch: newBranch,
+    task,
+    sources: [...s.sources, { agent: 'Macbeth01', task: 'AF-M3-CLOSEOUT', branch, head: oldHead }],
+  };
+  writeFileSync(join(s.root, `docs/management/agents/integrations/${task}.json`), JSON.stringify(manifest));
+  s.git('add', 'docs');
+  s.git(
+    'commit',
+    '-qm',
+    `[Macbeth01][${task}] Register next integration`,
+    '-m',
+    `Agent-ID: Macbeth01\nTask-ID: ${task}`,
+  );
+  const event = () => ({
+    pull_request: {
+      title: `[Macbeth01][${task}] Partial integration`,
+      head: { ref: newBranch, sha: s.git('rev-parse', 'HEAD'), repo },
+      base: { ref: 'master', sha: s.base, repo },
+    },
+  });
+  return { ...s, event, task };
+}
+test('new designated integration preserves registered prior manager and worker histories', (t) => {
+  const s = partialIntegration(t);
+  succeeds(s.run({ event: s.event() }));
+});
+test('new integration keeps canonical repository and strict manager-task boundaries', (t) => {
+  const s = partialIntegration(t);
+  const foreign = s.event();
+  foreign.pull_request.head.repo = { full_name: 'foreign/repository' };
+  rejects(s.run({ event: foreign }));
+  s.git(
+    'commit',
+    '--allow-empty',
+    '-qm',
+    '[Macbeth01][AF-M3-CLOSEOUT] Wrong task',
+    '-m',
+    'Agent-ID: Macbeth01\nTask-ID: AF-M3-CLOSEOUT',
+  );
+  rejects(s.run({ event: s.event() }));
+});
+test('new integration queue remains blocked when its base already contains old closeout', (t) => {
+  const s = partialIntegration(t);
+  const base = s.git('rev-parse', 'HEAD^');
+  rejects(
+    s.run({
+      name: 'merge_group',
+      event: {
+        merge_group: {
+          base_ref: 'refs/heads/master',
+          base_sha: base,
+          head_sha: s.git('rev-parse', 'HEAD'),
+          head_ref: 'refs/heads/gh-readonly-queue/master/pr-21-fixture',
+        },
+      },
+    }),
+    /integration.*queue/i,
+  );
+});

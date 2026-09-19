@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
-import { agentForBranch } from './agent-identity.mjs';
+import { agentForBranch, MANAGER_INTEGRATIONS } from './agent-identity.mjs';
 import { validateCommitSetIdentity } from './agent-identity-set.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
@@ -65,18 +65,21 @@ export function check() {
       '--format=%H',
       `${group.base_sha}..${group.head_sha}`,
       '--',
-      'docs/management/agents/integrations/AF-M3-CLOSEOUT.json',
+      ...MANAGER_INTEGRATIONS.map(({ task }) => `docs/management/agents/integrations/${task}.json`),
     );
     if (
       manifestHistory ||
-      range.some(
-        (commit) =>
-          /^Task-ID:\s*AF-M3-CLOSEOUT\s*$/m.test(commit.body) || commit.subject.includes('[AF-M3-CLOSEOUT]'),
+      range.some((commit) =>
+        MANAGER_INTEGRATIONS.some(
+          ({ task }) =>
+            commit.body.split(/\r?\n/).some((line) => line.match(/^Task-ID:\s*(\S+)\s*$/i)?.[1] === task) ||
+            commit.subject.includes(`[${task}]`),
+        ),
       )
     )
       throw new Error('Integration merge queue is not authorized without trusted PR/source binding');
   }
-  if (branch === 'macbeth01/AF-M3-CLOSEOUT') {
+  if (MANAGER_INTEGRATIONS.some((profile) => profile.branch === branch)) {
     if (
       pull &&
       (pull.head.ref !== branch ||

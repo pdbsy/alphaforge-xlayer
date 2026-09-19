@@ -1,3 +1,12 @@
+// Explicit manager integration assignments; never infer privilege from a prefix.
+export const MANAGER_INTEGRATIONS = Object.freeze([
+  Object.freeze({ branch: 'macbeth01/AF-M3-CLOSEOUT', task: 'AF-M3-CLOSEOUT' }),
+  Object.freeze({
+    branch: 'macbeth01/m3-partial-onchain-integration',
+    task: 'M3-01-PARTIAL-ONCHAIN-INTEGRATION',
+  }),
+]);
+
 const AGENTS = [1, 2, 3, 4, 5].map((number) => `Macbeth0${number}`);
 const AGENT_SET = new Set(AGENTS);
 const WORKSPACE_STATUSES = new Set(['NOT_STARTED', 'CONFIG_PREPARED', 'WORKSPACE_PREPARED', 'BLOCKED']);

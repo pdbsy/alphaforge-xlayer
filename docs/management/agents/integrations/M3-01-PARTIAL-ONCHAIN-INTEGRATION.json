@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "repository": "pdbsy/quantpass-arbitrum-hackathon",
+  "branch": "macbeth01/m3-partial-onchain-integration",
+  "task": "M3-01-PARTIAL-ONCHAIN-INTEGRATION",
+  "base": "7ecba357d5a19f387e86f578822af04a6261fed2",
+  "sources": [
+    {
+      "agent": "Macbeth02",
+      "task": "M3-02-PROTOCOL",
+      "branch": "macbeth02/M3-02-PROTOCOL",
+      "head": "d473f9df9eb5d1be41024b4b58ebc5ec4f5d9fcd"
+    },
+    {
+      "agent": "Macbeth03",
+      "task": "M3-03-ADAPTER",
+      "branch": "macbeth03/m3-chain-adapter",
+      "head": "588efa531b83548ffa7b1b01f976dfc49ff470b7"
+    },
+    {
+      "agent": "Macbeth04",
+      "task": "M3-04-PRODUCT-UI",
+      "branch": "macbeth04/M3-product-ui",
+      "head": "22616d809a5bbd83e4d15c9946bd91006c1417b2"
+    },
+    {
+      "agent": "Macbeth05",
+      "task": "AF-M3-05-INTEGRATION-ACCEPTANCE",
+      "branch": "macbeth05/AF-M3-05-INTEGRATION-ACCEPTANCE",
+      "head": "8dbf976aa161f57251bf522b95efebdbc3bad389"
+    },
+    {
+      "agent": "Macbeth01",
+      "task": "AF-M3-ASSIGNMENT-04",
+      "branch": "macbeth01/AF-M3-ASSIGNMENT-04-DELIVERY",
+      "head": "8be566b0c405ddf32ad7cd9886810b8dda23007e"
+    },
+    {
+      "agent": "Macbeth01",
+      "task": "AF-M3-05-REGISTRATION",
+      "branch": "macbeth01/AF-M3-05-REGISTRATION",
+      "head": "b5d429c7a4a4dc05843d6233288d546596285879"
+    },
+    {
+      "agent": "Macbeth01",
+      "task": "AF-M3-CLOSEOUT",
+      "branch": "macbeth01/AF-M3-CLOSEOUT",
+      "head": "919505b45572916a3868ecf355691fb09fa1e2c3"
+    }
+  ]
+}

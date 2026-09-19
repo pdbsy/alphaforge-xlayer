@@ -1,5 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import {
+  MANAGER_INTEGRATIONS,
   agentForBranch,
   taskMatchesAgent,
   validateCommitIdentity,
@@ -7,9 +8,7 @@ import {
 } from './agent-identity.mjs';
 
 export const MANAGER_INTEGRATION_BRANCH = 'macbeth01/AF-M3-CLOSEOUT';
-const task = 'AF-M3-CLOSEOUT';
 const repository = 'pdbsy/quantpass-arbitrum-hackathon';
-const manifestPath = 'docs/management/agents/integrations/AF-M3-CLOSEOUT.json';
 const shaPattern = /^[a-f0-9]{40}$/;
 function requireValue(condition, label) {
   if (!condition) throw new Error(`Integration identity rejected: ${label}`);
@@ -18,7 +17,10 @@ function requireValue(condition, label) {
 // Source refs and exact Git objects bind attribution. This is process provenance,
 // not an independent approval or an access-control boundary against code changes.
 export function verifyManagerIntegration(root, { branch, head, prTitle = null, pullBase = null }) {
-  requireValue(branch === MANAGER_INTEGRATION_BRANCH, 'unregistered integration branch');
+  const profile = MANAGER_INTEGRATIONS.find((entry) => entry.branch === branch);
+  requireValue(profile, 'unregistered integration branch');
+  const { task } = profile;
+  const manifestPath = `docs/management/agents/integrations/${task}.json`;
   const git = (...args) =>
     execFileSync('git', args, { cwd: root, encoding: 'utf8', maxBuffer: 4 * 1024 * 1024 }).trim();
   const exact = (ref) => {
