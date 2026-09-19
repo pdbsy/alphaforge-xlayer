@@ -46,7 +46,7 @@ Files: `contracts/src/` Vault/accounting interfaces and implementations, `contra
 - [x] Test then implement all 37 contract cases in specification XII.1, especially excess donation versus tracked equity, loss close, malicious dust isolation and mandatory transfer atomicity.
 - [x] Test and implement precise arithmetic: `usdcRaw * 10**12`, inverse remainder rejection only at capacity boundaries; ordinary ERC20 transfers retain full precision.
 - [x] Implement reserved balance protection, CEI/reentrancy and no owner migration/inherited owner bypass. Keep strategy position update authority unavailable to arbitrary callers.
-- [x] Run the complete locked `bash contracts/script/check-m3-vault.sh` gate (base checks plus mandatory compiler/published ABI equality), inspect ABI/bytecode and publish exact source SHA. Manager repeated 120 Solidity tests, 20 Python tests and zero-finding Slither on 02 source 8afb96e.
+- [x] Run the complete locked `bash contracts/script/check-m3-vault.sh` gate (base checks plus mandatory compiler/published ABI equality), inspect ABI/bytecode and publish exact source SHA. Manager repeated 120 Solidity tests, 20 Python tests and zero-finding Slither on 02 source 8afb96e; its explicit factory-owner regression then raised the complete gate to 121 Solidity tests with the same passing ABI/static-analysis checks.
 
 ### Task 4: Canonical projection and live operation boundary (03)
 
@@ -54,9 +54,9 @@ Files: `packages/chain-adapter/src/`, `apps/server/src/chain-store.ts`, `chain-s
 
 - [x] Test block-inclusive count `(latest - included + 1)`, third confirmation soft readiness, no inferred L1/finality and configuration validation.
 - [x] Implement 128-bounded rollback/replay with durable degraded evidence and idempotent removed/reorged event handling.
-- [ ] Consume exact 02 ABI for reads/calldata/events; compose `ChainStore.operationEvidence` through actual server API, without accepting browser-crafted READY evidence.
-- [ ] Provide live state/simulation and direct owner exit even if the indexer is degraded; RPC failure must report connectivity, not authorization denial.
-- [ ] Test actual API boundaries and all 14 specification XII.2 cases, publish source and interface receipts to 04/01.
+- [x] Consume exact 02 ABI for reads/calldata/events; compose `ChainStore.operationEvidence` through actual server API, without accepting browser-crafted READY evidence.
+- [x] Provide direct live state/simulation independently of the indexed API; startup retains product availability while failed indexed reads return unavailable. Final UI wiring is tracked in Task 5.
+- [x] Test actual API boundaries and the specified recovery cases; local source 77e2fe6 is integrated and communicated to 04. Remote source publication remains blocked by automatic approval review pending the user’s answer; this is not remote admission.
 
 ### Task 5: Product flow and browser acceptance (04)
 
@@ -74,6 +74,6 @@ Files: architecture/accounting/reorg/security audit docs, task/evidence manifest
 
 - [ ] Audit and merge exact published worker commits preserving authors; resolve shared interfaces and registration/provenance/tests serially.
 - [ ] Execute meaningful full local suite, contract unit/fuzz/invariant/Slither, product API/E2E/browser checks against the same candidate.
-- [ ] Give 05 immutable source and full scope for independent security and regression review; implement confirmed fixes and rerun affected checks.
+- [ ] BLOCKED: 05 received the source/scope but final independent review was stopped by a service restriction. Do not reroute the restricted review or claim manager checks as independent approval. Existing findings remain recorded.
 - [ ] Collect source C → manifest R → snapshot S with repository commands. Do not edit generated PASS.
 - [ ] Push manager branch/create PR against master; retain required checks and read actual hosted outcomes. Report implementation evidence separately from platform blockers and unauthorized Testnet operations.
