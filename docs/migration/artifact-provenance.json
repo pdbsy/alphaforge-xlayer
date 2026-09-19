@@ -1734,7 +1734,7 @@
       "target_path": "apps/web/src/product-ui.ts",
       "method": "selective source integration; shared-file resolution recorded in CONFLICTS.md; later product extensions tracked by M3-04-PRODUCT-UI",
       "original_sha256": "c094739b2c8308526a0d1470f72c32ac74de6c2157a3dcc0b0972584da755d38",
-      "migrated_sha256": "e4662a73f70b6a7569ef1cffd85e6aeafbd4735e709c1c651080fecc859d40e5"
+      "migrated_sha256": "9c94c4d4ab827dd074f695b271fa6331470a70c1deb73f7b186f3e373cfd0960"
     },
     {
       "source_repository": "pdbsy/quantpass",
@@ -1744,7 +1744,7 @@
       "target_path": "apps/web/vite.config.ts",
       "method": "selective source integration; shared-file resolution recorded in CONFLICTS.md",
       "original_sha256": "89412b0489e5ccb3d9d86ff20375eaeb9bdca5daad2e5a472057087d9858810f",
-      "migrated_sha256": "558533d9ec3f5499fa63b10f53bfc40c9b49489bb2af0926f003cf9223266973"
+      "migrated_sha256": "848464b255416f8de8afbbf4dd44f5dfe5dfe68e19c031a040d6e922dab00edb"
     },
     {
       "source_repository": "pdbsy/quantpass",

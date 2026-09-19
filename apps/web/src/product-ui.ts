@@ -26,7 +26,13 @@ declare global {
   }
 }
 const AF = window.AF;
-const onchainRuntime = AF.m3OnchainRuntime;
+let onchainRuntime = AF.m3OnchainRuntime;
+if (!onchainRuntime && import.meta.env.DEV && new URLSearchParams(location.search).get('m3Fixture') === '1') {
+  const fixtureModule = await import('./m3-injected-runtime-fixture.ts');
+  const fixture = fixtureModule.createM3InjectedRuntimeFixture();
+  onchainRuntime = fixture.runtime;
+  fixtureModule.installM3InjectedRuntimeControls(fixture);
+}
 const adapter = new ProductAdapter();
 const client = adapter.client;
 const esc = (value: unknown) =>

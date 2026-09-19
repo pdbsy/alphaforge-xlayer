@@ -25,12 +25,12 @@
 
 ## Capability Classification
 
-| Class             | Current baseline capability                                                                                                                                                     |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Class             | Current baseline capability                                                                                                                                                               |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | CAN IMPLEMENT NOW | Pure presentation; canonical network display; dynamic route/account projection; typed product runtime boundary; exact AF-USDC input; re-read/simulate/review/confirm action orchestration |
-| UI SHELL ONLY     | Wallet/network/transaction/Vault rendering from one injected Macbeth03-owned runtime; injected mock controls are visibly marked and hold no real rights                                  |
-| BLOCKED           | Live Pass/Vault state and writes until Macbeth02 completes the implementation/deployment manifest and Macbeth03 publishes the product runtime with live reads and simulation                    |
-| NOT IMPLEMENTED   | Buy/Sell/Approve end-to-end capabilities and all Strategy Runtime/venue/order/position/PnL behavior                                                                                              |
+| UI SHELL ONLY     | Wallet/network/transaction/Vault rendering from one injected Macbeth03-owned runtime; injected mock controls are visibly marked and hold no real rights                                   |
+| BLOCKED           | Live Pass/Vault state and writes until Macbeth02 completes the implementation/deployment manifest and Macbeth03 publishes the product runtime with live reads and simulation              |
+| NOT IMPLEMENTED   | Buy/Sell/Approve end-to-end capabilities and all Strategy Runtime/venue/order/position/PnL behavior                                                                                       |
 
 ## Task 1: Add semantic presentation tests
 
@@ -154,3 +154,15 @@
 - [ ] Consume the final Macbeth03 product runtime plus Macbeth02's mutation-resistant concrete artifact and verified deployment manifest when those sources are published; this remains BLOCKED rather than inferred.
 - [x] Run the final full repository gate and regenerate C/R/S evidence through the repository commands.
 - [ ] Publish the immutable candidate and request Macbeth05 review after remote push and agent messaging are explicitly authorized.
+
+## Task 10: Validate the injected-provider product journey in a real browser
+
+**Files:** Add `apps/web/src/m3-injected-runtime-fixture.ts` and `test/m3-injected-runtime.test.ts`; modify the development-only product entry and Vite asset middleware; update this plan and the worker log.
+
+- [x] Add a red-first injected-provider regression that uses the existing `Eip1193Wallet`, prepared-action authority and `M3ChainActionFlow` instead of introducing a second wallet path.
+- [x] Expose the fixture only in Vite development mode when `?m3Fixture=1` is explicit, and label it `INJECTED MOCK / NO REAL RIGHTS OR FUNDS / NO BROADCAST`.
+- [x] Exercise the actual `/trade/trend` product entry through wrong-network rejection, correct-network connection, immutable-owner read, exact AF-USDC review, repeated live simulation and mock submission.
+- [x] Verify soft-ready wording, reorg failure and indexer-degraded owner exit behavior; Deposit stays disabled in degraded/reorg states while Withdraw and Close remain available through simulation.
+- [x] Verify a clean browser page has no warning/error console entries and that the production application JavaScript contains no fixture marker, query switch, fixture class or draft selector.
+- [x] Keep live RPC, signing, broadcast, deployment and receipt confirmation NOT_RUN; the fixture returns a deterministic mock hash only.
+- [ ] Consume the final concrete Vault artifact and Macbeth03 runtime when published; draft selectors in this explicitly development-only fixture are not accepted deployment evidence.
