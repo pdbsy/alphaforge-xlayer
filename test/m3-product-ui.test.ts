@@ -11,6 +11,7 @@ import {
   renderM3StrategyShell,
   renderNetworkStatus,
   transactionPresentationFromEvidence,
+  transactionPresentationFromWalletSubmission,
   renderTransactionStatus,
   renderWalletStatus,
 } from '../apps/web/src/m3-product-shell.ts';
@@ -184,6 +185,49 @@ test('reorg, reconciliation failure and stale projection never map to READY', ()
   assert.equal(transactionPresentationFromEvidence(failures[0]!).errorCode, 'REORGED');
   assert.equal(transactionPresentationFromEvidence(failures[1]!).errorCode, 'RECONCILIATION_FAILED');
   assert.equal(transactionPresentationFromEvidence(failures[2]!).errorCode, 'PROJECTION_STALE');
+});
+
+test('wallet submission maps submitted evidence without claiming receipt success', () => {
+  const txHash = `0x${'ab'.repeat(32)}`;
+  assert.deepEqual(
+    transactionPresentationFromWalletSubmission({
+      operationId: 'deposit-01',
+      chainId: ROBINHOOD_CHAIN_TESTNET.chainId,
+      owner: '0x1111111111111111111111111111111111111111',
+      target: '0x2222222222222222222222222222222222222222',
+      state: 'SUBMITTED',
+      txHash,
+      submittedAt: '2026-09-19T09:00:00.000Z',
+    }),
+    { status: 'SUBMITTED', txHash },
+  );
+});
+
+test('every ambiguous wallet outcome is non-retryable and never maps to ready', () => {
+  const reasons = [
+    'SESSION_CHANGED',
+    'POST_SUBMISSION_CHECK_FAILED',
+    'PROVIDER_RESULT_UNKNOWN',
+    'LOCAL_EVIDENCE_INVALID',
+  ] as const;
+
+  for (const [index, reason] of reasons.entries()) {
+    const presentation = transactionPresentationFromWalletSubmission({
+      operationId: `deposit-${index}`,
+      requestedChainId: ROBINHOOD_CHAIN_TESTNET.chainId,
+      requestedOwner: '0x1111111111111111111111111111111111111111',
+      target: '0x2222222222222222222222222222222222222222',
+      state: 'SUBMISSION_AMBIGUOUS',
+      txHash: index % 2 === 0 ? `0x${'cd'.repeat(32)}` : null,
+      observedAt: index === 3 ? null : '2026-09-19T09:00:00.000Z',
+      reason,
+      retryable: false,
+    });
+    assert.equal(presentation.status, 'SUBMISSION_AMBIGUOUS');
+    assert.equal(presentation.errorCode, reason);
+    assert.notEqual(presentation.status, 'READY');
+  }
+  assert.match(renderTransactionStatus('SUBMISSION_AMBIGUOUS'), /do not retry/i);
 });
 
 test('presentation escapes route, account, address and error text', () => {
