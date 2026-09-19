@@ -65,6 +65,13 @@ export interface TransactionPresentation {
 export type OnchainProductAction = 'deposit' | 'withdraw' | 'close';
 export type OnchainReadiness = 'UNKNOWN' | 'SOFT_READY' | 'FINALITY_UNKNOWN' | 'REORGED';
 
+export interface DepositAuthorizationPresentation {
+  readonly spender: string;
+  readonly afUsdcAllowanceBaseUnits: string;
+  readonly passAllowanceBaseUnits: string;
+  readonly approvalCapability: 'UNAVAILABLE';
+}
+
 export interface OnchainProductPresentation {
   readonly deployment: 'UNAVAILABLE' | 'CONFIGURED';
   readonly health: 'UNAVAILABLE' | 'LIVE' | 'DEGRADED';
@@ -73,6 +80,8 @@ export interface OnchainProductPresentation {
   readonly writeMode: 'DISABLED' | 'INJECTED_MOCK' | 'LIVE_AUTHORIZED';
   readonly exitPath: 'UNAVAILABLE' | 'LIVE_RPC' | 'SIMULATION';
   readonly supportedActions: readonly OnchainProductAction[];
+  readonly vaultAddress?: string;
+  readonly depositAuthorization?: DepositAuthorizationPresentation;
 }
 
 export interface M3ProductChainPresentation {
@@ -301,6 +310,21 @@ export function onchainActionEnabled(
     !onchain.supportedActions.includes(action)
   )
     return false;
+  if (action === 'deposit') {
+    const authorization = onchain.depositAuthorization;
+    const validUnits = (value: string) => /^(0|[1-9][0-9]*)$/.test(value);
+    if (
+      !authorization ||
+      !onchain.vaultAddress ||
+      !/^0x[0-9a-fA-F]{40}$/.test(onchain.vaultAddress) ||
+      authorization.spender.toLowerCase() !== onchain.vaultAddress.toLowerCase() ||
+      !validUnits(authorization.afUsdcAllowanceBaseUnits) ||
+      !validUnits(authorization.passAllowanceBaseUnits) ||
+      BigInt(authorization.afUsdcAllowanceBaseUnits) === 0n ||
+      BigInt(authorization.passAllowanceBaseUnits) < 1_000_000_000_000n
+    )
+      return false;
+  }
   const exitEnabled =
     (action === 'withdraw' || action === 'close') &&
     (onchain.exitPath === 'LIVE_RPC' || onchain.exitPath === 'SIMULATION');
@@ -342,11 +366,21 @@ function onchainCard(onchain: OnchainProductPresentation): string {
       : onchain.writeMode === 'LIVE_AUTHORIZED'
         ? 'Live wallet actions require an explicit review and confirmation.'
         : 'Chain writes are disabled.';
+  const authorization = onchain.depositAuthorization;
+  const depositAuthorization = authorization
+    ? `<div class="receipt"><div class="receipt-lines"><div><span>AF-USDC allowance</span><span>${escapeHtml(
+        authorization.afUsdcAllowanceBaseUnits,
+      )} base units</span></div><div><span>Pass allowance</span><span>${escapeHtml(
+        authorization.passAllowanceBaseUnits,
+      )} base units</span></div><div><span>spender</span><span>${escapeHtml(
+        authorization.spender,
+      )}</span></div></div></div><p>Deposit requires two exact finite approvals to the configured Vault. Approval flow is not implemented; infinite approval and arbitrary spenders are never used.</p>`
+    : '<p>Deposit allowances are unavailable. Deposit remains disabled until both AF-USDC and Pass allowances are read for the configured Vault.</p>';
   return `<article class="sketch-box"><span class="section-label">PASS + VAULT / TESTNET</span><h3>${escapeHtml(
     onchain.readiness.replaceAll('_', ' '),
   )}</h3><p>${escapeHtml(readinessMessages[onchain.readiness])}</p><p>${escapeHtml(
     healthMessage,
-  )}</p><p>${escapeHtml(writeMessage)}</p>${onchainActions(onchain)}</article>`;
+  )}</p><p>${escapeHtml(writeMessage)}</p>${depositAuthorization}${onchainActions(onchain)}</article>`;
 }
 
 const unavailableWallet: WalletPresentation = { status: 'DISCONNECTED' };

@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { parseM3ProductAction, sameM3ProductAction } from '../apps/web/src/m3-product-runtime.ts';
+import {
+  depositAllowanceCheck,
+  parseM3ProductAction,
+  requiredDepositAllowances,
+  sameM3ProductAction,
+} from '../apps/web/src/m3-product-runtime.ts';
 
 test('deposit and withdraw requests preserve exact AF-USDC six-decimal base units', () => {
   assert.deepEqual(parseM3ProductAction('deposit', '1.000001'), {
@@ -44,4 +49,43 @@ test('review binding compares action kind and exact base units', () => {
     false,
   );
   assert.equal(sameM3ProductAction({ kind: 'close' }, { kind: 'close' }), true);
+});
+
+test('deposit requires exact AF-USDC and Pass allowances using the frozen 1e12 conversion', () => {
+  const request = parseM3ProductAction('deposit', '1.000001');
+  if (request.kind !== 'deposit') assert.fail('expected deposit request');
+  assert.deepEqual(requiredDepositAllowances(request), {
+    afUsdcBaseUnits: '1000001',
+    passBaseUnits: '1000001000000000000',
+  });
+  assert.equal(
+    depositAllowanceCheck(request, {
+      vaultAddress: '0x2222222222222222222222222222222222222222',
+      spender: '0x2222222222222222222222222222222222222222',
+      afUsdcAllowanceBaseUnits: '1000001',
+      passAllowanceBaseUnits: '1000001000000000000',
+      approvalCapability: 'UNAVAILABLE',
+    }).status,
+    'READY',
+  );
+});
+
+test('deposit allowance checks fail closed on either insufficient token, malformed values or another spender', () => {
+  const request = parseM3ProductAction('deposit', '1.000001');
+  if (request.kind !== 'deposit') assert.fail('expected deposit request');
+  const base = {
+    vaultAddress: '0x2222222222222222222222222222222222222222',
+    spender: '0x2222222222222222222222222222222222222222',
+    afUsdcAllowanceBaseUnits: '1000001',
+    passAllowanceBaseUnits: '1000001000000000000',
+    approvalCapability: 'UNAVAILABLE' as const,
+  };
+  for (const authorization of [
+    { ...base, afUsdcAllowanceBaseUnits: '1000000' },
+    { ...base, passAllowanceBaseUnits: '1000000999999999999' },
+    { ...base, afUsdcAllowanceBaseUnits: '01' },
+    { ...base, spender: '0x3333333333333333333333333333333333333333' },
+  ]) {
+    assert.notEqual(depositAllowanceCheck(request, authorization).status, 'READY');
+  }
 });

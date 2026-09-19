@@ -3,6 +3,7 @@ import type { CommandFields, CommandReview, CommandType } from './product-client
 import { extendM3ProductPages, onchainActionEnabled } from './m3-product-shell.ts';
 import type { OnchainProductAction } from './m3-product-shell.ts';
 import {
+  depositAllowanceCheck,
   parseM3ProductAction,
   sameM3ProductAction,
   type M3ProductActionRequest,
@@ -312,6 +313,17 @@ async function reviewOnchainAction(): Promise<void> {
   if (!onchainRuntime || !onchainDraft) throw Error('CHAIN_REVIEW_REQUIRED');
   const amountInput = document.querySelector<HTMLInputElement>('dialog[open] [name="chainAmount"]');
   const request = parseM3ProductAction(onchainDraft.action, amountInput?.value);
+  if (request.kind === 'deposit') {
+    const onchain = onchainRuntime.snapshot.onchain;
+    const authorization = onchain.depositAuthorization;
+    if (!onchain.vaultAddress || !authorization) throw Error('DEPOSIT_ALLOWANCES_UNAVAILABLE');
+    const check = depositAllowanceCheck(request, { vaultAddress: onchain.vaultAddress, ...authorization });
+    if (check.status === 'APPROVAL_REQUIRED')
+      throw Error(
+        `DEPOSIT_APPROVAL_REQUIRED_UNSUPPORTED: exact approvals to the Vault are required for ${check.required.afUsdcBaseUnits} AF-USDC base units and ${check.required.passBaseUnits} Pass base units. Infinite approval is not used.`,
+      );
+    if (check.status !== 'READY') throw Error('DEPOSIT_ALLOWANCES_UNAVAILABLE');
+  }
   const review = await onchainRuntime.reviewAction(request);
   if (!sameM3ProductAction(request, review.request)) throw Error('CHAIN_ACTION_REVIEW_MISMATCH');
   onchainDraft = { action: onchainDraft.action, request, review };

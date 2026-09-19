@@ -26,11 +26,19 @@ import type { SimulatingRobinhoodTestnetStrategyAdapter } from './strategy-adapt
 
 const OWNER = asAddress('0x1111111111111111111111111111111111111111');
 const VAULT = asAddress('0x2222222222222222222222222222222222222222');
+const AF_USDC = asAddress('0x3333333333333333333333333333333333333333');
+const PASS = asAddress('0x4444444444444444444444444444444444444444');
 const TX_HASH = asTransactionHash(`0x${'ab'.repeat(32)}`);
 const WRONG_CHAIN_ID = 1;
 
 interface FixtureSnapshot {
   readonly owner: Address;
+  readonly afUsdcAllowanceBaseUnits: string;
+  readonly passAllowanceBaseUnits: string;
+}
+
+function allowanceData(owner: Address, spender: Address): `0x${string}` {
+  return `0xdd62ed3e${owner.slice(2).padStart(64, '0')}${spender.slice(2).padStart(64, '0')}`;
 }
 
 class InjectedProviderFixture implements Eip1193Provider {
@@ -56,8 +64,10 @@ class InjectedProviderFixture implements Eip1193Provider {
     if (input.method === 'eth_requestAccounts' || input.method === 'eth_accounts') return [OWNER];
     if (input.method === 'eth_chainId') return `0x${this.chainId.toString(16)}`;
     if (input.method === 'eth_call') {
-      const call = input.params?.[0] as { readonly data?: unknown } | undefined;
+      const call = input.params?.[0] as { readonly data?: unknown; readonly to?: unknown } | undefined;
       if (call?.data === '0x8da5cb5b') return `0x${OWNER.slice(2).padStart(64, '0')}`;
+      if ((call?.to === AF_USDC || call?.to === PASS) && call.data === allowanceData(OWNER, VAULT))
+        return `0x${'0'.repeat(64)}`;
       return '0x';
     }
     if (input.method === 'eth_sendTransaction') return TX_HASH;
@@ -130,6 +140,13 @@ class InjectedM3ProductRuntime implements M3ProductRuntime {
         ...this.#snapshot.onchain,
         health: 'LIVE',
         owner: snapshot.owner === OWNER ? 'OWNER' : 'NON_OWNER',
+        vaultAddress: VAULT,
+        depositAuthorization: {
+          spender: VAULT,
+          afUsdcAllowanceBaseUnits: snapshot.afUsdcAllowanceBaseUnits,
+          passAllowanceBaseUnits: snapshot.passAllowanceBaseUnits,
+          approvalCapability: 'UNAVAILABLE',
+        },
       },
     };
   }
@@ -267,12 +284,26 @@ export function createM3InjectedRuntimeFixture(): M3InjectedRuntimeFixture {
   const adapter: SimulatingRobinhoodTestnetStrategyAdapter<FixtureSnapshot, M3ProductActionRequest, never> = {
     mode: 'robinhood-testnet',
     async readSnapshot() {
-      const value = await provider.request({
-        method: 'eth_call',
-        params: [{ to: VAULT, data: '0x8da5cb5b' }, 'latest'],
-      });
-      const encoded = String(value);
-      return { owner: asAddress(`0x${encoded.slice(-40)}`) };
+      const [ownerValue, afUsdcAllowance, passAllowance] = await Promise.all([
+        provider.request({
+          method: 'eth_call',
+          params: [{ to: VAULT, data: '0x8da5cb5b' }, 'latest'],
+        }),
+        provider.request({
+          method: 'eth_call',
+          params: [{ to: AF_USDC, data: allowanceData(OWNER, VAULT) }, 'latest'],
+        }),
+        provider.request({
+          method: 'eth_call',
+          params: [{ to: PASS, data: allowanceData(OWNER, VAULT) }, 'latest'],
+        }),
+      ]);
+      const encodedOwner = String(ownerValue);
+      return {
+        owner: asAddress(`0x${encodedOwner.slice(-40)}`),
+        afUsdcAllowanceBaseUnits: BigInt(String(afUsdcAllowance)).toString(),
+        passAllowanceBaseUnits: BigInt(String(passAllowance)).toString(),
+      };
     },
     async observeOperation(): Promise<never> {
       throw new Error('FIXTURE_OBSERVATION_NOT_REQUESTED');

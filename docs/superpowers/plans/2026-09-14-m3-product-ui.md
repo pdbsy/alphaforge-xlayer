@@ -161,8 +161,21 @@
 
 - [x] Add a red-first injected-provider regression that uses the existing `Eip1193Wallet`, prepared-action authority and `M3ChainActionFlow` instead of introducing a second wallet path.
 - [x] Expose the fixture only in Vite development mode when `?m3Fixture=1` is explicit, and label it `INJECTED MOCK / NO REAL RIGHTS OR FUNDS / NO BROADCAST`.
-- [x] Exercise the actual `/trade/trend` product entry through wrong-network rejection, correct-network connection, immutable-owner read, exact AF-USDC review, repeated live simulation and mock submission.
+- [x] Exercise the actual `/trade/trend` product entry through wrong-network rejection, correct-network connection, immutable-owner and two-token allowance reads, blocked new-wallet Deposit, repeated exit simulation and mock Withdraw/Close submission.
 - [x] Verify soft-ready wording, reorg failure and indexer-degraded owner exit behavior; Deposit stays disabled in degraded/reorg states while Withdraw and Close remain available through simulation.
 - [x] Verify a clean browser page has no warning/error console entries and that the production application JavaScript contains no fixture marker, query switch, fixture class or draft selector.
 - [x] Keep live RPC, signing, broadcast, deployment and receipt confirmation NOT_RUN; the fixture returns a deterministic mock hash only.
 - [ ] Consume the final concrete Vault artifact and Macbeth03 runtime when published; draft selectors in this explicitly development-only fixture are not accepted deployment evidence.
+
+## Task 11: Fail closed on the two-token Deposit authorization boundary
+
+**Files:** Modify the M3 product presentation, runtime helper, injected provider fixture, actual product entry, focused tests and worker log.
+
+- [x] Read and display AF-USDC and Pass allowances for the configured Vault spender; fail closed when either value, the Vault or the spender is missing, malformed or mismatched.
+- [x] Derive required Pass raw units as exact `AF-USDC raw * 1e12`, with no rounding, and reject Deposit review when either finite allowance is below the exact requested amount.
+- [x] Keep a newly connected wallet with zero allowances unable to Deposit; do not inject mock pre-authorization.
+- [x] State that two exact finite approvals to the configured Vault are required and that the current product UI has no approval flow. Do not expose unlimited approval or an arbitrary spender.
+- [x] Keep Withdraw and Close available through the verified exit simulation path, including reorg and degraded-indexer states.
+- [x] Re-run the real browser journey: wrong-chain rejection, chain 46630 owner/allowance reads, zero-allowance Soft Ready, exact `1.000001` AF-USDC Withdraw review/mock submission, reorg and degraded exit; verify empty warning/error console output.
+- [ ] Consume Macbeth03's amount-specific authorization/approval factories only after that source is committed and integrated. Its coordination handoff is not treated as an immutable dependency yet.
+- [ ] Revalidate the published concrete Vault ABI artifact after its commit is locally available; deployment addresses, signing, broadcast and receipt evidence remain NOT_RUN.

@@ -11,6 +11,7 @@ import {
   renderM3AccountShell,
   renderM3StrategyShell,
   renderNetworkStatus,
+  onchainActionEnabled,
   transactionPresentationFromEvidence,
   transactionPresentationFromWalletSubmission,
   renderTransactionStatus,
@@ -347,6 +348,53 @@ test('soft-ready chain state is shown without claiming finality', () => {
   assert.match(html, /three confirmations/i);
   assert.match(html, /L1 finality remains unknown/i);
   assert.doesNotMatch(html, /finalized/i);
+});
+
+test('a newly connected owner cannot deposit without both Vault-only token allowances', () => {
+  const onchain = {
+    deployment: 'CONFIGURED' as const,
+    health: 'LIVE' as const,
+    readiness: 'SOFT_READY' as const,
+    owner: 'OWNER' as const,
+    writeMode: 'INJECTED_MOCK' as const,
+    exitPath: 'SIMULATION' as const,
+    supportedActions: ['deposit', 'withdraw', 'close'] as const,
+    vaultAddress: '0x2222222222222222222222222222222222222222',
+    depositAuthorization: {
+      spender: '0x2222222222222222222222222222222222222222',
+      afUsdcAllowanceBaseUnits: '0',
+      passAllowanceBaseUnits: '0',
+      approvalCapability: 'UNAVAILABLE' as const,
+    },
+  };
+  const html = renderM3StrategyShell({
+    strategyId: 'trend',
+    contentProvenance: 'FIXTURE',
+    onchain,
+  });
+
+  assert.equal(onchainActionEnabled(onchain, 'deposit'), false);
+  assert.match(html, /AF-USDC allowance[\s\S]*0 base units/);
+  assert.match(html, /Pass allowance[\s\S]*0 base units/);
+  assert.match(html, /spender[\s\S]*0x2222222222222222222222222222222222222222/);
+  assert.match(html, /two exact finite approvals/i);
+  assert.match(html, /Approval flow is not implemented/i);
+  assert.match(html, /infinite approval/i);
+  assert.match(html, /data-chain-action="deposit"[^>]*disabled/);
+  assert.equal(
+    onchainActionEnabled(
+      {
+        ...onchain,
+        depositAuthorization: {
+          ...onchain.depositAuthorization,
+          afUsdcAllowanceBaseUnits: '1',
+          passAllowanceBaseUnits: '1',
+        },
+      },
+      'deposit',
+    ),
+    false,
+  );
 });
 
 test('degraded indexer preserves owner withdraw and close through live RPC simulation', () => {

@@ -16,43 +16,38 @@ test('injected runtime drives wrong-network, owner read, mock submit and recover
   assert.equal(runtime.snapshot.wallet.status, 'CONNECTED');
   assert.equal(runtime.snapshot.network.status, 'CORRECT');
   assert.equal(runtime.snapshot.onchain.owner, 'OWNER');
+  assert.equal(runtime.snapshot.onchain.depositAuthorization?.afUsdcAllowanceBaseUnits, '0');
+  assert.equal(runtime.snapshot.onchain.depositAuthorization?.passAllowanceBaseUnits, '0');
 
-  const review = await runtime.reviewAction({ kind: 'deposit', usdcBaseUnits: '1000001' });
+  const review = await runtime.reviewAction({ kind: 'withdraw', usdcBaseUnits: '1000001' });
   const submission = await runtime.confirmAction(review);
   assert.equal(submission.state, 'SUBMITTED');
   assert.equal(runtime.snapshot.transaction.status, 'SUBMITTED');
-  const expectedDepositData = `0xb6b55f25${BigInt(1_000_001).toString(16).padStart(64, '0')}`;
+  const expectedWithdrawData = `0x2e1a7d4d${BigInt(1_000_001).toString(16).padStart(64, '0')}`;
   const actionCalls = fixture.providerRequests.filter(
     (request) =>
       request.method === 'eth_call' &&
-      (request.params?.[0] as { readonly data?: unknown } | undefined)?.data === expectedDepositData,
+      (request.params?.[0] as { readonly data?: unknown } | undefined)?.data === expectedWithdrawData,
+  );
+  const allowanceCalls = fixture.providerRequests.filter(
+    (request) =>
+      request.method === 'eth_call' &&
+      String((request.params?.[0] as { readonly data?: unknown } | undefined)?.data).startsWith('0xdd62ed3e'),
   );
   const submissionRequest = fixture.providerRequests.find(
     (request) => request.method === 'eth_sendTransaction',
   );
   assert.equal(actionCalls.length, 2);
+  assert.equal(allowanceCalls.length, 6);
   assert.equal(
     (submissionRequest?.params?.[0] as { readonly data?: unknown } | undefined)?.data,
-    expectedDepositData,
+    expectedWithdrawData,
   );
-  assert.deepEqual(
-    fixture.providerRequests.map((request) => request.method),
-    [
-      'eth_requestAccounts',
-      'eth_chainId',
-      'eth_requestAccounts',
-      'eth_chainId',
-      'eth_call',
-      'eth_call',
-      'eth_call',
-      'eth_call',
-      'eth_call',
-      'eth_accounts',
-      'eth_chainId',
-      'eth_sendTransaction',
-      'eth_accounts',
-      'eth_chainId',
-    ],
+  assert.equal(
+    String((submissionRequest?.params?.[0] as { readonly data?: unknown } | undefined)?.data).startsWith(
+      '0xb6b55f25',
+    ),
+    false,
   );
 
   fixture.setSoftReady();

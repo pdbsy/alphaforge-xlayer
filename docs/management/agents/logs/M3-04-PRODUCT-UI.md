@@ -182,3 +182,17 @@
 - Tests run: Red-first injected runtime tests, focused M3 UI/runtime/action tests, typecheck and production Web build. Final full repository checks and C/R/S regeneration follow this source update.
 - Tests intentionally NOT_RUN: Live RPC, wallet signing, Testnet broadcast, deployment, receipt confirmation and hosted CI.
 - Next step: Publish the immutable candidate and share its interface summary only after explicit authorization. No merge, deployment, signing or broadcast is authorized.
+
+### 2026-09-20 — Two-token Deposit authorization correction
+
+- Task: M3-04-PRODUCT-UI, contributing to M3-01-PARTIAL-ONCHAIN-INTEGRATION.
+- Status: PASSED_FAIL_CLOSED_AUTHORIZATION_WITH_APPROVAL_FLOW_BLOCKED.
+- Superseded fixture assumption: The earlier injected-browser checkpoint exercised Deposit without first modeling token allowances. It is retained as historical evidence but is not accepted as the current Deposit result. The fixture no longer supplies or implies pre-authorization.
+- What changed: The product projection now carries the configured Vault address plus live AF-USDC and Pass allowance values for that exact spender. A newly connected injected wallet reads both values as zero, renders both base-unit amounts, and keeps Deposit disabled even in `SOFT_READY`.
+- Exact boundary: For a requested Deposit, required AF-USDC is the exact six-decimal raw amount and required Pass is `AF-USDC raw * 1e12`. Malformed values, either insufficient allowance, or a spender different from the configured Vault fail closed before action review.
+- Approval limitation: The current product runtime has no committed approval interface. The UI states that two exact finite approvals are required, and that approval is not implemented. It exposes neither unlimited approval nor an arbitrary spender.
+- Existing safe exit: Withdraw and Close continue to re-read and simulate before mock submission. Degraded and reorg states keep Deposit disabled while preserving the immutable owner's exit path.
+- Dependency update: Coordination reports a newer Macbeth02 concrete ABI commit and an uncommitted Macbeth03 amount-specific allowance/approval seam. The local Macbeth02 remote ref still resolves to the earlier review interface, and the Macbeth03 seam has no immutable source commit, so neither is claimed as integrated or deployment evidence here.
+- Tests: Added red-first checks for the exact `1e12` conversion, both allowance sufficiency, malformed values, Vault-only spender binding, zero-allowance new-wallet behavior and repeated allowance reads. Live RPC, approval submission, wallet signing, Testnet broadcast, deployment and receipts remain NOT_RUN.
+- Corrected browser result: The actual `/trade/trend` entry rejected chain 1, connected on chain 46630, read owner plus both zero allowances, and kept Deposit disabled in `SOFT_READY`, `REORGED` and `FINALITY UNKNOWN`. Withdraw `1.000001` reviewed as exactly `1000001` AF-USDC base units and returned only the deterministic mock hash. Withdraw/Close remained available during reorg and degradation. Warning/error console output was empty.
+- Evidence handling: This correction becomes a new forward source C. The prior source objects remain reachable; no amend, rebase or force push is used. Manifest R and snapshot S are regenerated only after the corrected browser journey and full checks pass.
