@@ -10,6 +10,7 @@ import {
   renderM3AccountShell,
   renderM3StrategyShell,
   renderNetworkStatus,
+  transactionPresentationFromEvidence,
   renderTransactionStatus,
   renderWalletStatus,
 } from '../apps/web/src/m3-product-shell.ts';
@@ -111,6 +112,82 @@ test('every frozen transaction status has distinct human-readable output', () =>
   assert.match(renderTransactionStatus('CHAIN_CONFIRMED'), /sync/i);
   assert.match(renderTransactionStatus('READY'), /product state is updated/i);
   assert.doesNotMatch(renderTransactionStatus('READY'), /waiting for readback/i);
+});
+
+test('Macbeth03 operation evidence maps receipt success and product readback separately', () => {
+  const base = {
+    receipt: 'SUCCESS' as const,
+    confirmations: 1,
+    reconciliation: 'PENDING' as const,
+    projection: 'PENDING' as const,
+    productReady: false,
+  };
+
+  assert.deepEqual(
+    transactionPresentationFromEvidence({ ...base, lifecycle: 'MINED' }),
+    { status: 'CHAIN_CONFIRMED' },
+  );
+  assert.deepEqual(
+    transactionPresentationFromEvidence({
+      ...base,
+      lifecycle: 'CONFIRMED',
+      confirmations: 3,
+      reconciliation: 'MATCHED',
+    }),
+    { status: 'INDEXING' },
+  );
+  assert.deepEqual(
+    transactionPresentationFromEvidence({
+      ...base,
+      lifecycle: 'CONFIRMED',
+      confirmations: 3,
+      reconciliation: 'MATCHED',
+      projection: 'READY',
+      productReady: true,
+    }),
+    { status: 'READY' },
+  );
+});
+
+test('reorg, reconciliation failure and stale projection never map to READY', () => {
+  const failures = [
+    {
+      lifecycle: 'REORGED' as const,
+      receipt: 'SUCCESS' as const,
+      confirmations: 3,
+      reconciliation: 'PENDING' as const,
+      projection: 'STALE' as const,
+      productReady: false,
+    },
+    {
+      lifecycle: 'RECONCILIATION_FAILED' as const,
+      receipt: 'SUCCESS' as const,
+      confirmations: 3,
+      reconciliation: 'FAILED' as const,
+      projection: 'PENDING' as const,
+      productReady: false,
+    },
+    {
+      lifecycle: 'CONFIRMED' as const,
+      receipt: 'SUCCESS' as const,
+      confirmations: 3,
+      reconciliation: 'MATCHED' as const,
+      projection: 'STALE' as const,
+      productReady: false,
+    },
+  ];
+
+  for (const evidence of failures) {
+    const presentation = transactionPresentationFromEvidence(evidence);
+    assert.equal(presentation.status, 'FAILED');
+    assert.notEqual(presentation.status, 'READY');
+  }
+  assert.equal(transactionPresentationFromEvidence(failures[0]).errorCode, 'REORGED');
+  assert.equal(
+    transactionPresentationFromEvidence(failures[1]).errorCode,
+    'RECONCILIATION_FAILED',
+  );
+  assert.equal(transactionPresentationFromEvidence(failures[2]).errorCode, 'PROJECTION_STALE');
 });
 
 test('presentation escapes route, account, address and error text', () => {
