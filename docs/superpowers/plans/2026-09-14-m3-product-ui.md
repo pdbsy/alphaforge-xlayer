@@ -4,7 +4,7 @@
 
 **Goal:** Extend the warm AlphaForge product UI with a truthful pre-Strategy-Runtime product shell that can consume Macbeth03 chain projections when they exist, while clearly separating fixtures and local simulation from Robinhood Chain Testnet state.
 
-**Architecture:** Keep the protected prototype byte-identical and add a small, pure presentation module beside `product-ui.ts`. The module renders values supplied by a caller and never owns wallet, RPC, transaction, receipt, or readback transitions. The current integration supplies only facts available on the public baseline: route strategy ID, fixture/local provenance, the canonical Robinhood Chain network configuration, and unavailable capabilities. Real reads and writes remain disabled until Macbeth02 publishes contract capability and Macbeth03 publishes the adapter projection.
+**Architecture:** Keep the protected prototype byte-identical and add a small, pure presentation module beside `product-ui.ts`. The module renders values supplied by a caller and never owns wallet, RPC, transaction, receipt, or readback transitions. It now consumes Macbeth03's immutable normalized `ProductOperationEvidence` contract while keeping provider access and lifecycle transitions in the shared chain adapter. Real asset reads and writes remain disabled until Macbeth02 publishes the required Vault/Pass capability and deployment metadata.
 
 **Tech Stack:** TypeScript, browser DOM, existing imported AlphaForge prototype, Node 24.21.0, npm 11.19.1, Node test runner; no new dependency.
 
@@ -79,14 +79,26 @@
 **Files:** Add `docs/management/agents/logs/M3-04-PRODUCT-UI.md`; update this plan's checkboxes.
 
 - [x] Record Task, status, branch, exact commit, change rationale, files, tests, limitations, dependencies, decision requests and next step.
-- [ ] Run typecheck, lint, format check, focused UI tests, full test suite and web build with the approved toolchain.
-- [ ] Verify the protected prototype byte count and SHA-256 tests still pass.
-- [ ] Request independent review before integration.
-- [ ] Create small commits and Draft PR with Task-ID `M3-04-PRODUCT-UI`.
+- [x] Run typecheck, lint, format check, focused UI tests, full test suite and web build with the approved toolchain.
+- [x] Verify the protected prototype byte count and SHA-256 tests still pass.
+- [x] Request independent review before integration.
+- [x] Create small commits and Draft PR with Task-ID `M3-04-PRODUCT-UI`.
+
+## Task 5: Consume Macbeth03 normalized evidence
+
+**Files:** Modify `apps/web/src/m3-product-shell.ts` and `test/m3-product-ui.test.ts`; merge the exact Macbeth03 source history without copying its adapter.
+
+- [x] Fetch and verify immutable interface source `b640489fccf704394eaf2721424652f167675148` from Draft PR #17.
+- [x] Add failing tests for receipt success, strict confirmation, product projection, reorg, reconciliation failure and stale projection.
+- [x] Preserve the upstream history through a merge commit; do not create a second wallet, RPC or lifecycle adapter.
+- [x] Map receipt success to `CHAIN_CONFIRMED`, reconciled chain evidence awaiting UI projection to `INDEXING`, and only `productReady=true` to `READY`.
+- [x] Fail closed for `REORGED`, `RECONCILIATION_FAILED`, reverted receipts and stale projections.
+- [x] Run 37 focused integration tests and the complete 435-test repository gate; retain the expected sandbox-only loopback failure and the successful loopback-capable rerun.
+- [ ] Regenerate source-bound management manifest R and Dashboard snapshot S, then verify the exact final head.
 
 ## Deferred Integration Gates
 
 - Macbeth01: resolved Task-ID and first canonical strategy; future product strategy assignments still require explicit decisions.
 - Macbeth02: reviewed ABI, deployed Testnet addresses, supported operations, authorization semantics, events and stable error behavior.
-- Macbeth03: wallet interface, network state, read projections, transaction lifecycle projection, receipt/readback semantics and explorer evidence.
+- Macbeth03: normalized wallet/lifecycle/projection evidence is consumed from immutable source `b640489`; Vault/Pass ABI and deployment metadata remain blocked.
 - Macbeth05: acceptance validation for happy, rejection, wrong-network, failed, replaced, stale and readback-lag paths.

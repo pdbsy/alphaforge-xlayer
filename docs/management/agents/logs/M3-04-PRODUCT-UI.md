@@ -3,11 +3,11 @@
 ## Current status
 
 - Current task: M3-04-PRODUCT-UI
-- Status: IN_PROGRESS
+- Status: IN_PROGRESS — CHAIN EVIDENCE INTEGRATED; C/R/S REFRESH PENDING
 - Branch: macbeth04/M3-product-ui
-- Last known commit: 971e625a9b8a869affd06689d931b730ff566987
-- Blocker: Real Testnet integration awaits Macbeth02 contract capability and Macbeth03 shared chain interface.
-- Last activity: 2026-09-14T21:12:58+08:00
+- Last known source commit: a49e648dbea9fd1ac451bf1352820625b3fa7e0e
+- Blocker: Real Vault/Pass reads and writes await Macbeth02 ABI, authorization semantics and deployed Testnet manifest.
+- Last activity: 2026-09-19
 
 ## Activity log
 
@@ -64,3 +64,20 @@
 - Open questions: Macbeth02 partial-withdrawal policy remains outside this UI shell; unknown operations stay disabled.
 - Decision requests: None outstanding for this phase.
 - Next step: Run final complete checks, commit with required identity metadata, publish a Draft PR and request independent review.
+
+### 2026-09-19 — Macbeth03 normalized chain evidence integration
+
+- Task: M3-04-PRODUCT-UI
+- Status: PASSED_WITH_BLOCKED_ASSET_CAPABILITIES
+- Branch: macbeth04/M3-product-ui
+- Source: Macbeth03 immutable interface commit `b640489fccf704394eaf2721424652f167675148`, Draft PR #17.
+- What changed: Preserved Macbeth03's original adapter history and added a pure UI mapping from `ProductOperationEvidence` to the existing transaction presentation states.
+- Why: Ensure the product shell can show receipt success, canonical reconciliation and product readback as separate milestones without owning chain truth or creating another adapter.
+- Files changed by Macbeth04: `apps/web/src/m3-product-shell.ts`, `test/m3-product-ui.test.ts`, this log and the implementation plan. Macbeth03 files retain their original commits and authorship.
+- Tests run: 37 focused lifecycle/sync/wallet/UI tests; typecheck; lint; formatting; and `npm run check` with approved Node/npm.
+- Tests passed: 37/37 focused tests and 435/435 complete repository tests. The full loopback-capable run also passed secret, privacy, network, governance, supply-chain, threat, planning and Forum gates.
+- Tests failed: The first sandboxed full run had one HTTP timeout and three `127.0.0.1` `EPERM` failures; the identical elevated rerun passed all 435 tests. The run then stopped at `management:check` with `RECORDED_GIT_GRAPH_MISMATCH`, which is the expected signal to regenerate C/R/S after a source graph change.
+- Truth boundary: `MINED` plus successful receipt may render `CHAIN_CONFIRMED`; strict backend `CONFIRMED` without the current UI projection renders `INDEXING`; only `productReady=true` renders `READY`. Reorg, reconciliation failure, reverted receipt and stale projection render `FAILED`.
+- Known limitations: No Vault/Pass owner-only ABI, deployed contract address or enabled asset action is available. All asset actions remain disabled and labeled `NOT IMPLEMENTED`.
+- Dependencies: Macbeth03 interface resolved; Macbeth02 Vault/Pass capability and deployment remain BLOCKED/NOT_RUN.
+- Next step: Commit this source record, generate manifest R and snapshot S through repository commands, verify the exact final head, push the Draft stacked branch and update PR #16.
