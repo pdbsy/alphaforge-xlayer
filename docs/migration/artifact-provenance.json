@@ -1734,7 +1734,7 @@
       "target_path": "apps/web/src/product-ui.ts",
       "method": "selective source integration; shared-file resolution recorded in CONFLICTS.md; later product extensions tracked by M3-04-PRODUCT-UI",
       "original_sha256": "c094739b2c8308526a0d1470f72c32ac74de6c2157a3dcc0b0972584da755d38",
-      "migrated_sha256": "e4662a73f70b6a7569ef1cffd85e6aeafbd4735e709c1c651080fecc859d40e5"
+      "migrated_sha256": "9c94c4d4ab827dd074f695b271fa6331470a70c1deb73f7b186f3e373cfd0960"
     },
     {
       "source_repository": "pdbsy/quantpass",

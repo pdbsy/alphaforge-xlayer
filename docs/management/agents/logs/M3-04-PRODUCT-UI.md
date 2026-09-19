@@ -168,3 +168,17 @@
 - Known limitations: Pass/Vault balances and owner state cannot be shown as live until Macbeth03 publishes the runtime projection and Macbeth02 provides a completed implementation, mutation-resistant compiled-artifact evidence and verified deployment manifest. Buy/Sell/Approve remain unavailable because the current review handoff does not make those end-to-end capabilities real.
 - Evidence handling: This final activity update becomes the new source C. Manifest R and snapshot S are regenerated only through repository commands and then verified on the exact final head.
 - Next step: Hand the immutable candidate to Macbeth01 and Macbeth05 after remote publication is explicitly authorized. No merge, deployment, signing or broadcast is authorized.
+
+### 2026-09-20 — Injected-provider browser acceptance
+
+- Task: M3-04-PRODUCT-UI, contributing to M3-01-PARTIAL-ONCHAIN-INTEGRATION.
+- Status: PASSED_INJECTED_MOCK_WITH_LIVE_CHAIN_BLOCKED.
+- What changed: Added a development-only injected EIP-1193 fixture behind the explicit `?m3Fixture=1` switch. It composes the existing prepared-action authority, `Eip1193Wallet` and `M3ChainActionFlow`; it does not create a production provider or a second submission path.
+- Fixture boundary: The page states `INJECTED MOCK / NO REAL RIGHTS OR FUNDS / NO BROADCAST`. Its reviewed draft selectors are test inputs only and are excluded from the production application JavaScript; they are not accepted ABI, deployment or Testnet evidence.
+- Browser journey actually run: The real `/trade/trend` entry rejected connection on chain 1, switched to chain 46630, connected `0x1111…1111`, read the immutable owner, reviewed exact `1.000001` AF-USDC as `1000001` base units, simulated before review and submission, and returned a deterministic mock transaction hash without broadcast.
+- Recovery evidence: Soft-ready rendered three confirmations while keeping L1 finality unknown. Reorg rendered `FAILED / REORGED`, disabled Deposit and preserved Withdraw/Close. Indexer degradation rendered `INDEXING / FINALITY UNKNOWN`, disabled Deposit and allowed a Close review, simulation and mock submission through the owner exit path.
+- Browser diagnostics: A fresh page rendered the explicit fixture boundary, wrong-network state and all disabled actions with no console warning/error entries.
+- Production boundary: The production application JavaScript contains no `INJECTED MOCK / NO REAL RIGHTS`, `m3Fixture`, `InjectedProviderFixture` or draft deposit selector marker. Documentation copied as static evidence may describe the fixture, but the default application entry remains runtime-unavailable and write-disabled.
+- Tests run: Red-first injected runtime tests, focused M3 UI/runtime/action tests, typecheck and production Web build. Final full repository checks and C/R/S regeneration follow this source update.
+- Tests intentionally NOT_RUN: Live RPC, wallet signing, Testnet broadcast, deployment, receipt confirmation and hosted CI.
+- Next step: Publish the immutable candidate and share its interface summary only after explicit authorization. No merge, deployment, signing or broadcast is authorized.
