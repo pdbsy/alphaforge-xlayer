@@ -102,3 +102,15 @@
 - Evidence handling: This source-only correction becomes a new source C; manifest R and snapshot S are regenerated only through the repository commands.
 - Product behavior: Unchanged. No adapter, provider, ABI, deployment metadata or write capability changed.
 - Next step: Wait for the authorized upstream integration sequence; do not merge, deploy, sign or broadcast.
+
+### 2026-09-19 — Race-safe wallet submission interface update
+
+- Task: M3-04-PRODUCT-UI
+- Status: READY_FOR_REVIEW_WITH_HOSTED_ADMISSION_BLOCKER
+- Upstream source: Macbeth03 source C `14ebe2c2c40d3292a95f56ec23b1328afc5f759c`; final dependency head `20347ec22729346d617525d64dc76f58354b5f0d`.
+- What changed: Updated the read-only UI seam for the new `WalletSubmission` union. A deterministic submission remains `SUBMITTED`; every `SUBMISSION_AMBIGUOUS` outcome renders a distinct non-ready state with its sanitized reason, optional transaction hash and an explicit prohibition on automatic retry.
+- Ownership boundary: Macbeth03 continues to own EIP-1193 provider listeners, wallet session validation, submission outcomes, chain reconciliation and canonical projection writes. Macbeth04 added no provider, retry engine, lifecycle owner or second adapter.
+- Tests: 63/63 focused lifecycle/store/sync/wallet/UI tests passed with typecheck, lint, formatting and diff checks.
+- Product capability: Unchanged. Vault/Pass writes remain disabled and `NOT IMPLEMENTED`; no signing or broadcast is performed by the product shell.
+- Evidence handling: This record joins the implementation as the new source C. Manifest R and snapshot S are generated only through repository commands, with exact SHAs maintained in Draft PR #16.
+- Next step: Preserve the Draft stack until the authorized upstream integration sequence permits a `master`-based hosted rerun. Entire Testnet closure remains BLOCKED.

@@ -4,7 +4,7 @@
 
 **Goal:** Extend the warm AlphaForge product UI with a truthful pre-Strategy-Runtime product shell that can consume Macbeth03 chain projections when they exist, while clearly separating fixtures and local simulation from Robinhood Chain Testnet state.
 
-**Architecture:** Keep the protected prototype byte-identical and add a small, pure presentation module beside `product-ui.ts`. The module renders values supplied by a caller and never owns wallet, RPC, transaction, receipt, or readback transitions. It now consumes Macbeth03's immutable normalized `ProductOperationEvidence` contract while keeping provider access and lifecycle transitions in the shared chain adapter. Real asset reads and writes remain disabled until Macbeth02 publishes the required Vault/Pass capability and deployment metadata.
+**Architecture:** Keep the protected prototype byte-identical and add a small, pure presentation module beside `product-ui.ts`. The module renders values supplied by a caller and never owns wallet, RPC, transaction, receipt, or readback transitions. It consumes Macbeth03's normalized `ProductOperationEvidence` and `WalletSubmission` contracts while keeping provider access, session listeners and lifecycle transitions in the shared chain adapter. Real asset reads and writes remain disabled until Macbeth02 publishes the required Vault/Pass capability and deployment metadata.
 
 **Tech Stack:** TypeScript, browser DOM, existing imported AlphaForge prototype, Node 24.21.0, npm 11.19.1, Node test runner; no new dependency.
 
@@ -102,3 +102,16 @@
 - Macbeth02: reviewed ABI, deployed Testnet addresses, supported operations, authorization semantics, events and stable error behavior.
 - Macbeth03: normalized wallet/lifecycle/projection evidence is consumed from immutable source `b640489`; Vault/Pass ABI and deployment metadata remain blocked.
 - Macbeth05: acceptance validation for happy, rejection, wrong-network, failed, replaced, stale and readback-lag paths.
+
+## Task 6: Handle race-safe wallet submission results
+
+**Files:** Modify `apps/web/src/m3-product-shell.ts` and `test/m3-product-ui.test.ts`; consume Macbeth03 source `14ebe2c2c40d3292a95f56ec23b1328afc5f759c` and final dependency head `20347ec22729346d617525d64dc76f58354b5f0d`.
+
+- [x] Preserve Macbeth03's provider listener, session race and backend projection changes through the stacked merge history.
+- [x] Consume `WalletSubmission` directly; do not add another EIP-1193 provider or submission state owner.
+- [x] Keep `SUBMITTED` separate from receipt success and product readiness.
+- [x] Render `SUBMISSION_AMBIGUOUS` as a distinct non-ready status with the sanitized reason and optional transaction hash.
+- [x] Explicitly state that ambiguous submissions must not be retried automatically.
+- [x] Cover all four reasons: `SESSION_CHANGED`, `POST_SUBMISSION_CHECK_FAILED`, `PROVIDER_RESULT_UNKNOWN` and `LOCAL_EVIDENCE_INVALID`.
+- [x] Run the expanded 63-test lifecycle/store/sync/wallet/UI integration set, typecheck, lint and formatting.
+- Evidence closeout for this update follows the same source C → manifest R → snapshot S workflow; exact immutable SHAs are recorded in Draft PR #16.
