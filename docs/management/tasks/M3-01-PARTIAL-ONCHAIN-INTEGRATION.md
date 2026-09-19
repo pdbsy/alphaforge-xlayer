@@ -42,3 +42,9 @@ The published protocol interface `135be1e1074436e2092487099f8376cc963b714f` and 
 ## Independent-review service interruption
 
 Macbeth05's task `01a095c3-8433-7c83-875e-2f542c2e30f3` reported a failed turn at 2026-09-19 16:08:12 UTC. The service returned a possible cybersecurity-risk restriction. Existing version-bound review material remains preserved; unfinished review is BLOCKED, not PASS. Manager checks and worker-authored tests cannot substitute for independent acceptance. Other authorized implementation and local validation continue. No attempt is made to bypass the service restriction.
+
+## User-approved metadata-only exception
+
+The user explicitly approved repairing only the unpublished Macbeth02 commit that omitted identity trailers. Original object `5270a6eb5ec5a9b061285fa2a56d2ef98de500d9` is permanently preserved by the published tag `evidence/macbeth02-m3-02-pre-trailer-5270a6e`. Corrected object `db620d68a635259f53f48c33defff4273237d372` adds only `Agent-ID: Macbeth02` and `Task-ID: M3-02-PROTOCOL` to the message. Both retain tree `92d0f2a2b324e586c5033a19f656828289ac2ea4`, parent `135be1e1074436e2092487099f8376cc963b714f`, author Macbeth02, author email and author date. No force push or other history rewrite was authorized or performed by this exception.
+
+The first canonical-policy/API batch from 03 (`18fa94b4a933bda65a6d7d9b2859d9c9a4fe5a8b`) is integrated. Manager verification passed 62 chain/wallet/provenance tests and the extended UI fixture checks; full Node tests with the pending deployment-template update passed 490/490. This is interim working-tree verification, not the final immutable candidate's C/R/S evidence.
