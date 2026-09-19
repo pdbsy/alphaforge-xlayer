@@ -53,7 +53,7 @@ The workbench reports were generated in a temporary local scan directory. They a
 | PR #17 `20347ec22729346d617525d64dc76f58354b5f0d` | `ui-chain-wallet`, `chain-store`, `chain-sync` | **42/42 PASS** | Independently verifies the two reported fixes, including wallet context races, ambiguous provider outcomes, cross-fork mismatch, restart, and competing synchronizers. |
 | PR #16 `037c2b55f7eb03b80b60dd11f4b4c400fb9c1215` stacked on fixed PR #17 | `chain-lifecycle`, `chain-rpc-manifest`, `chain-store`, `chain-sync`, `ui-chain-wallet`, `m3-product-ui` | **71/71 PASS** | Verifies wallet ambiguity presentation, chain regressions, escaping, hash handling, and disabled unsupported actions on the exact head. |
 
-Both runs used the approved runtime in `/private/tmp/af-verify-20347ec.wLQqsv/repo`; the checkout remained clean. No shared dependencies or SQLite data were written.
+Both runs used the approved runtime in an isolated temporary checkout; the checkout remained clean. No shared dependencies or SQLite data were written. The machine-specific temporary path is intentionally omitted from public evidence.
 
 ## Tests intentionally not executed
 
