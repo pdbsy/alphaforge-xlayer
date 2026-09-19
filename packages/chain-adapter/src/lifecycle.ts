@@ -33,6 +33,7 @@ export interface ChainOperation {
   readonly submittedAt: string | null;
   readonly blockNumber: bigint | null;
   readonly blockHash: BlockHash | null;
+  readonly transactionIndex: number | null;
   readonly receiptStatus: 'SUCCESS' | 'REVERTED' | null;
   readonly confirmations: number;
   readonly replacementTxHash: TransactionHash | null;
@@ -49,12 +50,14 @@ export type OperationTransition =
       readonly state: 'MINED';
       readonly blockNumber: bigint;
       readonly blockHash: BlockHash;
+      readonly transactionIndex?: number;
       readonly receiptStatus: 'SUCCESS';
     }
   | {
       readonly state: 'REVERTED';
       readonly blockNumber: bigint;
       readonly blockHash: BlockHash;
+      readonly transactionIndex?: number;
       readonly receiptStatus: 'REVERTED';
       readonly errorCode: 'TRANSACTION_REVERTED';
     }
@@ -115,6 +118,7 @@ export function createOperation(input: {
     submittedAt: null,
     blockNumber: null,
     blockHash: null,
+    transactionIndex: null,
     receiptStatus: null,
     confirmations: 0,
     replacementTxHash: null,
@@ -132,13 +136,26 @@ export function transitionOperation(current: ChainOperation, update: OperationTr
       if (!validTime(update.submittedAt)) throw new Error('INVALID_SUBMITTED_AT');
       return Object.freeze({ ...current, ...update, errorCode: null });
     case 'REJECTED':
-    case 'DROPPED':
       return Object.freeze({ ...current, ...update, canonical: false, reconciled: false, confirmedAt: null });
-    case 'MINED':
-      if (update.blockNumber < 0n) throw new Error('INVALID_BLOCK_NUMBER');
+    case 'DROPPED':
       return Object.freeze({
         ...current,
         ...update,
+        canonical: false,
+        reconciled: false,
+        confirmedAt: null,
+      });
+    case 'MINED':
+      if (update.blockNumber < 0n) throw new Error('INVALID_BLOCK_NUMBER');
+      if (
+        update.transactionIndex !== undefined &&
+        (!Number.isSafeInteger(update.transactionIndex) || update.transactionIndex < 0)
+      )
+        throw new Error('INVALID_TRANSACTION_INDEX');
+      return Object.freeze({
+        ...current,
+        ...update,
+        transactionIndex: update.transactionIndex ?? null,
         confirmations: 0,
         canonical: true,
         reconciled: false,
@@ -147,9 +164,15 @@ export function transitionOperation(current: ChainOperation, update: OperationTr
       });
     case 'REVERTED':
       if (update.blockNumber < 0n) throw new Error('INVALID_BLOCK_NUMBER');
+      if (
+        update.transactionIndex !== undefined &&
+        (!Number.isSafeInteger(update.transactionIndex) || update.transactionIndex < 0)
+      )
+        throw new Error('INVALID_TRANSACTION_INDEX');
       return Object.freeze({
         ...current,
         ...update,
+        transactionIndex: update.transactionIndex ?? null,
         confirmations: 0,
         canonical: true,
         reconciled: false,
