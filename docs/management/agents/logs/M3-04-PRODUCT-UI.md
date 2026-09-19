@@ -3,10 +3,10 @@
 ## Current status
 
 - Current task: M3-04-PRODUCT-UI
-- Status: READY_FOR_REVIEW_WITH_HOSTED_ADMISSION_BLOCKER
+- Status: PARTIAL_ONCHAIN_UI_BOUNDARY_READY_WITH_LIVE_DEPLOYMENT_BLOCKED
 - Branch: macbeth04/M3-product-ui
 - Evidence: Latest exact source C, manifest R, snapshot S and candidate SHAs are maintained in Draft PR #16 to avoid a self-referential commit hash in this source file.
-- Blocker: Real Vault/Pass reads and writes await Macbeth02 ABI, authorization semantics and deployed Testnet manifest.
+- Blocker: Macbeth02 has published a Vault review interface, but independent review found its current ABI regression insufficient against mutation; the concrete implementation, exact compiled-artifact comparison and deployment remain incomplete. Macbeth03 has not yet published the product runtime that supplies verified deployment state, live reads, simulation and operation evidence to the UI. Therefore the real product entry keeps writes off; only explicitly injected test runtimes can enable mock controls.
 - Last activity: 2026-09-19
 
 ## Activity log
@@ -137,3 +137,62 @@
 - Fixture boundary: Synthetic price, holdings and trade sections remain explicitly `DEMO`, `FIXTURE`, `LOCAL` or `NOT LIVE`; no local value is presented as Testnet evidence.
 - Browser diagnostics: No browser warning or error entries were observed after navigating and reloading both routes.
 - Limitation: This is offline browser acceptance only. Live Pass/Vault reads and supported actions remain blocked on the reviewed Macbeth02 ABI/deployment and Macbeth03 integration; no Testnet result is claimed.
+- Integration handoff: AF-M3-CLOSEOUT supersedes the earlier instruction to wait for PR #17 to merge first. Macbeth01 may include this exact candidate in its own `master`-based integration PR while preserving Worker history; PR #16 remains Draft and unmerged.
+
+### 2026-09-19 — Canonical backend readiness evidence boundary
+
+- Task: M3-04-PRODUCT-UI
+- Status: READY_FOR_CLOSEOUT_INTEGRATION_WITH_STACKED_PR_ADMISSION_BLOCKER
+- Upstream source: Macbeth03 source `1023caf` and final dependency head `588efa531b83548ffa7b1b01f976dfc49ff470b7`.
+- What changed: Preserved Macbeth03's removal of the browser-side `operationEvidence` derivation. The Web adapter now only re-exports the final `ProductOperationEvidence` type; `READY` is computed by `ChainStore.operationEvidence(operationId, projectionKey)` inside one canonical SQLite snapshot.
+- Product boundary: Macbeth04 continues to consume only the final evidence object. The UI does not combine raw operations and projections or reconstruct canonical ancestry. Its defensive failure-before-`productReady` mapping remains in place for malformed or contradictory API/cache input.
+- Tests: The expanded lifecycle/store/sync/wallet/UI set passes 68/68, including canonical-snapshot readiness, competing fork/hash rejection, bounded ancestry failure and contradictory frontend evidence.
+- Exact-head browser retest: The production Web build again loaded `#/trade/trend` and `#/account/trades` before and after reload; both retained their M3 shells, all five unsupported Testnet actions remained disabled, FIXTURE/LOCAL/DEMO/NOT LIVE boundaries remained visible, and browser warnings/errors remained empty.
+- Ownership: No provider, RPC, state transition, database write, ABI, calldata, signing, broadcast or automatic retry behavior was added by Macbeth04.
+- Evidence handling: This integration record becomes the new source C. Macbeth04 manifest R and snapshot S are regenerated only through repository commands.
+
+### 2026-09-19 — Partial on-chain product runtime boundary
+
+- Task: M3-04-PRODUCT-UI, contributing to M3-01-PARTIAL-ONCHAIN-INTEGRATION.
+- Status: PASSED_TYPED_BOUNDARY_WITH_LIVE_DEPLOYMENT_BLOCKED.
+- Branch: `macbeth04/M3-product-ui`.
+- Contract source reviewed: Macbeth02 immutable review-interface commit `135be1e1074436e2092487099f8376cc963b714f`. It proposes owner-only `deposit(uint256)`, `withdraw(uint256)` and `close()` calldata, exact AF-USDC six-decimal amounts and immutable-owner recipients, while explicitly remaining not deployed and implementation-in-progress. Macbeth05 subsequently reported that its current ABI regression is not mutation-resistant, so this commit is not treated as an independently accepted final ABI; the final UI adapter must compare against the concrete compiled Vault artifact.
+- Adapter source reviewed: Macbeth03 remote head `588efa531b83548ffa7b1b01f976dfc49ff470b7`, already preserved in this branch. No newer published browser product runtime or deployed Vault manifest exists at this checkpoint.
+- What changed: Added a product-chain presentation consumed dynamically by both `/trade/:strategyId` and Account routes; soft-ready and unknown L1 finality messaging; degraded/reorg owner-exit gating; an injectable product runtime seam; exact AF-USDC request parsing; and a review/confirm action flow that re-reads and simulates before both review and wallet submission.
+- Provider and truth ownership: The flow reuses Macbeth03's `BrowserWalletPort` and `RobinhoodTestnetStrategyAdapter` boundary. It does not create another provider, RPC client, indexer, receipt evaluator or finality calculation. Operation reviews are flow-bound and single-use; a failed reconnect clears the prior wallet session.
+- Product safety: Actual product writes remain disabled when no runtime is injected. An enabled control requires a verified configured deployment presentation, wallet ownership, an explicit write mode and an adapter-supported action. Degraded or reorged projections disable deposit while preserving owner withdraw/close only through a live RPC or simulation exit path. Injected mocks are labeled `INJECTED MOCK — no real rights or funds`.
+- Amount and recipient boundary: Deposit/withdraw UI input is converted exactly to AF-USDC base units with six decimals and rejects zero, excess precision and noncanonical forms. Close has no amount. No action accepts a recipient; Macbeth02's immutable owner remains the contract authority.
+- Tests actually run: Red-first focused product/runtime/action tests; 86/86 expanded lifecycle/store/sync/wallet/UI tests; and the exact candidate's complete `npm run check`, including 467/467 repository tests, typecheck, lint, formatting, secret/privacy/network/governance/supply-chain/threat/planning/Forum checks, management snapshot verification and the production Web build. Formal management collection recorded 11 PASS, 0 FAIL and 4 NOT_RUN.
+- Browser acceptance actually run: The production local build loaded `#/trade/trend` and `#/account/trades` before and after reload. Both routes retained their M3 shell; wallet remained `DISCONNECTED`, network `UNAVAILABLE`, transaction `IDLE`; all five unsupported actions stayed disabled and labeled `NOT IMPLEMENTED`; Account remained separate from wallet identity; strategy content remained `FIXTURE`; browser warning/error logs were empty.
+- Tests not run at this checkpoint: Live RPC, wallet signing, Testnet broadcast, deployment, receipt confirmation and hosted CI. These remain intentionally NOT_RUN.
+- Known limitations: Pass/Vault balances and owner state cannot be shown as live until Macbeth03 publishes the runtime projection and Macbeth02 provides a completed implementation, mutation-resistant compiled-artifact evidence and verified deployment manifest. Buy/Sell/Approve remain unavailable because the current review handoff does not make those end-to-end capabilities real.
+- Evidence handling: This final activity update becomes the new source C. Manifest R and snapshot S are regenerated only through repository commands and then verified on the exact final head.
+- Next step: Hand the immutable candidate to Macbeth01 and Macbeth05 after remote publication is explicitly authorized. No merge, deployment, signing or broadcast is authorized.
+
+### 2026-09-20 — Injected-provider browser acceptance
+
+- Task: M3-04-PRODUCT-UI, contributing to M3-01-PARTIAL-ONCHAIN-INTEGRATION.
+- Status: PASSED_INJECTED_MOCK_WITH_LIVE_CHAIN_BLOCKED.
+- What changed: Added a development-only injected EIP-1193 fixture behind the explicit `?m3Fixture=1` switch. It composes the existing prepared-action authority, `Eip1193Wallet` and `M3ChainActionFlow`; it does not create a production provider or a second submission path.
+- Fixture boundary: The page states `INJECTED MOCK / NO REAL RIGHTS OR FUNDS / NO BROADCAST`. Its reviewed draft selectors are test inputs only and are excluded from the production application JavaScript; they are not accepted ABI, deployment or Testnet evidence.
+- Browser journey actually run: The real `/trade/trend` entry rejected connection on chain 1, switched to chain 46630, connected `0x1111…1111`, read the immutable owner, reviewed exact `1.000001` AF-USDC as `1000001` base units, simulated before review and submission, and returned a deterministic mock transaction hash without broadcast.
+- Recovery evidence: Soft-ready rendered three confirmations while keeping L1 finality unknown. Reorg rendered `FAILED / REORGED`, disabled Deposit and preserved Withdraw/Close. Indexer degradation rendered `INDEXING / FINALITY UNKNOWN`, disabled Deposit and allowed a Close review, simulation and mock submission through the owner exit path.
+- Browser diagnostics: A fresh page rendered the explicit fixture boundary, wrong-network state and all disabled actions with no console warning/error entries.
+- Production boundary: The production application JavaScript contains no `INJECTED MOCK / NO REAL RIGHTS`, `m3Fixture`, `InjectedProviderFixture` or draft deposit selector marker. Documentation copied as static evidence may describe the fixture, but the default application entry remains runtime-unavailable and write-disabled.
+- Tests run: Red-first injected runtime tests, focused M3 UI/runtime/action tests, typecheck and production Web build. Final full repository checks and C/R/S regeneration follow this source update.
+- Tests intentionally NOT_RUN: Live RPC, wallet signing, Testnet broadcast, deployment, receipt confirmation and hosted CI.
+- Next step: Publish the immutable candidate and share its interface summary only after explicit authorization. No merge, deployment, signing or broadcast is authorized.
+
+### 2026-09-20 — Two-token Deposit authorization correction
+
+- Task: M3-04-PRODUCT-UI, contributing to M3-01-PARTIAL-ONCHAIN-INTEGRATION.
+- Status: PASSED_FAIL_CLOSED_AUTHORIZATION_WITH_APPROVAL_FLOW_BLOCKED.
+- Superseded fixture assumption: The earlier injected-browser checkpoint exercised Deposit without first modeling token allowances. It is retained as historical evidence but is not accepted as the current Deposit result. The fixture no longer supplies or implies pre-authorization.
+- What changed: The product projection now carries the configured Vault address plus live AF-USDC and Pass allowance values for that exact spender. A newly connected injected wallet reads both values as zero, renders both base-unit amounts, and keeps Deposit disabled even in `SOFT_READY`.
+- Exact boundary: For a requested Deposit, required AF-USDC is the exact six-decimal raw amount and required Pass is `AF-USDC raw * 1e12`. Malformed values, either insufficient allowance, or a spender different from the configured Vault fail closed before action review.
+- Approval limitation: The current product runtime has no committed approval interface. The UI states that two exact finite approvals are required, and that approval is not implemented. It exposes neither unlimited approval nor an arbitrary spender.
+- Existing safe exit: Withdraw and Close continue to re-read and simulate before mock submission. Degraded and reorg states keep Deposit disabled while preserving the immutable owner's exit path.
+- Dependency update: Coordination reports a newer Macbeth02 concrete ABI commit and an uncommitted Macbeth03 amount-specific allowance/approval seam. The local Macbeth02 remote ref still resolves to the earlier review interface, and the Macbeth03 seam has no immutable source commit, so neither is claimed as integrated or deployment evidence here.
+- Tests: Added red-first checks for the exact `1e12` conversion, both allowance sufficiency, malformed values, Vault-only spender binding, zero-allowance new-wallet behavior and repeated allowance reads. Live RPC, approval submission, wallet signing, Testnet broadcast, deployment and receipts remain NOT_RUN.
+- Corrected browser result: The actual `/trade/trend` entry rejected chain 1, connected on chain 46630, read owner plus both zero allowances, and kept Deposit disabled in `SOFT_READY`, `REORGED` and `FINALITY UNKNOWN`. Withdraw `1.000001` reviewed as exactly `1000001` AF-USDC base units and returned only the deterministic mock hash. Withdraw/Close remained available during reorg and degradation. Warning/error console output was empty.
+- Evidence handling: This correction becomes a new forward source C. The prior source objects remain reachable; no amend, rebase or force push is used. Manifest R and snapshot S are regenerated only after the corrected browser journey and full checks pass.

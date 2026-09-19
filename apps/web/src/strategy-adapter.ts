@@ -29,6 +29,20 @@ export interface RobinhoodTestnetStrategyAdapter<Snapshot, Action, Observation> 
   submitAction(prepared: PreparedAction, wallet: BrowserWalletPort): Promise<WalletSubmission>;
 }
 
+export type LiveActionSimulation =
+  { readonly ok: true } | { readonly ok: false; readonly errorCode: string; readonly errorMessage?: string };
+
+export interface SimulatingRobinhoodTestnetStrategyAdapter<
+  Snapshot,
+  Action,
+  Observation,
+> extends RobinhoodTestnetStrategyAdapter<Snapshot, Action, Observation> {
+  simulateAction(
+    prepared: PreparedAction,
+    context: { readonly owner: Address; readonly snapshot: Snapshot },
+  ): Promise<LiveActionSimulation>;
+}
+
 export type StrategyAdapter<Snapshot, Action, LocalResult, Observation> =
   | LocalStrategyAdapter<Snapshot, Action, LocalResult, Observation>
   | RobinhoodTestnetStrategyAdapter<Snapshot, Action, Observation>;
