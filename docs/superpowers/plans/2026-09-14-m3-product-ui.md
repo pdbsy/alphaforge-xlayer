@@ -136,4 +136,5 @@
 - [x] Keep `ChainStore.operationEvidence(operationId, projectionKey)` as the sole readiness computation owner.
 - [x] Retain failure-before-`productReady` defense for contradictory input crossing API/cache boundaries.
 - [x] Run the expanded 68-test lifecycle/store/sync/wallet/UI set.
+- [x] Re-run actual strategy/account browser acceptance on the exact integrated head.
 - Evidence closeout follows the source C → manifest R → snapshot S workflow; exact immutable SHAs are recorded in Draft PR #16.
