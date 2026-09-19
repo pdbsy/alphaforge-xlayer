@@ -1,5 +1,17 @@
 # AF-M3-CLOSEOUT — Current-stage integration
 
+Task ID: `AF-M3-CLOSEOUT`
+
+Title: `M3 Pass/Vault integration and review closeout`
+
+Worker: `Macbeth01`
+
+Start: `2026-09-19`
+
+Finish: `NOT_FINISHED`
+
+Status: `IN_PROGRESS`
+
 Agent: Macbeth01. Status: **IN_PROGRESS / DECISION-DEPENDENT**. Canonical repository: `pdbsy/quantpass-arbitrum-hackathon`. Branch: `macbeth01/AF-M3-CLOSEOUT`.
 
 User instruction SHA-256: `c5a6dfa8e4be082e2ee3da5313ef3a3e4c89ccde9418ef1ea8647c5eba3936a6`.
@@ -76,7 +88,7 @@ Affected files: 02 Vault/interface/accounting tests; 03 calldata/receipt decodin
 
 ## Candidate and evidence
 
-Current candidate: not yet designated. Never substitute the documentation commit for a complete product version. Pinned inclusion is recorded in the integration source manifest when assembled. PR15–19 remain open; none is closed, merged or deleted by this task.
+Current foundation source: `0818b8cab9eb`; newer changes require fresh evidence. Never substitute the documentation commit for a complete product version. Pinned inclusion is recorded in the integration source manifest when assembled. PR15–19 remain open; none is closed, merged or deleted by this task.
 
 Results are separate: 01 local / 05 independent / GitHub hosted / actual Testnet. Testnet is NOT_RUN / BLOCKED_ON_AUTHORIZATION. Final status is PARTIAL_BLOCKED until all current-scope requirements or approved limitations have evidence. New source after QA triggers affected retests; generated R/S commits must not change tested business code.
 
