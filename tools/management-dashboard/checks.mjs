@@ -8,6 +8,14 @@ import { validateCheckReport } from './schema.mjs';
 import { collectGitState as collectRepositoryGitState } from './sources.mjs';
 
 const unitTests = [
+  'test/m3-product-ui.test.ts',
+  'test/chain-lifecycle.test.ts',
+  'test/chain-rpc-manifest.test.ts',
+  'test/chain-store.test.ts',
+  'test/chain-sync.test.ts',
+  'test/ui-chain-wallet.test.ts',
+  'test/m3-deployment-template.test.mjs',
+
   'test/security-model.test.ts',
   'test/engineering.test.ts',
   'test/robinhood-chain.test.ts',
