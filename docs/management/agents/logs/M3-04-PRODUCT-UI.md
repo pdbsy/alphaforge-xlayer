@@ -6,7 +6,7 @@
 - Status: PARTIAL_ONCHAIN_UI_BOUNDARY_READY_WITH_LIVE_DEPLOYMENT_BLOCKED
 - Branch: macbeth04/M3-product-ui
 - Evidence: Latest exact source C, manifest R, snapshot S and candidate SHAs are maintained in Draft PR #16 to avoid a self-referential commit hash in this source file.
-- Blocker: Macbeth02 has frozen the Vault review interface, but the implementation and deployment remain incomplete. Macbeth03 has not yet published the product runtime that supplies verified deployment state, live reads, simulation and operation evidence to the UI. Therefore the real product entry keeps writes off; only explicitly injected test runtimes can enable mock controls.
+- Blocker: Macbeth02 has published a Vault review interface, but independent review found its current ABI regression insufficient against mutation; the concrete implementation, exact compiled-artifact comparison and deployment remain incomplete. Macbeth03 has not yet published the product runtime that supplies verified deployment state, live reads, simulation and operation evidence to the UI. Therefore the real product entry keeps writes off; only explicitly injected test runtimes can enable mock controls.
 - Last activity: 2026-09-19
 
 ## Activity log
@@ -156,7 +156,7 @@
 - Task: M3-04-PRODUCT-UI, contributing to M3-01-PARTIAL-ONCHAIN-INTEGRATION.
 - Status: PASSED_TYPED_BOUNDARY_WITH_LIVE_DEPLOYMENT_BLOCKED.
 - Branch: `macbeth04/M3-product-ui`.
-- Contract source reviewed: Macbeth02 immutable interface commit `135be1e1074436e2092487099f8376cc963b714f`. It freezes owner-only `deposit(uint256)`, `withdraw(uint256)` and `close()` calldata, exact AF-USDC six-decimal amounts and immutable-owner recipients, while explicitly remaining not deployed and implementation-in-progress.
+- Contract source reviewed: Macbeth02 immutable review-interface commit `135be1e1074436e2092487099f8376cc963b714f`. It proposes owner-only `deposit(uint256)`, `withdraw(uint256)` and `close()` calldata, exact AF-USDC six-decimal amounts and immutable-owner recipients, while explicitly remaining not deployed and implementation-in-progress. Macbeth05 subsequently reported that its current ABI regression is not mutation-resistant, so this commit is not treated as an independently accepted final ABI; the final UI adapter must compare against the concrete compiled Vault artifact.
 - Adapter source reviewed: Macbeth03 remote head `588efa531b83548ffa7b1b01f976dfc49ff470b7`, already preserved in this branch. No newer published browser product runtime or deployed Vault manifest exists at this checkpoint.
 - What changed: Added a product-chain presentation consumed dynamically by both `/trade/:strategyId` and Account routes; soft-ready and unknown L1 finality messaging; degraded/reorg owner-exit gating; an injectable product runtime seam; exact AF-USDC request parsing; and a review/confirm action flow that re-reads and simulates before both review and wallet submission.
 - Provider and truth ownership: The flow reuses Macbeth03's `BrowserWalletPort` and `RobinhoodTestnetStrategyAdapter` boundary. It does not create another provider, RPC client, indexer, receipt evaluator or finality calculation. Operation reviews are flow-bound and single-use; a failed reconnect clears the prior wallet session.
@@ -164,5 +164,5 @@
 - Amount and recipient boundary: Deposit/withdraw UI input is converted exactly to AF-USDC base units with six decimals and rejects zero, excess precision and noncanonical forms. Close has no amount. No action accepts a recipient; Macbeth02's immutable owner remains the contract authority.
 - Tests actually run so far: Red-first focused product/runtime/action tests, expanded lifecycle/store/sync/wallet/UI tests, TypeScript checks and formatting checks. The exact final counts and complete repository result will be recorded after the source commit and generated evidence flow.
 - Tests not run at this checkpoint: Live RPC, wallet signing, Testnet broadcast, deployment, receipt confirmation and hosted CI. These remain intentionally NOT_RUN.
-- Known limitations: Pass/Vault balances and owner state cannot be shown as live until Macbeth03 publishes the runtime projection and Macbeth02 provides a completed implementation plus verified deployment manifest. Buy/Sell/Approve remain unavailable because the currently frozen Vault handoff does not make those end-to-end capabilities real.
+- Known limitations: Pass/Vault balances and owner state cannot be shown as live until Macbeth03 publishes the runtime projection and Macbeth02 provides a completed implementation, mutation-resistant compiled-artifact evidence and verified deployment manifest. Buy/Sell/Approve remain unavailable because the current review handoff does not make those end-to-end capabilities real.
 - Next step: Complete the local full check and C/R/S evidence refresh, then hand the immutable candidate to Macbeth01 and Macbeth05. No merge, deployment, signing or broadcast is authorized.

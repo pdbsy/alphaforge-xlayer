@@ -143,7 +143,7 @@
 
 **Files:** Add `apps/web/src/m3-product-runtime.ts`, `apps/web/src/m3-chain-action-flow.ts`, and focused tests; modify the product shell, actual product entry, strategy adapter types and worker log.
 
-- [x] Verify Macbeth02 frozen interface commit `135be1e1074436e2092487099f8376cc963b714f` and retain its `NOT DEPLOYED / IMPLEMENTATION IN PROGRESS` boundary.
+- [x] Verify Macbeth02 review-interface commit `135be1e1074436e2092487099f8376cc963b714f`, retain its `NOT DEPLOYED / IMPLEMENTATION IN PROGRESS` boundary, and record that independent review still requires mutation-resistant comparison with the concrete compiled Vault artifact.
 - [x] Add red-first tests for soft-ready wording, unknown L1 finality, degraded/reorg owner exits, default-off writes and fresh chain state on both product routes.
 - [x] Consume wallet, network, transaction and contract presentation through one injected runtime in the existing `/trade/:strategyId` and Account pages.
 - [x] Reuse `BrowserWalletPort` and extend the existing Robinhood Testnet strategy-adapter seam with live simulation; do not add a provider, RPC client, receipt evaluator or second lifecycle owner.
@@ -151,5 +151,5 @@
 - [x] Parse Deposit/Withdraw as exact AF-USDC six-decimal base units; reject zero, excess precision and noncanonical values; keep Close amount-free and recipient-free.
 - [x] Keep real product writes off when no runtime is injected. Allow an injected mock only with an explicit `INJECTED MOCK — no real rights or funds` label.
 - [x] In degraded/reorg states, disable Deposit and preserve owner Withdraw/Close only when the runtime exposes a live RPC or simulation exit path.
-- [ ] Consume the final Macbeth03 product runtime and verified Macbeth02 deployment manifest when those sources are published; this remains BLOCKED rather than inferred.
+- [ ] Consume the final Macbeth03 product runtime plus Macbeth02's mutation-resistant concrete artifact and verified deployment manifest when those sources are published; this remains BLOCKED rather than inferred.
 - [ ] Run the final full repository gate, regenerate C/R/S evidence and request Macbeth05 review of the immutable candidate.
