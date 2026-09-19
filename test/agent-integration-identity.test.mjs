@@ -6,6 +6,8 @@ import { tmpdir } from 'node:os';
 import { execFileSync, spawnSync } from 'node:child_process';
 
 const branch = 'macbeth01/AF-M3-CLOSEOUT';
+const repository = 'pdbsy/quantpass-arbitrum-hackathon';
+const repo = { full_name: repository };
 const title = '[Macbeth01][AF-M3-CLOSEOUT] Integrate reviewed sources';
 function fixture(t) {
   const root = mkdtempSync(join(tmpdir(), 'af-integration-identity-'));
@@ -86,7 +88,11 @@ function fixture(t) {
     run(options = {}) {
       const head = git('rev-parse', 'HEAD');
       const event = options.event ?? {
-        pull_request: { title, head: { ref: branch, sha: head }, base: { ref: 'master', sha: base } },
+        pull_request: {
+          title,
+          head: { ref: branch, sha: head, repo },
+          base: { ref: 'master', sha: base, repo },
+        },
       };
       writeFileSync(join(root, 'event.json'), JSON.stringify(event));
       return spawnSync(process.execPath, ['tools/check-agent-identity.mjs'], {
@@ -158,8 +164,8 @@ test('integration pins master base and never enables stacked target admission', 
       event: {
         pull_request: {
           title,
-          head: { ref: branch, sha: head },
-          base: { ref: 'macbeth03/fixture', sha: s.base },
+          head: { ref: branch, sha: head, repo },
+          base: { ref: 'macbeth03/fixture', sha: s.base, repo },
         },
       },
     }),
@@ -255,4 +261,73 @@ test('worker source cannot launder foreign unregistered task provenance', (t) =>
   );
   s.record({ ...s.manifest, sources: s.sources.map((item) => (item === source ? { ...item, head } : item)) });
   rejects(s.run(), /unregistered provenance/);
+});
+
+for (const side of ['head', 'base']) {
+  for (const badRepo of [undefined, { full_name: 'foreign/quantpass-arbitrum-hackathon' }]) {
+    test(`integration rejects ${side} ${badRepo ? 'foreign' : 'missing'} repository identity`, (t) => {
+      const s = fixture(t);
+      const pull = {
+        title,
+        head: { ref: branch, sha: s.git('rev-parse', 'HEAD'), repo },
+        base: { ref: 'master', sha: s.base, repo },
+      };
+      pull[side].repo = badRepo;
+      rejects(s.run({ event: { pull_request: pull } }), /canonical.*repository/);
+    });
+  }
+}
+for (const advanced of [false, true]) {
+  test(`closeout merge queue fails closed with ${advanced ? 'advanced' : 'fixed'} base`, (t) => {
+    const s = fixture(t);
+    const candidate = s.git('rev-parse', 'HEAD');
+    let base = s.base;
+    if (advanced) {
+      s.git('switch', 'master');
+      s.git('commit', '--allow-empty', '-qm', 'Advance protected base');
+      base = s.git('rev-parse', 'HEAD');
+      s.git('update-ref', 'refs/remotes/origin/master', base);
+      s.git('merge', '--no-ff', '-m', 'Synthetic queue merge', candidate);
+    }
+    rejects(
+      s.run({
+        name: 'merge_group',
+        event: {
+          repository: repo,
+          merge_group: {
+            base_ref: 'refs/heads/master',
+            base_sha: base,
+            head_sha: s.git('rev-parse', 'HEAD'),
+            head_ref: 'refs/heads/gh-readonly-queue/master/pr-20-fixture',
+          },
+        },
+      }),
+      /integration.*queue/i,
+    );
+  });
+}
+test('removing integration manifest cannot launder closeout history through merge queue', (t) => {
+  const s = fixture(t);
+  s.git('rm', 'docs/management/agents/integrations/AF-M3-CLOSEOUT.json');
+  s.git(
+    'commit',
+    '-qm',
+    '[Macbeth01][AF-OTHER] Remove manifest',
+    '-m',
+    'Agent-ID: Macbeth01\nTask-ID: AF-OTHER',
+  );
+  rejects(
+    s.run({
+      name: 'merge_group',
+      event: {
+        merge_group: {
+          base_ref: 'refs/heads/master',
+          base_sha: s.base,
+          head_sha: s.git('rev-parse', 'HEAD'),
+          head_ref: 'refs/heads/gh-readonly-queue/master/pr-20-fixture',
+        },
+      },
+    }),
+    /integration.*queue/i,
+  );
 });

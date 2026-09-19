@@ -55,7 +55,36 @@ export function check() {
     base = agentForBranch(branch) ? git('merge-base', 'origin/master', head) : git('rev-parse', `${head}^`);
   }
   const prTitle = argument('pr-title') || pull?.title || null;
+  if (group) {
+    // The approved integration mode has no authenticated queue PR/source binding.
+    // Reject introducing its history, including a subsequently deleted manifest.
+    // Ordinary queued changes after an already integrated base stay unaffected.
+    const range = commitsInRange(group.base_sha, group.head_sha);
+    const manifestHistory = git(
+      'log',
+      '--format=%H',
+      `${group.base_sha}..${group.head_sha}`,
+      '--',
+      'docs/management/agents/integrations/AF-M3-CLOSEOUT.json',
+    );
+    if (
+      manifestHistory ||
+      range.some(
+        (commit) =>
+          /^Task-ID:\s*AF-M3-CLOSEOUT\s*$/m.test(commit.body) || commit.subject.includes('[AF-M3-CLOSEOUT]'),
+      )
+    )
+      throw new Error('Integration merge queue is not authorized without trusted PR/source binding');
+  }
   if (branch === 'macbeth01/AF-M3-CLOSEOUT') {
+    if (
+      pull &&
+      (pull.head.ref !== branch ||
+        pull.base.ref !== 'master' ||
+        pull.head.repo?.full_name !== 'pdbsy/quantpass-arbitrum-hackathon' ||
+        pull.base.repo?.full_name !== 'pdbsy/quantpass-arbitrum-hackathon')
+    )
+      throw new Error('Integration requires canonical head/base repository and refs');
     const exactHead = git('rev-parse', '--verify', `${head}^{commit}`);
     return import('./agent-integration-identity.mjs').then(({ verifyManagerIntegration }) => {
       const result = verifyManagerIntegration(root, {

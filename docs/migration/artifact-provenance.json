@@ -1334,7 +1334,7 @@
       "target_path": "tools/check-agent-identity.mjs",
       "method": "selective import; canonical repository allowlist and dashboard link adapted; PR11 review remediation: atomic product snapshot, identity lifecycle or bounded logical-message Forum as applicable",
       "original_sha256": "d3cebb25a3334804f336e867a92c00e60d71cfb20e11191a5469fdbad24d6e3e",
-      "migrated_sha256": "b4c0b3a0d1dc22c25ff29440113d31262a18fcac043eda16980b9b43d6a29041",
+      "migrated_sha256": "e08bbea8e63e84dad081c9060911a3a640cb553c3428d7c7f7bf37f2c2cbefed",
       "subsequent_adaptations": [
         {
           "task": "AF-M3-IDENTITY",
@@ -1347,6 +1347,12 @@
           "base_commit": "7ecba357d5a19f387e86f578822af04a6261fed2",
           "previous_sha256": "f96f0ec50b2a781b7950eb15ed37e53cc21a6b8bcb94456ab0cf9ef7507faefe",
           "reason": "User-approved bounded manager integration identity and closeout task registration; original sources preserved."
+        },
+        {
+          "task": "AF-M3-CLOSEOUT",
+          "base_commit": "3518c49bfb218fccf0d7516cabbe3362e42f4ac8",
+          "previous_sha256": "b4c0b3a0d1dc22c25ff29440113d31262a18fcac043eda16980b9b43d6a29041",
+          "reason": "Close verified PR repository identity and unbound merge-queue entry bypasses; preserve canonical PR and ordinary queue controls."
         }
       ]
     },
