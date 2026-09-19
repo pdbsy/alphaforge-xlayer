@@ -1,5 +1,7 @@
 # Restart intake report
 
+> Historical intake: PR #20 later supplied a unified foundation candidate and the closeout scope was resolved. See `FOUNDATION-CANDIDATE-REVIEW.md` and `CLOSEOUT-HANDOFF.md` for the current state.
+
 Recorded: 2026-09-19
 
 Agent: `Macbeth05`

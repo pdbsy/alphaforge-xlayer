@@ -46,3 +46,11 @@ No new dynamic candidate is inferred from the separate slice results. The final 
 - Testnet: `NOT_RUN`; no read, signing, deployment, approval, transfer, transaction, or broadcast authority was granted to this QA task.
 - Merge and approval: not performed by Macbeth05.
 - This AI-assisted review is not a third-party security audit or formal repository approval.
+
+## Unified foundation candidate update
+
+Macbeth01 later designated PR #20 head `919505b45572916a3868ecf355691fb09fa1e2c3`, fixed base `7ecba357d5a19f387e86f578822af04a6261fed2`, as the source-bound foundation candidate. The manifest pins Macbeth02 `d473f9df9eb5d1be41024b4b58ebc5ec4f5d9fcd`, Macbeth03 `588efa531b83548ffa7b1b01f976dfc49ff470b7`, Macbeth04 `22616d809a5bbd83e4d15c9946bd91006c1417b2`, and the recorded assignment/QA sources.
+
+Macbeth05 independently verified the final identity graph (102 records), reran 59 identity/lifecycle/bypass/management tests, closed FU-002 with 15/15 focused UI tests, and closed the original FU-003 security boundary with 60/60 chain/wallet/adapter tests under Node `24.21.0` and npm `11.19.1`. The two Low findings from identity scan `fcd15838-e8e3-4026-9aad-df58a2038ea9` are fixed at this head.
+
+The candidate remains a foundation. It does not supply the approved Pass/Vault user journey, and the server-side readiness method has no production API/UI caller. Product acceptance is therefore `PARTIAL_BLOCKED`, while Testnet remains `NOT_RUN`. See `FOUNDATION-CANDIDATE-REVIEW.md` for exact evidence and limits.

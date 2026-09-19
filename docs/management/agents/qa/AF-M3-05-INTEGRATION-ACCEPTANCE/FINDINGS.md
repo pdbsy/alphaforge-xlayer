@@ -1,5 +1,19 @@
 # Findings and follow-up
 
+## Unified foundation candidate disposition
+
+Current reviewed candidate: PR #20 head `919505b45572916a3868ecf355691fb09fa1e2c3`.
+
+| ID | Severity | Current status | Exact evidence |
+| --- | --- | --- | --- |
+| `integration-identity.merge-group-fixed-base-bypass` | Low, high confidence | **FIXED** | Initial finding in scan `fcd15838-e8e3-4026-9aad-df58a2038ea9`; fixed by source commit `5170886c1780bf265b864d1e4a0d37d71a262960` and independently verified at final head with fixed/advanced-base, manifest-deletion, ordinary-queue, and original reproducer coverage. |
+| `integration-identity.same-name-fork-bypass` | Low, high confidence | **FIXED** | Initial finding in scan `fcd15838-e8e3-4026-9aad-df58a2038ea9`; canonical head/base repository and refs are now required. Foreign and missing head/base repository cases fail closed. |
+| `AF-M3-05-FU-002` | Potential Low | **FIXED** | Commits `4f54f94ddfafdd101c4b6b0ec1937859ba596829` and `91777c93c52011b13515d44056a9b56cfefc3c2a`; independent 15/15 focused tests. |
+| `AF-M3-05-FU-003` | Previously deferred | **FIXED** for the original security boundary | Macbeth03 source `588efa531b83548ffa7b1b01f976dfc49ff470b7`; independent 60/60 chain/wallet/adapter tests. The API/UI product composition remains absent and is not accepted. |
+| `AF-M3-05-FU-001` | Unassigned | **FOLLOW_UP** | Test Venue quote trust remains relevant only when a future Vault/risk consumer derives execution bounds from it. Strategy execution is deferred in the current scope. |
+
+The final candidate retains a product delivery blocker rather than an unresolved reportable security finding: the required Pass/Vault implementation and real end-to-end product composition are absent.
+
 ## Historical reportable findings — fixed on the replacement PR #17 head
 
 ### AF-M3-05-SEC-001 — Wallet context can change while submission is pending
@@ -40,7 +54,7 @@
 
 The fixes were verified with the `codex-security:verify-fix` workflow against exact source `20347ec22729346d617525d64dc76f58354b5f0d`. This closes the two old finding paths only; it does not accept a combined product candidate or authorize Testnet.
 
-## Deferred security candidates
+## Follow-up security candidates
 
 ### AF-M3-05-FU-001 — Test Venue quote trust boundary
 
@@ -55,7 +69,7 @@ The fixes were verified with the `codex-security:verify-fix` workflow against ex
 
 ### AF-M3-05-FU-002 — `productReady` precedes contradictory failure checks
 
-- Severity: potential Low; current disposition `FOLLOW_UP`.
+- Severity: potential Low; current disposition **FIXED**.
 - Exact source: Macbeth04 PR #16 head `037c2b55f7eb03b80b60dd11f4b4c400fb9c1215` stacked on fixed PR #17 head `20347ec22729346d617525d64dc76f58354b5f0d`.
 - Location: `apps/web/src/m3-product-shell.ts:164-181`.
 - Evidence: `transactionPresentationFromEvidence` immediately returns `READY` when `productReady` is true, before checking `REORGED`, reverted receipt, failed reconciliation, or stale projection.
@@ -63,6 +77,7 @@ The fixes were verified with the `codex-security:verify-fix` workflow against ex
 - Re-evaluate when: the final API/cache/UI composition supplies `ProductOperationEvidence`, especially if fields come from separate requests, caches, or decoded JSON.
 - Required check: malformed and non-atomic evidence must fail closed; contradictory failure fields can never display `READY`.
 - Evidence source: PR #16 replacement scan `ad808dec-fc29-41fb-ad91-fd7540cab616`, candidate `candidate-8e43751ee7355a25` (0 reportable findings; partial coverage because final composition is absent).
+- Verification status: **FIXED** at unified candidate head `919505b45572916a3868ecf355691fb09fa1e2c3`. The test-first change `4f54f94ddfafdd101c4b6b0ec1937859ba596829` covers contradictory `productReady: true` inputs; implementation `91777c93c52011b13515d44056a9b56cfefc3c2a` checks lifecycle, receipt, reconciliation, and projection failure first. Independent exact-source execution passed 15/15 under Node `24.21.0`.
 
 ### AF-M3-05-FU-003 — Product readiness does not bind projection block hash or canonical ancestry
 
@@ -75,9 +90,13 @@ The fixes were verified with the `codex-security:verify-fix` workflow against ex
 - Re-evaluate when: the final API/cache composition and its canonical checkpoint or ancestry contract are available.
 - Required check: a same-height mismatched block hash and a higher unproven competing-fork projection must not become ready; records from different cache epochs must fail closed; a higher projection may become ready only with verifiable ancestry or an equivalent atomic canonical checkpoint.
 - Evidence source: PR #17 scan `f91656d0-9132-4bc0-b547-bcca503ecad3`, candidate `candidate-493db71e81bc7950`.
-- Verification status: **DEFERRED**. The 42/42 fix verification closed `AF-M3-05-SEC-001/002` but did not close this composition-dependent candidate.
+- Verification status: **FIXED** for the original security boundary at Macbeth03 source `588efa531b83548ffa7b1b01f976dfc49ff470b7`, included by unified candidate `919505b45572916a3868ecf355691fb09fa1e2c3`. The client-side raw composition helper is removed. `ChainStore.operationEvidence` verifies operation-to-checkpoint canonical ancestry, projection and endpoint hashes, continuous heights, and every parent edge in one SQLite read transaction, with a 2,000-block fail-closed bound. Independent exact-source chain/wallet/adapter execution passed 60/60 under Node `24.21.0`. No production API/UI caller exists, so this closure does not claim completion of the product path.
 
 ## Evidence and admission gaps
+
+- PR #20 final head `919505b45572916a3868ecf355691fb09fa1e2c3` is a unified source-bound foundation candidate. It still lacks the required Pass/Vault implementation and live wallet-to-Account composition, so product acceptance remains `PARTIAL_BLOCKED`.
+- At the final provider checkpoint, all Linux, macOS, and Windows engineering-check runs had passed. CodeQL completed source extraction and analysis, then failed at result upload/run metadata access with `Resource not accessible by integration`. Dependency review failed because the repository/account did not expose the required feature.
+- Manager-reported full-suite, Forge, Slither, and artifact-equivalence results are supporting evidence and are not relabelled as Macbeth05 independent execution.
 
 - PR #18's committed management receipt records Foundry, fuzz, invariant, and Slither as `NOT_RUN` because the approved toolchain was unavailable. This prevents an independent contract-test acceptance claim; it is not itself a vulnerability.
 - PR #16 head `037c2b55f7eb03b80b60dd11f4b4c400fb9c1215` has no clean hosted acceptance: all current `verify`, `verify-windows`, and `verify-macos` jobs stop at history admission because the stacked PR base is not `master`. They must be rerun after PR #17 reaches `master` and PR #16 is retargeted.

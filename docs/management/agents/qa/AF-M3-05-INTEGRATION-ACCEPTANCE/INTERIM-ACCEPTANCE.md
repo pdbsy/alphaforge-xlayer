@@ -1,5 +1,7 @@
 # Interim integration acceptance report
 
+> Historical checkpoint: the missing-candidate condition recorded here was later resolved by PR #20. See `FOUNDATION-CANDIDATE-REVIEW.md` for the current version-bound verdict. Product acceptance remains blocked for different, concrete delivery gaps.
+
 Status at this checkpoint: **integrated offline acceptance BLOCKED; Testnet NOT_RUN**.
 
 ## Versions reviewed
