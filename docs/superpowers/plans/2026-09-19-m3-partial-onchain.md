@@ -42,18 +42,18 @@ Files: `.github/workflows/codeql.yml`, `docs/security/M3-GITHUB-SECURITY-CONFIGU
 
 Files: `contracts/src/` Vault/accounting interfaces and implementations, `contracts/test/` unit/fuzz/invariant tests, contract ABI artifact/manifest preparation and accounting document. Reuse StrategyPass/PassLocker only where their authority model matches the spec.
 
-- [ ] Derive the contract interface from the frozen specification and existing primitives; publish exact constructor/getters/functions/events/errors to 03/04 early.
-- [ ] Test then implement all 37 contract cases in specification XII.1, especially excess donation versus tracked equity, loss close, malicious dust isolation and mandatory transfer atomicity.
-- [ ] Test and implement precise arithmetic: `usdcRaw * 10**12`, inverse remainder rejection only at capacity boundaries; ordinary ERC20 transfers retain full precision.
-- [ ] Implement reserved balance protection, CEI/reentrancy and no owner migration/inherited owner bypass. Keep strategy position update authority unavailable to arbitrary callers.
-- [ ] Run locked `bash contracts/script/check-local.sh` from its documented directory plus fuzz/invariant cases, inspect resulting ABI/bytecode and publish exact source SHA.
+- [x] Derive the contract interface from the frozen specification and existing primitives; publish exact constructor/getters/functions/events/errors to 03/04 early.
+- [x] Test then implement all 37 contract cases in specification XII.1, especially excess donation versus tracked equity, loss close, malicious dust isolation and mandatory transfer atomicity.
+- [x] Test and implement precise arithmetic: `usdcRaw * 10**12`, inverse remainder rejection only at capacity boundaries; ordinary ERC20 transfers retain full precision.
+- [x] Implement reserved balance protection, CEI/reentrancy and no owner migration/inherited owner bypass. Keep strategy position update authority unavailable to arbitrary callers.
+- [x] Run the complete locked `bash contracts/script/check-m3-vault.sh` gate (base checks plus mandatory compiler/published ABI equality), inspect ABI/bytecode and publish exact source SHA. Manager repeated 120 Solidity tests, 20 Python tests and zero-finding Slither on 02 source 8afb96e.
 
 ### Task 4: Canonical projection and live operation boundary (03)
 
 Files: `packages/chain-adapter/src/`, `apps/server/src/chain-store.ts`, `chain-sync.ts`, chain API composition, wallet adapter, related tests and reorg document.
 
-- [ ] Test block-inclusive count `(latest - included + 1)`, third confirmation soft readiness, no inferred L1/finality and configuration validation.
-- [ ] Implement 128-bounded rollback/replay with durable degraded evidence and idempotent removed/reorged event handling.
+- [x] Test block-inclusive count `(latest - included + 1)`, third confirmation soft readiness, no inferred L1/finality and configuration validation.
+- [x] Implement 128-bounded rollback/replay with durable degraded evidence and idempotent removed/reorged event handling.
 - [ ] Consume exact 02 ABI for reads/calldata/events; compose `ChainStore.operationEvidence` through actual server API, without accepting browser-crafted READY evidence.
 - [ ] Provide live state/simulation and direct owner exit even if the indexer is degraded; RPC failure must report connectivity, not authorization denial.
 - [ ] Test actual API boundaries and all 14 specification XII.2 cases, publish source and interface receipts to 04/01.
