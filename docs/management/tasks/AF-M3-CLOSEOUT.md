@@ -79,3 +79,11 @@ Affected files: 02 Vault/interface/accounting tests; 03 calldata/receipt decodin
 Current candidate: not yet designated. Never substitute the documentation commit for a complete product version. Pinned inclusion is recorded in the integration source manifest when assembled. PR15–19 remain open; none is closed, merged or deleted by this task.
 
 Results are separate: 01 local / 05 independent / GitHub hosted / actual Testnet. Testnet is NOT_RUN / BLOCKED_ON_AUTHORIZATION. Final status is PARTIAL_BLOCKED until all current-scope requirements or approved limitations have evidence. New source after QA triggers affected retests; generated R/S commits must not change tested business code.
+
+## Unified foundation candidate assembly
+
+The first assembly preserves protocol `5d1a26d`, adapter `20347ec`, updated UI/browser evidence `22616d8` (contains adapter), QA follow-ups `8dbf976`, and registration PRs #15/#19 via merge commits. Exact refs live in `../agents/integrations/AF-M3-CLOSEOUT.json`. The historical QA report `2efed688` remains an ancestor. This is a foundation candidate pending protocol decisions and follow-up fixes, not a completed Pass/Vault loop.
+
+Conflict resolutions retain the union of all test commands; retain both worker 04/05 registrations and bootstrap test expectations with the manager assigned to AF-M3-CLOSEOUT; retain both provenance adaptation histories and hash the resolved source files. Conflicting generated management evidence/snapshots were restored byte-for-byte from fixed master, not edited into PASS. They remain stale for this candidate until a new C→R→S collection.
+
+The approved identity mode passed 35 targeted tests, including independently pinned stacked sources and rejection of foreign task laundering. This is local implementation validation, not independent approval or whole-candidate acceptance. Required checks/protection remain unchanged.
