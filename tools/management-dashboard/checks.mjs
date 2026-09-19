@@ -8,6 +8,7 @@ import { validateCheckReport } from './schema.mjs';
 import { collectGitState as collectRepositoryGitState } from './sources.mjs';
 
 const unitTests = [
+  'test/ui-m3-vault-live-reader.test.ts',
   'test/chain-runtime.test.ts',
   'test/chain-vault-abi.test.ts',
   'test/chain-vault-integration.test.ts',
