@@ -60,7 +60,7 @@ function unavailable(id) {
     id,
     available: false,
     status: 'NOT_RUN',
-    reason: 'APPROVED_TOOLCHAIN_NOT_AVAILABLE',
+    reason: 'NOT_REGISTERED_IN_MANAGEMENT_COLLECTOR',
     profiles: Object.freeze(['quick', 'full']),
   });
 }
