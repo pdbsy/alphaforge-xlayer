@@ -327,3 +327,138 @@ test('invalid transaction hash is displayed as text without an explorer link', (
   assert.match(html, /javascript:alert\(1\)/);
   assert.doesNotMatch(html, /href=/);
 });
+
+test('soft-ready chain state is shown without claiming finality', () => {
+  const html = renderM3StrategyShell({
+    strategyId: 'trend',
+    contentProvenance: 'FIXTURE',
+    onchain: {
+      deployment: 'CONFIGURED',
+      health: 'LIVE',
+      readiness: 'SOFT_READY',
+      owner: 'OWNER',
+      writeMode: 'INJECTED_MOCK',
+      exitPath: 'LIVE_RPC',
+      supportedActions: ['deposit', 'withdraw', 'close'],
+    },
+  });
+
+  assert.match(html, /SOFT READY/);
+  assert.match(html, /three confirmations/i);
+  assert.match(html, /L1 finality remains unknown/i);
+  assert.doesNotMatch(html, /finalized/i);
+});
+
+test('degraded indexer preserves owner withdraw and close through live RPC simulation', () => {
+  const html = renderM3StrategyShell({
+    strategyId: 'trend',
+    contentProvenance: 'FIXTURE',
+    onchain: {
+      deployment: 'CONFIGURED',
+      health: 'DEGRADED',
+      readiness: 'FINALITY_UNKNOWN',
+      owner: 'OWNER',
+      writeMode: 'INJECTED_MOCK',
+      exitPath: 'SIMULATION',
+      supportedActions: ['deposit', 'withdraw', 'close'],
+    },
+  });
+
+  assert.match(html, /INDEXER DEGRADED/);
+  assert.match(html, /live RPC simulation/i);
+  assert.match(html, /INJECTED MOCK/);
+  assert.match(html, /no real rights or funds/i);
+  assert.match(html, /<button[^>]*data-chain-action="withdraw"[^>]*>Withdraw<\/button>/);
+  assert.match(html, /<button[^>]*data-chain-action="close"[^>]*>Close<\/button>/);
+  assert.match(html, /<button[^>]*data-chain-action="deposit"[^>]*disabled[^>]*>Deposit<\/button>/);
+});
+
+test('chain writes remain disabled without explicit write mode or wallet ownership', () => {
+  for (const onchain of [
+    {
+      deployment: 'CONFIGURED' as const,
+      health: 'LIVE' as const,
+      readiness: 'SOFT_READY' as const,
+      owner: 'OWNER' as const,
+      writeMode: 'DISABLED' as const,
+      exitPath: 'LIVE_RPC' as const,
+      supportedActions: ['deposit', 'withdraw', 'close'] as const,
+    },
+    {
+      deployment: 'CONFIGURED' as const,
+      health: 'LIVE' as const,
+      readiness: 'SOFT_READY' as const,
+      owner: 'NON_OWNER' as const,
+      writeMode: 'INJECTED_MOCK' as const,
+      exitPath: 'LIVE_RPC' as const,
+      supportedActions: ['deposit', 'withdraw', 'close'] as const,
+    },
+  ]) {
+    const html = renderM3StrategyShell({
+      strategyId: 'trend',
+      contentProvenance: 'FIXTURE',
+      onchain,
+    });
+    for (const action of ['deposit', 'withdraw', 'close']) {
+      assert.match(html, new RegExp(`<button[^>]*data-chain-action="${action}"[^>]*disabled`));
+    }
+  }
+});
+
+test('reorged projection permits only owner exit actions backed by live simulation', () => {
+  const html = renderM3StrategyShell({
+    strategyId: 'trend',
+    contentProvenance: 'FIXTURE',
+    onchain: {
+      deployment: 'CONFIGURED',
+      health: 'LIVE',
+      readiness: 'REORGED',
+      owner: 'OWNER',
+      writeMode: 'INJECTED_MOCK',
+      exitPath: 'SIMULATION',
+      supportedActions: ['deposit', 'withdraw', 'close'],
+    },
+  });
+
+  assert.match(html, /data-chain-action="deposit"[^>]*disabled/);
+  assert.match(html, /data-chain-action="withdraw"[^>]*>Withdraw<\/button>/);
+  assert.match(html, /data-chain-action="close"[^>]*>Close<\/button>/);
+});
+
+test('actual product page extension reads fresh onchain state on every render', () => {
+  let health = 'LIVE' as 'LIVE' | 'DEGRADED';
+  let walletAddress = '0x1111111111111111111111111111111111111111';
+  const pages = extendM3ProductPages(
+    {
+      account: (tab) => `<div>account ${tab}</div>`,
+      trade: (strategyId) => `<div>trade ${strategyId}</div>`,
+    },
+    {
+      accountId: () => 'alice',
+      contentProvenance: () => 'FIXTURE',
+      chain: () => ({
+        wallet: { status: 'CONNECTED', address: walletAddress },
+        network: { status: 'CORRECT', chainId: ROBINHOOD_CHAIN_TESTNET.chainId },
+        transaction: { status: 'INDEXING' },
+        onchain: {
+          deployment: 'CONFIGURED',
+          health,
+          readiness: 'SOFT_READY',
+          owner: 'OWNER',
+          writeMode: 'INJECTED_MOCK',
+          exitPath: 'LIVE_RPC',
+          supportedActions: ['deposit', 'withdraw', 'close'],
+        },
+      }),
+    },
+  );
+
+  assert.doesNotMatch(pages.trade('trend'), /INDEXER DEGRADED/);
+  assert.match(pages.trade('trend'), new RegExp(walletAddress));
+  assert.match(pages.trade('trend'), /INDEXING/);
+  health = 'DEGRADED';
+  walletAddress = '0x2222222222222222222222222222222222222222';
+  assert.match(pages.trade('trend'), /INDEXER DEGRADED/);
+  assert.match(pages.account('funds'), new RegExp(walletAddress));
+  assert.match(pages.account('funds'), /INJECTED MOCK/);
+});
