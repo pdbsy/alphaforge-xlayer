@@ -1480,13 +1480,19 @@
       "target_path": "docs/management/agents/bootstrap/Macbeth05.md",
       "method": "protocol import with current repository/authority preamble",
       "original_sha256": "5d5bc59b892ed0009ca8e161135c233ff7f4aafe912511c1c2a4a391b579cd10",
-      "migrated_sha256": "72a501d45868fff4db669219da453c5bed797fd26aac88ddb3ad9f235edd3cb1",
+      "migrated_sha256": "ada52fbacbe729aca039dceeb389a81dc795946097cb635e17f298f46b5bc835",
       "subsequent_adaptations": [
         {
           "task": "AF-M3-IDENTITY",
           "base_commit": "45e80f921df2d3f9172ddbbc8e6ab37c327107e7",
           "previous_sha256": "a8620724d3f96bb8c7639feb2ec31472972dcbaa486db44ec924646ce9ec31ec",
           "reason": "M3 worker identity and assignment compatibility; original migration source is preserved."
+        },
+        {
+          "task": "AF-M3-05-REGISTRATION",
+          "base_commit": "7ecba357d5a19f387e86f578822af04a6261fed2",
+          "previous_sha256": "72a501d45868fff4db669219da453c5bed797fd26aac88ddb3ad9f235edd3cb1",
+          "reason": "Register user-assigned Macbeth05 acceptance task and preserve unresolved candidate gates; original sources remain unchanged."
         }
       ]
     },
@@ -1498,13 +1504,19 @@
       "target_path": "docs/management/agents/registry.json",
       "method": "registry migrated; historical confirmations reset for canonical repository",
       "original_sha256": "ecb05bfdcccf1abb036c4e4fdd16155e959ae706395020db4a1dac49e43f50b6",
-      "migrated_sha256": "9eb6236235ed0740e31d9c8ff026b7c6910e7bc209a2cbb3b77c8c0af5823252",
+      "migrated_sha256": "42a60a4b2ad46a99c9a8e38c77c605e2f6cd37f206b385b21281e4323a51e2da",
       "subsequent_adaptations": [
         {
           "task": "AF-M3-IDENTITY",
           "base_commit": "45e80f921df2d3f9172ddbbc8e6ab37c327107e7",
           "previous_sha256": "3e748b89ca406eca21a2e7d0e2c5e9f5c3b6feceeb502477d8f50e7341be7fb1",
           "reason": "M3 worker identity and assignment compatibility; original migration source is preserved."
+        },
+        {
+          "task": "AF-M3-05-REGISTRATION",
+          "base_commit": "7ecba357d5a19f387e86f578822af04a6261fed2",
+          "previous_sha256": "9eb6236235ed0740e31d9c8ff026b7c6910e7bc209a2cbb3b77c8c0af5823252",
+          "reason": "Register user-assigned Macbeth05 acceptance task and preserve unresolved candidate gates; original sources remain unchanged."
         }
       ]
     },
