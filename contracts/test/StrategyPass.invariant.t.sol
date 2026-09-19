@@ -54,13 +54,16 @@ contract StrategyPassHandler {
 
 contract StrategyPassInvariantTest {
     uint256 private constant FIXED_SUPPLY = 1_000_000 ether;
+    bytes32 private constant STRATEGY_ID = keccak256("momentum");
 
     StrategyPass private pass;
     StrategyPassHandler private handler;
     address[] private targets;
 
     function setUp() public {
-        pass = new StrategyPass("Alpha Momentum Pass", "AF-MOM", FIXED_SUPPLY, address(this));
+        pass = new StrategyPass(
+            "Alpha Momentum Pass", "AF-MOM", STRATEGY_ID, FIXED_SUPPLY, address(this)
+        );
         handler = new StrategyPassHandler(pass);
         require(pass.transfer(address(handler), FIXED_SUPPLY), "handler funding failed");
         targets.push(address(handler));

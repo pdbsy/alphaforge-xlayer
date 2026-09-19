@@ -7,6 +7,7 @@ interface IAlphaForgeVault {
     error ZeroAddress();
     error DuplicateAsset(address token);
     error InvalidStrategyIdentity();
+    error StrategyPassMismatch(address pass, bytes32 expected, bytes32 actual);
     error UnexpectedDecimals(address token, uint8 expected, uint8 actual);
     error ZeroAmount();
     error VaultClosed();

@@ -16,6 +16,7 @@ contract PassLocker is ReentrancyGuard {
     error EscrowBalanceDeficit(uint256 balance, uint256 accounted);
     error InsufficientUnaccountedPass(uint256 available, uint256 requested);
     error InsufficientLockedPass(uint256 available, uint256 requested);
+    error PassTransferAmountMismatch(uint256 expected, uint256 actual);
 
     event PassLocked(address indexed owner, uint256 amount);
     event PassUnlocked(address indexed owner, uint256 amount);
@@ -55,7 +56,7 @@ contract PassLocker is ReentrancyGuard {
         uint256 available = lockedBalance;
         if (amount > available) revert InsufficientLockedPass(available, amount);
         lockedBalance = available - amount;
-        pass.safeTransfer(owner, amount);
+        _transferToOwnerExact(amount);
         emit PassUnlocked(owner, amount);
     }
 
@@ -63,11 +64,21 @@ contract PassLocker is ReentrancyGuard {
         amount = lockedBalance;
         if (amount == 0) revert ZeroAmount();
         lockedBalance = 0;
-        pass.safeTransfer(owner, amount);
+        _transferToOwnerExact(amount);
         emit PassUnlocked(owner, amount);
     }
 
     function _checkVault() private view {
         if (msg.sender != vault) revert Unauthorized();
+    }
+
+    function _transferToOwnerExact(uint256 amount) private {
+        uint256 beforeBalance = pass.balanceOf(owner);
+        pass.safeTransfer(owner, amount);
+        uint256 afterBalance = pass.balanceOf(owner);
+        if (afterBalance < beforeBalance || afterBalance - beforeBalance != amount) {
+            uint256 received = afterBalance >= beforeBalance ? afterBalance - beforeBalance : 0;
+            revert PassTransferAmountMismatch(amount, received);
+        }
     }
 }

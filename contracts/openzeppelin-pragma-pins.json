@@ -60,10 +60,22 @@
       "derivedSha256": "ed1b905ddab28a4edddc8dcb85a32dd66a4d64b7664918c3eee062c4ce161591"
     },
     {
+      "path": "utils/Address.sol",
+      "pragma": "pragma solidity ^0.8.20;",
+      "originalSha256": "f1a9255dbc40cf9ae7c786abed3b022691a9d24bca0c7f05dc60e63421d405ab",
+      "derivedSha256": "570662358c8dd17c76c8b2a32e1eba36c40cb4e4d924861cd329ce7c8ad756e7"
+    },
+    {
       "path": "utils/Context.sol",
       "pragma": "pragma solidity ^0.8.20;",
       "originalSha256": "847fda5460fee70f56f4200f59b82ae622bb03c79c77e67af010e31b7e2cc5b6",
       "derivedSha256": "04168caff9540cdbcd2d95ee39a24ab8600b7069933fbacce6367b9ef44600f5"
+    },
+    {
+      "path": "utils/Errors.sol",
+      "pragma": "pragma solidity ^0.8.20;",
+      "originalSha256": "0704b9d6c032cca8512a3bc3f30f49f86f1f03102d2896a3d23e794b82efea66",
+      "derivedSha256": "400d0583bf05fb61175db6c73100d17e65d4cc25d3a0c6775860693d949e6a6a"
     },
     {
       "path": "utils/Panic.sol",
