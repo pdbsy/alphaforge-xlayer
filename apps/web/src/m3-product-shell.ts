@@ -165,8 +165,6 @@ export function transactionPresentationFromEvidence(
   evidence: ProductOperationEvidence,
   txHash?: string,
 ): TransactionPresentation {
-  if (evidence.productReady) return { status: 'READY', ...(txHash ? { txHash } : {}) };
-
   if (
     evidence.lifecycle === 'REJECTED' ||
     evidence.lifecycle === 'REVERTED' ||
@@ -179,6 +177,8 @@ export function transactionPresentationFromEvidence(
   if (evidence.receipt === 'REVERTED') return failedTransaction('TRANSACTION_REVERTED', txHash);
   if (evidence.reconciliation === 'FAILED') return failedTransaction('RECONCILIATION_FAILED', txHash);
   if (evidence.projection === 'STALE') return failedTransaction('PROJECTION_STALE', txHash);
+
+  if (evidence.productReady) return { status: 'READY', ...(txHash ? { txHash } : {}) };
 
   const status: TransactionStatus =
     evidence.lifecycle === 'AWAITING_SIGNATURE'
