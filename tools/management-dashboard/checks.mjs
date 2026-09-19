@@ -9,6 +9,7 @@ import { collectGitState as collectRepositoryGitState } from './sources.mjs';
 
 const unitTests = [
   'test/ci-gates.test.mjs',
+  'test/security-scanners.test.mjs',
   'test/chain-startup.test.ts',
   'test/ui-m3-vault-live-reader.test.ts',
   'test/chain-runtime.test.ts',

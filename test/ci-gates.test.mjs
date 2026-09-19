@@ -192,7 +192,14 @@ test('dependency candidate binding distinguishes PR heads from merge checkout an
 test('actual CI gate contracts reject skipped, replaced and weakened jobs', async () => {
   const workflow = parse(await readFile(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8'));
   assert.doesNotThrow(() => validateCIGateWorkflows(stringify(workflow)));
-  for (const job of ['contracts-m3-macos', 'source-policy-js', 'dependency-delta-audit']) {
+  for (const job of [
+    'contracts-m3-macos',
+    'source-policy-js',
+    'dependency-delta-audit',
+    'semgrep-ce',
+    'osv-scanner',
+    'gitleaks',
+  ]) {
     for (const mutate of [
       (w) => {
         delete w.jobs[job];

@@ -1,8 +1,8 @@
 name: Dependency review
 
+# Optional legacy integration; automatic gates are Semgrep CE, OSV and Gitleaks.
 on:
-  pull_request:
-    branches: [master]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -21,6 +21,8 @@ jobs:
           persist-credentials: false
       - uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
         with:
+          base-ref: master
+          head-ref: ${{ github.sha }}
           fail-on-severity: high
           allow-licenses: >-
             MIT, Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC,

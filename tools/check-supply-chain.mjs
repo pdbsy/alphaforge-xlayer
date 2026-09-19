@@ -320,20 +320,23 @@ const workflowProfiles = new Map([
         ['contracts-m3-macos', readContents],
         ['source-policy-js', readContents],
         ['dependency-delta-audit', readContents],
+        ['semgrep-ce', readContents],
+        ['osv-scanner', readContents],
+        ['gitleaks', readContents],
       ]),
     },
   ],
   [
     '.github/workflows/dependency-review.yml',
     {
-      events: ['pull_request'],
+      events: ['workflow_dispatch'],
       jobs: new Map([['dependency-review', readContents]]),
     },
   ],
   [
     '.github/workflows/codeql.yml',
     {
-      events: ['push', 'pull_request', 'schedule', 'workflow_dispatch'],
+      events: ['workflow_dispatch'],
       jobs: new Map([
         ['analyze', { contents: 'read', actions: 'read', packages: 'read', 'security-events': 'write' }],
       ]),

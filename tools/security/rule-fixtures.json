@@ -1,0 +1,134 @@
+[
+  {
+    "id": "af.js-dynamic-eval",
+    "language": "javascript",
+    "bad": "eval(userInput);",
+    "good": "JSON.parse(userInput);"
+  },
+  {
+    "id": "af.js-function-constructor",
+    "language": "javascript",
+    "bad": "new Function(userInput);",
+    "good": "const f = (x) => x + 1;"
+  },
+  {
+    "id": "af.js-implied-eval",
+    "language": "javascript",
+    "bad": "setTimeout(\"work()\", 1);",
+    "good": "setTimeout(() => work(), 1);"
+  },
+  {
+    "id": "af.js-shell-enabled",
+    "language": "javascript",
+    "bad": "spawn(cmd, [], {shell: true});",
+    "good": "spawn(cmd, [], {shell: false});"
+  },
+  {
+    "id": "af.js-command-taint",
+    "language": "javascript",
+    "bad": "function handle(req) { const cmd = req.query.command; exec(cmd); }",
+    "good": "function handle(req) { execFile(\"git\", [\"status\"]); }"
+  },
+  {
+    "id": "af.js-sql-taint",
+    "language": "javascript",
+    "bad": "function handle(req, db) { const query = \"SELECT \" + req.body.table; db.prepare(query); }",
+    "good": "function handle(req, db) { db.prepare(\"SELECT * FROM t WHERE id = ?\").get(req.body.id); }"
+  },
+  {
+    "id": "af.js-path-taint",
+    "language": "javascript",
+    "bad": "function handle(req) { const path = req.params.path; readFileSync(path); }",
+    "good": "function handle(req) { readFileSync(\"fixed.json\"); }"
+  },
+  {
+    "id": "af.js-dom-taint",
+    "language": "javascript",
+    "bad": "function render() { const value = location.search; element.innerHTML = value; }",
+    "good": "function render() { element.textContent = location.search; }"
+  },
+  {
+    "id": "af.js-tls-verification",
+    "language": "javascript",
+    "bad": "const options = {rejectUnauthorized: false};",
+    "good": "const options = {rejectUnauthorized: true};"
+  },
+  {
+    "id": "af.js-weak-hash",
+    "language": "javascript",
+    "bad": "createHash(\"md5\");",
+    "good": "createHash(\"sha256\");"
+  },
+  {
+    "id": "af.js-wildcard-postmessage",
+    "language": "javascript",
+    "bad": "parent.postMessage(payload, \"*\");",
+    "good": "parent.postMessage(payload, \"https://example.test\");"
+  },
+  {
+    "id": "af.js-jwt-none",
+    "language": "javascript",
+    "bad": "jwt.verify(token, key, {algorithms: [\"none\"]});",
+    "good": "jwt.verify(token, key, {algorithms: [\"RS256\"]});"
+  },
+  {
+    "id": "af.py-dynamic-eval",
+    "language": "python",
+    "bad": "eval(user_input)",
+    "good": "int(user_input)"
+  },
+  {
+    "id": "af.py-pickle-deserialization",
+    "language": "python",
+    "bad": "import pickle\npickle.loads(data)",
+    "good": "import json\njson.loads(data)"
+  },
+  {
+    "id": "af.py-yaml-unsafe",
+    "language": "python",
+    "bad": "import yaml\nyaml.load(data)",
+    "good": "import yaml\nyaml.safe_load(data)"
+  },
+  {
+    "id": "af.py-shell-enabled",
+    "language": "python",
+    "bad": "import subprocess\nsubprocess.run(cmd, shell=True)",
+    "good": "import subprocess\nsubprocess.run([\"git\", \"status\"], shell=False)"
+  },
+  {
+    "id": "af.py-command-taint",
+    "language": "python",
+    "bad": "import os\ncommand = input()\nos.system(command)",
+    "good": "import subprocess\nsubprocess.run([\"git\", \"status\"])"
+  },
+  {
+    "id": "af.py-tls-verification",
+    "language": "python",
+    "bad": "import requests\nrequests.get(url, verify=False)",
+    "good": "import requests\nrequests.get(url, verify=True)"
+  },
+  {
+    "id": "af.py-insecure-tempfile",
+    "language": "python",
+    "bad": "import tempfile\ntempfile.mktemp()",
+    "good": "import tempfile\ntempfile.mkstemp()"
+  },
+  {
+    "id": "af.py-sql-interpolation",
+    "language": "python",
+    "bad": "cursor.execute(f\"SELECT {table}\")",
+    "good": "cursor.execute(\"SELECT * FROM t WHERE id = ?\", [value])"
+  },
+  {
+    "id": "af.py-unsafe-tar",
+    "language": "python",
+    "bad": "archive.extractall(destination)",
+    "good": "archive.extractall(destination, filter=\"data\")"
+  },
+  {
+    "id": "af.py-weak-hash",
+    "language": "python",
+    "bad": "import hashlib\nhashlib.md5(data)",
+    "good": "import hashlib\nhashlib.sha256(data)"
+  }
+]

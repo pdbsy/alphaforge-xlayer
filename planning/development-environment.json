@@ -40,6 +40,21 @@
       "platform": "linux",
       "arch": "x64",
       "label": "ubuntu-24.04"
+    },
+    "semgrep-ce": {
+      "platform": "linux",
+      "arch": "x64",
+      "label": "ubuntu-24.04"
+    },
+    "osv-scanner": {
+      "platform": "linux",
+      "arch": "x64",
+      "label": "ubuntu-24.04"
+    },
+    "gitleaks": {
+      "platform": "linux",
+      "arch": "x64",
+      "label": "ubuntu-24.04"
     }
   },
   "macDeveloperManager": "fnm",
