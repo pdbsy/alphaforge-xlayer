@@ -38,3 +38,7 @@ Implementation in progress. Prior candidate greens are baseline evidence only. N
 Draft PR21 is the current delivery PR. Initial head `8fcb14bd8f34bdbd56565344cb4f65158c725614` passed local `npm run check` with 483/483 tests; those results certify manager preparation only. CodeQL's real post-permission run now fails specifically because code scanning is not enabled, as documented in the GitHub configuration audit.
 
 The published protocol interface `135be1e1074436e2092487099f8376cc963b714f` and independent matrix `1cd8cf8fc95837270a8e050fdfb757e2e6b4ce75` have been inspected and merged preserving authors. The interface's original test was too weak to certify an ABI freeze: 05 demonstrated that incompatible mutations could retain 3/3 PASS. This is an interface review draft until 02 supplies exact selector/error/event/constructor artifact assertions and the concrete implementation. The current integration does not claim Vault custody is already implemented.
+
+## Independent-review service interruption
+
+Macbeth05's task `01a095c3-8433-7c83-875e-2f542c2e30f3` reported a failed turn at 2026-09-19 16:08:12 UTC. The service returned a possible cybersecurity-risk restriction. Existing version-bound review material remains preserved; unfinished review is BLOCKED, not PASS. Manager checks and worker-authored tests cannot substitute for independent acceptance. Other authorized implementation and local validation continue. No attempt is made to bypass the service restriction.
