@@ -81,6 +81,7 @@ export interface OnchainProductPresentation {
   readonly exitPath: 'UNAVAILABLE' | 'LIVE_RPC' | 'SIMULATION';
   readonly supportedActions: readonly OnchainProductAction[];
   readonly vaultAddress?: string;
+  readonly vaultClosed?: boolean;
   readonly depositAuthorization?: DepositAuthorizationPresentation;
 }
 
@@ -303,6 +304,7 @@ export function onchainActionEnabled(
   action: OnchainProductAction,
 ): boolean {
   if (
+    onchain.vaultClosed === true ||
     onchain.deployment !== 'CONFIGURED' ||
     onchain.health === 'UNAVAILABLE' ||
     onchain.owner !== 'OWNER' ||
@@ -363,8 +365,9 @@ function onchainCard(onchain: OnchainProductPresentation): string {
     onchain.deployment === 'CONFIGURED'
       ? 'Verified deployment metadata is configured.'
       : 'NOT DEPLOYED — no verified Vault address or deployment manifest is configured.';
-  const healthMessage =
-    onchain.health === 'DEGRADED'
+  const healthMessage = onchain.vaultClosed
+    ? `${onchain.health === 'DEGRADED' ? 'INDEXER DEGRADED. ' : ''}VAULT CLOSED. Deposit, withdraw and close are unavailable.`
+    : onchain.health === 'DEGRADED'
       ? onchain.owner === 'NON_OWNER'
         ? 'INDEXER DEGRADED. Current wallet is not the Vault owner; owner exits are unavailable.'
         : onchain.owner === 'OWNER'

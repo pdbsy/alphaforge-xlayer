@@ -37,6 +37,7 @@ class ConfiguredProviderFixture extends ProviderFixture {
   override chainId = 46_630;
   usdcAllowance = 0n;
   passAllowance = 0n;
+  closed = false;
 
   override async request(input: Eip1193Request): Promise<unknown> {
     this.requests.push(input);
@@ -49,7 +50,7 @@ class ConfiguredProviderFixture extends ProviderFixture {
       if (call?.data === encodeM3VaultCall('afUsdc()', [])) return addressResult(AF_USDC);
       if (call?.data === encodeM3VaultCall('pass()', [])) return addressResult(PASS);
       if (call?.data === encodeM3VaultCall('owner()', [])) return addressResult(OWNER);
-      if (call?.data === encodeM3VaultCall('closed()', [])) return uintResult(0n);
+      if (call?.data === encodeM3VaultCall('closed()', [])) return uintResult(this.closed ? 1n : 0n);
       if (call?.data === encodeM3VaultCall('strategyCreator()', []))
         return addressResult(vaultSnapshot.state.strategyCreator);
       if (call?.data === encodeM3VaultCall('strategyId()', [])) return vaultSnapshot.state.strategyId;
@@ -413,3 +414,37 @@ test('degraded registered evidence keeps owner exit actions while marking the in
   assert.equal(onchainActionEnabled(runtime.snapshot.onchain, 'close'), true);
   assert.equal(runtime.snapshot.transaction.status, 'SUBMITTED');
 });
+
+for (const source of ['canonical', 'live-exit'] as const) {
+  test(`a closed Vault disables product actions after ${source} refresh`, async () => {
+    const provider = new ConfiguredProviderFixture();
+    const runtime = createM3BrowserRuntime({
+      provider,
+      deployment,
+      vaultReader: {
+        readSnapshot: async () => {
+          if (source === 'live-exit') throw new Error('INDEXER_UNAVAILABLE');
+          return { ...vaultSnapshot, state: { ...vaultSnapshot.state, closed: provider.closed } };
+        },
+      },
+    });
+    await runtime.connect();
+    assert.equal(onchainActionEnabled(runtime.snapshot.onchain, 'withdraw'), true);
+    provider.closed = true;
+    await runtime.refresh();
+    for (const action of ['deposit', 'withdraw', 'close'] as const)
+      assert.equal(onchainActionEnabled(runtime.snapshot.onchain, action), false, action);
+    assert.equal(runtime.snapshot.onchain.writeMode, 'DISABLED');
+    const html = renderM3StrategyShell({
+      strategyId: 'trend',
+      contentProvenance: 'FIXTURE',
+      ...runtime.snapshot,
+    });
+    assert.match(html, /VAULT CLOSED/);
+    assert.doesNotMatch(html, /Owner exit remains available/);
+    assert.equal(
+      provider.requests.some((request) => request.method === 'eth_sendTransaction'),
+      false,
+    );
+  });
+}

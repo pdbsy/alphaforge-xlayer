@@ -304,6 +304,7 @@ class M3BrowserRuntime implements M3ProductRuntime {
     const vaultAddress = snapshot.value.contract;
     const owner = sameAddress(contractOwner, session.account);
     const live = snapshot.source === 'CANONICAL';
+    const closed = snapshot.value.state.closed;
     return {
       wallet: { status: 'CONNECTED', address: session.account },
       network: { status: 'CORRECT', chainId: session.chainId },
@@ -313,14 +314,12 @@ class M3BrowserRuntime implements M3ProductRuntime {
         health: live ? 'LIVE' : 'DEGRADED',
         readiness: 'FINALITY_UNKNOWN',
         owner: owner ? 'OWNER' : 'NON_OWNER',
-        writeMode: owner ? this.#writeMode : 'DISABLED',
-        exitPath:
-          owner && !(snapshot.source === 'LIVE_EXIT' && snapshot.value.state.closed)
-            ? 'SIMULATION'
-            : 'UNAVAILABLE',
-        supportedActions: live ? supportedActions : (['withdraw', 'close'] as const),
+        vaultClosed: closed,
+        writeMode: owner && !closed ? this.#writeMode : 'DISABLED',
+        exitPath: owner && !closed ? 'SIMULATION' : 'UNAVAILABLE',
+        supportedActions: closed ? [] : live ? supportedActions : (['withdraw', 'close'] as const),
         vaultAddress,
-        ...(authorization
+        ...(authorization && !closed
           ? {
               depositAuthorization: {
                 spender: authorization.summary.vault,

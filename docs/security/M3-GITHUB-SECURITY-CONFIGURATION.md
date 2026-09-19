@@ -54,3 +54,7 @@ Initial-head Engineering runs [35452842803](https://github.com/pdbsy/quantpass-a
 ## Protection readback during integration (2026-09-20 Asia/Shanghai)
 
 The manager re-read ruleset 22507334 from GitHub and compared `id`, `name`, `target`, `enforcement`, `conditions`, `rules`, and `bypass_actors` with the pre-change API response. All fields matched. The five strict required contexts and their integration ID 15368 remain unchanged, as do review, history, deletion and force-update protections. No setting write occurred.
+
+## Ready-to-merge follow-up (2026-09-20)
+
+Fresh API inspection still identifies a personal private repository and code-scanning 403. Exact PR head `6643fea04a15925239f290010d043adcd6255d57` has both three-platform Engineering runs passing, CodeQL/Dependency Review feature failures, and `REVIEW_REQUIRED` with no reviews. The PR author and all CODEOWNERS are `pdbsy`; that identity cannot approve its own PR. The user selected preparation of a private organization + Code Security solution, without approving purchase or transfer. See the [concrete preparation plan](M3-PRIVATE-ORGANIZATION-READINESS-PLAN.md), including billing assumptions, strict repository-identity migration, base-branch CODEOWNER bootstrapping and unresolved inputs. Required checks and repository settings are unchanged.
