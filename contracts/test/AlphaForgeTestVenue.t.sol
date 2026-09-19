@@ -11,7 +11,7 @@ import { AlphaForgeTestVenue } from "../src/AlphaForgeTestVenue.sol";
 interface VenueVm {
     function deal(address account, uint256 balance) external;
     function prank(address sender) external;
-    function warp(uint256 timestamp) external;
+    function roll(uint256 blockNumber) external;
 }
 
 contract AlphaForgeTestVenueTest {
@@ -76,7 +76,7 @@ contract AlphaForgeTestVenueTest {
 
         VM.prank(TRADER);
         uint256 returned = venue.swap(
-            address(usdc), address(afEth), amountIn, amountOut, RECIPIENT, block.timestamp
+            address(usdc), address(afEth), amountIn, amountOut, RECIPIENT, block.number
         );
 
         require(returned == amountOut, "wrong returned amount");
@@ -113,8 +113,7 @@ contract AlphaForgeTestVenueTest {
         (bool swapSuccess,) = address(venue)
             .call(
                 abi.encodeCall(
-                    venue.swap,
-                    (address(afEth), address(afBtc), 1e18, 0, RECIPIENT, block.timestamp)
+                    venue.swap, (address(afEth), address(afBtc), 1e18, 0, RECIPIENT, block.number)
                 )
             );
         require(!swapSuccess, "unsupported swap accepted");
@@ -132,12 +131,12 @@ contract AlphaForgeTestVenueTest {
             .call(
                 abi.encodeCall(
                     venue.swap,
-                    (address(usdc), address(afEth), amountIn, quote + 1, RECIPIENT, block.timestamp)
+                    (address(usdc), address(afEth), amountIn, quote + 1, RECIPIENT, block.number)
                 )
             );
         require(!slippageSuccess, "slippage limit ignored");
 
-        VM.warp(100);
+        VM.roll(100);
         VM.prank(TRADER);
         (bool deadlineSuccess,) = address(venue)
             .call(
@@ -157,7 +156,7 @@ contract AlphaForgeTestVenueTest {
         (bool recipientSuccess,) = address(venue)
             .call(
                 abi.encodeCall(
-                    venue.swap, (address(usdc), address(afEth), 1, 0, address(0), block.timestamp)
+                    venue.swap, (address(usdc), address(afEth), 1, 0, address(0), block.number)
                 )
             );
         require(!recipientSuccess, "zero recipient accepted");
@@ -175,7 +174,7 @@ contract AlphaForgeTestVenueTest {
         (bool success,) = address(venue).call{ value: 1 }(
             abi.encodeCall(
                 venue.swap,
-                (address(usdc), address(afEth), uint256(1), uint256(0), RECIPIENT, block.timestamp)
+                (address(usdc), address(afEth), uint256(1), uint256(0), RECIPIENT, block.number)
             )
         );
         require(!success, "native value accepted");

@@ -18,7 +18,7 @@ contract AlphaForgeSwapAdapter is ISwapAdapter, ReentrancyGuard {
     error DuplicateAsset();
     error ZeroAmount();
     error InvalidPair(address tokenIn, address tokenOut);
-    error Expired(uint256 deadline, uint256 timestamp);
+    error Expired(uint256 deadlineBlock, uint256 currentBlock);
     error SlippageExceeded(uint256 amountOut, uint256 minimum);
     error UnexpectedBalanceDelta(address token, uint256 expected, uint256 actual);
 
@@ -59,7 +59,9 @@ contract AlphaForgeSwapAdapter is ISwapAdapter, ReentrancyGuard {
         returns (uint256 amountOut)
     {
         if (action.amountIn == 0) revert ZeroAmount();
-        if (block.timestamp > action.deadline) revert Expired(action.deadline, block.timestamp);
+        if (block.number > action.deadlineBlock) {
+            revert Expired(action.deadlineBlock, block.number);
+        }
         _requirePair(action.tokenIn, action.tokenOut);
 
         IERC20 tokenIn = IERC20(action.tokenIn);
@@ -76,7 +78,7 @@ contract AlphaForgeSwapAdapter is ISwapAdapter, ReentrancyGuard {
             action.amountIn,
             action.minAmountOut,
             address(this),
-            action.deadline
+            action.deadlineBlock
         );
         tokenIn.forceApprove(address(venue), 0);
 

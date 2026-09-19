@@ -14,6 +14,7 @@ import { MaliciousVenue } from "./mocks/MaliciousVenue.sol";
 interface AdapterVm {
     function deal(address account, uint256 balance) external;
     function prank(address sender) external;
+    function roll(uint256 blockNumber) external;
 }
 
 contract AlphaForgeSwapAdapterTest {
@@ -87,6 +88,23 @@ contract AlphaForgeSwapAdapterTest {
         (bool success,) = address(adapter).call{ value: 1 }(abi.encodeCall(adapter.swap, action));
         require(!success, "native value accepted");
         require(address(adapter).balance == 0, "adapter retained native value");
+    }
+
+    function test_BlockDeadlineIsInclusiveAndExpiredActionsRevert() public {
+        uint256 amountIn = 1_000e6;
+        require(usdc.transfer(TRADER, amountIn), "trader funding failed");
+        VM.prank(TRADER);
+        require(usdc.approve(address(adapter), amountIn), "adapter approval failed");
+        ProtocolTypes.SwapAction memory action = _action(amountIn);
+        action.deadlineBlock = block.number;
+        VM.roll(block.number + 1);
+
+        VM.prank(TRADER);
+        (bool success,) = address(adapter).call(abi.encodeCall(adapter.swap, action));
+
+        require(!success, "expired block deadline accepted");
+        require(usdc.balanceOf(TRADER) == amountIn, "expired action moved input");
+        require(afEth.balanceOf(TRADER) == 0, "expired action moved output");
     }
 
     function test_VenueAllowanceIsExactDuringSwapAndZeroAfter() public {
@@ -182,7 +200,7 @@ contract AlphaForgeSwapAdapterTest {
             tokenOut: address(afEth),
             amountIn: amountIn,
             minAmountOut: 0,
-            deadline: block.timestamp,
+            deadlineBlock: block.number,
             expectedStateVersion: 7
         });
     }

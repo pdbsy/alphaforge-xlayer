@@ -52,7 +52,7 @@ contract TestVenueHandler {
         uint256 amount = rawAmount % (balance + 1);
         if (amount == 0) return;
         try VENUE.quote(tokenIn, tokenOut, amount) returns (uint256) {
-            VENUE.swap(tokenIn, tokenOut, amount, 0, address(this), block.timestamp);
+            VENUE.swap(tokenIn, tokenOut, amount, 0, address(this), block.number);
         } catch { }
     }
 }

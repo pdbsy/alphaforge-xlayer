@@ -22,7 +22,7 @@ contract AlphaForgeTestVenue is ITestVenue, ReentrancyGuard {
     error DuplicateAsset();
     error ZeroAmount();
     error InvalidPair(address tokenA, address tokenB);
-    error Expired(uint256 deadline, uint256 timestamp);
+    error Expired(uint256 deadlineBlock, uint256 currentBlock);
     error InsufficientLiquidity();
     error SlippageExceeded(uint256 amountOut, uint256 minimum);
     error UnexpectedBalanceDelta(address token, uint256 expected, uint256 actual);
@@ -98,11 +98,11 @@ contract AlphaForgeTestVenue is ITestVenue, ReentrancyGuard {
         uint256 amountIn,
         uint256 minAmountOut,
         address recipient,
-        uint256 deadline
+        uint256 deadlineBlock
     ) external nonReentrant returns (uint256 amountOut) {
         if (amountIn == 0) revert ZeroAmount();
         if (recipient == address(0)) revert ZeroAddress();
-        if (block.timestamp > deadline) revert Expired(deadline, block.timestamp);
+        if (block.number > deadlineBlock) revert Expired(deadlineBlock, block.number);
         (address asset, bool inputIsUsdc) = _resolvePair(tokenIn, tokenOut);
         Reserves storage reserves = pairReserves[asset];
         (uint256 reserveIn, uint256 reserveOut) =

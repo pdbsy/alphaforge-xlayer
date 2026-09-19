@@ -142,7 +142,7 @@ struct SwapAction {
     address tokenOut;
     uint256 amountIn;
     uint256 minAmountOut;
-    uint256 deadline;
+    uint256 deadlineBlock;
     uint256 expectedStateVersion;
 }
 ```
@@ -157,8 +157,9 @@ selector: 0xb359e721
 The Adapter pulls exactly `amountIn` from its caller, approves only the immutable Venue for that
 amount, verifies the Venue's actual input/output deltas, resets the allowance to zero, and sends
 the output to the caller. The eventual Vault must verify `strategyId` and `expectedStateVersion`
-before calling the Adapter. The Adapter has no `execute(address,bytes)`, raw calldata, arbitrary
-target, native-value, admin, or upgrade path.
+before calling the Adapter. `deadlineBlock` is an inclusive Robinhood Chain block height; the
+Adapter and Venue reject the action when `block.number > deadlineBlock`. The Adapter has no
+`execute(address,bytes)`, raw calldata, arbitrary target, native-value, admin, or upgrade path.
 
 ## Pending Vault boundary
 

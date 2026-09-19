@@ -15,7 +15,7 @@ interface ITestVenue {
         uint256 amountIn,
         uint256 minAmountOut,
         address recipient,
-        uint256 deadline
+        uint256 deadlineBlock
     ) external returns (uint256 amountOut);
 
     function getReserves(address tokenA, address tokenB)
