@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import { asAddress, asTransactionHash } from '../packages/chain-adapter/src/types.ts';
 import { ROBINHOOD_CHAIN_TESTNET } from '../packages/robinhood-chain/src/network.ts';
 import {
   TRANSACTION_STATUSES,
@@ -188,13 +189,13 @@ test('reorg, reconciliation failure and stale projection never map to READY', ()
 });
 
 test('wallet submission maps submitted evidence without claiming receipt success', () => {
-  const txHash = `0x${'ab'.repeat(32)}`;
+  const txHash = asTransactionHash(`0x${'ab'.repeat(32)}`);
   assert.deepEqual(
     transactionPresentationFromWalletSubmission({
       operationId: 'deposit-01',
       chainId: ROBINHOOD_CHAIN_TESTNET.chainId,
-      owner: '0x1111111111111111111111111111111111111111',
-      target: '0x2222222222222222222222222222222222222222',
+      owner: asAddress('0x1111111111111111111111111111111111111111'),
+      target: asAddress('0x2222222222222222222222222222222222222222'),
       state: 'SUBMITTED',
       txHash,
       submittedAt: '2026-09-19T09:00:00.000Z',
@@ -215,10 +216,10 @@ test('every ambiguous wallet outcome is non-retryable and never maps to ready', 
     const presentation = transactionPresentationFromWalletSubmission({
       operationId: `deposit-${index}`,
       requestedChainId: ROBINHOOD_CHAIN_TESTNET.chainId,
-      requestedOwner: '0x1111111111111111111111111111111111111111',
-      target: '0x2222222222222222222222222222222222222222',
+      requestedOwner: asAddress('0x1111111111111111111111111111111111111111'),
+      target: asAddress('0x2222222222222222222222222222222222222222'),
       state: 'SUBMISSION_AMBIGUOUS',
-      txHash: index % 2 === 0 ? `0x${'cd'.repeat(32)}` : null,
+      txHash: index % 2 === 0 ? asTransactionHash(`0x${'cd'.repeat(32)}`) : null,
       observedAt: index === 3 ? null : '2026-09-19T09:00:00.000Z',
       reason,
       retryable: false,

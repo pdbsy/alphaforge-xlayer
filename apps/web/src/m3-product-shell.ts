@@ -1,4 +1,5 @@
 import { ROBINHOOD_CHAIN_TESTNET } from '../../../packages/robinhood-chain/src/network.ts';
+import type { WalletSubmission } from './chain-wallet.ts';
 import type { ProductOperationEvidence } from './strategy-adapter.ts';
 
 export const M3_CANONICAL_STRATEGY_ID = 'trend' as const;
@@ -27,6 +28,7 @@ export const TRANSACTION_STATUSES = [
   'WALLET_APPROVAL_REQUIRED',
   'WALLET_PENDING',
   'SUBMITTED',
+  'SUBMISSION_AMBIGUOUS',
   'CONFIRMING',
   'CHAIN_CONFIRMED',
   'INDEXING',
@@ -115,6 +117,8 @@ const transactionMessages: Record<TransactionStatus, string> = {
   WALLET_APPROVAL_REQUIRED: 'Review the action before requesting wallet approval.',
   WALLET_PENDING: 'Waiting for wallet confirmation.',
   SUBMITTED: 'Transaction submitted. Waiting for an RPC receipt.',
+  SUBMISSION_AMBIGUOUS:
+    'Wallet submission outcome is unknown. Do not retry automatically; wait for chain reconciliation.',
   CONFIRMING: 'Transaction is confirming on-chain.',
   CHAIN_CONFIRMED:
     'Transaction receipt succeeded on-chain. AlphaForge is waiting for canonical reconciliation and product readback.',
@@ -133,6 +137,22 @@ export function renderNetworkStatus(status: NetworkStatus): string {
 
 export function renderTransactionStatus(status: TransactionStatus): string {
   return transactionMessages[status];
+}
+
+export function transactionPresentationFromWalletSubmission(
+  submission: WalletSubmission,
+): TransactionPresentation {
+  switch (submission.state) {
+    case 'SUBMITTED':
+      return { status: 'SUBMITTED', txHash: submission.txHash };
+    case 'SUBMISSION_AMBIGUOUS':
+      return {
+        status: 'SUBMISSION_AMBIGUOUS',
+        ...(submission.txHash ? { txHash: submission.txHash } : {}),
+        errorCode: submission.reason,
+        errorMessage: 'Submission outcome is unknown. Do not retry automatically; wait for reconciliation.',
+      };
+  }
 }
 
 const failedTransaction = (errorCode: string, txHash?: string): TransactionPresentation => ({
