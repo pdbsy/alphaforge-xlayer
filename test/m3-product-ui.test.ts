@@ -348,6 +348,8 @@ test('soft-ready chain state is shown without claiming finality', () => {
   assert.match(html, /three confirmations/i);
   assert.match(html, /L1 finality remains unknown/i);
   assert.doesNotMatch(html, /finalized/i);
+  assert.match(html, /Mock provider reads are active/);
+  assert.doesNotMatch(html, /Canonical chain reads are live/);
 });
 
 test('a newly connected owner cannot deposit without both Vault-only token allowances', () => {
