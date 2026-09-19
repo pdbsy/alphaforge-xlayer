@@ -6,11 +6,13 @@ import {
   asHexData,
   asTransactionHash,
   sameAddress,
+  sameHash,
   type Address,
   type BlockHash,
   type HexData,
 } from '../../../packages/chain-adapter/src/types.ts';
 import type { ChainBlock, ChainLog } from '../../../packages/chain-adapter/src/rpc.ts';
+import type { ProductOperationEvidence } from '../../../packages/chain-adapter/src/reconciliation.ts';
 import type {
   ChainOperation,
   OperationErrorCode,
@@ -75,6 +77,7 @@ const errorCodes = new Set<OperationErrorCode>([
   'CONTRACT_STATE_MISMATCH',
   'RPC_UNAVAILABLE',
 ]);
+const MAX_PRODUCT_EVIDENCE_ANCESTRY_BLOCKS = 2_000;
 const receiptStatuses = new Set(['SUCCESS', 'REVERTED']);
 const namePattern = /^[A-Za-z][A-Za-z0-9._-]{0,127}$/;
 
@@ -1247,6 +1250,112 @@ export class ChainStore {
       });
     } catch {
       throw new Error('CORRUPT_CHAIN_DATABASE');
+    }
+  }
+
+  operationEvidence(operationId: string, projectionKey: string): ProductOperationEvidence | null {
+    this.db.exec('BEGIN');
+    try {
+      const operation = this.operation(operationId);
+      if (!operation) {
+        this.db.exec('COMMIT');
+        return null;
+      }
+      const reconciliation =
+        operation.state === 'RECONCILIATION_FAILED' ? 'FAILED' : operation.reconciled ? 'MATCHED' : 'PENDING';
+      let projectionMilestone: ProductOperationEvidence['projection'] = 'PENDING';
+      if (operation.state === 'REORGED') {
+        projectionMilestone = 'STALE';
+      } else {
+        const projection = this.projection(
+          operation.chainId,
+          operation.owner,
+          operation.target,
+          projectionKey,
+        );
+        if (projection) {
+          const checkpoint = this.checkpoint(operation.chainId, operation.target);
+          let canonicalAncestry =
+            operation.canonical &&
+            operation.blockNumber !== null &&
+            operation.blockHash !== null &&
+            projection.chainId === operation.chainId &&
+            sameAddress(projection.owner, operation.owner) &&
+            sameAddress(projection.contract, operation.target) &&
+            checkpoint !== null &&
+            projection.blockNumber >= operation.blockNumber! &&
+            projection.blockNumber <= checkpoint!.blockNumber;
+
+          if (canonicalAncestry) {
+            const start = safeNumber(operation.blockNumber!);
+            const end = safeNumber(checkpoint!.blockNumber);
+            const expectedBlockCount = end - start + 1;
+            canonicalAncestry = expectedBlockCount <= MAX_PRODUCT_EVIDENCE_ANCESTRY_BLOCKS;
+            if (canonicalAncestry) {
+              const blocks = this.db
+                .prepare(
+                  `SELECT block_number, block_hash, parent_hash
+                   FROM chain_blocks
+                   WHERE chain_id = ? AND contract_address = ? AND canonical = 1
+                     AND block_number BETWEEN ? AND ?
+                   ORDER BY block_number`,
+                )
+                .iterate(chainId(operation.chainId), normalizedAddress(operation.target), start, end);
+              let observedBlockCount = 0;
+              let previousHash: string | null = null;
+              let projectionWitnessed = false;
+              for (const value of blocks) {
+                const block = value as unknown as {
+                  block_number: number;
+                  block_hash: string;
+                  parent_hash: string;
+                };
+                const expectedNumber = start + observedBlockCount;
+                if (
+                  block.block_number !== expectedNumber ||
+                  (observedBlockCount === 0 &&
+                    !sameHash(asBlockHash(block.block_hash), operation.blockHash!)) ||
+                  (previousHash !== null &&
+                    !sameHash(asBlockHash(block.parent_hash), asBlockHash(previousHash)))
+                ) {
+                  canonicalAncestry = false;
+                  break;
+                }
+                if (BigInt(block.block_number) === projection.blockNumber) {
+                  projectionWitnessed = sameHash(asBlockHash(block.block_hash), projection.blockHash);
+                }
+                previousHash = block.block_hash;
+                observedBlockCount++;
+              }
+              canonicalAncestry =
+                canonicalAncestry &&
+                observedBlockCount === expectedBlockCount &&
+                projectionWitnessed &&
+                previousHash !== null &&
+                sameHash(asBlockHash(previousHash), checkpoint!.blockHash);
+            }
+          }
+          projectionMilestone = canonicalAncestry ? 'READY' : 'STALE';
+        }
+      }
+
+      const evidence = Object.freeze({
+        lifecycle: operation.state,
+        receipt: operation.receiptStatus ?? 'PENDING',
+        confirmations: operation.confirmations,
+        reconciliation,
+        projection: projectionMilestone,
+        productReady:
+          operation.state === 'CONFIRMED' &&
+          operation.canonical &&
+          reconciliation === 'MATCHED' &&
+          projectionMilestone === 'READY',
+      }) satisfies ProductOperationEvidence;
+      this.db.exec('COMMIT');
+      return evidence;
+    } catch (error) {
+      if (this.db.isTransaction) this.db.exec('ROLLBACK');
+      throw error;
     }
   }
 

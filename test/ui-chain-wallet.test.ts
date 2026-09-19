@@ -8,16 +8,13 @@ import {
   type Eip1193Request,
   type PreparedAction,
 } from '../apps/web/src/chain-wallet.ts';
-import { operationEvidence, type ChainProjectionReference } from '../apps/web/src/strategy-adapter.ts';
-import { createOperation, transitionOperation } from '../packages/chain-adapter/src/lifecycle.ts';
-import { asAddress, asBlockHash, asHexData, asTransactionHash } from '../packages/chain-adapter/src/types.ts';
+import { asAddress, asHexData, asTransactionHash } from '../packages/chain-adapter/src/types.ts';
 
 const CHAIN_ID = 46_630;
 const OWNER = asAddress('0x1111111111111111111111111111111111111111');
 const OTHER_OWNER = asAddress('0x3333333333333333333333333333333333333333');
 const CONTRACT = asAddress('0x2222222222222222222222222222222222222222');
 const TX_HASH = asTransactionHash(`0x${'aa'.repeat(32)}`);
-const BLOCK_HASH = asBlockHash(`0x${'bb'.repeat(32)}`);
 
 class ProviderFixture implements Eip1193Provider {
   readonly methods: string[] = [];
@@ -321,68 +318,4 @@ test('prepared action factory rejects values outside the EVM uint256 range', () 
     encode: () => ({ data: asHexData('0x'), value: 1n << 256n }),
   });
   assert.throws(() => invalidFactory.prepare(null, OWNER), /INVALID_TRANSACTION_VALUE/);
-});
-
-test('operation evidence keeps receipt, reconciliation and product projection milestones separate', () => {
-  const submitted = transitionOperation(
-    createOperation({
-      operationId: 'operation-view',
-      chainId: CHAIN_ID,
-      owner: OWNER,
-      target: CONTRACT,
-      state: 'AWAITING_SIGNATURE',
-    }),
-    { state: 'SUBMITTED', txHash: TX_HASH, submittedAt: '2026-09-14T12:00:00.000Z' },
-  );
-  const mined = transitionOperation(submitted, {
-    state: 'MINED',
-    blockNumber: 100n,
-    blockHash: BLOCK_HASH,
-    receiptStatus: 'SUCCESS',
-  });
-  const confirming = transitionOperation(mined, {
-    state: 'CONFIRMING',
-    confirmations: 2,
-    reconciled: true,
-  });
-  assert.deepEqual(operationEvidence(confirming, null), {
-    lifecycle: 'CONFIRMING',
-    receipt: 'SUCCESS',
-    confirmations: 2,
-    reconciliation: 'MATCHED',
-    projection: 'PENDING',
-    productReady: false,
-  });
-  const confirmed = transitionOperation(confirming, {
-    state: 'CONFIRMED',
-    confirmations: 3,
-    reconciled: true,
-    confirmedAt: '2026-09-14T12:01:00.000Z',
-  });
-  const projection: ChainProjectionReference = {
-    chainId: CHAIN_ID,
-    owner: OWNER,
-    contract: CONTRACT,
-    blockNumber: 100n,
-    blockHash: BLOCK_HASH,
-    stale: false,
-  };
-  assert.equal(operationEvidence(confirmed, projection).productReady, true);
-  assert.deepEqual(
-    operationEvidence(
-      transitionOperation(confirmed, {
-        state: 'REORGED',
-        errorCode: 'CHAIN_REORG',
-      }),
-      projection,
-    ),
-    {
-      lifecycle: 'REORGED',
-      receipt: 'SUCCESS',
-      confirmations: 3,
-      reconciliation: 'PENDING',
-      projection: 'STALE',
-      productReady: false,
-    },
-  );
 });

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdir, mkdtemp } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { ChainStore } from '../apps/server/src/chain-store.ts';
-import { ChainSynchronizer } from '../apps/server/src/chain-sync.ts';
+import { ChainSynchronizer, type ChainSynchronizerOptions } from '../apps/server/src/chain-sync.ts';
 import type {
   ContractIntegration,
   DecodedContractEvent,
@@ -192,19 +192,44 @@ function submitted(operationId: string, hash: TransactionHash) {
   );
 }
 
+function createSynchronizer(
+  options: Omit<ChainSynchronizerOptions, 'maxReorgDepth'> & {
+    readonly maxReorgDepth?: number;
+  },
+): ChainSynchronizer {
+  return new ChainSynchronizer({ maxReorgDepth: 8, ...options });
+}
+
+test('indexer requires an explicit reorg-depth policy', async () => {
+  const store = new ChainStore(await databasePath());
+  const rpc = new FixtureRpc();
+  assert.throws(
+    () =>
+      new ChainSynchronizer({
+        rpc,
+        store,
+        manifest,
+        integration,
+        confirmationDepth: 1,
+      } as unknown as ChainSynchronizerOptions),
+    /INVALID_CHAIN_SYNC_POLICY/,
+  );
+  store.close();
+});
+
 test('indexer replay and restart keep one event and rebuildable wallet projection', async () => {
   const path = await databasePath();
   const rpc = new FixtureRpc();
   rpc.blocks.set(100n, block(100n, HASH_100, HASH_99));
   rpc.receipts.set(TX_A, receipt(TX_A, 100n, HASH_100));
   let store = new ChainStore(path);
-  let sync = new ChainSynchronizer({ rpc, store, manifest, integration, confirmationDepth: 3 });
+  let sync = createSynchronizer({ rpc, store, manifest, integration, confirmationDepth: 3 });
   assert.deepEqual(await sync.syncTo(100n), { scannedBlocks: 1, insertedEvents: 1, reorgedBlocks: 0 });
   assert.deepEqual(await sync.syncTo(100n), { scannedBlocks: 0, insertedEvents: 0, reorgedBlocks: 0 });
   store.close();
 
   store = new ChainStore(path);
-  sync = new ChainSynchronizer({ rpc, store, manifest, integration, confirmationDepth: 3 });
+  sync = createSynchronizer({ rpc, store, manifest, integration, confirmationDepth: 3 });
   assert.deepEqual(await sync.syncTo(100n), { scannedBlocks: 0, insertedEvents: 0, reorgedBlocks: 0 });
   assert.equal(store.canonicalEvents(CHAIN_ID, CONTRACT).length, 1);
   assert.deepEqual(store.projection(CHAIN_ID, OWNER, CONTRACT, 'trend-vault')?.state, {
@@ -227,7 +252,7 @@ test('receipt and tx hash remain confirming until canonical event reconciliation
   rpc.head = 101n;
   const store = new ChainStore(await databasePath());
   store.saveOperation(submitted('operation-confirm', TX_A));
-  const sync = new ChainSynchronizer({
+  const sync = createSynchronizer({
     rpc,
     store,
     manifest,
@@ -269,7 +294,7 @@ test('delayed operation reconciliation cannot overwrite a newer synchronized pro
   };
   const store = new ChainStore(await databasePath());
   store.saveOperation(submitted('operation-delayed-reconciliation', TX_A));
-  const sync = new ChainSynchronizer({
+  const sync = createSynchronizer({
     rpc,
     store,
     manifest,
@@ -310,7 +335,7 @@ test('same-block operation reconciliation cannot replace the rebuilt final proje
   };
   const store = new ChainStore(await databasePath());
   store.saveOperation(submitted('operation-same-block-reconciliation', TX_A));
-  const sync = new ChainSynchronizer({
+  const sync = createSynchronizer({
     rpc,
     store,
     manifest,
@@ -331,7 +356,7 @@ test('unexpected event evidence fails closed after a successful receipt', async 
   rpc.receipts.set(TX_A, receipt(TX_A, 100n, HASH_100, 'SUCCESS', [log(TX_A, 100n, HASH_100, UNKNOWN_SIG)]));
   const store = new ChainStore(await databasePath());
   store.saveOperation(submitted('operation-mismatch', TX_A));
-  const sync = new ChainSynchronizer({ rpc, store, manifest, integration, confirmationDepth: 1 });
+  const sync = createSynchronizer({ rpc, store, manifest, integration, confirmationDepth: 1 });
   const result = await sync.trackOperation('operation-mismatch');
   assert.equal(result.state, 'RECONCILIATION_FAILED');
   assert.equal(result.errorCode, 'EVENT_EVIDENCE_MISMATCH');
@@ -345,7 +370,7 @@ test('reverted receipt never creates a confirmed projection', async () => {
   rpc.receipts.set(TX_A, receipt(TX_A, 100n, HASH_100, 'REVERTED', []));
   const store = new ChainStore(await databasePath());
   store.saveOperation(submitted('operation-reverted', TX_A));
-  const sync = new ChainSynchronizer({ rpc, store, manifest, integration, confirmationDepth: 1 });
+  const sync = createSynchronizer({ rpc, store, manifest, integration, confirmationDepth: 1 });
   const result = await sync.trackOperation('operation-reverted');
   assert.equal(result.state, 'REVERTED');
   assert.equal(result.receiptStatus, 'REVERTED');
@@ -361,7 +386,7 @@ test('block-hash mismatch rewinds to a common ancestor and replays the canonical
   rpc.head = 101n;
   const store = new ChainStore(await databasePath());
   store.saveOperation(submitted('operation-reorg', TX_A));
-  const sync = new ChainSynchronizer({ rpc, store, manifest, integration, confirmationDepth: 1 });
+  const sync = createSynchronizer({ rpc, store, manifest, integration, confirmationDepth: 1 });
   assert.equal((await sync.trackOperation('operation-reorg')).state, 'CONFIRMED');
 
   rpc.blocks.set(101n, block(101n, HASH_101_ALT, HASH_100));
@@ -381,7 +406,7 @@ test('replacement and dropped outcomes require explicit backend evidence', async
   const store = new ChainStore(await databasePath());
   store.saveOperation(submitted('operation-replaced', TX_A));
   store.saveOperation(submitted('operation-dropped', TX_B));
-  const sync = new ChainSynchronizer({ rpc, store, manifest, integration, confirmationDepth: 1 });
+  const sync = createSynchronizer({ rpc, store, manifest, integration, confirmationDepth: 1 });
   assert.equal(sync.recordReplacement('operation-replaced', TX_B).state, 'REPLACED');
   assert.equal(sync.recordDropped('operation-dropped').state, 'DROPPED');
   store.close();
@@ -392,7 +417,7 @@ test('wrong-chain RPC fails before any checkpoint or projection is persisted', a
   rpc.networkChainId = 1;
   rpc.blocks.set(100n, block(100n, HASH_100, HASH_99));
   const store = new ChainStore(await databasePath());
-  const sync = new ChainSynchronizer({ rpc, store, manifest, integration, confirmationDepth: 1 });
+  const sync = createSynchronizer({ rpc, store, manifest, integration, confirmationDepth: 1 });
   await assert.rejects(() => sync.syncTo(100n), { code: 'CHAIN_ID_MISMATCH' });
   assert.equal(store.checkpoint(CHAIN_ID, CONTRACT), null);
   store.close();
@@ -407,7 +432,7 @@ test('provider logs outside the trusted contract and block fail closed', async (
   };
   rpc.receipts.set(TX_A, receipt(TX_A, 100n, HASH_100, 'SUCCESS', [foreignLog]));
   const store = new ChainStore(await databasePath());
-  const sync = new ChainSynchronizer({ rpc, store, manifest, integration, confirmationDepth: 1 });
+  const sync = createSynchronizer({ rpc, store, manifest, integration, confirmationDepth: 1 });
   await assert.rejects(() => sync.syncTo(100n), { code: 'CHAIN_LOG_MISMATCH' });
   assert.equal(store.checkpoint(CHAIN_ID, CONTRACT), null);
   store.close();
@@ -424,7 +449,7 @@ test('projection rebuild failure removes the partially indexed canonical block',
       throw new Error('fixture failure');
     },
   };
-  const sync = new ChainSynchronizer({
+  const sync = createSynchronizer({
     rpc,
     store,
     manifest,
@@ -444,7 +469,7 @@ test('cross-fork parent mismatch keeps an incomplete prefix unreadable until rec
   rpc.blocks.set(101n, block(101n, HASH_101, HASH_100));
   rpc.receipts.set(TX_A, receipt(TX_A, 100n, HASH_100_ALT));
   let store = new ChainStore(path);
-  let sync = new ChainSynchronizer({ rpc, store, manifest, integration, confirmationDepth: 1 });
+  let sync = createSynchronizer({ rpc, store, manifest, integration, confirmationDepth: 1 });
 
   await assert.rejects(() => sync.syncTo(101n), { code: 'CHAIN_BLOCK_MISMATCH' });
   assert.deepEqual(store.checkpoint(CHAIN_ID, CONTRACT), {
@@ -464,7 +489,7 @@ test('cross-fork parent mismatch keeps an incomplete prefix unreadable until rec
 
   store = new ChainStore(path);
   assert.throws(() => store.projection(CHAIN_ID, OWNER, CONTRACT, 'trend-vault'), /CHAIN_SYNC_UNHEALTHY/);
-  sync = new ChainSynchronizer({ rpc, store, manifest, integration, confirmationDepth: 1 });
+  sync = createSynchronizer({ rpc, store, manifest, integration, confirmationDepth: 1 });
   await assert.rejects(() => sync.syncTo(100n), { code: 'CHAIN_SYNC_TARGET_BEHIND' });
   assert.throws(() => store.projection(CHAIN_ID, OWNER, CONTRACT, 'trend-vault'), /CHAIN_SYNC_UNHEALTHY/);
   rpc.blocks.set(101n, block(101n, HASH_101, HASH_100_ALT));
@@ -492,7 +517,7 @@ test('concurrent sync requests are serialized before they inspect mutable RPC co
     return CHAIN_ID;
   };
   const store = new ChainStore(await databasePath());
-  const sync = new ChainSynchronizer({ rpc, store, manifest, integration, confirmationDepth: 1 });
+  const sync = createSynchronizer({ rpc, store, manifest, integration, confirmationDepth: 1 });
   await Promise.all([sync.syncTo(100n), sync.syncTo(101n)]);
   assert.equal(maximumConcurrentChainChecks, 1);
   assert.deepEqual(store.checkpoint(CHAIN_ID, CONTRACT), {
@@ -536,14 +561,14 @@ test('separate synchronizers cannot clear a higher incomplete target through a l
   };
 
   const store = new ChainStore(await databasePath());
-  const lowSync = new ChainSynchronizer({
+  const lowSync = createSynchronizer({
     rpc: lowRpc,
     store,
     manifest,
     integration,
     confirmationDepth: 1,
   });
-  const highSync = new ChainSynchronizer({
+  const highSync = createSynchronizer({
     rpc: highRpc,
     store,
     manifest,
@@ -566,7 +591,7 @@ test('separate synchronizers cannot clear a higher incomplete target through a l
   await assert.rejects(() => highAttempt, { code: 'CHAIN_BLOCK_UNAVAILABLE' });
   assert.equal(store.syncTarget(CHAIN_ID, CONTRACT), 101n);
 
-  const recovery = new ChainSynchronizer({
+  const recovery = createSynchronizer({
     rpc: highRpc,
     store,
     manifest,
@@ -599,14 +624,14 @@ test('a stale lower-head synchronizer cannot roll back a completed higher-head s
 
   const lowStore = new ChainStore(path);
   const highStore = new ChainStore(path);
-  const lowSync = new ChainSynchronizer({
+  const lowSync = createSynchronizer({
     rpc: lowRpc,
     store: lowStore,
     manifest,
     integration,
     confirmationDepth: 1,
   });
-  const highSync = new ChainSynchronizer({
+  const highSync = createSynchronizer({
     rpc: highRpc,
     store: highStore,
     manifest,
@@ -645,7 +670,7 @@ test('restart rebuilds a projection when a block checkpoint committed before pro
   ]);
   assert.equal(store.projectionCheckpoint(CHAIN_ID, CONTRACT), null);
   assert.throws(() => store.projection(CHAIN_ID, OWNER, CONTRACT, 'trend-vault'), /CHAIN_PROJECTION_PENDING/);
-  const sync = new ChainSynchronizer({ rpc, store, manifest, integration, confirmationDepth: 1 });
+  const sync = createSynchronizer({ rpc, store, manifest, integration, confirmationDepth: 1 });
   assert.deepEqual(await sync.syncTo(100n), { scannedBlocks: 0, insertedEvents: 0, reorgedBlocks: 0 });
   assert.deepEqual(store.projectionCheckpoint(CHAIN_ID, CONTRACT), {
     blockNumber: 100n,
@@ -663,7 +688,7 @@ test('temporarily unavailable checkpoint block blocks reads without destructive 
   rpc.blocks.set(100n, block(100n, HASH_100, HASH_99));
   rpc.receipts.set(TX_A, receipt(TX_A, 100n, HASH_100));
   const store = new ChainStore(await databasePath());
-  const sync = new ChainSynchronizer({ rpc, store, manifest, integration, confirmationDepth: 1 });
+  const sync = createSynchronizer({ rpc, store, manifest, integration, confirmationDepth: 1 });
   await sync.syncTo(100n);
   rpc.blocks.delete(100n);
   rpc.blocks.set(101n, block(101n, HASH_101, HASH_100));
@@ -693,7 +718,7 @@ test('reorg beyond the configured search bound marks projections unhealthy', asy
   rpc.receipts.set(TX_A, receipt(TX_A, 100n, HASH_100));
   rpc.head = 102n;
   const store = new ChainStore(await databasePath());
-  const sync = new ChainSynchronizer({
+  const sync = createSynchronizer({
     rpc,
     store,
     manifest,
