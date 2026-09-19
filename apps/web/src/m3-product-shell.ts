@@ -365,13 +365,17 @@ function onchainCard(onchain: OnchainProductPresentation): string {
       : 'NOT DEPLOYED — no verified Vault address or deployment manifest is configured.';
   const healthMessage =
     onchain.health === 'DEGRADED'
-      ? `INDEXER DEGRADED. Owner exit remains available through ${
-          onchain.exitPath === 'SIMULATION'
-            ? 'live RPC simulation'
-            : onchain.exitPath === 'LIVE_RPC'
-              ? 'live RPC'
-              : 'no verified exit path'
-        }.`
+      ? onchain.owner === 'NON_OWNER'
+        ? 'INDEXER DEGRADED. Current wallet is not the Vault owner; owner exits are unavailable.'
+        : onchain.owner === 'OWNER'
+          ? `INDEXER DEGRADED. Owner exit remains available through ${
+              onchain.exitPath === 'SIMULATION'
+                ? 'live RPC simulation'
+                : onchain.exitPath === 'LIVE_RPC'
+                  ? 'live RPC'
+                  : 'no verified exit path'
+            }.`
+          : 'INDEXER DEGRADED. Vault ownership is unknown; owner exits remain unavailable.'
       : onchain.health === 'LIVE'
         ? onchain.writeMode === 'INJECTED_MOCK'
           ? 'Mock provider reads are active.'

@@ -469,6 +469,26 @@ test('degraded indexer preserves owner withdraw and close through live RPC simul
   assert.match(html, /<button[^>]*data-chain-action="deposit"[^>]*disabled[^>]*>Deposit<\/button>/);
 });
 
+test('degraded indexer identifies a non-owner wallet without implying an owner exit path', () => {
+  const html = renderM3StrategyShell({
+    strategyId: 'trend',
+    contentProvenance: 'FIXTURE',
+    onchain: {
+      deployment: 'CONFIGURED',
+      health: 'DEGRADED',
+      readiness: 'FINALITY_UNKNOWN',
+      owner: 'NON_OWNER',
+      writeMode: 'DISABLED',
+      exitPath: 'UNAVAILABLE',
+      supportedActions: ['withdraw', 'close'],
+      vaultAddress: '0x2222222222222222222222222222222222222222',
+    },
+  });
+
+  assert.match(html, /Current wallet is not the Vault owner; owner exits are unavailable/);
+  assert.doesNotMatch(html, /Owner exit remains available/);
+});
+
 test('chain writes remain disabled without explicit write mode or wallet ownership', () => {
   for (const onchain of [
     {

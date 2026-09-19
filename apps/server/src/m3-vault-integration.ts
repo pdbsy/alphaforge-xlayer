@@ -235,13 +235,6 @@ export class M3VaultContractIntegration implements ContractIntegration {
       if (!sameAddress(state.owner, context.operation.owner))
         return { status: 'MISMATCH', errorCode: 'CONTRACT_STATE_MISMATCH' };
       if (
-        (action.kind === 'DEPOSIT' || action.kind === 'WITHDRAW') &&
-        (field(event, 'principalBasis') !== state.principalBasis ||
-          field(event, 'trackedUsdcBalance') !== state.trackedUsdcBalance ||
-          state.closed)
-      )
-        return { status: 'MISMATCH', errorCode: 'CONTRACT_STATE_MISMATCH' };
-      if (
         action.kind === 'CLOSE' &&
         (!state.closed ||
           state.principalBasis !== '0' ||

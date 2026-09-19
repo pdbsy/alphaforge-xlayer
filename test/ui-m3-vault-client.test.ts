@@ -1,6 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { M3VaultApiClient, M3VaultReadFailure } from '../apps/web/src/m3-vault-client.ts';
+import {
+  M3VaultApiClient,
+  M3VaultReadFailure,
+  M3VaultSubmissionFailure,
+} from '../apps/web/src/m3-vault-client.ts';
 import { asAddress, asBlockHash, asHexData, asTransactionHash } from '../packages/chain-adapter/src/types.ts';
 import { encodeM3VaultCall } from '../packages/chain-adapter/src/vault-abi.ts';
 
@@ -119,6 +123,39 @@ test('web Vault client registers exact wallet submission identity through the sa
       },
     },
   ]);
+});
+
+test('web Vault submission client rejects extra input authority and conflicting responses', async () => {
+  const input = {
+    operationId: 'web-submission-2',
+    chainId: 46_630,
+    owner: OWNER,
+    target: CONTRACT,
+    calldata: encodeM3VaultCall('close()', []),
+    txHash: asTransactionHash(`0x${'cc'.repeat(32)}`),
+  } as const;
+  const client = new M3VaultApiClient(
+    async () =>
+      new Response(
+        JSON.stringify({
+          ...input,
+          owner: CREATOR,
+          state: 'SUBMITTED',
+          submittedAt: '2026-09-20T00:00:00.000Z',
+        }),
+        { status: 202 },
+      ),
+  );
+  await assert.rejects(
+    () => client.registerSubmission({ ...input, productReady: true } as typeof input),
+    (error: unknown) =>
+      error instanceof M3VaultSubmissionFailure && error.code === 'M3_VAULT_SUBMISSION_FAILED',
+  );
+  await assert.rejects(
+    () => client.registerSubmission(input),
+    (error: unknown) =>
+      error instanceof M3VaultSubmissionFailure && error.code === 'M3_VAULT_SUBMISSION_FAILED',
+  );
 });
 
 test('web Vault client reads exact operation evidence for the registered owner', async () => {

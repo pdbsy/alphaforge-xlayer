@@ -222,7 +222,7 @@ export class ChainSynchronizer {
     }
   }
 
-  async syncTo(head: bigint): Promise<ChainSyncResult> {
+  async syncTo(head: bigint, requiredTarget: bigint = head): Promise<ChainSyncResult> {
     const previous = this.#syncTail;
     let release!: () => void;
     const turn = new Promise<void>((resolve) => {
@@ -231,7 +231,7 @@ export class ChainSynchronizer {
     this.#syncTail = previous.then(() => turn);
     await previous;
     try {
-      return await this.#syncTo(head);
+      return await this.#syncTo(head, requiredTarget);
     } catch (error) {
       if (
         error instanceof Error &&
@@ -244,20 +244,30 @@ export class ChainSynchronizer {
     }
   }
 
-  async #syncTo(head: bigint): Promise<ChainSyncResult> {
+  async #syncTo(head: bigint, requiredTarget: bigint): Promise<ChainSyncResult> {
     await this.#assertChain();
     if (head < this.#manifest.deploymentBlock) throw new ChainSyncFailure('CHAIN_HEAD_BEFORE_DEPLOYMENT');
+    if (requiredTarget < head) throw new ChainSyncFailure('CHAIN_SYNC_TARGET_BEHIND');
     const remoteHead = await this.#rpc.block(head);
     if (!remoteHead) throw new ChainSyncFailure('CHAIN_HEAD_UNAVAILABLE');
     if (remoteHead.number !== head) throw new ChainSyncFailure('CHAIN_BLOCK_MISMATCH');
 
     const ownerToken = randomUUID();
-    this.#store.claimSync(this.#manifest.chainId, this.#manifest.contractAddress, head, ownerToken);
+    this.#store.claimSync(this.#manifest.chainId, this.#manifest.contractAddress, requiredTarget, ownerToken);
     const reorgedBlocks = await this.#rewindIfNeeded(ownerToken);
     await this.#recoverProjection(ownerToken);
     const checkpoint = this.#store.checkpoint(this.#manifest.chainId, this.#manifest.contractAddress);
     const start = checkpoint ? checkpoint.blockNumber + 1n : this.#manifest.deploymentBlock;
     if (start > head) {
+      if (head < requiredTarget) {
+        this.#store.releaseSyncIncomplete(
+          this.#manifest.chainId,
+          this.#manifest.contractAddress,
+          requiredTarget,
+          ownerToken,
+        );
+        return { scannedBlocks: 0, insertedEvents: 0, reorgedBlocks };
+      }
       if (
         !this.#store.markSyncHealthy(this.#manifest.chainId, this.#manifest.contractAddress, head, ownerToken)
       )
@@ -286,7 +296,7 @@ export class ChainSynchronizer {
         this.#manifest.contractAddress,
         current,
         events,
-        head,
+        requiredTarget,
         ownerToken,
       ).insertedEvents;
       try {
@@ -308,14 +318,21 @@ export class ChainSynchronizer {
         throw new ChainSyncFailure('PROJECTION_REBUILD_FAILED');
       }
     }
-    if (
+    if (head < requiredTarget)
+      this.#store.releaseSyncIncomplete(
+        this.#manifest.chainId,
+        this.#manifest.contractAddress,
+        requiredTarget,
+        ownerToken,
+      );
+    else if (
       !this.#store.markSyncHealthy(this.#manifest.chainId, this.#manifest.contractAddress, head, ownerToken)
     )
       throw new Error('CHAIN_SYNC_SUPERSEDED');
     return { scannedBlocks: count, insertedEvents, reorgedBlocks };
   }
 
-  async trackOperation(operationId: string): Promise<ChainOperation> {
+  async trackOperation(operationId: string, synchronizedHead?: ChainBlock): Promise<ChainOperation> {
     let operation = this.#store.operation(operationId);
     if (!operation) throw new ChainSyncFailure('OPERATION_NOT_FOUND');
     if (
@@ -326,14 +343,20 @@ export class ChainSynchronizer {
       throw new ChainSyncFailure('OPERATION_NOT_TRACKABLE');
     const transactionHash = operation.txHash;
 
-    const latest = await this.#rpc.block('latest');
+    const latest = synchronizedHead ?? (await this.#rpc.block('latest'));
     if (!latest) throw new ChainSyncFailure('CHAIN_HEAD_UNAVAILABLE');
-    await this.syncTo(latest.number);
+    if (!synchronizedHead) await this.syncTo(latest.number);
     const synchronizedCheckpoint = this.#store.checkpoint(
       this.#manifest.chainId,
       this.#manifest.contractAddress,
     );
-    if (!synchronizedCheckpoint) throw new ChainSyncFailure('CHAIN_SYNC_SUPERSEDED');
+    if (
+      !synchronizedCheckpoint ||
+      synchronizedCheckpoint.blockNumber !== latest.number ||
+      !sameHash(synchronizedCheckpoint.blockHash, latest.hash) ||
+      !this.#store.syncHealth(this.#manifest.chainId, this.#manifest.contractAddress).healthy
+    )
+      throw new ChainSyncFailure('CHAIN_SYNC_SUPERSEDED');
     operation = this.#store.operation(operationId)!;
     const receipt = await this.#rpc.receipt(transactionHash);
     if (!receipt) return operation;

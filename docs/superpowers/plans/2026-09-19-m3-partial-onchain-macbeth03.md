@@ -220,6 +220,33 @@ Run: `/opt/homebrew/bin/fnm exec --using=24.21.0 -- npm run check`
 - [x] **Step 4: Implement live allowance reads and fixed exact approvals without arbitrary spender/target/value**
 - [x] **Step 5: Re-run independent review, full checks, C→R→S, push, and report**
 
+### Task 6: Executable startup and wallet-submission registration
+
+**Files:**
+
+- Create: `apps/server/src/m3-startup.ts`
+- Create: `apps/server/src/m3-main.ts`
+- Modify: `apps/server/src/chain-routes.ts`
+- Modify: `apps/server/src/m3-chain-runtime.ts`
+- Modify: `apps/web/src/m3-vault-client.ts`
+- Test: `test/chain-startup.test.ts`
+- Test: `test/chain-api.test.ts`
+- Test: `test/ui-m3-vault-client.test.ts`
+
+**Interfaces:**
+
+- Adds an executable `m3:server` path whose checked-in deployment state is inert `NOT_DEPLOYED`.
+- Composes runtime → app → bounded initial/periodic sync → one close lifecycle, with injected read-only RPC support for the same composition test.
+- Persists an unavailable target across bounded catch-up passes, rotates the pending-operation queue, and isolates a failing receipt from later operation tracking.
+- Registers only pending wallet identity/calldata/transaction hash; client-supplied lifecycle, receipt, projection and readiness are rejected.
+- Tracks registered operations through independent canonical RPC evidence, including legal earlier operations followed by a same-block close.
+
+- [x] **Step 1: Add RED API/startup/client/same-block tests**
+- [x] **Step 2: Implement inert executable startup and bounded runtime synchronization**
+- [x] **Step 3: Implement strict same-origin submission registration and client**
+- [x] **Step 4: Preserve per-transaction evidence while using block-end views only for final projection**
+- [ ] **Step 5: Re-run independent review, full checks, append-only source/evidence commits, push, and report**
+
 ## Self-Review
 
 - Spec coverage: policy 3/128, confirmation formula, persistent transaction/log/block identity, rollback/replay/degraded, L1/finality unknown, server evidence composition, wallet preflight, direct-exit independence, docs and delivery are covered. Contract accounting and UI rendering remain owned by Macbeth02 and Macbeth04 and require their exact artifacts.

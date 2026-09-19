@@ -10,6 +10,7 @@ import {
   type Address,
   type BlockHash,
   type HexData,
+  type TransactionHash,
 } from '../../../packages/chain-adapter/src/types.ts';
 import type { ChainBlock, ChainLog } from '../../../packages/chain-adapter/src/rpc.ts';
 import type { ProductOperationEvidence } from '../../../packages/chain-adapter/src/reconciliation.ts';
@@ -739,6 +740,43 @@ export class ChainStore {
     }
   }
 
+  releaseSyncIncomplete(
+    valueChainId: number,
+    contract: Address,
+    targetBlock: bigint,
+    ownerToken: string,
+  ): void {
+    const id = chainId(valueChainId);
+    const address = normalizedAddress(contract);
+    const target = safeNumber(targetBlock);
+    this.db.exec('BEGIN IMMEDIATE');
+    try {
+      this.#assertSyncOwner(id, address, ownerToken);
+      const checkpoint = this.db
+        .prepare(
+          `UPDATE chain_checkpoints
+           SET sync_healthy = 0, sync_error = 'CHAIN_SYNC_INCOMPLETE',
+             sync_target_block_number = CASE
+               WHEN sync_target_block_number IS NULL OR sync_target_block_number < ? THEN ?
+               ELSE sync_target_block_number
+             END
+           WHERE chain_id = ? AND contract_address = ?`,
+        )
+        .run(target, target, id, address);
+      if (checkpoint.changes !== 1) throw new Error('CHAIN_CHECKPOINT_NOT_FOUND');
+      const released = this.db
+        .prepare(
+          'DELETE FROM chain_sync_leases WHERE chain_id = ? AND contract_address = ? AND owner_token = ?',
+        )
+        .run(id, address, ownerToken);
+      if (released.changes !== 1) throw new Error('CHAIN_SYNC_SUPERSEDED');
+      this.db.exec('COMMIT');
+    } catch (error) {
+      if (this.db.isTransaction) this.db.exec('ROLLBACK');
+      throw error;
+    }
+  }
+
   syncTarget(valueChainId: number, contract: Address): bigint | null {
     const row = this.db
       .prepare(
@@ -1011,9 +1049,10 @@ export class ChainStore {
           previous.txHash.toLowerCase() !== operation.txHash.toLowerCase()))
     )
       throw new Error('OPERATION_IDENTITY_CONFLICT');
-    this.db
-      .prepare(
-        `INSERT INTO chain_transactions
+    try {
+      this.db
+        .prepare(
+          `INSERT INTO chain_transactions
           (operation_id, chain_id, tx_hash, owner_address, target_address, calldata, state, submitted_at, block_number, block_hash, transaction_index, receipt_status, confirmations, replacement_tx_hash, canonical, reconciled, confirmed_at, error_code)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT(operation_id) DO UPDATE SET
@@ -1023,27 +1062,35 @@ export class ChainStore {
           confirmations = excluded.confirmations,
           replacement_tx_hash = excluded.replacement_tx_hash, canonical = excluded.canonical,
           reconciled = excluded.reconciled, confirmed_at = excluded.confirmed_at, error_code = excluded.error_code`,
-      )
-      .run(
-        operation.operationId,
-        chainId(operation.chainId),
-        operation.txHash?.toLowerCase() ?? null,
-        normalizedAddress(operation.owner),
-        normalizedAddress(operation.target),
-        operation.calldata?.toLowerCase() ?? null,
-        operation.state,
-        operation.submittedAt,
-        operation.blockNumber === null ? null : safeNumber(operation.blockNumber),
-        operation.blockHash?.toLowerCase() ?? null,
-        operation.transactionIndex,
-        operation.receiptStatus,
-        operation.confirmations,
-        operation.replacementTxHash?.toLowerCase() ?? null,
-        operation.canonical ? 1 : 0,
-        operation.reconciled ? 1 : 0,
-        operation.confirmedAt,
-        operation.errorCode,
-      );
+        )
+        .run(
+          operation.operationId,
+          chainId(operation.chainId),
+          operation.txHash?.toLowerCase() ?? null,
+          normalizedAddress(operation.owner),
+          normalizedAddress(operation.target),
+          operation.calldata?.toLowerCase() ?? null,
+          operation.state,
+          operation.submittedAt,
+          operation.blockNumber === null ? null : safeNumber(operation.blockNumber),
+          operation.blockHash?.toLowerCase() ?? null,
+          operation.transactionIndex,
+          operation.receiptStatus,
+          operation.confirmations,
+          operation.replacementTxHash?.toLowerCase() ?? null,
+          operation.canonical ? 1 : 0,
+          operation.reconciled ? 1 : 0,
+          operation.confirmedAt,
+          operation.errorCode,
+        );
+    } catch (error) {
+      const transaction = operation.txHash
+        ? this.operationByTransaction(operation.chainId, operation.txHash)
+        : null;
+      if (transaction && transaction.operationId !== operation.operationId)
+        throw new Error('OPERATION_IDENTITY_CONFLICT', { cause: error });
+      throw error;
+    }
   }
 
   operation(operationId: string): ChainOperation | null {
@@ -1082,6 +1129,54 @@ export class ChainStore {
     } catch {
       throw new Error('CORRUPT_CHAIN_DATABASE');
     }
+  }
+
+  operationByTransaction(networkChainId: number, txHash: TransactionHash): ChainOperation | null {
+    const row = this.db
+      .prepare('SELECT operation_id FROM chain_transactions WHERE chain_id = ? AND tx_hash = ?')
+      .get(chainId(networkChainId), txHash.toLowerCase()) as { operation_id: string } | undefined;
+    return row ? this.operation(row.operation_id) : null;
+  }
+
+  trackableOperationIds(
+    networkChainId: number,
+    contract: Address,
+    limit = 100,
+    after: string | null = null,
+  ): readonly string[] {
+    if (!Number.isSafeInteger(limit) || limit < 1 || limit > 1000)
+      throw new Error('INVALID_OPERATION_QUERY_LIMIT');
+    if (after !== null && !/^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/.test(after))
+      throw new Error('INVALID_OPERATION_ID');
+    const id = chainId(networkChainId);
+    const address = normalizedAddress(contract);
+    const select = (comparison: '>' | '<=', cursor: string, count: number) =>
+      this.db
+        .prepare(
+          `SELECT operation_id FROM chain_transactions
+         WHERE chain_id = ? AND target_address = ?
+           AND state IN ('SUBMITTED', 'MINED', 'CONFIRMING', 'REORGED', 'RECONCILIATION_FAILED')
+           AND operation_id ${comparison} ?
+         ORDER BY operation_id
+         LIMIT ?`,
+        )
+        .all(id, address, cursor, count) as Array<{ operation_id: string }>;
+    let rows: Array<{ operation_id: string }>;
+    if (after === null) {
+      rows = this.db
+        .prepare(
+          `SELECT operation_id FROM chain_transactions
+           WHERE chain_id = ? AND target_address = ?
+             AND state IN ('SUBMITTED', 'MINED', 'CONFIRMING', 'REORGED', 'RECONCILIATION_FAILED')
+           ORDER BY operation_id
+           LIMIT ?`,
+        )
+        .all(id, address, limit) as Array<{ operation_id: string }>;
+    } else {
+      rows = select('>', after, limit);
+      if (rows.length < limit) rows.push(...select('<=', after, limit - rows.length));
+    }
+    return Object.freeze(rows.map((row) => row.operation_id));
   }
 
   saveOperationAtCheckpoint(
