@@ -293,6 +293,70 @@ test('RPC rejects malformed receipt authority, finality and index fields', async
   }
 });
 
+test('RPC rejects malformed block, log, topic and quantity evidence before it reaches accounting', async () => {
+  const rpcFor = (method: string, result: unknown) =>
+    new JsonRpcClient([ENDPOINT], { transport: transportFor({ [method]: result }) });
+  const rawLog = {
+    address: CONTRACT,
+    blockNumber: '0x78',
+    blockHash: BLOCK_HASH,
+    transactionHash: TX_HASH,
+    transactionIndex: '0x0',
+    logIndex: '0x0',
+    data: '0x',
+    topics: [`0x${'88'.repeat(32)}`],
+    removed: false,
+  };
+  const rawBlock = {
+    number: '0x78',
+    hash: BLOCK_HASH,
+    parentHash: PARENT_HASH,
+    timestamp: '0x1',
+  };
+
+  await assert.rejects(() => rpcFor('eth_getBlockByNumber', []).block(120n), {
+    code: 'RPC_INVALID_RESPONSE',
+  });
+  await assert.rejects(() => rpcFor('eth_chainId', 46_630).chainId(), {
+    code: 'RPC_INVALID_RESPONSE',
+  });
+  for (const malformed of [
+    { ...rawLog, topics: {} },
+    { ...rawLog, removed: 'false' },
+    { ...rawLog, topics: ['0x01'] },
+    { ...rawLog, address: '0x00' },
+  ])
+    await assert.rejects(
+      () => rpcFor('eth_getLogs', [malformed]).logs({ address: CONTRACT, fromBlock: 120n, toBlock: 120n }),
+      { code: 'RPC_INVALID_RESPONSE' },
+    );
+  await assert.rejects(() => rpcFor('eth_getBlockByNumber', { ...rawBlock, hash: '0x00' }).block(120n), {
+    code: 'RPC_INVALID_RESPONSE',
+  });
+  await assert.rejects(() => rpcFor('eth_getBlockByNumber', { ...rawBlock, number: '0x00' }).block(120n), {
+    code: 'RPC_INVALID_RESPONSE',
+  });
+  assert.deepEqual(await rpcFor('eth_getBlockByNumber', rawBlock).block('latest'), {
+    number: 120n,
+    hash: BLOCK_HASH,
+    parentHash: PARENT_HASH,
+    timestamp: 1n,
+  });
+});
+
+test('RPC stops after the final retryable transport failure', async () => {
+  let attempts = 0;
+  const rpc = new JsonRpcClient([ENDPOINT], {
+    maxAttempts: 2,
+    transport: async () => {
+      attempts++;
+      throw new Error('fixture transport unavailable');
+    },
+  });
+  await assert.rejects(() => rpc.chainId(), { code: 'RPC_UNAVAILABLE', retryable: true });
+  assert.equal(attempts, 2);
+});
+
 test('read-only RPC uses only allowlisted methods and canonical quantity encoding', async () => {
   const requests: { method: string; params: readonly unknown[] }[] = [];
   const transport: RpcTransport = async (_endpoint, request) => {
