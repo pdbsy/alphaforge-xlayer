@@ -1,3 +1,24 @@
+# 当前第一阶段收尾 — 2026-09-20
+
+唯一正式仓库：`pdbsy/quantpass-arbitrum-hackathon`。经理：Macbeth01。实际 master / BASE_SHA：`18f5352070910a867b9729b031aa2e3951785e01`；PR #21 已合并，提交备注 `65%finish`。主分支 tree `a4b1cf782f6e5f2aaa90c955cfffb629ee5231ba` 与原候选 `a712685c1645d9a924dcb0931c98d917da919ced` 完全相同。
+
+| 状态域 | 真实结论 |
+| --- | --- |
+| IMPLEMENTATION_COMPLETE | NO：已合入 Pass/Vault 和配置钱包操作核心，第一阶段仍按[22项矩阵](phase1/REMAINING-TASKS.md)补缺与核验 |
+| LOCAL_ACCEPTANCE_STATUS | 已合并 master 的完整591/591及环境/身份/构建/管理一致性通过；不是后续候选证明 |
+| HOSTED_CI_STATUS | master Engineering [35470492722](https://github.com/pdbsy/quantpass-arbitrum-hackathon/actions/runs/35470492722) 九任务及每步骤成功 |
+| QA_SECURITY_STATUS | 旧分片/基础候选复核仅证明原范围；05最终安全审查受服务限制，普通功能QA另行开展 |
+| REVIEW_REQUIREMENTS_STATUS | 原审批规则已恢复；独立CODEOWNER/last-push审批要求仍有效，无新豁免 |
+| MERGE_STATUS | PR21 MERGED；本轮[PR22](https://github.com/pdbsy/quantpass-arbitrum-hackathon/pull/22) Draft/IN_PROGRESS，尚未获本轮merge授权 |
+| TESTNET_ACCEPTANCE_STATUS | NOT_RUN；LOCAL/MOCK/NOT_DEPLOYED，无真实部署、签名或交易验收 |
+| PHASE1_STATUS | IN_PROGRESS；GOV-001/SUPPLY-001和独立验收/授权阻塞仍在，不是100%完成 |
+
+当前[任务/分支/文件边界](phase1/ASSIGNMENTS.md)已登记且02–06实际派发，02/03/05 已有本人实际 ACK 及 Draft PR23–25，04 待实际 ACK，06 本地只读核验继续但公开发布受自动审批阻塞。首发分配/转账必须完成；付费销售和真实Buy/Sell已由用户明确移出第一阶段。所有worker问题先交01查证，无法解决再由01统一问用户。
+
+产品实际入口为 `apps/web/index.html` 的 `user-ui.js` 与 `product-ui.ts`，保留英文暖色手绘；蓝色 `docs/management/dashboard` 是内部只读管理看板。当前roadmap的P1不是用户第一阶段；41项全部映射到当前矩阵，受保护验收/风险要求不降低。
+
+## 以下保留历史日期及原始范围
+
 > Subsequent M3 assignment — Macbeth04 is now explicitly authorized for `M3-04-PRODUCT-UI` on `macbeth04/M3-product-ui`, from fixed validated baseline `7ecba357d5a19f387e86f578822af04a6261fed2`. See [the task record](agents/M3-04-PRODUCT-UI.md). Earlier audit-only statements below retain their historical scope; this does not grant chain writes or alter other worker assignments.
 
 > Current update — 2026-09-14: remote master is `45e80f921df2d3f9172ddbbc8e6ab37c327107e7` (PR #11 merged, 45% finish). Macbeth02–05 have returned baseline-reading receipts. M3 identity/task alignment is in review preparation; 02 implementation awaits aligned master, and 03–05 retain audit-only scope. See [M3 assignments](agents/M3-ASSIGNMENTS.md) for exact status and blockers. Earlier PR #11 unmerged/master NOT_RUN statements below are historical source snapshots, not current Git status. This update does not claim M3 Testnet completion or independent approval.

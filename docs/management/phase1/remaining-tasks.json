@@ -60,7 +60,7 @@
       "dependencies": "base；接口变化依赖PH1-02",
       "deliverables": "配置/适配回归与接入说明",
       "acceptance": "错链/错地址/错ABI/错owner失败关闭；真实参数缺失保持 NOT_DEPLOYED",
-      "evidence": "packages/chain/；新03报告",
+      "evidence": "packages/chain-adapter/；新03报告",
       "blocker_type": "IMPLEMENTATION_EVIDENCE",
       "requires_user_decision": false
     },

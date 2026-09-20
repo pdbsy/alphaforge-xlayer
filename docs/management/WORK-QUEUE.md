@@ -1,3 +1,20 @@
+# 当前第一阶段工作队列 — 2026-09-20
+
+以 [22项全量矩阵及41项旧路线映射](phase1/REMAINING-TASKS.md) 和 [02–06准确任务](phase1/ASSIGNMENTS.md) 为当前队列。经理PR22，从实际master18f5352开始；全部worker问题统一返回01。
+
+| 路径 | Owner | 当前动作 |
+| --- | --- | --- |
+| 合约、构建和本地部署方案 | 02 | 已派发；实际ACK/验收待回传 |
+| 适配、索引、交易和数据恢复 | 03 | 已派发；实际包路径packages/chain-adapter已勘误 |
+| 首发分配/转账、Vault操作和浏览器 | 04 | 已派发；付费交易移出阶段；保持暖色英文UI |
+| 普通功能QA、覆盖率和最终复测 | 05 | 已派发；历史安全服务限制保留，禁止绕行 |
+| CI/规则/覆盖/证据 | 06 | 已派发只读任务；既有7必需CI保持 |
+| 来源核对、共享修复、文档与交付 | 01 | active；旧PR15–20逐项判断superseded；12/13是另行资格审查的依赖更新 |
+| 外部治理/独立安全与GitHub审批 | 用户/合格外部主体，01协调 | BLOCKED；准备具体选择，不伪造独立身份 |
+| 实际Testnet验收 | 01/02–06 | 准备参数与逐交易包；未经另批不部署/签名/广播 |
+
+## 历史队列（日期与原始证据保留）
+
 > Subsequent M3 assignment — Macbeth04 is now explicitly authorized for `M3-04-PRODUCT-UI` on `macbeth04/M3-product-ui`, from fixed validated baseline `7ecba357d5a19f387e86f578822af04a6261fed2`. See [the task record](agents/M3-04-PRODUCT-UI.md). Earlier audit-only statements below retain their historical scope; this does not grant chain writes or alter other worker assignments.
 
 > Current update — 2026-09-14: remote master is `45e80f921df2d3f9172ddbbc8e6ab37c327107e7` (PR #11 merged, 45% finish). Macbeth02–05 have returned baseline-reading receipts. M3 identity/task alignment is in review preparation; 02 implementation awaits aligned master, and 03–05 retain audit-only scope. See [M3 assignments](agents/M3-ASSIGNMENTS.md) for exact status and blockers. Earlier PR #11 unmerged/master NOT_RUN statements below are historical source snapshots, not current Git status. This update does not claim M3 Testnet completion or independent approval.

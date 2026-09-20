@@ -26,7 +26,7 @@
 
 - [x] Fetch, verify master, clean state, tool versions and prior accepted tree.
 - [x] Read current user instructions, protocol, roadmap and historical findings; register all remaining destinations without inventing PASS.
-- [ ] Run registry/bootstrap validation and formatting, commit registration, open manager Draft PR.
+- [x] Run registry/bootstrap validation and formatting, commit registration, open manager Draft PR #22.
 - [ ] Send each existing worker its exact task and spec; worker starts at BASE_SHA without inheriting manager commits. Capture actual app intake plus their own public PR/Forum ACK.
 
 Verification commands:
@@ -53,7 +53,7 @@ Each implementation change first adds a behavioral reproducer in the owning test
 **Files:** README.md; docs/management/CURRENT-STATUS.md, WORK-QUEUE.md, DECISIONS.md, CHANGELOG.md; phase1 reports; approved roadmap lifecycle/current-scope records.
 **Interfaces:** source SHA/tree and PR21 ancestry/patch adaptations; no repeated cherry-pick.
 
-- [ ] Compare every open PR source to preserved candidate ancestry and final tree, distinguish covered content from remaining unique changes; record exact evidence.
+- [x] Compare every open PR source to preserved candidate ancestry and final tree, distinguish covered content from remaining unique changes; record exact evidence in phase1/PR-SUPERSESSION.json and .md.
 - [ ] Close only verified superseded PRs with source/evidence refs retained; dependency-update PRs receive their own review disposition.
 - [ ] Synchronize current product/run/deployment/roadmap status without lowering protected acceptance fields or rewriting historical reports.
 - [ ] Resolve collector NOT_RUN applicability honestly; either connect a real collector under an explicit implementation/test plan or preserve external job evidence with its accurate scope.

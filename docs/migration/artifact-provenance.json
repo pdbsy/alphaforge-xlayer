@@ -1582,7 +1582,7 @@
       "target_path": "docs/management/agents/registry.json",
       "method": "registry migrated; historical confirmations reset for canonical repository; user-authorized Macbeth06 CI/gate role registration (2026-09-20), historical source identity unchanged",
       "original_sha256": "ecb05bfdcccf1abb036c4e4fdd16155e959ae706395020db4a1dac49e43f50b6",
-      "migrated_sha256": "c9e0e5b3b958d9ffebd61740c93015f626129979c6cbe34dd55eceeaf13f879a",
+      "migrated_sha256": "3f191a5d21c0489442a4791859dfa30cb9a41f89de259581a4bee546b6d13510",
       "subsequent_adaptations": [
         {
           "task": "AF-M3-IDENTITY",
@@ -1637,6 +1637,12 @@
           "base_commit": "18f5352070910a867b9729b031aa2e3951785e01",
           "previous_sha256": "855fe12cb2026a2fa4a4aa7eb0ddde82c20b321a36e84debdfa726315d093c12",
           "reason": "User-authorized Phase One task registration and current-baseline notice; original source and all historical adaptation records remain unchanged."
+        },
+        {
+          "task": "M3-01-PHASE1-CLOSEOUT",
+          "base_commit": "18f5352070910a867b9729b031aa2e3951785e01",
+          "previous_sha256": "c9e0e5b3b958d9ffebd61740c93015f626129979c6cbe34dd55eceeaf13f879a",
+          "reason": "Record actual worker ACKs and current read-only Forum synchronization; retain original migration sources and prior records."
         }
       ]
     },
