@@ -504,7 +504,18 @@ test('indexer connectivity failure does not prevent the product server starting 
     const headers = { host: '127.0.0.1:4180' };
     assert.equal((await server.app.inject({ url: '/api/health', headers })).statusCode, 200);
     const status = await server.app.inject({ url: '/api/v1/chain/runtime-status', headers });
-    assert.deepEqual(status.json(), { lastAttempt: 'FAILED', errorCode: 'M3_INDEXER_SYNC_FAILED' });
+    assert.deepEqual(status.json(), {
+      lastAttempt: 'FAILED',
+      errorCode: 'M3_INDEXER_SYNC_FAILED',
+      database: { status: 'HEALTHY', schemaVersion: 6, integrity: 'OK' },
+      deployment: {
+        chainId: CHAIN_ID,
+        contract: CONTRACT,
+        manifestDigest,
+        abiHash: M3_VAULT_ABI_HASH,
+        runtimeBytecodeHash: manifestBody.runtimeBytecodeHash,
+      },
+    });
     assert.doesNotMatch(status.body, /private RPC error/);
     assert.equal(
       (await server.app.inject({ url: `/api/v1/chain/vaults/${OWNER}`, headers })).statusCode,
@@ -519,6 +530,14 @@ test('indexer connectivity failure does not prevent the product server starting 
     assert.deepEqual((await server.app.inject({ url: '/api/v1/chain/runtime-status', headers })).json(), {
       lastAttempt: 'SUCCEEDED',
       errorCode: null,
+      database: { status: 'HEALTHY', schemaVersion: 6, integrity: 'OK' },
+      deployment: {
+        chainId: CHAIN_ID,
+        contract: CONTRACT,
+        manifestDigest,
+        abiHash: M3_VAULT_ABI_HASH,
+        runtimeBytecodeHash: manifestBody.runtimeBytecodeHash,
+      },
     });
     unavailable = true;
     await assert.rejects(server.syncNow());

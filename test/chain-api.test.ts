@@ -310,3 +310,35 @@ test('submission API accepts only pending identity and rejects forged state or c
     assert.equal(rejected.json().error, 'INVALID_REQUEST');
   }
 });
+
+test('runtime status exposes fixed deployment identity and database health without private paths', async (t) => {
+  const directory = await folder();
+  const runtime = new M3ChainRuntime({
+    dbPath: resolve(directory, 'private-chain.sqlite'),
+    rpc: new InertRpc(),
+    manifest,
+  });
+  const { app } = await buildApp({
+    dbPath: resolve(directory, 'private-ledger.sqlite'),
+    env,
+    origin,
+    chainRuntime: runtime,
+  });
+  t.after(async () => app.close());
+
+  const response = await app.inject({ url: '/api/v1/chain/runtime-status', headers });
+  assert.equal(response.statusCode, 200, response.body);
+  assert.deepEqual(response.json(), {
+    lastAttempt: 'NOT_RUN',
+    errorCode: null,
+    database: { status: 'HEALTHY', schemaVersion: 6, integrity: 'OK' },
+    deployment: {
+      chainId: CHAIN_ID,
+      contract: CONTRACT,
+      manifestDigest,
+      abiHash: M3_VAULT_ABI_HASH,
+      runtimeBytecodeHash: manifest.runtimeBytecodeHash,
+    },
+  });
+  assert.doesNotMatch(response.body, /private-chain|private-ledger|\.sqlite/);
+});

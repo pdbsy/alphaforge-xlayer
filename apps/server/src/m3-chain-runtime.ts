@@ -118,6 +118,14 @@ export class M3ChainRuntime {
       syncStatus: () => ({
         lastAttempt: this.#lastSyncAttempt,
         errorCode: this.#lastSyncAttempt === 'FAILED' ? ('M3_INDEXER_SYNC_FAILED' as const) : null,
+        database: this.store.health(),
+        deployment: {
+          chainId: this.manifest.chainId,
+          contract: this.manifest.contractAddress,
+          manifestDigest: this.manifest.manifestDigest,
+          abiHash: this.manifest.abiHash,
+          runtimeBytecodeHash: this.manifest.runtimeBytecodeHash,
+        },
       }),
       recordSubmission: (input: ObservedWalletSubmission) => this.recordSubmission(input),
     });

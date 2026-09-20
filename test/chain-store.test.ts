@@ -763,3 +763,47 @@ test('version-three incomplete targets remain authoritative after sync-lease mig
   assert.equal(store.syncTarget(CHAIN_ID, CONTRACT), 101n);
   store.close();
 });
+
+test('chain projection online backup reopens independently and never overwrites a destination', async () => {
+  const path = await databasePath();
+  const target = `${path}.backup`;
+  const store = new ChainStore(path);
+  const block = { number: 100n, hash: BLOCK_100, parentHash: BLOCK_99, timestamp: 1_000n };
+  store.recordCanonicalBlock(CHAIN_ID, CONTRACT, block, [event()]);
+  store.commitProjections(CHAIN_ID, CONTRACT, block, [
+    {
+      chainId: CHAIN_ID,
+      owner: OWNER_A,
+      contract: CONTRACT,
+      projectionKey: 'm3-vault',
+      blockNumber: 100n,
+      blockHash: BLOCK_100,
+      state: { strategyId: 'trend', principalBasis: '1000000' },
+    },
+  ]);
+
+  const recovery = store as ChainStore & {
+    backupTo(targetPath: string): Promise<string>;
+    health(): { status: string; schemaVersion: number | null; integrity: string };
+  };
+  assert.deepEqual(recovery.health(), { status: 'HEALTHY', schemaVersion: 6, integrity: 'OK' });
+  assert.equal(await recovery.backupTo(target), target);
+  await assert.rejects(recovery.backupTo(target), /BACKUP_TARGET_EXISTS/);
+
+  const restored = new ChainStore(target);
+  try {
+    assert.deepEqual(restored.health(), { status: 'HEALTHY', schemaVersion: 6, integrity: 'OK' });
+    assert.deepEqual(restored.checkpoint(CHAIN_ID, CONTRACT), {
+      blockNumber: 100n,
+      blockHash: BLOCK_100,
+    });
+    assert.equal(
+      restored.projection(CHAIN_ID, OWNER_A, CONTRACT, 'm3-vault')?.state.principalBasis,
+      '1000000',
+    );
+    assert.equal(restored.canonicalEvents(CHAIN_ID, CONTRACT).length, 1);
+  } finally {
+    restored.close();
+    store.close();
+  }
+});
