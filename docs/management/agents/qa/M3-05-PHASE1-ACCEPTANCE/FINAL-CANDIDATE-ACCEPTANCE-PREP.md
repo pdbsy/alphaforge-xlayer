@@ -14,12 +14,12 @@ candidate PASS.
 
 ## Published source checkpoints
 
-| Area | Published identity | QA interpretation |
-| --- | --- | --- |
-| Contract implementation | `2ad816200e7edfbfad96d765b4a696bc8b838c2d`, tree `ea7be39d0b40b3d6421cf2d7c680a7ca251b8aae` | PR #24 implementation source. Worker evidence head `a13052993b6f408b7be835ecd6f4b13ef6df367d`, tree `0db6b922fa8c33219793f4d758e39d46665905d0`. Independent locked-toolchain gate and coverage pass at this checkpoint. |
-| Earlier Chain/API handoff | `500914b900d61ea5b26c32ab5cc39c4b0d829c3c`, tree `f5257183b1b114295e565f1799b736a124797f72` | Source consumed by the product worker. Superseded for final integration by the later PR #26 head. |
-| Latest Chain/API head | `28ff3d4b5c6e70ff0c6ea1b11ad0fea4283887fd`, tree `7f4abc27757e099c1b5b26a66509395015bdb7b7` | PR #26 final worker checkpoint. Full Node suite passes, but the independently measured 13-source branch result is 92.11% and enumerated critical gaps remain below the frozen 100% target. |
-| Latest product head | `332549c07239c41c1f1c3735cc1e5e8f247d3d6b`, tree `438e2614b3adc3c4e143953790ec11abb78b9941` | PR #27 source checkpoint. Targeted product tests pass. Its versioned browser evidence still names product source `86f2f903...` and Chain/API source `500914...`; it is not evidence bound to the latest published heads or a unified candidate. |
+| Area                      | Published identity                                                                          | QA interpretation                                                                                                                                                                                                                                                                                                                           |
+| ------------------------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Contract implementation   | `2ad816200e7edfbfad96d765b4a696bc8b838c2d`, tree `ea7be39d0b40b3d6421cf2d7c680a7ca251b8aae` | PR #24 implementation source. Worker evidence head `a13052993b6f408b7be835ecd6f4b13ef6df367d`, tree `0db6b922fa8c33219793f4d758e39d46665905d0`. Independent locked-toolchain gate and coverage pass at this checkpoint.                                                                                                                     |
+| Earlier Chain/API handoff | `500914b900d61ea5b26c32ab5cc39c4b0d829c3c`, tree `f5257183b1b114295e565f1799b736a124797f72` | Source consumed by the product worker. Superseded for final integration by the later PR #26 head.                                                                                                                                                                                                                                           |
+| Latest Chain/API head     | `a4d73bb197ff1f715fcf6ea9f1fe1daae2c75030`, tree `bf9726cd560c51a7c60e320e1bdfe45501c9a91b` | PR #26 final remediation checkpoint. The independent full suite passes 643/643 and the same 13-source population reports 97.37% lines, 95.39% branches and 98.56% functions. Every concrete frozen critical zero-hit from the preceding checkpoint is covered; two residual V8 branch records are source-proved nonsemantic or unreachable. |
+| Latest product head       | `ffe7d08b0aa4fc2a71e01418033ced942526bfdf`, tree `544c9204dbaf2425acb9cac4cbdf01526d7ad7b3` | PR #27 final evidence checkpoint. Product code is unchanged from `bb8b628efa092e9f83669ee62263e4910a7f1418`. Independent 86-test focused and 137-test critical-product groups pass, and the local real-browser multi-Vault journey passes. It remains a separate worker source rather than the unified candidate.                           |
 
 ## Recovery and evidence boundary
 
@@ -36,19 +36,19 @@ explicitly follow-up evidence, not replacements for the deleted historical bytes
 
 ## Critical authorization and accounting map
 
-| Frozen property | Contract evidence path at PR #24 | Chain/API or product evidence path at latest published source | Final-candidate requirement |
-| --- | --- | --- | --- |
-| Explicit immutable nonzero Owner; deployer/creator gain no custody | `AlphaForgeVault.custody.t.sol`, `Phase1DeploymentRehearsal.t.sol` | manifest-bound runtime and owner-qualified routes in `chain-runtime.test.ts`, `chain-api.test.ts` | Independent contract gate plus owner/non-owner browser journey; every authorization branch covered |
-| Nonzero, matching identities and immutable code/ABI | constructor boundary tests and frozen interface/manifest gate | `chain-rpc-manifest.test.ts`, `chain-runtime.test.ts`, `chain-vault-abi.test.ts`; product runtime-code and contract-qualified reader tests | Wrong chain, wrong code, wrong Pass strategy, malformed manifest/ABI and address conflict all fail closed |
-| Exact six-decimal AF-USDC to eighteen-decimal Pass conversion | custody conversion and fuzz tests | exact raw calldata/event/view reconciliation; product amount and allowance tests | One AF-USDC base unit maps to `10^12` Pass raw units; inexact, zero, signed and overflow values reject |
-| Initial allocation and ordinary 18-decimal Pass transfer | `StrategyPass.t.sol` and fixed-supply invariant | `chain-startup.test.ts` and `chain-runtime.test.ts`; PR #27 one-raw-unit browser/runtime transfer | Initial supply is truthful and non-sale; one raw Pass unit reaches the fixed reviewed recipient with no capacity rounding |
-| Profit-first withdrawal | `AlphaForgeVault.accounting.t.sol` | `chain-vault-integration.test.ts` accounting identity checks | Profit is consumed before principal and Pass unlock follows principal only |
-| Loss never automatically unlocks Pass | accounting tests and invariant | reconciliation rejects inconsistent principal, profit or Pass deltas | Loss, reorg, stale or malformed evidence cannot create unlocked capacity or READY state |
-| Exact transfer delta and atomic rollback | rescue/abnormal-token tests | calldata, events, receipt, canonical views and operation identity reconciliation | Short/fee/reverting token behavior rolls back transfers, accounting and unlocks |
-| Terminal close and owner-only post-close rescue | accounting, rescue and invariant tests | close/rescue reconciliation plus PR #27 closed-state product actions | Active rescue rejects; close clears obligations; only Owner can rescue actual unreserved token/native balance |
-| Confirmation depth 3 and reorg search limit 128 | outside contract runtime | ChainStore/synchronizer/startup tests and recovery drill | No READY before three confirmations; reorg recovery is bounded at 128 and deeper uncertainty fails closed |
-| Multiple Vaults remain isolated and explicitly selected | one Vault per deployment rehearsal | `chain-api.test.ts` and `chain-startup.test.ts` multi-runtime cases | Contract-qualified routes isolate Vault, owner, StrategyPass, database and evidence; ambiguous owner-only route must fail |
-| Paid sale and strategy execution remain absent | contract delivery boundary | product presentation and action union | Buy/Sell stay unavailable and no strategy execution, pricing, liquidity or arbitrary target authority appears |
+| Frozen property                                                    | Contract evidence path at PR #24                                   | Chain/API or product evidence path at latest published source                                                                              | Final-candidate requirement                                                                                               |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
+| Explicit immutable nonzero Owner; deployer/creator gain no custody | `AlphaForgeVault.custody.t.sol`, `Phase1DeploymentRehearsal.t.sol` | manifest-bound runtime and owner-qualified routes in `chain-runtime.test.ts`, `chain-api.test.ts`                                          | Independent contract gate plus owner/non-owner browser journey; every authorization branch covered                        |
+| Nonzero, matching identities and immutable code/ABI                | constructor boundary tests and frozen interface/manifest gate      | `chain-rpc-manifest.test.ts`, `chain-runtime.test.ts`, `chain-vault-abi.test.ts`; product runtime-code and contract-qualified reader tests | Wrong chain, wrong code, wrong Pass strategy, malformed manifest/ABI and address conflict all fail closed                 |
+| Exact six-decimal AF-USDC to eighteen-decimal Pass conversion      | custody conversion and fuzz tests                                  | exact raw calldata/event/view reconciliation; product amount and allowance tests                                                           | One AF-USDC base unit maps to `10^12` Pass raw units; inexact, zero, signed and overflow values reject                    |
+| Initial allocation and ordinary 18-decimal Pass transfer           | `StrategyPass.t.sol` and fixed-supply invariant                    | `chain-startup.test.ts` and `chain-runtime.test.ts`; PR #27 one-raw-unit browser/runtime transfer                                          | Initial supply is truthful and non-sale; one raw Pass unit reaches the fixed reviewed recipient with no capacity rounding |
+| Profit-first withdrawal                                            | `AlphaForgeVault.accounting.t.sol`                                 | `chain-vault-integration.test.ts` accounting identity checks                                                                               | Profit is consumed before principal and Pass unlock follows principal only                                                |
+| Loss never automatically unlocks Pass                              | accounting tests and invariant                                     | reconciliation rejects inconsistent principal, profit or Pass deltas                                                                       | Loss, reorg, stale or malformed evidence cannot create unlocked capacity or READY state                                   |
+| Exact transfer delta and atomic rollback                           | rescue/abnormal-token tests                                        | calldata, events, receipt, canonical views and operation identity reconciliation                                                           | Short/fee/reverting token behavior rolls back transfers, accounting and unlocks                                           |
+| Terminal close and owner-only post-close rescue                    | accounting, rescue and invariant tests                             | close/rescue reconciliation plus PR #27 closed-state product actions                                                                       | Active rescue rejects; close clears obligations; only Owner can rescue actual unreserved token/native balance             |
+| Confirmation depth 3 and reorg search limit 128                    | outside contract runtime                                           | ChainStore/synchronizer/startup tests and recovery drill                                                                                   | No READY before three confirmations; reorg recovery is bounded at 128 and deeper uncertainty fails closed                 |
+| Multiple Vaults remain isolated and explicitly selected            | one Vault per deployment rehearsal                                 | `chain-api.test.ts` and `chain-startup.test.ts` multi-runtime cases                                                                        | Contract-qualified routes isolate Vault, owner, StrategyPass, database and evidence; ambiguous owner-only route must fail |
+| Paid sale and strategy execution remain absent                     | contract delivery boundary                                         | product presentation and action union                                                                                                      | Buy/Sell stay unavailable and no strategy execution, pricing, liquidity or arbitrary target authority appears             |
 
 Macbeth05 independently reproduced the PR #24 result: the three core contracts reach 100% lines,
 statements, branches and functions; 134 Solidity and 24 Python tests pass; Slither reports no
@@ -194,13 +194,13 @@ is `c4cdbeaadc7db5f8ecf14cb0b4a23947e1d762c4af2b2a239f55887e195abbb2`.
 The final-head critical classification is based on whether a branch can change authority,
 canonical accounting, readiness or deterministic recovery:
 
-| Critical population still requiring a hit or source-level unreachable proof | Final-head zero-hit positions | Reason |
-| --- | --- | --- |
-| Operation evidence availability | `chain-routes.ts:245,250` | A failed runtime or missing projection evidence must not produce authority or readiness. |
-| Bounded synchronization and reorg recovery | `chain-sync.ts:61,126,216,219,284,331,359,375` | These branches enforce the 128-block bound, canonical ancestry, projection rebuild and lease/checkpoint consistency. |
-| Operation reconciliation state | `chain-sync.ts:401,402`; `chain-store.ts:166,202,1463,1473,1552,1556,1563,1566-1568` | Confirmed, rejected, reorged, replaced and reconciliation-failed states must map deterministically and never create false READY. |
-| Canonical store identity and concurrency | `chain-store.ts:873,1012,1086,1326,1330,1354` | Conflicting events/operations, lost leases and non-canonical projection blocks must fail closed. |
-| Untrusted RPC evidence | `rpc.ts:171,177,195,199,213,229,302` | Malformed block, receipt, log or call results and exhausted retries must not enter accounting state. |
+| Critical population still requiring a hit or source-level unreachable proof | Final-head zero-hit positions                                                        | Reason                                                                                                                           |
+| --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| Operation evidence availability                                             | `chain-routes.ts:245,250`                                                            | A failed runtime or missing projection evidence must not produce authority or readiness.                                         |
+| Bounded synchronization and reorg recovery                                  | `chain-sync.ts:61,126,216,219,284,331,359,375`                                       | These branches enforce the 128-block bound, canonical ancestry, projection rebuild and lease/checkpoint consistency.             |
+| Operation reconciliation state                                              | `chain-sync.ts:401,402`; `chain-store.ts:166,202,1463,1473,1552,1556,1563,1566-1568` | Confirmed, rejected, reorged, replaced and reconciliation-failed states must map deterministically and never create false READY. |
+| Canonical store identity and concurrency                                    | `chain-store.ts:873,1012,1086,1326,1330,1354`                                        | Conflicting events/operations, lost leases and non-canonical projection blocks must fail closed.                                 |
+| Untrusted RPC evidence                                                      | `rpc.ts:171,177,195,199,213,229,302`                                                 | Malformed block, receipt, log or call results and exhausted retries must not enter accounting state.                             |
 
 The optional `webRoot` spread in `m3-app.ts`, optional policy/constructor-cleanup branches in
 `m3-chain-runtime.ts`, and default timer/listen/cleanup branches in `m3-startup.ts` are not part of
@@ -306,11 +306,18 @@ A final `PASS` requires all of the following on one exact clean candidate:
 - all required CLI and browser journeys pass and their evidence is bound to the exact candidate;
 - no unresolved required `BLOCKED`, `NOT_RUN` or `NOT_MEASURED` item remains.
 
-The latest published checkpoints do not meet those rules. PR #26 final worker head passes 627/627
-Node tests but its 13 explicitly measured Chain/API sources report 96.59% lines, 92.11% branches
-and 98.56% functions, with enumerated critical authorization/accounting gaps. PR #24 independently
-passes its locked contract gate and core 100% target at its separate source checkpoint. PR #27
-passes the 125-test targeted product group, but its checked-in browser evidence is not bound
-to the latest worker heads or a unified candidate. No separate functional defect was confirmed in
-the targeted runtime review; the coverage and evidence-binding failures are sufficient to keep
-acceptance open.
+The latest published checkpoints still do not meet those rules on one candidate. PR #26 final
+remediation head passes 643/643 Node tests; its 13 explicitly measured Chain/API sources report
+97.37% lines, 95.39% branches and 98.56% functions. Macbeth05 found no remaining concrete zero-hit
+in the frozen critical Chain/API subset: `chain-sync.ts:242` is a V8 branch record on a `finally`
+brace whose body executes, and `rpc.ts:325` is a loop-close record whose following fallback is
+unreachable because each terminal attempt returns or throws. The raw denominator is retained and
+is not rewritten as 100%. PR #24 independently passes its locked contract gate and core 100%
+target at its separate source checkpoint. PR #27 final evidence head passes the 86-test focused and
+137-test critical-product groups and an independent local real-browser multi-Vault journey, while
+its full suite remains 642/643 because the shared migration provenance still records the previous
+`product-ui.ts` hash. Macbeth01 subsequently announced local integration source `639ffd8...`, but
+that object is not yet available through Macbeth05's repository refs and has no newly published
+C/R/S evidence; its reported 705/705 result is therefore manager evidence rather than an
+independent Macbeth05 rerun. Combined JS/TS overall coverage remains `NOT_MEASURED`. Those remaining
+evidence conditions keep acceptance open.

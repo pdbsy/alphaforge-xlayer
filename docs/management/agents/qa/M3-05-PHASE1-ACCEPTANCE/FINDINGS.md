@@ -41,6 +41,17 @@ event/operation identity conflicts, operation-state evidence mapping and malform
 The 13-file average cannot substitute for the frozen critical-branch 100% requirement, and combined
 JS/TS overall coverage remains `NOT_MEASURED`; the finding remains `OPEN`.
 
+Final remediation checkpoint `a4d73bb197ff1f715fcf6ea9f1fe1daae2c75030`, tree
+`bf9726cd560c51a7c60e320e1bdfe45501c9a91b`, passes 643/643 tests and improves the same population
+to 97.37% lines, 95.39% branches and 98.56% functions. Every concrete frozen critical zero-hit from
+`28ff3d4...` is now covered. The only residual records adjacent to that subset are
+`chain-sync.ts:242`, a nonsemantic V8 branch record on a `finally` brace whose body executes, and
+`rpc.ts:325`, a loop-close record whose following fallback is unreachable because the final retry
+must return or throw. Macbeth05 therefore records the critical Chain/API subset as
+`PASS_AT_PR26_SOURCE_CHECKPOINT` without changing the raw 95.39% branch figure. The finding stays
+`OPEN` because combined JS/TS overall coverage remains `NOT_MEASURED` and the separate contract,
+Chain/API and product checkpoints have not been rerun on one exact unified candidate.
+
 ## M3-05-P1-002 — Phase 1 has no usable Pass transfer product operation
 
 | Field         | Value                                                                                                                     |
@@ -68,12 +79,20 @@ group passes. The finding remains `OPEN` until those changes are present in the 
 candidate and the real final browser journey passes; the checked-in PR #27 browser evidence names
 older product and Chain/API source identities.
 
+Latest closure checkpoint: PR #27 head `ffe7d08b0aa4fc2a71e01418033ced942526bfdf`, tree
+`544c9204dbaf2425acb9cac4cbdf01526d7ad7b3`, retains the product code from `bb8b628...` and passes
+Macbeth05's independent 86/86 focused multi-Vault group, 137/137 critical-product group and local
+real-browser journey. The browser proved one-raw-unit transfer, exact balance delta, reviewed
+allowlisted selection, two independent Owners and spenders, per-Vault allowance isolation, shared
+Pass identity, review clearing on selection, and wrong-network write shutdown. The finding remains
+`OPEN` only until the same product source is present and rerun in the exact unified candidate.
+
 ## Integration and external blockers
 
 | ID           | State     | Basis                                                                                                                                                                | Owner / closure condition                                                                                    |
 | ------------ | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
 | M3-05-P1-B01 | `BLOCKED` | `npm run check` stops at `management:check` because shared C/R/S evidence is recorded for another branch. Macbeth05 will not rewrite shared generated PASS evidence. | Macbeth01 supplies an exact unified candidate with correctly regenerated evidence.                           |
-| M3-05-P1-B02 | `BLOCKED` | No exact unified final candidate containing accepted 02/03/04 changes has been supplied.                                                                             | Macbeth01 supplies the candidate SHA/tree/source composition.                                                |
+| M3-05-P1-B02 | `BLOCKED` | Macbeth01 announced local integration source `639ffd8...`, but it is not yet available through Macbeth05's refs and has no newly published C/R/S evidence.           | Macbeth01 publishes an accessible candidate ref plus exact SHA/tree/source composition and C/R/S evidence.   |
 | M3-05-P1-B03 | `BLOCKED` | Historical final security review remains service-limited; ordinary functional QA and the local Slither pass are different evidence.                                  | Authorized qualifying service result for the exact candidate, or explicit closeout retaining the limitation. |
 | M3-05-P1-B04 | `BLOCKED` | Real Robinhood Chain Testnet writes, deployment, signing, and broadcast are outside this task's authorization.                                                       | Separate applicable authorization and transaction/readback evidence.                                         |
 | M3-05-P1-B05 | `NOT_RUN` | Hosted required checks and independent review are separate from Macbeth05's local evidence.                                                                          | Macbeth06/provider results and eligible independent approval on the exact candidate.                         |

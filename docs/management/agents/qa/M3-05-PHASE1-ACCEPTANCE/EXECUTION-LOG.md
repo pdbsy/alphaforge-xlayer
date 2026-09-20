@@ -36,12 +36,12 @@ That run stopped at `management:check` with `RECORDED_GIT_BRANCH_MISMATCH`: the 
 
 The complete top-level test list was executed under Node's built-in coverage with first-party includes covering `apps/server/src`, `apps/web/src` (`.ts` and `.tsx`), `packages`, `src`, and `tools` (`.ts`, `.mjs`, and `.js`), excluding declarations. All 591 tests passed.
 
-| Metric                                   | Observed |                      Target | Result             |
-| ---------------------------------------- | -------: | --------------------------: | ------------------ |
-| Loaded-file lines                        |   91.67% |                 90% overall | Insufficient proof |
-| Loaded-file branches                     |   84.67% | 90% overall / 100% critical | `FAIL`             |
-| Loaded-file functions                    |   94.30% |                 90% overall | Informational      |
-| Extension-based candidate files represented |  77 / 98 | Candidate inventory only | Insufficient proof |
+| Metric                                      | Observed |                      Target | Result             |
+| ------------------------------------------- | -------: | --------------------------: | ------------------ |
+| Loaded-file lines                           |   91.67% |                 90% overall | Insufficient proof |
+| Loaded-file branches                        |   84.67% | 90% overall / 100% critical | `FAIL`             |
+| Loaded-file functions                       |   94.30% |                 90% overall | Informational      |
+| Extension-based candidate files represented |  77 / 98 |    Candidate inventory only | Insufficient proof |
 
 The 91.67% line figure applies only to loaded files and is not reported as whole-repository coverage. The earlier checkpoint mistakenly said 77 / 99 and 22 missing because its inventory retained `apps/web/src/vite-env.d.ts` while its written method excluded declarations. Rebuilding the extension-based base inventory gives 98 candidates after excluding `.d.ts`; 77 are represented and 21 are not. Follow-up then proved that this is not an exact executable denominator: `reconciliation.ts` is type-only, while the tracked prototype HTML contains the actual 603-line product script emitted as `user-ui.js`. [Coverage Gaps](COVERAGE-GAPS.md) preserves the inventory, correction, exact command, tool limits, and uncovered branch positions.
 
@@ -129,14 +129,14 @@ test list passed 617/617 in the permitted local loopback environment. The same f
 target. The initial sandbox attempt had four loopback `EPERM` failures; it is environmental failure
 evidence and is not reported as a source failure or a pass.
 
-| Recovered follow-up artifact | SHA-256 |
-| --- | --- |
-| `run-pr26-full-coverage.mjs` | `9e7e074bcd5777854eda9f2ae52af3ba170dca755c70952ef502f5487648006c` |
-| `pr26-full-critical-coverage.log` | `0db0f92ce3cac8c369bda6cfa1723855f62dcd9021e8fab8740fc4ff59a58c76` |
+| Recovered follow-up artifact       | SHA-256                                                            |
+| ---------------------------------- | ------------------------------------------------------------------ |
+| `run-pr26-full-coverage.mjs`       | `9e7e074bcd5777854eda9f2ae52af3ba170dca755c70952ef502f5487648006c` |
+| `pr26-full-critical-coverage.log`  | `0db0f92ce3cac8c369bda6cfa1723855f62dcd9021e8fab8740fc4ff59a58c76` |
 | `pr26-full-critical-coverage.lcov` | `d2533d4cc8d72aff5835581345020a2785b800ecd00bf8bb2a74bd2c5e19b6b7` |
-| `summarize-pr26-branches.mjs` | `5b67ff7778f02b2c2e59e55ae3965352f21a28809600958c6af88ccef1301b6a` |
-| `pr26-critical-branch-gaps.json` | `8c4bec8ae5374bd013de1466fd9efe3d27f05c3eb3dfc85cd8be36850779d67a` |
-| `pr26-diff-check.log` | `18b2f9e3bcd0f8e18d99ea1b6c532620e19bd885b5ce83e8a9d6822b82e93a15` |
+| `summarize-pr26-branches.mjs`      | `5b67ff7778f02b2c2e59e55ae3965352f21a28809600958c6af88ccef1301b6a` |
+| `pr26-critical-branch-gaps.json`   | `8c4bec8ae5374bd013de1466fd9efe3d27f05c3eb3dfc85cd8be36850779d67a` |
+| `pr26-diff-check.log`              | `18b2f9e3bcd0f8e18d99ea1b6c532620e19bd885b5ce83e8a9d6822b82e93a15` |
 
 The PR #26 base-to-head `git diff --check` also exits 2 because
 `docs/management/phase1/Macbeth03-INTAKE.md` lines 3-5 contain trailing whitespace. This is a source
@@ -171,12 +171,12 @@ coverage reports `AlphaForgeVault`, `PassLocker` and `StrategyPass` at 100% line
 branches and functions; complete compiled totals are 95.53% lines, 95.12% statements, 73.42%
 branches and 95.54% functions.
 
-| New independent PR #24 artifact | SHA-256 |
-| --- | --- |
+| New independent PR #24 artifact      | SHA-256                                                            |
+| ------------------------------------ | ------------------------------------------------------------------ |
 | `pr24-independent-contract-gate.log` | `ce21fa201e92aa7751e95a95e091d2930356b7af197eed6c70c32017b9f400dd` |
-| `pr24-independent-coverage.log` | `25216f3495f82aa343f6fb0c64bd91bcace356857a7f5337074d834df7218eab` |
-| `pr24-independent-coverage.lcov` | `ab68b1355c159d195c72ef262246b7ad7ffcc5fcee0b127fa31b2141ffa95115` |
-| task-local `slither.json` | `6075497f3ba5e1b4cbd5302241e78e7ad61e5b81e371a86ed2bdeff356557046` |
+| `pr24-independent-coverage.log`      | `25216f3495f82aa343f6fb0c64bd91bcace356857a7f5337074d834df7218eab` |
+| `pr24-independent-coverage.lcov`     | `ab68b1355c159d195c72ef262246b7ad7ffcc5fcee0b127fa31b2141ffa95115` |
+| task-local `slither.json`            | `6075497f3ba5e1b4cbd5302241e78e7ad61e5b81e371a86ed2bdeff356557046` |
 
 PR #26 progressed to final worker head `28ff3d4b5c6e70ff0c6ea1b11ad0fea4283887fd`, tree
 `7f4abc27757e099c1b5b26a66509395015bdb7b7`. The independent permitted-local rerun passes 627/627
@@ -185,12 +185,12 @@ Wrong-chain, Pass-code, manifest and Vault-ABI gaps are closed, while the enumer
 evidence, canonical recovery, state mapping and RPC-input gaps keep the critical target failed.
 `git diff --check` from the fixed base passes.
 
-| Final-worker PR #26 artifact | SHA-256 |
-| --- | --- |
-| `pr26-28ff3d4-full-critical-coverage.log` | `1238723a86d93a2192df7d06af5e84237c6d148512ebf27738ec670762db1918` |
+| Final-worker PR #26 artifact               | SHA-256                                                            |
+| ------------------------------------------ | ------------------------------------------------------------------ |
+| `pr26-28ff3d4-full-critical-coverage.log`  | `1238723a86d93a2192df7d06af5e84237c6d148512ebf27738ec670762db1918` |
 | `pr26-28ff3d4-full-critical-coverage.lcov` | `99989cc423ebc590e22fca9c53f5071a26f25e577d2bfbc9e25817cb8e422e2e` |
-| `summarize-pr26-28ff3d4-branches.mjs` | `bbf713951212cb32940a64d2fc1af5ef1311c8a5bae8f6244561b6cea15651c7` |
-| `pr26-28ff3d4-critical-branch-gaps.json` | `c4cdbeaadc7db5f8ecf14cb0b4a23947e1d762c4af2b2a239f55887e195abbb2` |
+| `summarize-pr26-28ff3d4-branches.mjs`      | `bbf713951212cb32940a64d2fc1af5ef1311c8a5bae8f6244561b6cea15651c7` |
+| `pr26-28ff3d4-critical-branch-gaps.json`   | `c4cdbeaadc7db5f8ecf14cb0b4a23947e1d762c4af2b2a239f55887e195abbb2` |
 
 ## Hosted PR #25 checks at `77398e0...`
 
@@ -203,11 +203,81 @@ gate with `RECORDED_GIT_CI_CONTEXT_INVALID`. Their environment admission and pre
 This is the already-recorded shared C/R/S CI-context binding, not a newly discovered platform or
 contract failure. Macbeth05 did not regenerate or edit the shared evidence.
 
-| Downloaded failed-job log | SHA-256 |
-| --- | --- |
-| Linux `verify` | `ea6174038fc1b052c7f82a0d37943c856e061af06c85a928439d9452753771a6` |
-| `verify-macos` | `38fbca5c2284ae3939a60dbc960fb85433acc550bb48708ff960d5dde57beae5` |
-| `verify-windows` | `a9e84ad39cdbecc0b54986f490d45a82cdc5d8cbb816a671681faa2b0982a3cd` |
+| Downloaded failed-job log | SHA-256                                                            |
+| ------------------------- | ------------------------------------------------------------------ |
+| Linux `verify`            | `ea6174038fc1b052c7f82a0d37943c856e061af06c85a928439d9452753771a6` |
+| `verify-macos`            | `38fbca5c2284ae3939a60dbc960fb85433acc550bb48708ff960d5dde57beae5` |
+| `verify-windows`          | `a9e84ad39cdbecc0b54986f490d45a82cdc5d8cbb816a671681faa2b0982a3cd` |
 
 The hosted result remains `FUNCTIONAL_AND_SECURITY_JOBS_PASS / MANAGEMENT_CONTEXT_BLOCKED`; it is
 not a complete required-check PASS and cannot close the final-candidate gate.
+
+## Final PR #26 remediation checkpoint
+
+PR #26 advanced to `a4d73bb197ff1f715fcf6ea9f1fe1daae2c75030`, tree
+`bf9726cd560c51a7c60e320e1bdfe45501c9a91b`. Macbeth05 fetched that exact ref into the existing
+isolated PR #26 checkout, reinstalled the locked Node dependencies, and reran the unchanged full
+critical-source coverage driver. All 643 tests passed. The 13-source result is 97.37% lines, 95.39%
+branches and 98.56% functions; `chain-routes.ts` reaches 100% branches, `chain-sync.ts` 99.39%,
+`rpc.ts` 99.34% and `chain-store.ts` 88.81%. Base-to-head `git diff --check` passes.
+
+Every concrete frozen critical zero-hit enumerated at `28ff3d4...` is absent. Two raw branch records
+remain relevant to interpretation rather than remediation: `chain-sync.ts:242` is the closing brace
+of a `finally` block whose source lines execute 104 times, and `rpc.ts:325` is the closing brace of a
+retry loop whose line 326 fallback is unreachable because every terminal iteration returns or
+throws. The raw coverage result is preserved. The frozen concrete Chain/API subset is
+`PASS_AT_PR26_SOURCE_CHECKPOINT`; overall JS/TS coverage remains `NOT_MEASURED`.
+
+| PR #26 remediation artifact                | SHA-256                                                            |
+| ------------------------------------------ | ------------------------------------------------------------------ |
+| `pr26-a4d73bb-full-critical-coverage.log`  | `f8682d9419227b1ddd6cbe6a460306d5b122af0103ed59bf3ba1982678e40860` |
+| `pr26-a4d73bb-full-critical-coverage.lcov` | `dc2b53a0dfc8da5e6440913ffb2fe1bb8682d987f120ec8cebd41b0314cac54f` |
+| `summarize-pr26-a4d73bb-branches.mjs`      | `001a92a17573c0e0b8beab8fe02522a55ffd65484e5e0114fa013ca8e7c4ff49` |
+| `pr26-a4d73bb-critical-branch-gaps.json`   | `927fb67cb210e2273b032d64f29ffa00c2a2cf5091644cd41129e0df90ceab4d` |
+
+## Final PR #27 product and browser checkpoint
+
+PR #27 final evidence head is `ffe7d08b0aa4fc2a71e01418033ced942526bfdf`, tree
+`544c9204dbaf2425acb9cac4cbdf01526d7ad7b3`; product code is unchanged from `bb8b628...`.
+Macbeth05 used Node 24.21.0 and npm 11.19.1 in a separate dependency directory. Typecheck, ESLint,
+Prettier, web build, exact PR branch/title identity for all 13 worker commits, and base-to-head
+`git diff --check` pass. The worker's six-file multi-Vault group passes 86/86, and the expanded
+13-file critical-product group passes 137/137.
+
+The permitted-local full suite passes 642/643. The only failure is the shared migration provenance
+entry: `apps/web/src/product-ui.ts` is actually
+`dd368d5033b1d30dc7c4707c18523976e3fc37f6a746b4101c7a674ec94d7f99`, while the shared record still
+expects `56c01e81072d10088eef3011d317ff8e34b8e7bd1d1dd19548baf812c82f3ea2`. The initial sandbox run
+also had four loopback `EPERM` failures; those disappeared in the permitted-local rerun and are not
+classified as source failures.
+
+The real Codex in-app browser journey used only the explicit `DEV_MOCK` fixture at
+`http://127.0.0.1:5194/?m3Fixture=1#/trade/trend`. It showed two reviewed Vaults with different
+Owners and spenders and the same Pass address. A Vault A withdrawal reached a one-base-unit
+Owner-bound review; selecting Vault B cleared the dialog and disabled writes until Owner B
+reconnected. Vault A accepted an exact one-base-unit AF-USDC approval; Vault B remained at zero,
+and switching back restored Vault A's one-base-unit allowance. Vault B transferred exactly one raw
+Pass unit to the reviewed recipient, reported `SUBMITTED`, and after refresh changed the balance
+from `1000000000000000000` to `999999999999999999`. Wrong chain ID 1 disabled Deposit, Withdraw,
+Close and Pass transfer. Buy/Sell remained outside Phase One, strategy execution remained deferred,
+and the browser console contained no warning or error. Screenshots exist in the computer-use task
+record; the tool returned no repository file path, so no image artifact is claimed here.
+
+| PR #27 artifact                            | SHA-256                                                            |
+| ------------------------------------------ | ------------------------------------------------------------------ |
+| `pr27-ffe7d08-focused-multivault.log`      | `d15933f4c8e69d929a45d7124fb42ca78f66c2e064496f8c6bb0c845f56da24e` |
+| `pr27-ffe7d08-critical-product-tests.log`  | `8a520fb2904fcafc1647e92572ace6cab408a97da6bc7cd6c260074854afbcbd` |
+| `pr27-ffe7d08-typecheck.log`               | `2a6a2c0222a96232b5dd3dea2c3e4411abfc22401c3a741d0a8e3f88ad508016` |
+| `pr27-ffe7d08-lint.log`                    | `fcbadef52cfd75d63be42f230222655fb4f63a3916164157e43956728eb448c1` |
+| `pr27-ffe7d08-format-check.log`            | `ff037a0c2db2ebb4c2444f87ee6b8fa32e15250dc00f90a7dc4c57834beb82e8` |
+| `pr27-ffe7d08-build-web.log`               | `4b3950aa5c0d33f199aadb621bcd4b5bb30c2f7ae472345ee65a414e32fbe849` |
+| `pr27-ffe7d08-agent-identity-exact.log`    | `afb33c9e523a71a163a8e2bb46cfae5349ec1a7d3a3df9f9cdbadf50d73ef9ff` |
+| `pr27-ffe7d08-full-npm-test-permitted.log` | `08e915ad696019e48c204e6434dd89a3d10af808e0d83cb83c6946df56de3d3b` |
+| `pr27-ffe7d08-diff-check.log`              | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
+
+After this run, Macbeth01 announced local integration source
+`639ffd8f85a89ee9266112c6d80e90e9428381a2` containing PR #26 `a4d73bb...`, PR #27 `ffe7d08...`
+and QA `c27c869...`, with the shared product provenance updated and 705/705 tests reportedly
+passing. The object is not present in Macbeth05's repository object stores or remote refs, and new
+C/R/S evidence is not yet published. Those statements are recorded as manager evidence only; they
+are not an independent acceptance result for that integration source.
