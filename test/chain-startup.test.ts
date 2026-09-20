@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdir, mkdtemp } from 'node:fs/promises';
 import { resolve } from 'node:path';
-import { startM3Server } from '../apps/server/src/m3-startup.ts';
+import { startM3Server, type M3ServerStartupOptions } from '../apps/server/src/m3-startup.ts';
 import {
   deploymentManifestDigest,
   type DeploymentManifestDocument,
@@ -768,6 +768,35 @@ test('multi-runtime startup rejects empty, inactive and shared database sets', a
     );
 });
 
+test('startup requires exactly one deployment form and a bounded sync interval', async () => {
+  const root = await directory();
+  const app = {
+    dbPath: resolve(root, 'ledger.sqlite'),
+    env: { QP_MODE: 'local', QP_ADAPTER: 'mock' },
+    origin: 'http://127.0.0.1:4180',
+  };
+  for (const options of [
+    { app, syncIntervalMs: null },
+    {
+      app,
+      deployment: { deploymentStatus: 'NOT_DEPLOYED' as const },
+      deployments: [],
+      syncIntervalMs: null,
+    },
+  ])
+    await assert.rejects(startM3Server(options as M3ServerStartupOptions), /INVALID_M3_DEPLOYMENT_SET/);
+
+  for (const syncIntervalMs of [999, 300_001, 1.5])
+    await assert.rejects(
+      startM3Server({
+        app,
+        deployment: { deploymentStatus: 'NOT_DEPLOYED' },
+        syncIntervalMs,
+      }),
+      /INVALID_M3_SYNC_INTERVAL/,
+    );
+});
+
 test('StrategyPass transfer reaches canonical evidence and exact holder balance projections', async () => {
   const root = await directory();
   const server = await startM3Server(
@@ -1036,6 +1065,24 @@ test('startup rejects non-loopback listen hosts at runtime', async () => {
     }),
     /INVALID_M3_LISTEN_ADDRESS/,
   );
+});
+
+test('startup rejects invalid loopback ports before building the application', async () => {
+  const root = await directory();
+  for (const port of [-1, 65_536, 1.5])
+    await assert.rejects(
+      startM3Server({
+        deployment: { deploymentStatus: 'NOT_DEPLOYED' },
+        app: {
+          dbPath: resolve(root, `ledger-${port}.sqlite`),
+          env: { QP_MODE: 'local', QP_ADAPTER: 'mock' },
+          origin: 'http://127.0.0.1:4180',
+        },
+        listen: { host: '127.0.0.1', port },
+        syncIntervalMs: null,
+      }),
+      /INVALID_M3_LISTEN_ADDRESS/,
+    );
 });
 
 test('indexer connectivity failure does not prevent the product server starting or later recovering', async () => {

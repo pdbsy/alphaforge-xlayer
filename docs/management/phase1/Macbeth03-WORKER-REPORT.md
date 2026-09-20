@@ -26,28 +26,34 @@ Runtime boundary: Local / Mock / NOT_DEPLOYED
 - `npm run typecheck`: PASS.
 - `npm run lint`: PASS.
 - `npm run format:check`: PASS.
-- `npm test`: PASS, 619/619.
+- `npm test`: PASS, 627/627.
 - `npm run secrets:check`: PASS.
 - `npm run privacy:check`: PASS.
 - `npm run env:check`: exit 0; local/mock admission, workspace warning for the intentional task diff, contracts `NOT_RUN`.
 
-Focused Node LCOV after the Macbeth05 gap report:
+Macbeth05's full-suite runner measured the 13 critical chain/API files on the current candidate:
 
-| Module | Branches |
-| --- | ---: |
-| `apps/server/src/m3-pass-integration.ts` | 37/37 (100.00%) |
-| `packages/chain-adapter/src/pass-abi.ts` | 26/26 (100.00%) |
-| `apps/server/src/m3-vault-integration.ts` | 59/59 (100.00%) after removing two proven unreachable catches behind validated string/decimal guards |
-| `packages/chain-adapter/src/rpc.ts` | 131/140 (93.57%) |
-| `packages/chain-adapter/src/vault-abi.ts` | 78/86 (90.70%) |
-| `apps/server/src/chain-sync.ts` | 140/151 (92.72%) |
-| `apps/server/src/chain-store.ts` | 315/382 (82.46%) |
-| `apps/server/src/m3-startup.ts` | 54/69 (78.26%) |
-| `apps/server/src/m3-app.ts` | 13/19 (68.42%) |
+| Module | Lines | Branches | Functions |
+| --- | ---: | ---: | ---: |
+| `apps/server/src/chain-routes.ts` | 314/314 (100.00%) | 75/77 (97.40%) | 17/17 (100.00%) |
+| `apps/server/src/chain-store.ts` | 1538/1663 (92.48%) | 332/395 (84.05%) | 52/52 (100.00%) |
+| `apps/server/src/chain-sync.ts` | 461/464 (99.35%) | 139/150 (92.67%) | 24/24 (100.00%) |
+| `apps/server/src/m3-app.ts` | 42/42 (100.00%) | 21/22 (95.45%) | 3/3 (100.00%) |
+| `apps/server/src/m3-chain-runtime.ts` | 398/401 (99.25%) | 115/117 (98.29%) | 17/17 (100.00%) |
+| `apps/server/src/m3-pass-integration.ts` | 159/159 (100.00%) | 37/37 (100.00%) | 9/9 (100.00%) |
+| `apps/server/src/m3-startup.ts` | 171/186 (91.94%) | 66/74 (89.19%) | 16/19 (84.21%) |
+| `apps/server/src/m3-vault-integration.ts` | 245/245 (100.00%) | 59/59 (100.00%) | 10/10 (100.00%) |
+| `packages/chain-adapter/src/keccak.ts` | 89/89 (100.00%) | 18/18 (100.00%) | 3/3 (100.00%) |
+| `packages/chain-adapter/src/manifest.ts` | 167/167 (100.00%) | 37/37 (100.00%) | 5/5 (100.00%) |
+| `packages/chain-adapter/src/pass-abi.ts` | 78/78 (100.00%) | 26/26 (100.00%) | 7/7 (100.00%) |
+| `packages/chain-adapter/src/rpc.ts` | 393/400 (98.25%) | 131/140 (93.57%) | 23/23 (100.00%) |
+| `packages/chain-adapter/src/vault-abi.ts` | 282/282 (100.00%) | 88/88 (100.00%) | 19/19 (100.00%) |
+
+Critical-file totals: 96.59% lines, 92.26% branches, and 98.56% functions. Manifest, Keccak, Pass/Vault ABI, and Pass/Vault reconciliation authorization and accounting branches are 100% covered.
 
 The focused report is not an overall repository coverage claim. Remaining `chain-store` branches are primarily schema-corruption, impossible concurrent mutation, migration, and rollback failure paths; they remain visible rather than being deleted or presented as covered. New tests exercise actual amount/precision, target/chain identity, receipt/finality, close/rescue settlement state, stale checkpoint, sync range, unknown log, malformed projection, and corrupt persisted JSON behavior.
 
-Focused LCOV SHA-256: `75419185901f67cb0ffac05ceedd71ebf0630a7bae62b34f0d0ae73c1c879a03`.
+Recorded raw LCOV SHA-256: `673bc4634643ad5ac8ce819eb1254692a90070f242bffe06cc141a1983375c88`.
 
 ## External-state boundary
 
