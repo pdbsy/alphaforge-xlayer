@@ -113,3 +113,101 @@ Source inspection and browser behavior both show that current product actions ar
 ## Base conclusion
 
 The base has strong functional contract and recovery evidence, and the complete locked contract gate passes after independently verified offline dependency reproduction. It is not Phase 1 acceptable because the usable Pass transfer product path is absent, the coverage targets are not met/proven, management evidence is not bound to this worker branch, the final unified candidate is pending, Testnet writes are unauthorized, and the historical security-review service limitation remains unresolved.
+
+## Published-worker follow-up after temporary checkout loss
+
+The original task checkout and all historical `/private/tmp` evidence directories referenced above
+were absent when the follow-up began. They were not reconstructed. A clean QA worktree was recovered
+from the published branch at `a35f19b...`; PR #24, PR #26 and PR #27 were checked out as separate
+detached read-only source worktrees with independent dependency directories. This section records
+only new follow-up observations under `/private/tmp/AlphaForge-M3-05-RECOVERED-EVIDENCE`.
+
+At PR #26 head `67b7d48e7e393133b1b231aa4dc20d1319665278`, the complete package
+test list passed 617/617 in the permitted local loopback environment. The same full test list, with
+13 critical Chain/API source files explicitly included, reported 96.44% lines, 88.98% branches and
+98.52% functions. This is a `FAIL` against the frozen 100% critical authorization/accounting branch
+target. The initial sandbox attempt had four loopback `EPERM` failures; it is environmental failure
+evidence and is not reported as a source failure or a pass.
+
+| Recovered follow-up artifact | SHA-256 |
+| --- | --- |
+| `run-pr26-full-coverage.mjs` | `9e7e074bcd5777854eda9f2ae52af3ba170dca755c70952ef502f5487648006c` |
+| `pr26-full-critical-coverage.log` | `0db0f92ce3cac8c369bda6cfa1723855f62dcd9021e8fab8740fc4ff59a58c76` |
+| `pr26-full-critical-coverage.lcov` | `d2533d4cc8d72aff5835581345020a2785b800ecd00bf8bb2a74bd2c5e19b6b7` |
+| `summarize-pr26-branches.mjs` | `5b67ff7778f02b2c2e59e55ae3965352f21a28809600958c6af88ccef1301b6a` |
+| `pr26-critical-branch-gaps.json` | `8c4bec8ae5374bd013de1466fd9efe3d27f05c3eb3dfc85cd8be36850779d67a` |
+| `pr26-diff-check.log` | `18b2f9e3bcd0f8e18d99ea1b6c532620e19bd885b5ce83e8a9d6822b82e93a15` |
+
+The PR #26 base-to-head `git diff --check` also exits 2 because
+`docs/management/phase1/Macbeth03-INTAKE.md` lines 3-5 contain trailing whitespace. This is a source
+hygiene/evidence failure, not a confirmed runtime defect.
+
+At PR #27 head `332549c07239c41c1f1c3735cc1e5e8f247d3d6b`, the 11-file targeted
+product group passed 125/125. Its new follow-up log is
+`/private/tmp/AlphaForge-M3-05-RECOVERED-EVIDENCE/pr27-targeted-product-tests.log`, SHA-256
+`5680202d26e28e9120f71c6bbe9f1d0de1803ff693d91c8548984d115a10984f`; it is not final
+candidate evidence because PR #27 is a separate worker head and its checked-in browser record is
+bound to older source identities.
+
+Independent PR #24 contract execution is now `BLOCKED`: the recovered source checkout has no
+`.checks/af-chain01/toolchain/bin/forge`, Slither venv, pinned solc or wheel cache, and the host has
+no system Forge or solc. Macbeth05 does not inherit the worker's self-reported 134-test/100%-core
+result as independent evidence. The exact final commands and closure criteria are recorded in
+[Final Candidate Acceptance Preparation](FINAL-CANDIDATE-ACCEPTANCE-PREP.md).
+
+That temporary blocker was subsequently resolved. The original bootstrap acquired and verified
+Forge 1.5.1, OpenZeppelin 5.4.0 and all 47 hash-locked binary wheels. The fixed solc URL timed out
+twice without returning bytes; Macbeth05 then copied the already approved public artifact from a
+known local task environment into this task's isolated directory. Source and copy had distinct
+inodes; both were 35,738,976 bytes with SHA-256
+`f5a243d6b2dd8fba307e36c5fefa2d8eb3ae74ba81036d1c17c971b5d346ade9`, and the copy was mode
+`0444`. The unchanged bootstrap and gate reverified the bytes before use.
+
+At PR #24 evidence head `a13052993b6f408b7be835ecd6f4b13ef6df367d`, tree
+`0db6b922fa8c33219793f4d758e39d46665905d0`, the independent gate passed 24/24 Python tests,
+134/134 Solidity tests, fuzz/invariant suites, ABI equality, manifest equality and deployment
+rehearsal. Slither JSON reports `success: true`, `error: null` and zero detectors. Independent Forge
+coverage reports `AlphaForgeVault`, `PassLocker` and `StrategyPass` at 100% lines, statements,
+branches and functions; complete compiled totals are 95.53% lines, 95.12% statements, 73.42%
+branches and 95.54% functions.
+
+| New independent PR #24 artifact | SHA-256 |
+| --- | --- |
+| `pr24-independent-contract-gate.log` | `ce21fa201e92aa7751e95a95e091d2930356b7af197eed6c70c32017b9f400dd` |
+| `pr24-independent-coverage.log` | `25216f3495f82aa343f6fb0c64bd91bcace356857a7f5337074d834df7218eab` |
+| `pr24-independent-coverage.lcov` | `ab68b1355c159d195c72ef262246b7ad7ffcc5fcee0b127fa31b2141ffa95115` |
+| task-local `slither.json` | `6075497f3ba5e1b4cbd5302241e78e7ad61e5b81e371a86ed2bdeff356557046` |
+
+PR #26 progressed to final worker head `28ff3d4b5c6e70ff0c6ea1b11ad0fea4283887fd`, tree
+`7f4abc27757e099c1b5b26a66509395015bdb7b7`. The independent permitted-local rerun passes 627/627
+tests and reports 96.59% lines, 92.11% branches and 98.56% functions for the same 13 sources.
+Wrong-chain, Pass-code, manifest and Vault-ABI gaps are closed, while the enumerated operation
+evidence, canonical recovery, state mapping and RPC-input gaps keep the critical target failed.
+`git diff --check` from the fixed base passes.
+
+| Final-worker PR #26 artifact | SHA-256 |
+| --- | --- |
+| `pr26-28ff3d4-full-critical-coverage.log` | `1238723a86d93a2192df7d06af5e84237c6d148512ebf27738ec670762db1918` |
+| `pr26-28ff3d4-full-critical-coverage.lcov` | `99989cc423ebc590e22fca9c53f5071a26f25e577d2bfbc9e25817cb8e422e2e` |
+| `summarize-pr26-28ff3d4-branches.mjs` | `bbf713951212cb32940a64d2fc1af5ef1311c8a5bae8f6244561b6cea15651c7` |
+| `pr26-28ff3d4-critical-branch-gaps.json` | `c4cdbeaadc7db5f8ecf14cb0b4a23947e1d762c4af2b2a239f55887e195abbb2` |
+
+## Hosted PR #25 checks at `77398e0...`
+
+GitHub ran two Engineering Checks workflows for source head
+`77398e02f3f5683ea189da7f79053c38fc2e6236`, tree
+`9894428a64c16e98bfec1d456eb8c55682c85d5e`. In both runs, `contracts-m3-macos`,
+`dependency-delta-audit`, `gitleaks`, `osv-scanner`, `semgrep-ce` and `source-policy-js` passed.
+Linux `verify`, `verify-macos` and `verify-windows` failed at the same final management-dashboard
+gate with `RECORDED_GIT_CI_CONTEXT_INVALID`. Their environment admission and preceding tests passed.
+This is the already-recorded shared C/R/S CI-context binding, not a newly discovered platform or
+contract failure. Macbeth05 did not regenerate or edit the shared evidence.
+
+| Downloaded failed-job log | SHA-256 |
+| --- | --- |
+| Linux `verify` | `ea6174038fc1b052c7f82a0d37943c856e061af06c85a928439d9452753771a6` |
+| `verify-macos` | `38fbca5c2284ae3939a60dbc960fb85433acc550bb48708ff960d5dde57beae5` |
+| `verify-windows` | `a9e84ad39cdbecc0b54986f490d45a82cdc5d8cbb816a671681faa2b0982a3cd` |
+
+The hosted result remains `FUNCTIONAL_AND_SECURITY_JOBS_PASS / MANAGEMENT_CONTEXT_BLOCKED`; it is
+not a complete required-check PASS and cannot close the final-candidate gate.
