@@ -72,7 +72,7 @@
 - [x] Run `node --test test/chain-store.test.ts test/chain-api.test.ts` and confirm expected RED failures.
 - [x] Implement minimal backup and health methods plus the safe status projection.
 - [x] Run focused tests and migration tests, including version-one and version-three fixtures.
-- [ ] Commit this independently reviewable recovery batch.
+- [x] Commit this independently reviewable recovery batch (`9886ffc`).
 
 ### Task 3: Multi-Vault, multi-wallet, and multi-strategy isolation
 
@@ -92,10 +92,10 @@
 - Routes submissions by exact chain and target contract; unknown or duplicate runtime identities fail closed.
 - Confirms projection keys include chain, immutable Vault contract, owner wallet, and `m3-vault`; strategy identity remains a state field verified against the Vault and Strategy Pass at the same canonical block.
 
-- [ ] Write failing tests for two Vaults with different owners/strategies in the same database and contract-qualified API reads/submissions.
-- [ ] Run `node --test test/chain-api.test.ts test/chain-store.test.ts test/chain-vault-integration.test.ts` and confirm expected RED failures.
-- [ ] Implement the minimal runtime registry and exact dispatch rules.
-- [ ] Run focused tests and the complete chain test set; verify no cross-Vault reads, writes, closures, or sync health leakage.
+- [x] Write failing tests for two Vaults with different owners/strategies in the same database and contract-qualified API reads/submissions.
+- [x] Run `node --test test/chain-api.test.ts test/chain-store.test.ts test/chain-vault-integration.test.ts` and confirm expected RED failures.
+- [x] Implement the minimal runtime registry and exact dispatch rules.
+- [x] Run focused tests and the complete chain test set; verify no cross-Vault reads, writes, closures, or sync health leakage.
 - [ ] Commit this independently reviewable isolation batch.
 
 ### Task 4: Recovery matrix, UI/API handoff, and non-broadcast smoke procedure

@@ -17,7 +17,9 @@ const CHAIN_ID = 46_630;
 const OWNER = asAddress('0x1111111111111111111111111111111111111111');
 const OTHER_OWNER = asAddress('0x3333333333333333333333333333333333333333');
 const CONTRACT = asAddress('0x2222222222222222222222222222222222222222');
+const OTHER_CONTRACT = asAddress('0x4444444444444444444444444444444444444444');
 const TX_HASH = asTransactionHash(`0x${'aa'.repeat(32)}`);
+const OTHER_TX_HASH = asTransactionHash(`0x${'dd'.repeat(32)}`);
 const BLOCK_HASH = asBlockHash(`0x${'bb'.repeat(32)}`);
 const PARENT_HASH = asBlockHash(`0x${'cc'.repeat(32)}`);
 const env = { QP_MODE: 'local', QP_ADAPTER: 'mock' };
@@ -341,4 +343,142 @@ test('runtime status exposes fixed deployment identity and database health witho
     },
   });
   assert.doesNotMatch(response.body, /private-chain|private-ledger|\.sqlite/);
+});
+
+test('multi-Vault API isolates contract, wallet and strategy state and requires explicit Vault selection', async (t) => {
+  const directory = await folder();
+  const dbPath = resolve(directory, 'shared-chain.sqlite');
+  const otherManifestBody = { ...manifestBody, contractAddress: OTHER_CONTRACT };
+  const otherManifestDigest = deploymentManifestDigest(otherManifestBody);
+  const otherManifest = validateDeploymentManifest(
+    { ...otherManifestBody, manifestDigest: otherManifestDigest },
+    {
+      environment: 'robinhood-chain-testnet',
+      chainId: CHAIN_ID,
+      manifestDigest: otherManifestDigest,
+      contractAddress: OTHER_CONTRACT,
+    },
+  );
+  const first = new M3ChainRuntime({ dbPath, rpc: new InertRpc(), manifest });
+  const second = new M3ChainRuntime({ dbPath, rpc: new InertRpc(), manifest: otherManifest });
+  const block = { number: 1n, hash: BLOCK_HASH, parentHash: PARENT_HASH, timestamp: 1n };
+  first.store.recordCanonicalBlock(CHAIN_ID, CONTRACT, block, []);
+  first.store.commitProjections(CHAIN_ID, CONTRACT, block, [
+    {
+      chainId: CHAIN_ID,
+      owner: OWNER,
+      contract: CONTRACT,
+      projectionKey: 'm3-vault',
+      blockNumber: 1n,
+      blockHash: BLOCK_HASH,
+      state: { strategyId: 'trend', principalBasis: '1000000' },
+    },
+  ]);
+  second.store.recordCanonicalBlock(CHAIN_ID, OTHER_CONTRACT, block, []);
+  second.store.commitProjections(CHAIN_ID, OTHER_CONTRACT, block, [
+    {
+      chainId: CHAIN_ID,
+      owner: OTHER_OWNER,
+      contract: OTHER_CONTRACT,
+      projectionKey: 'm3-vault',
+      blockNumber: 1n,
+      blockHash: BLOCK_HASH,
+      state: { strategyId: 'yield', principalBasis: '2000000' },
+    },
+  ]);
+  const multiOptions = {
+    dbPath: resolve(directory, 'ledger.sqlite'),
+    env,
+    origin,
+    chainRuntimes: [first, second],
+  } as Parameters<typeof buildApp>[0] & { chainRuntimes: readonly M3ChainRuntime[] };
+  await assert.rejects(
+    () =>
+      buildApp({
+        ...multiOptions,
+        dbPath: resolve(directory, 'duplicate-ledger.sqlite'),
+        chainRuntimes: [first, first],
+      }),
+    /DUPLICATE_CHAIN_RUNTIME/,
+  );
+  const { app } = await buildApp(multiOptions);
+  t.after(async () => {
+    await app.close();
+    first.close();
+    second.close();
+  });
+
+  const firstRead = await app.inject({
+    url: `/api/v1/chain/vaults/${CONTRACT}/${OWNER}`,
+    headers,
+  });
+  assert.equal(firstRead.statusCode, 200, firstRead.body);
+  assert.equal(firstRead.json().state.strategyId, 'trend');
+  const secondRead = await app.inject({
+    url: `/api/v1/chain/vaults/${OTHER_CONTRACT}/${OTHER_OWNER}`,
+    headers,
+  });
+  assert.equal(secondRead.statusCode, 200, secondRead.body);
+  assert.equal(secondRead.json().state.strategyId, 'yield');
+  assert.equal(
+    (
+      await app.inject({
+        url: `/api/v1/chain/vaults/${OTHER_CONTRACT}/${OWNER}`,
+        headers,
+      })
+    ).statusCode,
+    404,
+  );
+
+  const ambiguous = await app.inject({ url: `/api/v1/chain/vaults/${OWNER}`, headers });
+  assert.equal(ambiguous.statusCode, 409, ambiguous.body);
+  assert.equal(ambiguous.json().error, 'CHAIN_VAULT_SELECTION_REQUIRED');
+
+  const submitted = await app.inject({
+    method: 'POST',
+    url: '/api/v1/chain/operations',
+    headers: { ...headers, origin, 'x-quantpass-demo': '1' },
+    payload: {
+      operationId: 'other-vault-close',
+      chainId: CHAIN_ID,
+      owner: OTHER_OWNER,
+      target: OTHER_CONTRACT,
+      calldata: encodeM3VaultCall('close()', []),
+      txHash: OTHER_TX_HASH,
+    },
+  });
+  assert.equal(submitted.statusCode, 202, submitted.body);
+  assert.equal(submitted.json().target, OTHER_CONTRACT);
+  assert.equal(second.store.operation('other-vault-close')?.target, OTHER_CONTRACT);
+
+  const unconfigured = await app.inject({
+    method: 'POST',
+    url: '/api/v1/chain/operations',
+    headers: { ...headers, origin, 'x-quantpass-demo': '1' },
+    payload: {
+      operationId: 'unconfigured-vault',
+      chainId: CHAIN_ID,
+      owner: OWNER,
+      target: OWNER,
+      calldata: encodeM3VaultCall('close()', []),
+      txHash: asTransactionHash(`0x${'ee'.repeat(32)}`),
+    },
+  });
+  assert.equal(unconfigured.statusCode, 400, unconfigured.body);
+  assert.equal(unconfigured.json().error, 'CHAIN_SUBMISSION_INVALID');
+
+  const otherStatus = await app.inject({
+    url: `/api/v1/chain/runtime-status/${OTHER_CONTRACT}`,
+    headers,
+  });
+  assert.equal(otherStatus.statusCode, 200, otherStatus.body);
+  assert.equal(otherStatus.json().deployment.contract, OTHER_CONTRACT);
+  const statusList = await app.inject({ url: '/api/v1/chain/runtime-status', headers });
+  assert.equal(statusList.statusCode, 200, statusList.body);
+  assert.deepEqual(
+    statusList
+      .json()
+      .runtimes.map((status: { deployment: { contract: string } }) => status.deployment.contract),
+    [CONTRACT, OTHER_CONTRACT],
+  );
 });
