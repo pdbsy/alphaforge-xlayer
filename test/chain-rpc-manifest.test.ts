@@ -19,6 +19,7 @@ const TX_HASH = asTransactionHash(`0x${'33'.repeat(32)}`);
 const BLOCK_HASH = asBlockHash(`0x${'44'.repeat(32)}`);
 const PARENT_HASH = asBlockHash(`0x${'55'.repeat(32)}`);
 const RUNTIME_HASH = asBlockHash(`0x${'77'.repeat(32)}`);
+const ABI_HASH = asBlockHash('0x264b4498cf396008e4619664c59bf8d8eac0a04f04b80e760df3cfbc00846977');
 const ENDPOINT = 'https://rpc.testnet.chain.robinhood.com';
 
 const manifestBody = {
@@ -30,6 +31,7 @@ const manifestBody = {
   contractAddress: CONTRACT,
   deploymentBlock: '100',
   abiVersion: 'm3-owner-v1',
+  abiHash: ABI_HASH,
   runtimeBytecodeHash: RUNTIME_HASH,
 };
 const DIGEST = asBlockHash(`0x${createHash('sha256').update(JSON.stringify(manifestBody)).digest('hex')}`);
@@ -44,6 +46,7 @@ test('deployment manifest is accepted only when exact trusted identity matches',
   const manifest = validateDeploymentManifest(manifestInput, expected);
   assert.equal(manifest.contractAddress, CONTRACT);
   assert.equal(manifest.deploymentBlock, 100n);
+  assert.equal(manifest.abiHash, ABI_HASH);
   assert.equal(manifest.runtimeBytecodeHash, RUNTIME_HASH);
   assert.ok(Object.isFrozen(manifest));
   for (const changed of [
@@ -53,6 +56,7 @@ test('deployment manifest is accepted only when exact trusted identity matches',
     { ...manifestInput, contractAddress: OWNER },
     { ...manifestInput, contractName: 'OtherVault' },
     { ...manifestInput, deploymentBlock: '101' },
+    { ...manifestInput, abiHash: BLOCK_HASH },
     { ...manifestInput, runtimeBytecodeHash: BLOCK_HASH },
     { ...manifestInput, unexpected: true },
   ]) {
@@ -65,6 +69,9 @@ test('deployment manifest is accepted only when exact trusted identity matches',
 });
 
 test('deployment manifest rejects missing runtime identity and unsafe identifiers', () => {
+  const withoutAbiHash = { ...manifestInput } as Partial<typeof manifestInput>;
+  delete withoutAbiHash.abiHash;
+  assert.throws(() => validateDeploymentManifest(withoutAbiHash, expected), /INVALID_DEPLOYMENT_MANIFEST/);
   const withoutRuntimeHash = { ...manifestInput } as Partial<typeof manifestInput>;
   delete withoutRuntimeHash.runtimeBytecodeHash;
   assert.throws(
@@ -74,6 +81,28 @@ test('deployment manifest rejects missing runtime identity and unsafe identifier
   assert.throws(
     () => validateDeploymentManifest({ ...manifestInput, abiVersion: '../untrusted' }, expected),
     /INVALID_DEPLOYMENT_MANIFEST/,
+  );
+  assert.throws(
+    () =>
+      validateDeploymentManifest(
+        { ...manifestInput, contractAddress: asAddress(`0x${'00'.repeat(20)}`) },
+        expected,
+      ),
+    /INVALID_DEPLOYMENT_MANIFEST/,
+  );
+});
+
+test('Ethereum Keccak-256 hashes bytecode with the legacy padding used by EVM identities', async () => {
+  const adapter = (await import('../packages/chain-adapter/src/index.ts')) as Record<string, unknown>;
+  assert.equal(typeof adapter.keccak256, 'function');
+  const keccak256 = adapter.keccak256 as (data: ReturnType<typeof asHexData>) => string;
+  assert.equal(
+    keccak256(asHexData('0x')),
+    '0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470',
+  );
+  assert.equal(
+    keccak256(asHexData('0x616263')),
+    '0x4e03657aea45a94fc7d47ba826c8d667c0d1e6e33a64a036ec44f58fa12d6c45',
   );
 });
 
@@ -116,6 +145,7 @@ test('read-only RPC verifies chain identity and normalizes receipt, block, logs 
         logs: [rawLog],
       },
       eth_getLogs: [rawLog],
+      eth_getCode: '0x6000',
       eth_call: '0x1234',
     }),
   });
@@ -132,6 +162,13 @@ test('read-only RPC verifies chain identity and normalizes receipt, block, logs 
   assert.equal(receipt?.to, CONTRACT);
   assert.equal(receipt?.logs[0]?.logIndex, 1);
   assert.deepEqual(await rpc.logs({ address: CONTRACT, fromBlock: 120n, toBlock: 120n }), receipt?.logs);
+  assert.equal(
+    await (rpc as JsonRpcClient & { code(address: typeof CONTRACT, block: bigint): Promise<string> }).code(
+      CONTRACT,
+      120n,
+    ),
+    '0x6000',
+  );
   assert.equal(await rpc.call({ to: CONTRACT, data: asHexData('0x1234') }, 120n), '0x1234');
 });
 
@@ -144,12 +181,16 @@ test('read-only RPC uses only allowlisted methods and canonical quantity encodin
       body: JSON.stringify({
         jsonrpc: '2.0',
         id: request.id,
-        result: request.method === 'eth_call' ? '0x' : [],
+        result: request.method === 'eth_call' || request.method === 'eth_getCode' ? '0x' : [],
       }),
     };
   };
   const rpc = new JsonRpcClient([ENDPOINT], { transport });
   await rpc.logs({ address: CONTRACT, fromBlock: 0n, toBlock: 16n, topics: [null] });
+  await (rpc as JsonRpcClient & { code(address: typeof CONTRACT, block: 'latest'): Promise<string> }).code(
+    CONTRACT,
+    'latest',
+  );
   await rpc.call(
     { to: CONTRACT, data: asHexData('0x1234') },
     { blockHash: BLOCK_HASH, requireCanonical: true },
@@ -158,6 +199,10 @@ test('read-only RPC uses only allowlisted methods and canonical quantity encodin
     {
       method: 'eth_getLogs',
       params: [{ address: CONTRACT, fromBlock: '0x0', toBlock: '0x10', topics: [null] }],
+    },
+    {
+      method: 'eth_getCode',
+      params: [CONTRACT, 'latest'],
     },
     {
       method: 'eth_call',

@@ -8,7 +8,7 @@ import {
   validateDeploymentManifest,
 } from '../packages/chain-adapter/src/manifest.ts';
 import type { ReadonlyRpc } from '../packages/chain-adapter/src/rpc.ts';
-import { encodeM3VaultCall } from '../packages/chain-adapter/src/vault-abi.ts';
+import { encodeM3VaultCall, M3_VAULT_ABI_HASH } from '../packages/chain-adapter/src/vault-abi.ts';
 import { asAddress, asBlockHash, asHexData, asTransactionHash } from '../packages/chain-adapter/src/types.ts';
 
 const CONTRACT = asAddress('0x2222222222222222222222222222222222222222');
@@ -23,6 +23,7 @@ const manifestBody = {
   contractAddress: CONTRACT,
   deploymentBlock: '100',
   abiVersion: 'm3-vault-db620d6',
+  abiHash: M3_VAULT_ABI_HASH,
   runtimeBytecodeHash: asBlockHash(`0x${'99'.repeat(32)}`),
 } as const;
 const manifestDigest = deploymentManifestDigest(manifestBody);
@@ -44,10 +45,20 @@ class InertRpc implements ReadonlyRpc {
   async logs() {
     return [];
   }
+  async code() {
+    return asHexData('0x6000');
+  }
   async call() {
     return asHexData('0x');
   }
 }
+
+test('runtime rejects live bytecode that does not match the trusted manifest before indexing', async () => {
+  const runtime = new M3ChainRuntime({ dbPath: await path(), rpc: new InertRpc(), manifest });
+  await assert.rejects(() => runtime.syncToHead(), /M3_DEPLOYMENT_CODE_MISMATCH/);
+  assert.equal(runtime.store.checkpoint(manifest.chainId, manifest.contractAddress), null);
+  runtime.close();
+});
 
 async function path() {
   await mkdir('.checks', { recursive: true });

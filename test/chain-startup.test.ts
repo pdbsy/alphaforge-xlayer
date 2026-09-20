@@ -16,7 +16,12 @@ import type {
   ChainReceipt,
   ReadonlyRpc,
 } from '../packages/chain-adapter/src/rpc.ts';
-import { M3_VAULT_REVIEW_ABI, encodeM3VaultCall } from '../packages/chain-adapter/src/vault-abi.ts';
+import { keccak256 } from '../packages/chain-adapter/src/keccak.ts';
+import {
+  M3_VAULT_ABI_HASH,
+  M3_VAULT_REVIEW_ABI,
+  encodeM3VaultCall,
+} from '../packages/chain-adapter/src/vault-abi.ts';
 import { transitionOperation } from '../packages/chain-adapter/src/lifecycle.ts';
 import {
   asAddress,
@@ -40,6 +45,7 @@ const TX = asTransactionHash(`0x${'aa'.repeat(32)}`);
 const BAD_TX = asTransactionHash(`0x${'bb'.repeat(32)}`);
 const STRATEGY_ID = asHexData(`0x${'11'.repeat(32)}`);
 const STRATEGY_REF = asHexData(`0x${'22'.repeat(32)}`);
+const RUNTIME_CODE = asHexData('0x6000');
 const blocks = new Map<bigint, ChainBlock>(
   [1n, 2n, 3n].map((number) => [
     number,
@@ -65,7 +71,8 @@ const manifestBody: DeploymentManifestDocument = {
   contractAddress: CONTRACT,
   deploymentBlock: '1',
   abiVersion: 'm3-vault-db620d6',
-  runtimeBytecodeHash: asBlockHash(`0x${'99'.repeat(32)}`),
+  abiHash: M3_VAULT_ABI_HASH,
+  runtimeBytecodeHash: keccak256(RUNTIME_CODE),
 };
 const manifestDigest = deploymentManifestDigest(manifestBody);
 
@@ -87,6 +94,9 @@ class StartupRpc implements ReadonlyRpc {
   readonly receiptHashes: string[] = [];
   async chainId() {
     return CHAIN_ID;
+  }
+  async code() {
+    return RUNTIME_CODE;
   }
   async block(number: bigint | 'latest') {
     return blocks.get(number === 'latest' ? this.latest : number) ?? null;
