@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { createM3InjectedRuntimeFixture } from '../apps/web/src/m3-injected-runtime-fixture.ts';
+import { asAddress } from '../packages/chain-adapter/src/types.ts';
 
 test('injected runtime drives wrong-network, owner read, mock submit and recovery states', async () => {
   const fixture = createM3InjectedRuntimeFixture();
@@ -20,6 +21,7 @@ test('injected runtime drives wrong-network, owner read, mock submit and recover
   assert.equal(runtime.snapshot.onchain.depositAuthorization?.approvalCapability, 'AVAILABLE');
   assert.equal(runtime.snapshot.onchain.depositAuthorization?.afUsdcAllowanceBaseUnits, '0');
   assert.equal(runtime.snapshot.onchain.depositAuthorization?.passAllowanceBaseUnits, '0');
+  assert.equal(runtime.snapshot.onchain.passBalanceBaseUnits, '2000000000000000000');
 
   const deposit = { kind: 'deposit' as const, usdcBaseUnits: '1000001' };
   const usdcApproval = await runtime.reviewDepositApprovals!(deposit);
@@ -75,6 +77,25 @@ test('injected runtime drives wrong-network, owner read, mock submit and recover
   assert.equal(runtime.snapshot.onchain.health, 'DEGRADED');
   assert.equal(runtime.snapshot.onchain.exitPath, 'SIMULATION');
   assert.equal(runtime.snapshot.transaction.status, 'INDEXING');
+});
+
+test('injected runtime exercises full-precision Pass transfer and post-close rescue', async () => {
+  const fixture = createM3InjectedRuntimeFixture();
+  fixture.setCorrectNetwork();
+  await fixture.runtime.connect();
+  const transfer = await fixture.runtime.reviewPassTransfer!({
+    recipient: asAddress('0x9999999999999999999999999999999999999999'),
+    passBaseUnits: '1',
+  });
+  await fixture.runtime.confirmPassTransfer!(transfer);
+  await fixture.runtime.refresh();
+  assert.equal(fixture.runtime.snapshot.onchain.passBalanceBaseUnits, '1999999999999999999');
+
+  await fixture.setClosed();
+  assert.equal(fixture.runtime.snapshot.onchain.vaultClosed, true);
+  const rescue = await fixture.runtime.reviewAction({ kind: 'rescue-native' });
+  await fixture.runtime.confirmAction(rescue);
+  assert.equal(fixture.runtime.snapshot.transaction.status, 'SUBMITTED');
 });
 
 test('injected runtime reviews bind the exact request and are single-use', async () => {

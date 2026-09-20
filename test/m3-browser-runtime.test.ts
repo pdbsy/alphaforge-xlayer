@@ -35,13 +35,16 @@ class ProviderFixture implements Eip1193Provider {
 
 class ConfiguredProviderFixture extends ProviderFixture {
   override chainId = 46_630;
+  account: string | null = OWNER;
   usdcAllowance = 0n;
   passAllowance = 0n;
+  passBalance = 0n;
   closed = false;
 
   override async request(input: Eip1193Request): Promise<unknown> {
     this.requests.push(input);
-    if (input.method === 'eth_requestAccounts' || input.method === 'eth_accounts') return [OWNER];
+    if (input.method === 'eth_requestAccounts' || input.method === 'eth_accounts')
+      return this.account ? [this.account] : [];
     if (input.method === 'eth_chainId') return `0x${this.chainId.toString(16)}`;
     if (input.method === 'eth_getBlockByNumber') return { number: '0x64', hash: vaultSnapshot.blockHash };
     if (input.method === 'eth_sendTransaction') return TX_HASH;
@@ -70,6 +73,8 @@ class ConfiguredProviderFixture extends ProviderFixture {
         return uintResult(0n);
       if (String(call?.data).startsWith('0xdd62ed3e'))
         return uintResult(call?.to === AF_USDC ? this.usdcAllowance : this.passAllowance);
+      if (String(call?.data).startsWith('0x70a08231') && call?.to === PASS)
+        return uintResult(this.passBalance);
       return '0x';
     }
     throw new Error('UNEXPECTED_PROVIDER_METHOD');
@@ -294,12 +299,28 @@ test('configured runtime disables writes when the connected provider changes to 
   await runtime.refresh();
   assert.deepEqual(runtime.snapshot.network, { status: 'WRONG', chainId: 1 });
   assert.equal(runtime.snapshot.onchain.writeMode, 'DISABLED');
+  assert.equal(runtime.snapshot.onchain.passTransferMode, 'DISABLED');
   assert.equal(onchainActionEnabled(runtime.snapshot.onchain, 'withdraw'), false);
 
   provider.chainId = 46_630;
   await runtime.refresh();
   assert.deepEqual(runtime.snapshot.network, { status: 'CORRECT', chainId: 46_630 });
   assert.equal(runtime.snapshot.onchain.writeMode, 'LIVE_AUTHORIZED');
+});
+
+test('configured runtime disables Pass transfer after wallet disconnect', async () => {
+  const provider = new ConfiguredProviderFixture();
+  const runtime = createM3BrowserRuntime({
+    provider,
+    deployment,
+    vaultReader: { readSnapshot: async () => vaultSnapshot },
+  });
+  await runtime.connect();
+  assert.equal(runtime.snapshot.onchain.passTransferMode, 'LIVE_AUTHORIZED');
+  provider.account = null;
+  await runtime.refresh();
+  assert.equal(runtime.snapshot.wallet.status, 'DISCONNECTED');
+  assert.equal(runtime.snapshot.onchain.passTransferMode, 'DISABLED');
 });
 
 test('configured runtimes create collision-resistant operation ids across browser reloads', async () => {
@@ -416,8 +437,9 @@ test('degraded registered evidence keeps owner exit actions while marking the in
 });
 
 for (const source of ['canonical', 'live-exit'] as const) {
-  test(`a closed Vault disables product actions after ${source} refresh`, async () => {
+  test(`a closed Vault preserves exact owner rescue actions after ${source} refresh`, async () => {
     const provider = new ConfiguredProviderFixture();
+    const registrations: Array<Record<string, unknown>> = [];
     const runtime = createM3BrowserRuntime({
       provider,
       deployment,
@@ -425,6 +447,10 @@ for (const source of ['canonical', 'live-exit'] as const) {
         readSnapshot: async () => {
           if (source === 'live-exit') throw new Error('INDEXER_UNAVAILABLE');
           return { ...vaultSnapshot, state: { ...vaultSnapshot.state, closed: provider.closed } };
+        },
+        registerSubmission: async (input) => {
+          registrations.push(input);
+          return { state: 'SUBMITTED' };
         },
       },
     });
@@ -434,17 +460,113 @@ for (const source of ['canonical', 'live-exit'] as const) {
     await runtime.refresh();
     for (const action of ['deposit', 'withdraw', 'close'] as const)
       assert.equal(onchainActionEnabled(runtime.snapshot.onchain, action), false, action);
-    assert.equal(runtime.snapshot.onchain.writeMode, 'DISABLED');
+    assert.equal(onchainActionEnabled(runtime.snapshot.onchain, 'rescue-token'), true);
+    assert.equal(onchainActionEnabled(runtime.snapshot.onchain, 'rescue-native'), true);
+    assert.equal(runtime.snapshot.onchain.writeMode, 'LIVE_AUTHORIZED');
     const html = renderM3StrategyShell({
       strategyId: 'trend',
       contentProvenance: 'FIXTURE',
       ...runtime.snapshot,
     });
     assert.match(html, /VAULT CLOSED/);
-    assert.doesNotMatch(html, /Owner exit remains available/);
-    assert.equal(
-      provider.requests.some((request) => request.method === 'eth_sendTransaction'),
-      false,
+    assert.match(html, /Owner-only post-close rescue remains available/);
+
+    const nativeReview = await runtime.reviewAction({ kind: 'rescue-native' });
+    await runtime.confirmAction(nativeReview);
+    const tokenReview = await runtime.reviewAction({ kind: 'rescue-token', token: AF_USDC });
+    await runtime.confirmAction(tokenReview);
+    const sent = provider.requests
+      .filter((request) => request.method === 'eth_sendTransaction')
+      .map((request) => request.params?.[0] as { readonly to: string; readonly data: string });
+    assert.deepEqual(
+      sent.map(({ to, data }) => ({ to, data })),
+      [
+        { to: VAULT, data: encodeM3VaultCall('rescueNative()', []) },
+        { to: VAULT, data: encodeM3VaultCall('rescueUntrackedToken(address)', [AF_USDC]) },
+      ],
     );
+    assert.equal(registrations.length, 2);
+    assert.equal(registrations[0]?.calldata, encodeM3VaultCall('rescueNative()', []));
+    assert.equal(registrations[1]?.calldata, encodeM3VaultCall('rescueUntrackedToken(address)', [AF_USDC]));
+    await assert.rejects(runtime.confirmAction(tokenReview), /INVALID_PRODUCT_REVIEW/);
   });
 }
+
+test('open Vault rejects rescue review without asking the wallet to send', async () => {
+  const provider = new ConfiguredProviderFixture();
+  const runtime = createM3BrowserRuntime({
+    provider,
+    deployment,
+    vaultReader: { readSnapshot: async () => vaultSnapshot },
+  });
+  await runtime.connect();
+  await assert.rejects(runtime.reviewAction({ kind: 'rescue-native' }), /M3_RESCUE_REQUIRES_CLOSED_VAULT/);
+  assert.equal(
+    provider.requests.some((request) => request.method === 'eth_sendTransaction'),
+    false,
+  );
+});
+
+test('configured runtime transfers one raw Pass unit to the reviewed recipient exactly once', async () => {
+  const provider = new ConfiguredProviderFixture();
+  provider.passBalance = 1n;
+  const registrations: Array<Record<string, unknown>> = [];
+  const runtime = createM3BrowserRuntime({
+    provider,
+    deployment,
+    vaultReader: {
+      readSnapshot: async () => vaultSnapshot,
+      registerSubmission: async (input) => {
+        registrations.push(input);
+        return { state: 'SUBMITTED' };
+      },
+    },
+    now: () => '2026-09-20T00:00:00.000Z',
+  });
+  await runtime.connect();
+  assert.equal(runtime.snapshot.onchain.passAddress, PASS);
+  assert.equal(runtime.snapshot.onchain.passBalanceBaseUnits, '1');
+  assert.equal(typeof runtime.reviewPassTransfer, 'function');
+  assert.equal(typeof runtime.confirmPassTransfer, 'function');
+
+  const request = {
+    recipient: asAddress('0x9999999999999999999999999999999999999999'),
+    passBaseUnits: '1',
+  };
+  const review = await runtime.reviewPassTransfer!(request);
+  assert.deepEqual(review.request, request);
+  assert.equal(review.token, PASS);
+  await runtime.confirmPassTransfer!(review);
+
+  const transfer = provider.requests.filter((item) => item.method === 'eth_sendTransaction').at(-1)
+    ?.params?.[0] as { readonly to: string; readonly data: string };
+  assert.equal(transfer.to, PASS);
+  assert.equal(
+    transfer.data,
+    `0xa9059cbb${request.recipient.slice(2).padStart(64, '0')}${'1'.padStart(64, '0')}`,
+  );
+  assert.deepEqual(registrations, []);
+  await assert.rejects(runtime.confirmPassTransfer!(review), /INVALID_PASS_TRANSFER_REVIEW/);
+});
+
+test('reviewed deployment metadata exposes initial Pass allocation without inventing a sale', async () => {
+  const provider = new ConfiguredProviderFixture();
+  const runtime = createM3BrowserRuntime({
+    provider,
+    deployment: {
+      ...deployment,
+      passInitialSupplyBaseUnits: '10000000000000000000',
+      passInitialRecipient: OWNER,
+    },
+    vaultReader: { readSnapshot: async () => vaultSnapshot },
+  });
+  await runtime.connect();
+  assert.equal(runtime.snapshot.onchain.passInitialSupplyBaseUnits, '10000000000000000000');
+  assert.equal(runtime.snapshot.onchain.passInitialRecipient, OWNER);
+  assert.throws(() =>
+    createM3BrowserRuntime({
+      provider,
+      deployment: { ...deployment, passInitialSupplyBaseUnits: '1' },
+    }),
+  );
+});

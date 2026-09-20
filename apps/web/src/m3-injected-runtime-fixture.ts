@@ -37,6 +37,8 @@ const deployment: M3BrowserDeploymentConfig = Object.freeze({
   abiVersion: 'm3-dev-fixture-v1',
   manifestDigest: asBlockHash(`0x${'12'.repeat(32)}`),
   runtimeBytecodeHash: asBlockHash(`0x${'34'.repeat(32)}`),
+  passInitialSupplyBaseUnits: '2000000000000000000',
+  passInitialRecipient: OWNER,
 });
 
 const vaultSnapshot: M3VaultSnapshot = Object.freeze({
@@ -77,6 +79,8 @@ class DevProvider implements Eip1193Provider {
   account = OWNER;
   usdcAllowance = 0n;
   passAllowance = 0n;
+  passBalance = 2_000_000_000_000_000_000n;
+  closed = false;
 
   on(): void {}
   removeListener(): void {}
@@ -95,6 +99,10 @@ class DevProvider implements Eip1193Provider {
         const allowance = BigInt(`0x${data.slice(74)}`);
         if (transaction?.to === AF_USDC) this.usdcAllowance = allowance;
         else if (transaction?.to === PASS) this.passAllowance = allowance;
+      } else if (transaction?.to === PASS && data.startsWith('0xa9059cbb') && data.length === 138) {
+        const transferAmount = BigInt(`0x${data.slice(74)}`);
+        if (transferAmount > this.passBalance) throw new Error('DEV_FIXTURE_INSUFFICIENT_PASS_BALANCE');
+        this.passBalance -= transferAmount;
       }
       return TX_HASH;
     }
@@ -112,7 +120,7 @@ class DevProvider implements Eip1193Provider {
       if (data === encodeM3VaultCall('afBtc()', [])) return addressResult(AF_BTC);
       if (data === encodeM3VaultCall('passLocker()', []))
         return addressResult(vaultSnapshot.state.passLocker);
-      if (data === encodeM3VaultCall('closed()', [])) return uintResult(0n);
+      if (data === encodeM3VaultCall('closed()', [])) return uintResult(this.closed ? 1n : 0n);
       if (
         data === encodeM3VaultCall('principalBasis()', []) ||
         data === encodeM3VaultCall('trackedUsdcBalance()', []) ||
@@ -124,6 +132,7 @@ class DevProvider implements Eip1193Provider {
         return uintResult(0n);
       if (data.startsWith('0xdd62ed3e'))
         return uintResult(call?.to === AF_USDC ? this.usdcAllowance : this.passAllowance);
+      if (data.startsWith('0x70a08231') && call?.to === PASS) return uintResult(this.passBalance);
       return '0x';
     }
     throw new Error('DEV_FIXTURE_PROVIDER_METHOD_UNSUPPORTED');
@@ -147,13 +156,17 @@ const pendingEvidence = (): ProductOperationEvidence => ({
 
 class DevVaultReader implements M3VaultReader {
   degraded = false;
+  closed = false;
   evidence = pendingEvidence();
   operationId: string | null = null;
   owner: Address | null = null;
 
   async readSnapshot(owner: Address): Promise<M3VaultSnapshot> {
     if (this.degraded || !sameAddress(owner, OWNER)) throw new Error('DEV_FIXTURE_PROJECTION_UNAVAILABLE');
-    return vaultSnapshot;
+    return Object.freeze({
+      ...vaultSnapshot,
+      state: Object.freeze({ ...vaultSnapshot.state, closed: this.closed }),
+    });
   }
 
   async registerSubmission(input: Parameters<NonNullable<M3VaultReader['registerSubmission']>>[0]) {
@@ -185,6 +198,7 @@ export interface M3InjectedRuntimeFixture {
   setSoftReady(): Promise<void>;
   setReorged(): Promise<void>;
   setDegraded(): Promise<void>;
+  setClosed(): Promise<void>;
 }
 
 export function createM3InjectedRuntimeFixture(): M3InjectedRuntimeFixture {
@@ -260,6 +274,11 @@ export function createM3InjectedRuntimeFixture(): M3InjectedRuntimeFixture {
       };
       await runtime.refresh();
     },
+    setClosed: async () => {
+      provider.closed = true;
+      reader.closed = true;
+      await runtime.refresh();
+    },
   });
 }
 
@@ -270,7 +289,7 @@ export function installM3InjectedRuntimeControls(fixture: M3InjectedRuntimeFixtu
   controls.className = 'wrap dialog-notice';
   controls.setAttribute('data-m3-fixture-controls', '');
   controls.innerHTML =
-    '<strong>DEV TRANSPORT MOCK / PRODUCTION RUNTIME / NO REAL RIGHTS OR FUNDS / NO BROADCAST</strong><div class="inline-actions"><button data-m3-fixture="network">Use correct network</button><button data-m3-fixture="wrong-network">Use wrong network</button><button data-m3-fixture="owner">Use owner wallet</button><button data-m3-fixture="non-owner">Use non-owner wallet</button><button data-m3-fixture="soft-ready">Soft ready</button><button data-m3-fixture="reorg">Reorg</button><button data-m3-fixture="degraded">Indexer degraded</button></div>';
+    '<strong>DEV TRANSPORT MOCK / PRODUCTION RUNTIME / NO REAL RIGHTS OR FUNDS / NO BROADCAST</strong><div class="inline-actions"><button data-m3-fixture="network">Use correct network</button><button data-m3-fixture="wrong-network">Use wrong network</button><button data-m3-fixture="owner">Use owner wallet</button><button data-m3-fixture="non-owner">Use non-owner wallet</button><button data-m3-fixture="soft-ready">Soft ready</button><button data-m3-fixture="reorg">Reorg</button><button data-m3-fixture="degraded">Indexer degraded</button><button data-m3-fixture="closed">Close Vault state</button></div>';
   controls.addEventListener('click', (event) => {
     const button = (event.target as Element).closest<HTMLButtonElement>('[data-m3-fixture]');
     if (!button) return;
@@ -281,6 +300,7 @@ export function installM3InjectedRuntimeControls(fixture: M3InjectedRuntimeFixtu
     else if (button.dataset.m3Fixture === 'soft-ready') void fixture.setSoftReady();
     else if (button.dataset.m3Fixture === 'reorg') void fixture.setReorged();
     else if (button.dataset.m3Fixture === 'degraded') void fixture.setDegraded();
+    else if (button.dataset.m3Fixture === 'closed') void fixture.setClosed();
   });
   main.before(controls);
 }
