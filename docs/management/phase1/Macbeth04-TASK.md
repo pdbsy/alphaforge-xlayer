@@ -8,6 +8,6 @@ Dependencies: 先消费 base ABI/adapter；等待 02/03 新接口精确 SHA；�
 
 Read [the full assigned user scope](../specs/PHASE1-CLOSEOUT-2026-09-20.md), especially the frozen constraints and your worker section, and [assignments](ASSIGNMENTS.md). Current instructions supersede historical inactive/startup states only within this assignment.
 
-Acceptance: report precise source/candidate/tree/environment/commands/results; preserve failures and NOT_RUN; provide versioned handoff, own retrospective and original PR/Forum ACK. No Testnet broadcast, signing, merge, rule weakening, history rewrite or invented approval. The new Task Intake is not yet received.
+Acceptance: report precise source/candidate/tree/environment/commands/results; preserve failures and NOT_RUN; provide versioned handoff, own retrospective and original PR/Forum ACK. No Testnet broadcast, signing, merge, rule weakening, history rewrite or invented approval. Actual intake and delivery status are tracked in ASSIGNMENTS.md and Macbeth01-RESUMPTION.md; intake is not final acceptance.
 
 最新范围决定见 [DECISIONS.md](DECISIONS.md)。

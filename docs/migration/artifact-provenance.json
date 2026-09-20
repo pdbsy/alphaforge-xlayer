@@ -1588,7 +1588,7 @@
       "target_path": "docs/management/agents/registry.json",
       "method": "registry migrated; historical confirmations reset for canonical repository; user-authorized Macbeth06 CI/gate role registration (2026-09-20), historical source identity unchanged",
       "original_sha256": "ecb05bfdcccf1abb036c4e4fdd16155e959ae706395020db4a1dac49e43f50b6",
-      "migrated_sha256": "3f191a5d21c0489442a4791859dfa30cb9a41f89de259581a4bee546b6d13510",
+      "migrated_sha256": "4061231b7dcd76a782b8d4a3d059e02f4009c45e1c85aefe79d61c51593e1792",
       "subsequent_adaptations": [
         {
           "task": "AF-M3-IDENTITY",
@@ -1649,6 +1649,12 @@
           "base_commit": "18f5352070910a867b9729b031aa2e3951785e01",
           "previous_sha256": "c9e0e5b3b958d9ffebd61740c93015f626129979c6cbe34dd55eceeaf13f879a",
           "reason": "Record actual worker ACKs and current read-only Forum synchronization; retain original migration sources and prior records."
+        },
+        {
+          "task": "M3-01-PHASE1-CLOSEOUT",
+          "base_commit": "18f5352070910a867b9729b031aa2e3951785e01",
+          "previous_sha256": "3f191a5d21c0489442a4791859dfa30cb9a41f89de259581a4bee546b6d13510",
+          "reason": "Record verified worker04 intake, corrected worker03 source branch and actual minimum worker06 receipt; do not invent public ACK."
         }
       ]
     },
@@ -1902,7 +1908,15 @@
       "target_path": "apps/web/src/product-ui.ts",
       "method": "selective source integration; shared-file resolution recorded in CONFLICTS.md; M3-04-PRODUCT-UI adds the manifest-bound Vault runtime, finite approval review and canonical evidence readback",
       "original_sha256": "c094739b2c8308526a0d1470f72c32ac74de6c2157a3dcc0b0972584da755d38",
-      "migrated_sha256": "56c01e81072d10088eef3011d317ff8e34b8e7bd1d1dd19548baf812c82f3ea2"
+      "migrated_sha256": "335dd498b1b70a4b52ec1029e59b2efda7f9f750f47f4d7b1459e80c4a75c0db",
+      "subsequent_adaptations": [
+        {
+          "task": "M3-01-PHASE1-CLOSEOUT",
+          "base_commit": "18f5352070910a867b9729b031aa2e3951785e01",
+          "previous_sha256": "56c01e81072d10088eef3011d317ff8e34b8e7bd1d1dd19548baf812c82f3ea2",
+          "reason": "Integrate the exact Macbeth04 Phase One product implementation; preserve original migration source identity."
+        }
+      ]
     },
     {
       "source_repository": "pdbsy/quantpass",

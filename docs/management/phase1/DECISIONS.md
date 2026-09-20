@@ -9,3 +9,8 @@
 ## 统一问题入口
 
 用户明确要求所有 worker 的问题返回 Macbeth01，由 Macbeth01 先自行查证解决，仅无法解决的事项统一询问用户。该规则已随任务派发落实；不会扩大业务、权限或风险授权。
+
+## 已有规范依据的实施澄清
+
+- 一策略一 StrategyPass，不是每个 Vault 必须独占 Pass。StrategyPass 绑定 strategyId；各 Vault 创建独立不可变 Locker，允许不同 Owner 的同策略 Vault 共享 Pass。03 正纠正全局 Pass 唯一性假设，保留 Vault 唯一、配置身份与隔离约束。依据与当前修复状态见 Macbeth01-RESUMPTION.md。
+- 用户原文是“创建或选择 Vault”。第一阶段产品补齐来自受审 allowlist 的真实 Vault 选择；API runtime-status 只能核验身份/健康，不能成为可信部署参数来源。初始创建仍沿用显式 Owner 的受审构造部署方案，未授权交易前保持 NOT_DEPLOYED。无需新增 factory、自动发现或自助部署来满足此处“或”的要求。
