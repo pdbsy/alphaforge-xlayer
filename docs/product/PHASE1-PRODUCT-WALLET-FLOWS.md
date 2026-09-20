@@ -6,14 +6,18 @@
 - Product source candidate: `86f2f9036657eeda3a7357943b6fcac6de3e5dbe`
 - Candidate tree: `ae90be8d3411d921bdaf37cf15d3fdea01ce22b3`
 - Fixed base: `18f5352070910a867b9729b031aa2e3951785e01`
-- Contract handoff consumed read-only: `e5eff6805d9705745bc0b4483de83466e5693ffa`
-- Contract handoff evidence head: `f703209a0ba409818f75ed6074242b3395f7938e`
+- Contract handoff consumed read-only: `2ad816200e7edfbfad96d765b4a696bc8b838c2d`
+- Contract handoff evidence head: `a13052993b6f408b7be835ecd6f4b13ef6df367d`
 - Runtime boundary: `LOCAL / MOCK / NOT_DEPLOYED`
 
 The contract handoff confirms that `StrategyPass`, `AlphaForgeVault`, and `PassLocker` retain the
 base ABI. It also confirms that initial Pass allocation is performed only by the Strategy Pass
-constructor and that ordinary transfers retain all 18 decimal places. No Macbeth02 commit is part
-of this worker branch; integration remains a Macbeth01 responsibility.
+constructor and that ordinary transfers retain all 18 decimal places. The corrected handoff changes
+only reproducible immutable compiler-reference offsets, deployment-boundary documentation, and
+business-boundary tests; production Solidity, constructor inputs, selectors, topics, and the Vault
+ABI consumed by this UI are unchanged. `TestVenue` and `SwapAdapter` are outside the default minimal
+deployment candidate. No Macbeth02 commit is part of this worker branch; integration remains a
+Macbeth01 responsibility.
 
 ## User-visible behavior
 
@@ -68,4 +72,3 @@ into `READY`.
 - No Vault factory or multi-Vault discovery interface was invented. The current product selects the
   single reviewed Vault in deployment metadata. Additional creation/discovery remains dependent on
   an exact integrated interface.
-
