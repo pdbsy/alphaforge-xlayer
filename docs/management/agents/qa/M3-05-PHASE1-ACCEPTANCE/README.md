@@ -10,7 +10,7 @@ BASE_SHA: `18f5352070910a867b9729b031aa2e3951785e01`
 
 This directory is Macbeth05's versioned QA record for the AlphaForge Phase 1 closeout. It separates the intake baseline, requirement matrix, historical-version mapping, execution evidence, findings, and the later final-candidate conclusion.
 
-Current status: `BASE_REGRESSION_COMPLETE / FINAL_CANDIDATE_BLOCKED`. The exact base has completed local dependency, engineering, contract, coverage, and browser acceptance. It is not the unified final candidate, does not establish Testnet acceptance, and does not resolve the historical security-review service limitation or independent approval requirements.
+Current status: `PUBLISHED_WORKER_ACCEPTANCE_COMPLETE / FINAL_CANDIDATE_BLOCKED`. The exact base and latest PR #24, #26 and #27 worker checkpoints have completed their applicable independent local verification. They are not one unified final candidate, do not establish Testnet acceptance, and do not resolve the historical security-review service limitation or independent approval requirements.
 
 ## Records
 
