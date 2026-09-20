@@ -36,6 +36,11 @@ const errors: Readonly<Record<string, { status: number; message: string; retryab
   CHAIN_OPERATION_NOT_FOUND: { status: 404, message: '未找到该链上操作。', retryable: false },
   CHAIN_SUBMISSION_INVALID: { status: 400, message: '链上操作登记无效。', retryable: false },
   CHAIN_OPERATION_CONFLICT: { status: 409, message: '链上操作标识与已有记录冲突。', retryable: false },
+  CHAIN_VAULT_SELECTION_REQUIRED: {
+    status: 409,
+    message: '必须明确选择链上 Vault 合约。',
+    retryable: false,
+  },
   CHAIN_PROJECTION_NOT_FOUND: { status: 404, message: '未找到该链上 Vault。', retryable: false },
   CHAIN_PROJECTION_UNAVAILABLE: { status: 503, message: '链上 Vault 投影暂不可用。', retryable: true },
   RATE_LIMITED: { status: 429, message: '请求过于频繁，请稍后重试。', retryable: true },
