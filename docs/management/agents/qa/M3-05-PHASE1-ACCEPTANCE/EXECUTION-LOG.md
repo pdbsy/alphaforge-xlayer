@@ -379,3 +379,76 @@ The exact candidate result is `LOCAL_UNIFIED_CANDIDATE_FUNCTIONAL_PASS / FINAL_E
 It is not a final milestone PASS. Candidate-bound C/R/S, the base-to-candidate diff check, complete
 overall JS/TS coverage, hosted required checks, eligible independent approval, the restricted
 security-review result and authorized Testnet evidence remain unresolved.
+
+## Refreshed exact integration checkpoint `3a78e34...`
+
+Macbeth01 supplied refreshed candidate `3a78e34ba933f1e3239424d3bf0b1e27b1a65bb8`, tree
+`6f1a21845a99e16a0ba171612cd97e9bf3439294`, on
+`macbeth01/m3-phase1-closeout`. Its evidence chain is C
+`cb6ecd7ce7d8d230a03f87c64065df8b3aa66793`, R
+`41e36815ca5f07a1a825cf7ea55fae4bbf63e2ab`, S `3a78e34...`. Macbeth05 created isolated clone
+`/private/tmp/AlphaForge-M3-05-INTEGRATION-3A78E34` with `--no-local --no-hardlinks`, checked out
+the exact source and installed 193 locked packages. The clone used its own dependency directory and
+no shared writable SQLite data.
+
+The complete `npm run check` passes with 711/711 tests. Environment admission reports
+`eligibleForEvidence: true`; canonical identity verifies 71 records, comprising 36 original source
+records and 35 manager records; the management dashboard has zero diagnostics. Base-to-candidate
+`git diff --check` produces no output. A direct path-limited diff between `639ffd8...` and
+`3a78e34...` is empty for application, package, contract and critical-test functional source.
+
+| Exact-candidate check                    | Result                 | Evidence SHA-256                                                   |
+| ---------------------------------------- | ---------------------- | ------------------------------------------------------------------ |
+| Complete `npm run check`                 | `PASS` — 711/711       | `8eafedf19945894a8714ca88f328a8bac78743022a677396ce5b8250c3f6cafa` |
+| Canonical identity                       | `PASS` — 71 records    | `2841c5beed5b419d55d324586bf492ff539f1581a486dae625465766b82df561` |
+| Environment admission                    | `PASS`                 | `da10b4cc06dda1c6d1c80ebc77374531e30b02eb9d831682bd98872eea8f912d` |
+| Management dashboard                     | `PASS` — 0 diagnostics | `91850e50f8218d62c3bf262c03e1ceca935e1d387099cc5972d58fa5e3cd0102` |
+| Base-to-candidate `git diff --check`     | `PASS` — empty         | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
+| Functional source diff from `639ffd8...` | `PASS` — empty         | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
+| Gitleaks disposition regression          | `PASS` — 16/16         | `bbd88e4dd958ef395af2be67e8910be1d9faa4f5273ed8b591b7585be775eedc` |
+| Exact local Gitleaks 8.30.1 gate         | `PASS`                 | `fc37eca1fa29869feaf0fca98a731213110166179b8b9721dd32287107a837ea` |
+
+The Gitleaks gate verifies a hash-locked 8.30.1 binary, a redaction canary, full available history
+and every tracked current file. The raw historical result remains `FAIL`; only the exact one-row,
+time-bounded occurrence is dispositioned after its commit, tree, blob and source text match their
+immutable proofs. Extra, duplicate, malformed, expired or mismatched rows remain failed or blocked.
+The current-tree result receives no disposition. The archived approved artifact used by the gate
+matched lock SHA-256 `b40ab0ae...`, had a distinct inode and was read-only.
+
+Codex Security scan `6688c259-6db5-4c46-b087-761e6d9722ca` reviewed the exact
+`639ffd8...3a78e34...` range, including the production scanner wrapper and its supporting bootstrap,
+staging, result-classification and C/R/S controls. Coverage is complete, with zero discovery
+candidates and zero reportable findings. Report SHA-256 is
+`c21697b0787d48dfb87f16830ce599ce58d7cff0df9549aa9731d9bec72ebd0b`; findings JSON SHA-256 is
+`759755ce992ca540f727254d1f6cf69dc4b33e444f56dea4b2c6a2fe8c64507a`. This local scan is bounded
+by fetched refs and does not substitute for the hosted exact-candidate job or the historical
+restricted security service.
+
+### Refreshed critical coverage and inherited journeys
+
+The exact candidate's complete 711-test list ran with all 13 critical Chain/API sources included.
+All tests pass; the result is 97.37% lines, 95.40% branches and 98.56% functions. Every frozen
+concrete critical branch is covered. The two raw residuals remain the nonsemantic executed
+`chain-sync.ts:242` brace and the unreachable `rpc.ts:325` loop-close record. The raw denominator is
+preserved. Overall JS/TS coverage remains `NOT_MEASURED` pending qualification and execution of a
+complete homogeneous counter.
+
+| Critical coverage artifact                      | SHA-256                                                            |
+| ----------------------------------------------- | ------------------------------------------------------------------ |
+| `run-integration-3a78e34-critical-coverage.mjs` | `aaefa45a9c1eb8b26a93695bec27fb755ad3c8293fce0d25072264e545215591` |
+| `integration-3a78e34-critical-coverage.log`     | `2f7f11c8964dd1def6e29e31ad699d62550d73365f41dd6c511c8592c3383a9b` |
+| `integration-3a78e34-critical-coverage.lcov`    | `d3227b94ed7ae3d07ea3ca03847ba5db149e67b0497b0b367aa7ad524664f3d3` |
+| `summarize-integration-3a78e34-branches.mjs`    | `c0dfc8da70b861c90a821d790cfd1fbcb095c1750584b002c26403d677a13998` |
+| `integration-3a78e34-critical-branch-gaps.json` | `e1bb666812d4c031679185a633e99f9002d12e5f35fcfe4e16d9d82bf6745a34` |
+
+Because `contracts/**` is unchanged, the independent PR #24 contract gate and 100% core-contract
+coverage remain applicable by exact source equivalence. Product source is also unchanged from the
+real-browser-validated `639ffd8...` candidate, so that one-raw-unit transfer, multi-Vault isolation
+and wrong-network shutdown result remains applicable. Macbeth05 did not relabel that inherited
+browser result as a new browser execution.
+
+The refreshed local conclusion is
+`LOCAL_UNIFIED_CANDIDATE_GATE_PASS / FINAL_COVERAGE_AND_EXTERNAL_EVIDENCE_BLOCKED`. Candidate-bound
+C/R/S and source hygiene are resolved. Overall JS/TS coverage, exact-candidate hosted checks,
+eligible independent approval, the historical restricted-service disposition and separately
+authorized Testnet evidence remain open.

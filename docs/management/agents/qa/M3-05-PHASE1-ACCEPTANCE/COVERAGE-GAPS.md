@@ -157,3 +157,39 @@ LCOV and branch-gap JSON SHA-256 values are respectively
 `bc59d41daf49b98d37a743e034022500daf0f66acfddef43f535ff949ec4c8b1`,
 `ad7248f05f9ba092d07dd88df571e3ccee004d693a01dd3ac13575b355f88e20` and
 `e938e3fe48bf701bb3031ed002440397a5ee62ad8fa82f0945a7e2a2a9c956e3`.
+
+## Refreshed candidate `3a78e34...`
+
+Candidate `3a78e34ba933f1e3239424d3bf0b1e27b1a65bb8` does not change the contract,
+Chain/API or product functional source from `639ffd8...`. Macbeth05 nevertheless reran the complete
+711-test list with the 13 critical Chain/API sources explicitly included. All tests pass; coverage
+is 97.37% lines, 95.40% branches and 98.56% functions. The only adjacent residual V8 records remain
+`chain-sync.ts:242`, an executed `finally` closing brace, and `rpc.ts:325`, the retry-loop closing
+brace before a fallback that cannot be reached because the final attempt returns or throws. The
+frozen concrete critical subset is `PASS_AT_3A78_LOCAL_CANDIDATE`; raw coverage is retained without
+rewriting the percentage.
+
+The manager's new canonical counter probe demonstrates that one original TypeScript AST count graph
+can conservatively merge a Node positive branch and a browser-minified negative branch from the
+same source: `[[1,0]] + [[0,1]]` becomes `[[1,1]]`, while an uncalled function, type-only source and
+an unimported file remain in the denominator at zero. This is useful method evidence, but it is not
+yet an admitted repository-wide measurement. Full syntax and prototype coverage, mixed callbacks,
+subprocess propagation and incomplete-process handling remain unqualified. A prior V8 Node/Vite
+union duplicated the branch denominator and is retained as a counterexample rather than reported as
+coverage. The production browser build with hidden source maps produced the same JavaScript and CSS
+bytes as the ordinary build, but byte equality alone does not solve the semantic branch mapping.
+
+For a process intentionally terminated by `SIGKILL`, missing or incomplete coverage output may be
+treated only as zero hits on the complete canonical denominator. If the conservative union still
+exceeds 90%, it can establish a mathematical lower bound; it cannot claim that the killed lifecycle
+was completely observed. The crash-recovery behavior remains proved by its functional test, and
+coverage hits must come from separately traceable executions. Until the complete method qualifies
+and produces a candidate-bound report, overall JS/TS coverage remains `NOT_MEASURED`.
+
+| Critical coverage artifact                      | SHA-256                                                            |
+| ----------------------------------------------- | ------------------------------------------------------------------ |
+| `run-integration-3a78e34-critical-coverage.mjs` | `aaefa45a9c1eb8b26a93695bec27fb755ad3c8293fce0d25072264e545215591` |
+| `integration-3a78e34-critical-coverage.log`     | `2f7f11c8964dd1def6e29e31ad699d62550d73365f41dd6c511c8592c3383a9b` |
+| `integration-3a78e34-critical-coverage.lcov`    | `d3227b94ed7ae3d07ea3ca03847ba5db149e67b0497b0b367aa7ad524664f3d3` |
+| `summarize-integration-3a78e34-branches.mjs`    | `c0dfc8da70b861c90a821d790cfd1fbcb095c1750584b002c26403d677a13998` |
+| `integration-3a78e34-critical-branch-gaps.json` | `e1bb666812d4c031679185a633e99f9002d12e5f35fcfe4e16d9d82bf6745a34` |

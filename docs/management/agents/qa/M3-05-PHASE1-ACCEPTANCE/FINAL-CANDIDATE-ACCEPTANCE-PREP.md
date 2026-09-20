@@ -350,3 +350,24 @@ residual records are nonsemantic or unreachable. Combined JS/TS overall coverage
 `NOT_MEASURED`. The candidate also lacks new C/R/S, fails the base-to-candidate diff check, and has
 no exact-candidate hosted, independent-review, restricted-security-service or Testnet-write
 evidence. Those conditions keep final acceptance open.
+
+## Refreshed candidate disposition
+
+For `3a78e34ba933f1e3239424d3bf0b1e27b1a65bb8`, tree
+`6f1a21845a99e16a0ba171612cd97e9bf3439294`, the former C/R/S and source-hygiene blockers are
+closed. Candidate evidence C is `cb6ecd7ce7d8d230a03f87c64065df8b3aa66793`; review evidence R is
+`41e36815ca5f07a1a825cf7ea55fae4bbf63e2ab`. The exact environment gate, 71-record identity gate,
+management dashboard, complete `npm run check`, base-to-candidate diff check, focused security
+regression and local Gitleaks 8.30.1 gate all pass. The complete check executes 711/711 tests.
+
+Contract, Chain/API and product functional sources are byte-identical to `639ffd8...`. The PR #24
+contract result and the `639ffd8...` real browser journey therefore remain applicable by source
+equivalence. Macbeth05 reran the exact critical Chain/API collection on `3a78e34...`; all 711 tests
+pass and every frozen concrete critical branch remains covered.
+
+The final local decision is
+`LOCAL_UNIFIED_CANDIDATE_GATE_PASS / FINAL_COVERAGE_AND_EXTERNAL_EVIDENCE_BLOCKED`. Closure still
+requires a candidate-bound admitted overall JS/TS coverage report at or above 90%, exact-candidate
+hosted required checks, eligible independent approval, disposition of the historical restricted
+security-service limitation, and separately authorized Testnet evidence. A canonical coverage
+counter probe is promising but does not yet satisfy the overall measurement requirement.

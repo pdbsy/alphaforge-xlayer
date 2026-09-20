@@ -61,17 +61,26 @@ records described above. This establishes `PASS_AT_639_LOCAL_CANDIDATE` for the 
 critical subset. The finding remains `OPEN` because combined JS/TS overall coverage is still
 `NOT_MEASURED` and the candidate lacks final C/R/S and hosted evidence.
 
+Refreshed candidate `3a78e34ba933f1e3239424d3bf0b1e27b1a65bb8`, tree
+`6f1a21845a99e16a0ba171612cd97e9bf3439294`, retains the same functional source and passes the
+complete 711-test list. Its independently rerun 13-source collection reports 97.37% lines, 95.40%
+branches and 98.56% functions; every frozen concrete critical branch remains covered. C/R/S,
+management identity and source hygiene now pass. `M3-05-P1-001` remains `OPEN` only for the overall
+JS/TS denominator: the new canonical AST counter has a valid small same-source Node/browser probe,
+but full syntax, subprocess and incomplete-process qualification is still pending, so overall
+coverage remains `NOT_MEASURED`.
+
 ## M3-05-P1-002 — Phase 1 has no usable Pass transfer product operation
 
 | Field         | Value                                                                                                                     |
 | ------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| Status        | `PASS_AT_639_LOCAL_CANDIDATE / OPEN_FOR_FINAL_ACCEPTANCE`                                                                 |
+| Status        | `PASS_AT_3A78_LOCAL_CANDIDATE / OPEN_FOR_FINAL_ACCEPTANCE`                                                                |
 | Severity      | `MEDIUM`                                                                                                                  |
 | Requirements  | `P1-SCOPE-01`, `P1-PRODUCT-01`                                                                                            |
 | Blocker class | `MILESTONE_COMPLETION_BLOCKER`                                                                                            |
 | Owners        | Macbeth04 product flow with Macbeth03 adapter/interface and Macbeth02 contract/interface alignment; Macbeth01 coordinates |
-| Fix SHA       | `639ffd8f85a89ee9266112c6d80e90e9428381a2`                                                                                |
-| Retest        | Independent local candidate pass; final C/R/S-bound candidate pending                                                     |
+| Fix SHA       | `3a78e34ba933f1e3239424d3bf0b1e27b1a65bb8`                                                                                |
+| Retest        | Independent local candidate pass; hosted and final governance evidence pending                                            |
 
 Reproduction: inspect the supported onchain action union and open the actual `/trade/trend` product entrypoint in production and the explicitly marked local fixture.
 
@@ -104,15 +113,23 @@ and complete wrong-network write shutdown. This finding is functionally resolved
 candidate, while final acceptance stays open until the candidate is bound to regenerated C/R/S and
 hosted evidence.
 
+Candidate `3a78e34...` changes no product source from that browser-validated candidate, passes
+711/711 tests and now carries valid C/R/S and management evidence. The finding is therefore
+`PASS_AT_3A78_LOCAL_CANDIDATE`; the overall milestone remains open only for the separate coverage
+and external acceptance conditions.
+
 ## Integration and external blockers
 
-| ID           | State     | Basis                                                                                                                                                                                             | Owner / closure condition                                                                                    |
-| ------------ | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| M3-05-P1-B01 | `BLOCKED` | Exact candidate `639ffd8...` reaches `management:check` and fails `RECORDED_GIT_BRANCH_MISMATCH`; no new candidate-bound C/R/S exists. Macbeth05 will not rewrite shared generated PASS evidence. | Macbeth01 regenerates C/R/S for the final candidate and all management checks pass.                          |
-| M3-05-P1-B02 | `BLOCKED` | Base-to-`639ffd8...` `git diff --check` fails because `docs/protocol/PHASE1-TESTNET-DEPLOYMENT-PLAN.md` lines 3-4 contain trailing whitespace.                                                    | The owning integration source removes the whitespace and the final candidate passes the exact diff check.    |
-| M3-05-P1-B03 | `BLOCKED` | Historical final security review remains service-limited; ordinary functional QA and the local Slither pass are different evidence.                                                               | Authorized qualifying service result for the exact candidate, or explicit closeout retaining the limitation. |
-| M3-05-P1-B04 | `BLOCKED` | Real Robinhood Chain Testnet writes, deployment, signing, and broadcast are outside this task's authorization.                                                                                    | Separate applicable authorization and transaction/readback evidence.                                         |
-| M3-05-P1-B05 | `NOT_RUN` | Hosted required checks and independent review are separate from Macbeth05's local evidence.                                                                                                       | Macbeth06/provider results and eligible independent approval on the exact candidate.                         |
+| ID           | State     | Basis                                                                                                                               | Owner / closure condition                                                                                    |
+| ------------ | --------- | ----------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| M3-05-P1-B03 | `BLOCKED` | Historical final security review remains service-limited; ordinary functional QA and the local Slither pass are different evidence. | Authorized qualifying service result for the exact candidate, or explicit closeout retaining the limitation. |
+| M3-05-P1-B04 | `BLOCKED` | Real Robinhood Chain Testnet writes, deployment, signing, and broadcast are outside this task's authorization.                      | Separate applicable authorization and transaction/readback evidence.                                         |
+| M3-05-P1-B05 | `NOT_RUN` | Hosted required checks and independent review are separate from Macbeth05's local evidence.                                         | Macbeth06/provider results and eligible independent approval on the exact candidate.                         |
+
+`M3-05-P1-B01` and `M3-05-P1-B02` are resolved at `3a78e34...`: candidate-bound C/R/S and the
+management dashboard pass, and the base-to-candidate `git diff --check` output is empty. The exact
+local Gitleaks gate also passes. That gate preserves the raw historical FAIL and dispositions only
+the exact approved one-row immutable occurrence; its current-tree scan remains independent.
 
 ## Resolved execution blocker
 

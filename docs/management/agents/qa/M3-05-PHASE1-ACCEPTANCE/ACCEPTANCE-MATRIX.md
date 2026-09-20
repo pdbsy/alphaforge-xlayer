@@ -49,3 +49,24 @@ The historical base statuses above remain unchanged. For local integration candi
 | Source hygiene                             | `FAIL`                                           | Base-to-candidate diff check finds trailing whitespace in the Phase One Testnet deployment plan              |
 | Hosted, independent, security and Testnet  | `NOT_RUN / BLOCKED`                              | Exact-candidate required checks, eligible approval, restricted-service result and authorized writes absent   |
 | Final decision                             | `LOCAL_FUNCTIONAL_PASS / FINAL_EVIDENCE_BLOCKED` | Every required final condition is not yet satisfied                                                          |
+
+## Refreshed exact candidate overlay
+
+Macbeth01 supplied refreshed candidate `3a78e34ba933f1e3239424d3bf0b1e27b1a65bb8`, tree
+`6f1a21845a99e16a0ba171612cd97e9bf3439294`, with candidate evidence C
+`cb6ecd7ce7d8d230a03f87c64065df8b3aa66793` and review evidence R
+`41e36815ca5f07a1a825cf7ea55fae4bbf63e2ab`. This overlay supersedes the `639ffd8...`
+overlay for the latest local acceptance conclusion; the historical base matrix remains unchanged.
+
+| Requirement set                            | Candidate result                                                 | Basis                                                                                                                               |
+| ------------------------------------------ | ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Phase One allocation/transfer scope        | `PASS_AT_3A78_LOCAL_CANDIDATE`                                   | 711/711 tests; product source equals `639ffd8...`, whose exact one-raw-unit browser transfer was independently exercised            |
+| Contract critical authorization/accounting | `PASS_BY_SOURCE_EQUIVALENCE`                                     | `contracts/**` is unchanged from `639ffd8...` and the independently gated PR #24 source with core contracts at 100%                 |
+| Chain/API concrete critical subset         | `PASS_AT_3A78_LOCAL_CANDIDATE`                                   | 97.37% lines, 95.40% branches, 98.56% functions; all frozen concrete critical branches covered                                      |
+| Product multi-Vault journey                | `PASS_BY_EXACT_SOURCE_EQUIVALENCE`                               | Product source equals the real-browser-validated `639ffd8...` source; no browser result is claimed for changed code                 |
+| Overall JS/TS coverage                     | `NOT_MEASURED`                                                   | The canonical AST counter has passed a small same-source probe but lacks full-syntax, lifecycle and subprocess qualification        |
+| Management identity and C/R/S              | `PASS_AT_3A78_LOCAL_CANDIDATE`                                   | Environment, 71-record identity, clean tree, exact C/R/S and management dashboard all pass                                          |
+| Source hygiene                             | `PASS_AT_3A78_LOCAL_CANDIDATE`                                   | Base-to-candidate `git diff --check` is empty                                                                                       |
+| Local secret and security regression       | `PASS_AT_3A78_LOCAL_CANDIDATE`                                   | Exact Gitleaks 8.30.1 scan, canary, current-tree scan and 16/16 disposition regression tests pass; security diff reports no finding |
+| Hosted, independent and Testnet            | `NOT_RUN / BLOCKED`                                              | Exact-candidate hosted checks, eligible approval and authorized Testnet writes remain external                                      |
+| Final decision                             | `LOCAL_GATE_PASS / FINAL_COVERAGE_AND_EXTERNAL_EVIDENCE_BLOCKED` | Overall coverage is not admitted and external acceptance conditions remain open                                                     |
