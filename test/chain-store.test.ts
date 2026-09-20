@@ -1,10 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { mkdir, mkdtemp } from 'node:fs/promises';
+import { mkdir, mkdtemp, rm, stat } from 'node:fs/promises';
 import { resolve } from 'node:path';
+import { performance } from 'node:perf_hooks';
 import { DatabaseSync } from 'node:sqlite';
 import { ChainStore, type IndexedChainEvent } from '../apps/server/src/chain-store.ts';
+import { ChainSynchronizer } from '../apps/server/src/chain-sync.ts';
+import type { DeploymentManifest } from '../packages/chain-adapter/src/manifest.ts';
+import type { ReadonlyRpc } from '../packages/chain-adapter/src/rpc.ts';
 import { asAddress, asBlockHash, asHexData, asTransactionHash } from '../packages/chain-adapter/src/types.ts';
 import { createOperation, transitionOperation } from '../packages/chain-adapter/src/lifecycle.ts';
 import type { ChainOperation } from '../packages/chain-adapter/src/lifecycle.ts';
@@ -806,6 +810,126 @@ test('chain projection online backup reopens independently and never overwrites 
     restored.close();
     store.close();
   }
+});
+
+test('local recovery drill measures backup, reopen and 128-block catch-up separately', async (context) => {
+  const block = (number: bigint) => ({
+    number,
+    hash: asBlockHash(`0x${number.toString(16).padStart(64, '0')}`),
+    parentHash: asBlockHash(`0x${(number - 1n).toString(16).padStart(64, '0')}`),
+    timestamp: 1_700_000_000n + number,
+  });
+  const manifest = {
+    schemaVersion: 1,
+    environment: 'robinhood-chain-testnet',
+    chainId: CHAIN_ID,
+    contractName: 'AlphaForgeVault',
+    contractType: 'vault',
+    contractAddress: CONTRACT,
+    deploymentBlock: 1n,
+    abiVersion: 'm3-vault-drill',
+    abiHash: asBlockHash(`0x${'21'.repeat(32)}`),
+    runtimeBytecodeHash: asBlockHash(`0x${'22'.repeat(32)}`),
+    strategyPassAddress: OWNER_B,
+    strategyPassDeploymentBlock: 1n,
+    strategyPassAbiHash: asBlockHash(`0x${'23'.repeat(32)}`),
+    strategyPassRuntimeBytecodeHash: asBlockHash(`0x${'24'.repeat(32)}`),
+    manifestDigest: asBlockHash(`0x${'25'.repeat(32)}`),
+  } as unknown as DeploymentManifest;
+  const measurements: Array<{
+    backupBytes: number;
+    backupMs: number;
+    reopenAndHealthMs: number;
+    catchupMs: number;
+    restoreToHealthyMs: number;
+  }> = [];
+  for (let run = 0; run < 3; run++) {
+    const directory = await mkdtemp(resolve('.checks/m3-recovery-drill-'));
+    const sourcePath = resolve(directory, 'source.sqlite');
+    const backupPath = resolve(directory, 'backup.sqlite');
+    let head = 1_000n;
+    const rpc: ReadonlyRpc = {
+      chainId: async () => CHAIN_ID,
+      block: async (number) => block(number === 'latest' ? head : number),
+      code: async () => asHexData('0x01'),
+      receipt: async () => null,
+      logs: async () => [],
+      call: async () => asHexData('0x'),
+    };
+    const integration = {
+      decode: () => null,
+      rebuildProjections: async () => [],
+      reconcileOperation: async () => ({ status: 'MATCH' as const }),
+    };
+    let source: ChainStore | null = new ChainStore(sourcePath);
+    const seed = new ChainSynchronizer({
+      rpc,
+      store: source,
+      manifest,
+      integration,
+      policy: { softReadyDepth: 3, reorgSearchLimit: 128 },
+      maxBlocksPerSync: 2_000,
+    });
+    try {
+      await seed.syncTo(head, head);
+      const backupStarted = performance.now();
+      await source.backupTo(backupPath);
+      const backupMs = performance.now() - backupStarted;
+      source.close();
+      source = null;
+
+      head = 1_128n;
+      const reopenStarted = performance.now();
+      const restored = new ChainStore(backupPath);
+      const restoredHealth = restored.health();
+      const restoredCheckpoint = restored.checkpoint(CHAIN_ID, CONTRACT);
+      const reopenAndHealthMs = performance.now() - reopenStarted;
+      try {
+        assert.deepEqual(restoredHealth, { status: 'HEALTHY', schemaVersion: 6, integrity: 'OK' });
+        assert.equal(restoredCheckpoint?.blockNumber, 1_000n);
+        const catchup = new ChainSynchronizer({
+          rpc,
+          store: restored,
+          manifest,
+          integration,
+          policy: { softReadyDepth: 3, reorgSearchLimit: 128 },
+          maxBlocksPerSync: 2_000,
+        });
+        const catchupStarted = performance.now();
+        const result = await catchup.syncTo(head, head);
+        const catchupMs = performance.now() - catchupStarted;
+        assert.equal(result.scannedBlocks, 128);
+        assert.equal(restored.checkpoint(CHAIN_ID, CONTRACT)?.blockNumber, head);
+        assert.deepEqual(restored.syncHealth(CHAIN_ID, CONTRACT), { healthy: true, error: null });
+        measurements.push({
+          backupBytes: (await stat(backupPath)).size,
+          backupMs,
+          reopenAndHealthMs,
+          catchupMs,
+          restoreToHealthyMs: reopenAndHealthMs + catchupMs,
+        });
+      } finally {
+        restored.close();
+      }
+    } finally {
+      source?.close();
+      await rm(directory, { recursive: true, force: true });
+    }
+  }
+  const median = (key: keyof (typeof measurements)[number]) =>
+    [...measurements].sort((left, right) => left[key] - right[key])[1]![key];
+  context.diagnostic(
+    JSON.stringify({
+      fixture: { backupCheckpoint: 1_000, observedHead: 1_128, rpoBlocks: 128, runs: 3 },
+      medianMs: {
+        backup: Number(median('backupMs').toFixed(3)),
+        reopenAndHealth: Number(median('reopenAndHealthMs').toFixed(3)),
+        catchup: Number(median('catchupMs').toFixed(3)),
+        restoreToHealthy: Number(median('restoreToHealthyMs').toFixed(3)),
+      },
+      backupBytes: median('backupBytes'),
+    }),
+  );
 });
 
 test('chain store rejects malformed recovery, operation and projection identities', async () => {

@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-- Base is `18f5352070910a867b9729b031aa2e3951785e01`; branch is `macbeth03/m3-phase1-recovery`.
+- Base is `18f5352070910a867b9729b031aa2e3951785e01`; final candidate branch is `macbeth03/m3-phase1-recovery-final`. The original `macbeth03/m3-phase1-recovery` source ref remains preserved.
 - Runtime remains Local / Mock / NOT_DEPLOYED. No external RPC write, signing, broadcast, deployment, secret, purchase, or merge.
 - AF-USDC uses 6 decimals, Pass uses 18 decimals, `softReadyDepth = 3`, and `reorgSearchLimit = 128`.
 - Runtime bytecode and ABI hashes use Keccak-256 as frozen by `docs/protocol/M3-VAULT-ABI-HANDOFF.md`.
@@ -39,7 +39,7 @@
 
 **Interfaces:**
 
-- Produces `keccak256(data: HexData): BlockHash`, validated against the empty-string and `abc` Ethereum Keccak-256 vectors.
+- Produces `keccak256(data: HexData): BlockHash`, validated against the empty-string, `abc`, and 135/136/137/272-byte rate-boundary Ethereum Keccak-256 vectors.
 - Extends `DeploymentManifestDocument` with mandatory `abiHash` and binds it into `manifestDigest`.
 - Produces `M3_VAULT_ABI_HASH = 0x264b4498cf396008e4619664c59bf8d8eac0a04f04b80e760df3cfbc00846977`.
 - Adds `ReadonlyRpc.code(address, block)` using allowlisted `eth_getCode`.
@@ -87,7 +87,7 @@
 
 **Interfaces:**
 
-- `buildM3App` accepts a validated nonempty set of distinct `M3ChainRuntime` instances while retaining `buildApp`'s existing one-runtime call shape and historical provenance hash.
+- `buildM3App` accepts a validated nonempty set of distinct `M3ChainRuntime` instances while retaining `buildApp`'s existing one-runtime call shape and historical provenance hash. The production `startM3Server` path accepts one deployment or an isolated deployment set, synchronizes every runtime, and rejects shared SQLite paths.
 - Adds contract-qualified read `GET /api/v1/chain/vaults/:contract/:owner`; the legacy owner-only route remains valid only for a one-runtime server.
 - Routes submissions by exact chain and target contract; unknown or duplicate runtime identities fail closed.
 - Confirms projection keys include chain, immutable Vault contract, owner wallet, and `m3-vault`; strategy identity remains a state field verified against the Vault and Strategy Pass at the same canonical block.

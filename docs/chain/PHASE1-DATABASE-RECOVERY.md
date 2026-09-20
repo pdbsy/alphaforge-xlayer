@@ -23,10 +23,23 @@ The database uses WAL mode, `synchronous = FULL`, foreign keys, and a five-secon
 The repeatable local drill is:
 
 ```sh
-node --test test/chain-store.test.ts
+node --test --test-name-pattern="local recovery drill measures" test/chain-store.test.ts
 ```
 
-The test creates an isolated database, writes canonical block/event/projection evidence, performs the online backup, proves overwrite refusal, reopens the copy, and checks the preserved identities.
+The test creates three isolated schema-6 databases. Each run synchronizes an empty-log canonical fixture through block 1000, performs an online backup, reopens and checks the copy, advances the observed head to 1128, catches up exactly 128 blocks, and requires a healthy checkpoint at the new head. It emits the measured components as a diagnostic without imposing a machine-speed assertion.
+
+## Recorded local recovery measurement
+
+The following sample was recorded on 2026-09-20 with Node 24.21.0 using the repeatable test above. The backup artifact was 495,616 bytes in each of three runs.
+
+| Component | Three-run median |
+| --- | ---: |
+| Online backup at block 1000 | 1.856 ms |
+| Reopen plus schema/integrity health check | 0.686 ms |
+| Read-only catch-up from block 1001 through 1128 | 30.100 ms |
+| Reopen through healthy block-1128 checkpoint | 30.768 ms |
+
+This is a local deterministic fixture measurement, not a Testnet or production SLA. In this fixture, the recovery point gap is intentionally 128 blocks because the backup checkpoint is 1000 and the later observed head is 1128. Operational RPO is the age of the selected verified backup at incident time. Operational RTO also includes artifact selection, process startup, real RPC latency, log volume, and any manual review; those factors were not measured here.
 
 ## Restore drill
 

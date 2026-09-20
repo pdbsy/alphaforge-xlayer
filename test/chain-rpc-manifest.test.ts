@@ -121,6 +121,21 @@ test('Ethereum Keccak-256 hashes bytecode with the legacy padding used by EVM id
   );
 });
 
+test('Ethereum Keccak-256 preserves the rate-boundary regression vectors', async () => {
+  const { keccak256 } = await import('../packages/chain-adapter/src/keccak.ts');
+  const vector = (length: number) =>
+    asHexData(
+      `0x${Buffer.from(Uint8Array.from({ length }, (_, index) => (index * 37 + 11) % 256)).toString('hex')}`,
+    );
+  for (const [length, expected] of [
+    [135, '0x9b6deb2387c86783862216d0205051ba7d41fa4fa70a30e2abfe18ca94d22b22'],
+    [136, '0xb8717c6e7605ca3b5a0a94a147127679778a23a4324e53b910263673d0bfb55c'],
+    [137, '0xe2d9f409a6d575e1457f9d3f7436081485d5794bf84db179566eea07a8266e8d'],
+    [272, '0x79cacfd52db427ce7b9a771984a13387a6e31075bcc4716a5deddff6875c4e69'],
+  ] as const)
+    assert.equal(keccak256(vector(length)), expected, `${length}-byte vector`);
+});
+
 function transportFor(results: Readonly<Record<string, unknown>>): RpcTransport {
   return async (_endpoint, request) => ({
     status: 200,
