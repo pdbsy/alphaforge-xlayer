@@ -1,10 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import Fastify from 'fastify';
 import { mkdir, mkdtemp } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { buildApp } from '../apps/server/src/app.ts';
 import { buildM3App } from '../apps/server/src/m3-app.ts';
 import { M3ChainRuntime } from '../apps/server/src/m3-chain-runtime.ts';
+import {
+  registerChainEvidenceRoutes,
+  type ChainEvidenceRoutesOptions,
+} from '../apps/server/src/chain-routes.ts';
 import { createOperation, transitionOperation } from '../packages/chain-adapter/src/lifecycle.ts';
 import {
   deploymentManifestDigest,
@@ -89,6 +94,39 @@ function submitted(operationId: string) {
     { state: 'SUBMITTED', txHash: TX_HASH, submittedAt: '2026-09-19T12:00:00.000Z' },
   );
 }
+
+test('chain route registration rejects ambiguous or malformed runtime identities', async () => {
+  const directory = await folder();
+  const runtime = new M3ChainRuntime({
+    dbPath: resolve(directory, 'chain.sqlite'),
+    rpc: new InertRpc(),
+    manifest,
+  });
+  const base = runtime.chainEvidence;
+  const { passProjectionKey, ...withoutPassProjection } = base;
+  assert.equal(passProjectionKey, 'm3-strategy-pass');
+  const cases: ReadonlyArray<readonly [unknown, RegExp]> = [
+    [[], /INVALID_CHAIN_RUNTIME_SET/],
+    [[{ ...base, projectionKey: 'bad/key' }], /INVALID_PROJECTION_KEY/],
+    [[base, { ...base }], /DUPLICATE_CHAIN_RUNTIME/],
+    [[withoutPassProjection], /INVALID_CHAIN_RUNTIME_SET/],
+    [[{ ...base, passProjectionKey: 'bad/key' }], /INVALID_PROJECTION_KEY/],
+    [[{ ...base, passContract: base.contract }], /DUPLICATE_CHAIN_RUNTIME/],
+  ];
+  for (const [input, expectedError] of cases) {
+    const app = Fastify();
+    assert.throws(
+      () =>
+        registerChainEvidenceRoutes(
+          app,
+          input as ChainEvidenceRoutesOptions | readonly ChainEvidenceRoutesOptions[],
+        ),
+      expectedError,
+    );
+    await app.close();
+  }
+  runtime.close();
+});
 
 test('server exposes its canonical operation evidence and hides owner mismatches as not found', async (t) => {
   const directory = await folder();
@@ -424,6 +462,24 @@ test('multi-Vault API isolates contract, wallet and strategy state and requires 
     () =>
       buildM3App({
         ...multiOptions,
+        dbPath: resolve(directory, 'empty-ledger.sqlite'),
+        chainRuntimes: [],
+      }),
+    /INVALID_CHAIN_RUNTIME_SET/,
+  );
+  await assert.rejects(
+    () =>
+      buildM3App({
+        ...multiOptions,
+        dbPath: resolve(directory, 'conflicting-ledger.sqlite'),
+        chainRuntime: first,
+      } as Parameters<typeof buildM3App>[0]),
+    /INVALID_CHAIN_RUNTIME_SET/,
+  );
+  await assert.rejects(
+    () =>
+      buildM3App({
+        ...multiOptions,
         dbPath: resolve(directory, 'duplicate-ledger.sqlite'),
         chainRuntimes: [first, first],
       }),
@@ -501,6 +557,15 @@ test('multi-Vault API isolates contract, wallet and strategy state and requires 
   });
   assert.equal(otherStatus.statusCode, 200, otherStatus.body);
   assert.equal(otherStatus.json().deployment.contract, OTHER_CONTRACT);
+  for (const url of [
+    `/api/v1/chain/runtime-status/${OWNER}`,
+    `/api/v1/chain/vaults/${OWNER}/${OWNER}`,
+    `/api/v1/chain/passes/${OWNER}/${OWNER}`,
+  ]) {
+    const missing = await app.inject({ url, headers });
+    assert.equal(missing.statusCode, 404, missing.body);
+    assert.equal(missing.json().error, 'CHAIN_PROJECTION_NOT_FOUND');
+  }
   const statusList = await app.inject({ url: '/api/v1/chain/runtime-status', headers });
   assert.equal(statusList.statusCode, 200, statusList.body);
   assert.deepEqual(

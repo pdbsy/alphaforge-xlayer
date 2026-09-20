@@ -9,6 +9,7 @@ import {
 } from '../packages/chain-adapter/src/manifest.ts';
 import type { ReadonlyRpc } from '../packages/chain-adapter/src/rpc.ts';
 import { M3_STRATEGY_PASS_ABI_HASH } from '../packages/chain-adapter/src/pass-abi.ts';
+import { keccak256 } from '../packages/chain-adapter/src/keccak.ts';
 import { encodeM3VaultCall, M3_VAULT_ABI_HASH } from '../packages/chain-adapter/src/vault-abi.ts';
 import { asAddress, asBlockHash, asHexData, asTransactionHash } from '../packages/chain-adapter/src/types.ts';
 
@@ -64,6 +65,78 @@ test('runtime rejects live bytecode that does not match the trusted manifest bef
   const runtime = new M3ChainRuntime({ dbPath: await path(), rpc: new InertRpc(), manifest });
   await assert.rejects(() => runtime.syncToHead(), /M3_DEPLOYMENT_CODE_MISMATCH/);
   assert.equal(runtime.store.checkpoint(manifest.chainId, manifest.contractAddress), null);
+  runtime.close();
+});
+
+test('runtime rejects a wrong chain before code reads or projection writes', async () => {
+  class WrongChainRpc extends InertRpc {
+    codeReads = 0;
+    override async chainId() {
+      return 1;
+    }
+    override async code() {
+      this.codeReads++;
+      return asHexData('0x6000');
+    }
+  }
+  const rpc = new WrongChainRpc();
+  const runtime = new M3ChainRuntime({ dbPath: await path(), rpc, manifest });
+  await assert.rejects(() => runtime.syncToHead(), /M3_DEPLOYMENT_CHAIN_MISMATCH/);
+  assert.equal(rpc.codeReads, 0);
+  assert.equal(runtime.store.checkpoint(manifest.chainId, manifest.contractAddress), null);
+  assert.equal(runtime.store.checkpoint(manifest.chainId, manifest.strategyPassAddress), null);
+  assert.throws(
+    () => runtime.configureStrategyPassProjectionOwnership(false),
+    /M3_STRATEGY_PASS_OWNERSHIP_LOCKED/,
+  );
+  runtime.close();
+});
+
+test('runtime locks deterministic Pass ownership before accepting submissions', async () => {
+  const runtime = new M3ChainRuntime({ dbPath: await path(), rpc: new InertRpc(), manifest });
+  runtime.configureStrategyPassProjectionOwnership(false);
+  assert.equal(runtime.chainEvidence.passContract, undefined);
+  assert.throws(
+    () =>
+      runtime.recordSubmission({
+        operationId: 'follower-pass-transfer',
+        chainId: 46_630,
+        owner: OWNER,
+        target: PASS,
+        calldata: asHexData(`0xa9059cbb${RECIPIENT.slice(2).padStart(64, '0')}${'1'.padStart(64, '0')}`),
+        txHash: asTransactionHash(`0x${'ef'.repeat(32)}`),
+      }),
+    /INVALID_M3_WALLET_SUBMISSION/,
+  );
+  assert.throws(
+    () => runtime.configureStrategyPassProjectionOwnership(true),
+    /M3_STRATEGY_PASS_OWNERSHIP_LOCKED/,
+  );
+  runtime.close();
+});
+
+test('runtime rejects mismatched StrategyPass bytecode before indexing either contract', async () => {
+  const vaultCode = asHexData('0x6000');
+  const expectedPassCode = asHexData('0x6001');
+  const exactBody = {
+    ...manifestBody,
+    runtimeBytecodeHash: keccak256(vaultCode),
+    strategyPassRuntimeBytecodeHash: keccak256(expectedPassCode),
+  };
+  const exactDigest = deploymentManifestDigest(exactBody);
+  const exactManifest = validateDeploymentManifest(
+    { ...exactBody, manifestDigest: exactDigest },
+    {
+      environment: 'robinhood-chain-testnet',
+      chainId: 46_630,
+      manifestDigest: exactDigest,
+      contractAddress: CONTRACT,
+    },
+  );
+  const runtime = new M3ChainRuntime({ dbPath: await path(), rpc: new InertRpc(), manifest: exactManifest });
+  await assert.rejects(() => runtime.syncToHead(), /M3_STRATEGY_PASS_CODE_MISMATCH/);
+  assert.equal(runtime.store.checkpoint(exactManifest.chainId, exactManifest.contractAddress), null);
+  assert.equal(runtime.store.checkpoint(exactManifest.chainId, exactManifest.strategyPassAddress), null);
   runtime.close();
 });
 

@@ -213,6 +213,46 @@ test('known event topics fail closed on malformed indexed or data words while un
   );
   assert.equal(decodeM3VaultEvent({ ...valid, topics: [asHexData(`0x${'ff'.repeat(32)}`)] }), null);
   assert.equal(decodeM3VaultEvent({ ...valid, topics: [] }), null);
+  assert.equal(decodeM3VaultCalldata(`0xb6b55f25${'g'.repeat(64)}` as HexData), null);
+  const sparseTopics = [deposited] as Array<HexData>;
+  sparseTopics.length = 2;
+  assert.throws(() => decodeM3VaultEvent({ ...valid, topics: sparseTopics }), /INVALID_M3_VAULT_EVENT/);
+});
+
+test('every known Vault event rejects missing or surplus indexed topics', () => {
+  const topics = M3_VAULT_REVIEW_ABI.eventTopics;
+  const validLogs = [
+    event(
+      topics['Deposited(address,uint256,uint256,uint256,uint256)'],
+      [addressTopic(OWNER)],
+      [1n, 2n, 3n, 4n],
+    ),
+    event(
+      topics['Withdrawn(address,uint256,uint256,uint256,uint256,uint256,uint256)'],
+      [addressTopic(OWNER)],
+      [1n, 2n, 3n, 4n, 5n, 6n],
+    ),
+    event(topics['Closed(address,uint256,uint256)'], [addressTopic(OWNER)], [1n, 2n]),
+    event(topics['TrackedUsdcBalanceChanged(uint256,uint256)'], [], [1n, 2n]),
+    event(topics['TrackedPositionChanged(address,uint256,uint256)'], [addressTopic(TOKEN)], [1n, 2n]),
+    event(
+      topics['UntrackedTokenRescued(address,address,uint256)'],
+      [addressTopic(TOKEN), addressTopic(OWNER)],
+      [1n],
+    ),
+    event(topics['NativeRescued(address,uint256)'], [addressTopic(OWNER)], [1n]),
+  ];
+  for (const log of validLogs) {
+    const malformedTopics =
+      log.topics.length === 1
+        ? [...log.topics, addressTopic(OWNER)]
+        : log.topics.slice(0, log.topics.length - 1);
+    assert.throws(
+      () => decodeM3VaultEvent({ ...log, topics: malformedTopics }),
+      /INVALID_M3_VAULT_EVENT/,
+      String(log.topics[0]),
+    );
+  }
 });
 
 test('StrategyPass transfer codec preserves every 18-decimal raw unit and rejects unsafe targets', async () => {

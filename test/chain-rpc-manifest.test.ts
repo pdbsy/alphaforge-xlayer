@@ -2,7 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import {
+  deploymentManifestDigest,
   validateDeploymentManifest,
+  type DeploymentManifestDocument,
   type DeploymentManifestExpectation,
 } from '../packages/chain-adapter/src/manifest.ts';
 import {
@@ -105,6 +107,34 @@ test('deployment manifest rejects missing runtime identity and unsafe identifier
       ),
     /INVALID_DEPLOYMENT_MANIFEST/,
   );
+});
+
+test('deployment manifest independently rejects non-documents and trusted expectation mismatches', () => {
+  for (const input of [null, [], 'manifest', 1])
+    assert.throws(() => validateDeploymentManifest(input, expected), /INVALID_DEPLOYMENT_MANIFEST/);
+
+  assert.throws(
+    () => validateDeploymentManifest(manifestInput, { ...expected, manifestDigest: BLOCK_HASH }),
+    /INVALID_DEPLOYMENT_MANIFEST/,
+  );
+  assert.throws(
+    () => validateDeploymentManifest(manifestInput, { ...expected, contractAddress: OWNER }),
+    /INVALID_DEPLOYMENT_MANIFEST/,
+  );
+
+  const changedBody: DeploymentManifestDocument = {
+    ...manifestBody,
+    schemaVersion: 1,
+    environment: 'robinhood-chain-testnet',
+    chainId: 46_630,
+    deploymentBlock: '101',
+  };
+  const changedDigest = deploymentManifestDigest(changedBody);
+  assert.throws(
+    () => validateDeploymentManifest({ ...changedBody, manifestDigest: DIGEST }, expected),
+    /INVALID_DEPLOYMENT_MANIFEST/,
+  );
+  assert.notEqual(changedDigest, DIGEST);
 });
 
 test('Ethereum Keccak-256 hashes bytecode with the legacy padding used by EVM identities', async () => {
