@@ -19,6 +19,11 @@ const LOCKER = asAddress('0x8888888888888888888888888888888888888888');
 const BLOCK_HASH = asBlockHash(`0x${'aa'.repeat(32)}`);
 const STRATEGY_ID = asHexData(`0x${'11'.repeat(32)}`);
 const STRATEGY_REF = asHexData(`0x${'22'.repeat(32)}`);
+const MANIFEST_DIGEST = asBlockHash(`0x${'12'.repeat(32)}`);
+const VAULT_ABI_HASH = asBlockHash('0x264b4498cf396008e4619664c59bf8d8eac0a04f04b80e760df3cfbc00846977');
+const VAULT_CODE_HASH = asBlockHash(`0x${'34'.repeat(32)}`);
+const PASS_ABI_HASH = asBlockHash('0xdd989644feeb7798baca69f7391ba75b6f9d09f47fb05bd90184f6072912923f');
+const PASS_CODE_HASH = asBlockHash(`0x${'56'.repeat(32)}`);
 
 function payload() {
   return {
@@ -98,6 +103,72 @@ test('web Vault client reads an exact contract-qualified StrategyPass projection
   );
   assert.deepEqual(await client.readPassSnapshot(OWNER), passPayload);
   assert.deepEqual(requests, [`/api/v1/chain/passes/${PASS}/${OWNER}`]);
+});
+
+test('web Vault client reads exact contract-qualified runtime status for identity cross-checking', async () => {
+  const body = {
+    lastAttempt: 'SUCCEEDED',
+    errorCode: null,
+    database: { status: 'HEALTHY', schemaVersion: 6, integrity: 'OK' },
+    deployment: {
+      chainId: 46_630,
+      contract: CONTRACT,
+      manifestDigest: MANIFEST_DIGEST,
+      abiHash: VAULT_ABI_HASH,
+      runtimeBytecodeHash: VAULT_CODE_HASH,
+      strategyPassAddress: PASS,
+      strategyPassAbiHash: PASS_ABI_HASH,
+      strategyPassRuntimeBytecodeHash: PASS_CODE_HASH,
+    },
+  } as const;
+  const requests: Array<{ input: string; init: RequestInit | undefined }> = [];
+  const client = new M3VaultApiClient(
+    async (input, init) => {
+      requests.push({ input: String(input), init });
+      return new Response(JSON.stringify(body), { status: 200 });
+    },
+    { vaultAddress: CONTRACT, passAddress: PASS },
+  );
+
+  assert.deepEqual(await client.readRuntimeStatus(), body);
+  assert.deepEqual(requests, [
+    {
+      input: `/api/v1/chain/runtime-status/${CONTRACT}`,
+      init: { method: 'GET', credentials: 'same-origin', headers: { Accept: 'application/json' } },
+    },
+  ]);
+});
+
+test('web Vault client rejects malformed, foreign and unhealthy runtime status', async () => {
+  const valid = {
+    lastAttempt: 'SUCCEEDED',
+    errorCode: null,
+    database: { status: 'HEALTHY', schemaVersion: 6, integrity: 'OK' },
+    deployment: {
+      chainId: 46_630,
+      contract: CONTRACT,
+      manifestDigest: MANIFEST_DIGEST,
+      abiHash: VAULT_ABI_HASH,
+      runtimeBytecodeHash: VAULT_CODE_HASH,
+      strategyPassAddress: PASS,
+      strategyPassAbiHash: PASS_ABI_HASH,
+      strategyPassRuntimeBytecodeHash: PASS_CODE_HASH,
+    },
+  };
+  for (const body of [
+    [],
+    { ...valid, unexpected: true },
+    { ...valid, lastAttempt: 'FAILED', errorCode: 'M3_INDEXER_SYNC_FAILED' },
+    { ...valid, database: { ...valid.database, status: 'UNHEALTHY', integrity: 'FAILED' } },
+    { ...valid, deployment: { ...valid.deployment, contract: CREATOR } },
+    { ...valid, deployment: { ...valid.deployment, manifestDigest: '0x01' } },
+  ]) {
+    const client = new M3VaultApiClient(async () => new Response(JSON.stringify(body), { status: 200 }), {
+      vaultAddress: CONTRACT,
+      passAddress: PASS,
+    });
+    await assert.rejects(client.readRuntimeStatus(), /M3_VAULT_READ_FAILED/);
+  }
 });
 
 test('web Vault client rejects malformed or conflicting StrategyPass projections', async () => {
