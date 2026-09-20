@@ -1,8 +1,8 @@
 # Macbeth03 Task Intake — M3-03-PHASE1-RECOVERY
 
-Status: ACKNOWLEDGED / IN_PROGRESS  
-Date: 2026-09-20  
-Agent: Macbeth03  
+Status: ACKNOWLEDGED / IN_PROGRESS
+Date: 2026-09-20
+Agent: Macbeth03
 Task: M3-03-PHASE1-RECOVERY
 
 ## Repository and isolation
