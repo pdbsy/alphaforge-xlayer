@@ -97,6 +97,19 @@ High-priority semantic groups for new tests are:
 - settlement/recovery identity: `m3-vault-integration.ts` 236, 244, 246; `chain-store.ts` 1051, 1196, 1260, 1269, 1272, 1274, 1291, 1295, 1319; `chain-sync.ts` 216, 274, 331, 359, 375, 401, 402;
 - RPC receipt/finality: `rpc.ts` 219, 235, 241, 249, 300, 301, 305, 308, 321; `m3-vault-client.ts` 324 and 325.
 
+### `packages/domain/src/vault.ts:193` criticality judgment
+
+The sole zero-count branch in this file is `Array.isArray(value)` inside private fingerprint serializer `canonical()`. It is reached only from line 235 with `{ actor, command, policyId }`:
+
+- the `Actor` and `Command` unions contain string, number, and object fields but no arrays;
+- the public command routes use a closed `oneOf` schema whose every shape has `additionalProperties: false`; none permits an array;
+- the actor comes from the authenticated session/simulation boundary, and `policyId` is a validated string or `null`;
+- the whole ledger is marked `scope: TEST_ONLY`; Phase 1 onchain Vault accounting uses the separate contract and M3 chain modules.
+
+On this evidence, line 193 is not a reachable branch of a valid public command and is not a critical Phase 1 authorization or accounting decision. A synthetic extra array property would be rejected at the HTTP schema boundary, while a direct type-unsafe call would be outside the accepted interface. Macbeth05 therefore does not recommend adding a meaningless array input merely to increment coverage.
+
+The branch remains visible in the module and overall metrics: `vault.ts` is 80 / 81 branches, not 100%. This exclusion applies only to the explicit critical authorization/accounting inventory; it does not turn the entire module or overall coverage into 100%, and it does not close `M3-05-P1-001` while the other recorded critical gaps remain.
+
 ## Solidity uncovered branches
 
 The exact locked Forge 1.5.1 / solc 0.8.31 environment ran `forge coverage --offline --report lcov` and passed 121 / 121 tests. LCOV SHA-256: `cc174b349cad013a5045bd8ce1e58cdb7f6a498eaf914776e174728fc0716ab0`.
