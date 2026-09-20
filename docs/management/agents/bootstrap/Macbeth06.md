@@ -1,3 +1,5 @@
+> Current phase-one task: [M3-06-CI-GATES](../../phase1/Macbeth06-TASK.md), base `18f5352070910a867b9729b031aa2e3951785e01`. Read before historical instructions below; no new ACK is implied.
+
 # Macbeth06 bootstrap
 
 AGENT_NAME = Macbeth06

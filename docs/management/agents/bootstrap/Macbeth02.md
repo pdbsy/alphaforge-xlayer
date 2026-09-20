@@ -1,3 +1,5 @@
+> Current phase-one task: [M3-02-PHASE1-CONTRACTS](../../phase1/Macbeth02-TASK.md), base `18f5352070910a867b9729b031aa2e3951785e01`. Read before historical instructions below; no new ACK is implied.
+
 > Current assignment: see [M3 assignments](../M3-ASSIGNMENTS.md). Canonical repository: `pdbsy/quantpass-arbitrum-hackathon`. Current user instructions take precedence over historical setup examples below; no merge or chain transaction authority is granted by this file.
 
 # Macbeth02 bootstrap
