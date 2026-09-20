@@ -135,3 +135,25 @@ Priority contract gaps are:
 - settlement: SwapAdapter line 87 (venue return below minimum), Vault lines 238/249/257 (custody settlement mismatch/deficit), and Vault line 283 (StrategyPass identity call failure).
 
 The direct Owner authorization branch at Vault line 38 and the PassLocker controller authorization branch at line 72 are covered in this report. That does not satisfy the broader 100% critical authorization/accounting target while the listed session, amount, capacity, settlement, and recovery branches remain uncovered.
+
+## Local integration candidate update
+
+At candidate `639ffd8f85a89ee9266112c6d80e90e9428381a2`, tree
+`7a6b8cc6ae06d8424674669727b06cf0f923c4ba`, the candidate contract source is identical to the PR
+#24 evidence source whose three core contracts independently reached 100% lines, statements,
+branches and functions. The exact candidate's complete 705-test list also ran against the 13
+explicitly included critical Chain/API sources and reported 97.37% lines, 95.40% branches and
+98.56% functions.
+
+Every concrete frozen critical zero-hit from the earlier Chain/API checkpoint remains closed. The
+raw residual records are `chain-sync.ts:242`, the closing brace of an executed `finally`, and
+`rpc.ts:325`, the retry-loop closing brace before an unreachable fallback. They remain in the raw
+denominator. The concrete critical subset is `PASS_AT_639_LOCAL_CANDIDATE`; overall JS/TS coverage
+remains `NOT_MEASURED` because this targeted population is not a complete homogeneous denominator
+for all Node and production-browser first-party source.
+
+Exact-candidate artifacts are recorded in [Execution Log](EXECUTION-LOG.md). The critical log,
+LCOV and branch-gap JSON SHA-256 values are respectively
+`bc59d41daf49b98d37a743e034022500daf0f66acfddef43f535ff949ec4c8b1`,
+`ad7248f05f9ba092d07dd88df571e3ccee004d693a01dd3ac13575b355f88e20` and
+`e938e3fe48bf701bb3031ed002440397a5ee62ad8fa82f0945a7e2a2a9c956e3`.

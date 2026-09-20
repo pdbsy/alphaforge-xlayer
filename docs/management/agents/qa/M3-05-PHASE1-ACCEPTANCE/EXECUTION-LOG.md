@@ -281,3 +281,101 @@ and QA `c27c869...`, with the shared product provenance updated and 705/705 test
 passing. The object is not present in Macbeth05's repository object stores or remote refs, and new
 C/R/S evidence is not yet published. Those statements are recorded as manager evidence only; they
 are not an independent acceptance result for that integration source.
+
+## Independent local integration checkpoint `639ffd8...`
+
+Macbeth01 subsequently provided the local manager worktree containing exact candidate
+`639ffd8f85a89ee9266112c6d80e90e9428381a2`, tree
+`7a6b8cc6ae06d8424674669727b06cf0f923c4ba`. Macbeth05 created an isolated clone at
+`/private/tmp/AlphaForge-M3-05-INTEGRATION-639FFD8` with `git clone --no-local --no-hardlinks`,
+checked out the exact SHA detached, and installed 193 packages with `npm ci --ignore-scripts`.
+There was no shared writable dependency directory or SQLite data.
+
+The candidate contains PR #26 `a4d73bb197ff1f715fcf6ea9f1fe1daae2c75030`, PR #27
+`ffe7d08b0aa4fc2a71e01418033ced942526bfdf`, and QA source `c27c869...`. The shared migration
+provenance now records the actual product UI digest
+`dd368d5033b1d30dc7c4707c18523976e3fc37f6a746b4101c7a674ec94d7f99`, and the candidate test list
+registers the `ui-evm-keccak` and `m3-browser-runtime-set` groups.
+
+Source-equivalence checks return no diff for:
+
+- `contracts/**` between PR #24 evidence head `a130529...` and `639ffd8...`;
+- the critical Chain/API source and test population between PR #26 `a4d73bb...` and `639ffd8...`;
+- product source and the critical product tests between PR #27 `ffe7d08...` and `639ffd8...`.
+
+The source-equivalent contract result is therefore inherited from the independent PR #24 gate,
+while all applicable Node, coverage, identity, static/build and browser checks below were executed
+against the exact integration candidate.
+
+### Node, identity and static/build results
+
+| Check                                | Result                       | Evidence SHA-256                                                   |
+| ------------------------------------ | ---------------------------- | ------------------------------------------------------------------ |
+| Complete package test list           | `PASS` — 705/705             | `0d8390d6a7be480f44c0a317d6244eb1052e065c203b1b70362821a3ac996a4c` |
+| Typecheck                            | `PASS`                       | `2a6a2c0222a96232b5dd3dea2c3e4411abfc22401c3a741d0a8e3f88ad508016` |
+| ESLint                               | `PASS`                       | `fcbadef52cfd75d63be42f230222655fb4f63a3916164157e43956728eb448c1` |
+| Prettier                             | `PASS`                       | `ff037a0c2db2ebb4c2444f87ee6b8fa32e15250dc00f90a7dc4c57834beb82e8` |
+| Secret scan                          | `PASS`                       | `a688cfe625a8e8229a7f4294b4872304f17f7cdac2903ca0e7e38c017fe182c0` |
+| Privacy check                        | `PASS`                       | `695e8293a88dd39f8adf2bf8915c0b0dab83873b65c71711869d2fe12914c31d` |
+| Web build                            | `PASS`                       | `4915646ce8f462a43129b3101b62c5976cacb5fd72de6a4ad6625c2d8b23bb29` |
+| Canonical worker identity            | `PASS` — 64 records          | `2cfcaabae31b1b505b5da58173cf164d1eafac18ee8ce47a3dda9a0e934c2488` |
+| Management dashboard                 | `BLOCKED` — branch mismatch  | `5a11fe448069ca46f1ade746767c7364977990c916b430e0a03b548fc1ab9e44` |
+| Base-to-candidate `git diff --check` | `FAIL` — trailing whitespace | `0b5edb00ba2069eafcc11ac7069e618ad781e39f816a264f2bb0809833a98d54` |
+
+The isolated clone initially identified its local source worktree as `origin`; canonical identity
+verification correctly rejected that noncanonical remote. Macbeth05 then set the clone remote to
+the canonical GitHub repository, fetched the exact worker refs, and reran the check. It passed with
+`64 records verified; 35 original source records and 29 manager records`.
+
+`management:check` fails exactly `RECORDED_GIT_BRANCH_MISMATCH`; there is no new C/R/S evidence for
+this candidate. The base-to-candidate diff check exits 2 at
+`docs/protocol/PHASE1-TESTNET-DEPLOYMENT-PLAN.md` lines 3-4 because both lines contain trailing
+spaces. Macbeth05 did not edit either shared evidence or source outside the assigned QA directory.
+
+### Exact-candidate critical coverage
+
+The candidate's complete 705-test list ran with the same 13 critical Chain/API sources explicitly
+included. All tests pass. The summary is 97.37% lines, 95.40% branches and 98.56% functions;
+`chain-routes.ts` remains 100% branches, `chain-sync.ts` 99.39%, `rpc.ts` 99.34%, and
+`chain-store.ts` 88.81%.
+
+Every concrete frozen critical branch remains covered. The two adjacent residual records are the
+same source-proved records from PR #26: `chain-sync.ts:242` is the closing brace of a `finally`
+whose body executes, and `rpc.ts:325` is the retry-loop closing brace before a fallback that cannot
+execute because every terminal attempt returns or throws. The raw coverage is preserved and is not
+rewritten as 100%. The concrete critical subset result is `PASS_AT_639_LOCAL_CANDIDATE`; combined
+JS/TS overall coverage remains `NOT_MEASURED`.
+
+| Critical coverage artifact                      | SHA-256                                                            |
+| ----------------------------------------------- | ------------------------------------------------------------------ |
+| `run-integration-639ffd8-critical-coverage.mjs` | `83a43aa913b287793ab746ce157c043b4bf694cbbbed72513057a21cac47e250` |
+| `integration-639ffd8-critical-coverage.log`     | `bc59d41daf49b98d37a743e034022500daf0f66acfddef43f535ff949ec4c8b1` |
+| `integration-639ffd8-critical-coverage.lcov`    | `ad7248f05f9ba092d07dd88df571e3ccee004d693a01dd3ac13575b355f88e20` |
+| `summarize-integration-639ffd8-branches.mjs`    | `5c2c13c1188ce5bcc02d40cabd053facad7c832311a156a73a6e40115f8565dd` |
+| `integration-639ffd8-critical-branch-gaps.json` | `e938e3fe48bf701bb3031ed002440397a5ee62ad8fa82f0945a7e2a2a9c956e3` |
+
+### Exact-candidate real browser journey
+
+The real Codex in-app browser opened only the explicit local fixture at
+`http://127.0.0.1:5195/?m3Fixture=1#/trade/trend`. It showed two reviewed Vaults with different
+Owners and spenders and one shared Pass. A Vault A one-base-unit withdrawal reached an Owner- and
+Vault-bound review. Selecting Vault B cleared that pending review and disabled writes until Owner B
+was connected.
+
+With Owner B connected, one raw Pass unit was sent to the fixed reviewed recipient. The UI reported
+`SUBMITTED`; refresh changed Vault B's displayed balance from `1000000000000000000` to
+`999999999999999999`. Vault A then approved exactly one AF-USDC base unit to Vault A. Returning to
+Vault B showed allowance zero and Vault B as spender; returning to Vault A restored allowance one,
+which proves the reviewed per-Vault isolation at the exact candidate.
+
+Switching to chain ID 1 showed `WRONG`, `Chain writes are disabled`, and native disabled states for
+Deposit, Withdraw, Close and Transfer Pass. Buy/Sell remained disabled and outside Phase One;
+strategy execution remained deferred. Browser console collection returned no warning or error.
+The tab and local Vite server were closed after verification.
+
+### Integration conclusion
+
+The exact candidate result is `LOCAL_UNIFIED_CANDIDATE_FUNCTIONAL_PASS / FINAL_EVIDENCE_BLOCKED`.
+It is not a final milestone PASS. Candidate-bound C/R/S, the base-to-candidate diff check, complete
+overall JS/TS coverage, hosted required checks, eligible independent approval, the restricted
+security-review result and authorized Testnet evidence remain unresolved.

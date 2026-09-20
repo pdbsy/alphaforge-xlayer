@@ -10,7 +10,7 @@ BASE_SHA: `18f5352070910a867b9729b031aa2e3951785e01`
 
 This directory is Macbeth05's versioned QA record for the AlphaForge Phase 1 closeout. It separates the intake baseline, requirement matrix, historical-version mapping, execution evidence, findings, and the later final-candidate conclusion.
 
-Current status: `PUBLISHED_WORKER_ACCEPTANCE_COMPLETE / FINAL_CANDIDATE_BLOCKED`. The exact base and latest PR #24, #26 and #27 worker checkpoints have completed their applicable independent local verification. They are not one unified final candidate, do not establish Testnet acceptance, and do not resolve the historical security-review service limitation or independent approval requirements.
+Current status: `LOCAL_UNIFIED_CANDIDATE_FUNCTIONAL_PASS / FINAL_EVIDENCE_BLOCKED`. Macbeth05 independently reran local integration candidate `639ffd8f85a89ee9266112c6d80e90e9428381a2`, tree `7a6b8cc6ae06d8424674669727b06cf0f923c4ba`: 705/705 tests, the applicable static/build gates, exact identity verification, critical-source coverage, and the real local multi-Vault browser journey pass. Final acceptance remains blocked by missing candidate-bound C/R/S evidence, a base-to-candidate `git diff --check` failure, overall JS/TS coverage remaining `NOT_MEASURED`, hosted required checks and independent approval, the historical security-review service limitation, and unauthorized Testnet writes.
 
 ## Records
 
