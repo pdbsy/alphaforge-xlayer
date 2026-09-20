@@ -8,11 +8,14 @@ import {
   validateDeploymentManifest,
 } from '../packages/chain-adapter/src/manifest.ts';
 import type { ReadonlyRpc } from '../packages/chain-adapter/src/rpc.ts';
+import { M3_STRATEGY_PASS_ABI_HASH } from '../packages/chain-adapter/src/pass-abi.ts';
 import { encodeM3VaultCall, M3_VAULT_ABI_HASH } from '../packages/chain-adapter/src/vault-abi.ts';
 import { asAddress, asBlockHash, asHexData, asTransactionHash } from '../packages/chain-adapter/src/types.ts';
 
 const CONTRACT = asAddress('0x2222222222222222222222222222222222222222');
 const OWNER = asAddress('0x1111111111111111111111111111111111111111');
+const PASS = asAddress('0x4444444444444444444444444444444444444444');
+const RECIPIENT = asAddress('0x5555555555555555555555555555555555555555');
 const TX = asTransactionHash(`0x${'aa'.repeat(32)}`);
 const manifestBody = {
   schemaVersion: 1,
@@ -25,6 +28,10 @@ const manifestBody = {
   abiVersion: 'm3-vault-db620d6',
   abiHash: M3_VAULT_ABI_HASH,
   runtimeBytecodeHash: asBlockHash(`0x${'99'.repeat(32)}`),
+  strategyPassAddress: PASS,
+  strategyPassDeploymentBlock: '90',
+  strategyPassAbiHash: M3_STRATEGY_PASS_ABI_HASH,
+  strategyPassRuntimeBytecodeHash: asBlockHash(`0x${'88'.repeat(32)}`),
 } as const;
 const manifestDigest = deploymentManifestDigest(manifestBody);
 const manifest = validateDeploymentManifest(
@@ -57,6 +64,35 @@ test('runtime rejects live bytecode that does not match the trusted manifest bef
   const runtime = new M3ChainRuntime({ dbPath: await path(), rpc: new InertRpc(), manifest });
   await assert.rejects(() => runtime.syncToHead(), /M3_DEPLOYMENT_CODE_MISMATCH/);
   assert.equal(runtime.store.checkpoint(manifest.chainId, manifest.contractAddress), null);
+  runtime.close();
+});
+
+test('runtime records exact manifest-bound StrategyPass transfer without capacity rounding', async () => {
+  const runtime = new M3ChainRuntime({ dbPath: await path(), rpc: new InertRpc(), manifest });
+  const calldata = asHexData(`0xa9059cbb${RECIPIENT.slice(2).padStart(64, '0')}${'1'.padStart(64, '0')}`);
+  const operation = runtime.recordSubmission({
+    operationId: 'pass-transfer-one-wei',
+    chainId: 46_630,
+    owner: OWNER,
+    target: PASS,
+    calldata,
+    txHash: asTransactionHash(`0x${'cc'.repeat(32)}`),
+  });
+  assert.equal(operation.state, 'SUBMITTED');
+  assert.equal(operation.target, PASS);
+  assert.equal(operation.calldata, calldata);
+  assert.throws(
+    () =>
+      runtime.recordSubmission({
+        operationId: 'pass-transfer-wrong-target',
+        chainId: 46_630,
+        owner: OWNER,
+        target: RECIPIENT,
+        calldata,
+        txHash: asTransactionHash(`0x${'dd'.repeat(32)}`),
+      }),
+    /INVALID_M3_WALLET_SUBMISSION/,
+  );
   runtime.close();
 });
 

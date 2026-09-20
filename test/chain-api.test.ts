@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdir, mkdtemp } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { buildApp } from '../apps/server/src/app.ts';
+import { buildM3App } from '../apps/server/src/m3-app.ts';
 import { M3ChainRuntime } from '../apps/server/src/m3-chain-runtime.ts';
 import { createOperation, transitionOperation } from '../packages/chain-adapter/src/lifecycle.ts';
 import {
@@ -10,6 +11,7 @@ import {
   validateDeploymentManifest,
 } from '../packages/chain-adapter/src/manifest.ts';
 import type { ReadonlyRpc } from '../packages/chain-adapter/src/rpc.ts';
+import { M3_STRATEGY_PASS_ABI_HASH } from '../packages/chain-adapter/src/pass-abi.ts';
 import { asAddress, asBlockHash, asHexData, asTransactionHash } from '../packages/chain-adapter/src/types.ts';
 import { encodeM3VaultCall, M3_VAULT_ABI_HASH } from '../packages/chain-adapter/src/vault-abi.ts';
 
@@ -18,6 +20,8 @@ const OWNER = asAddress('0x1111111111111111111111111111111111111111');
 const OTHER_OWNER = asAddress('0x3333333333333333333333333333333333333333');
 const CONTRACT = asAddress('0x2222222222222222222222222222222222222222');
 const OTHER_CONTRACT = asAddress('0x4444444444444444444444444444444444444444');
+const STRATEGY_PASS = asAddress('0x6666666666666666666666666666666666666666');
+const OTHER_STRATEGY_PASS = asAddress('0x7777777777777777777777777777777777777777');
 const TX_HASH = asTransactionHash(`0x${'aa'.repeat(32)}`);
 const OTHER_TX_HASH = asTransactionHash(`0x${'dd'.repeat(32)}`);
 const BLOCK_HASH = asBlockHash(`0x${'bb'.repeat(32)}`);
@@ -36,6 +40,10 @@ const manifestBody = {
   abiVersion: 'm3-vault-db620d6',
   abiHash: M3_VAULT_ABI_HASH,
   runtimeBytecodeHash: asBlockHash(`0x${'99'.repeat(32)}`),
+  strategyPassAddress: STRATEGY_PASS,
+  strategyPassDeploymentBlock: '1',
+  strategyPassAbiHash: M3_STRATEGY_PASS_ABI_HASH,
+  strategyPassRuntimeBytecodeHash: asBlockHash(`0x${'88'.repeat(32)}`),
 } as const;
 const manifestDigest = deploymentManifestDigest(manifestBody);
 const manifest = validateDeploymentManifest(
@@ -301,16 +309,29 @@ test('submission API accepts only pending identity and rejects forged state or c
   });
   assert.equal(missingWriteHeader.statusCode, 403);
 
+  const withoutTxHash = {
+    operationId: body.operationId,
+    chainId: body.chainId,
+    owner: body.owner,
+    target: body.target,
+    calldata: body.calldata,
+  };
   for (const forged of [
     { ...body, state: 'CONFIRMED' },
     { ...body, productReady: true },
     { ...body, receipt: { status: 'SUCCESS' } },
     { ...body, submittedAt: '2026-09-20T00:00:00.000Z' },
+    {
+      ...withoutTxHash,
+      operationId: 'submission-ambiguous',
+      submissionStatus: 'SUBMISSION_AMBIGUOUS',
+    },
   ]) {
     const rejected = await request(forged);
     assert.equal(rejected.statusCode, 400);
     assert.equal(rejected.json().error, 'INVALID_REQUEST');
   }
+  assert.equal(runtime.store.operation('submission-ambiguous'), null);
 });
 
 test('runtime status exposes fixed deployment identity and database health without private paths', async (t) => {
@@ -340,6 +361,9 @@ test('runtime status exposes fixed deployment identity and database health witho
       manifestDigest,
       abiHash: M3_VAULT_ABI_HASH,
       runtimeBytecodeHash: manifest.runtimeBytecodeHash,
+      strategyPassAddress: STRATEGY_PASS,
+      strategyPassAbiHash: M3_STRATEGY_PASS_ABI_HASH,
+      strategyPassRuntimeBytecodeHash: manifest.strategyPassRuntimeBytecodeHash,
     },
   });
   assert.doesNotMatch(response.body, /private-chain|private-ledger|\.sqlite/);
@@ -348,7 +372,11 @@ test('runtime status exposes fixed deployment identity and database health witho
 test('multi-Vault API isolates contract, wallet and strategy state and requires explicit Vault selection', async (t) => {
   const directory = await folder();
   const dbPath = resolve(directory, 'shared-chain.sqlite');
-  const otherManifestBody = { ...manifestBody, contractAddress: OTHER_CONTRACT };
+  const otherManifestBody = {
+    ...manifestBody,
+    contractAddress: OTHER_CONTRACT,
+    strategyPassAddress: OTHER_STRATEGY_PASS,
+  };
   const otherManifestDigest = deploymentManifestDigest(otherManifestBody);
   const otherManifest = validateDeploymentManifest(
     { ...otherManifestBody, manifestDigest: otherManifestDigest },
@@ -391,17 +419,17 @@ test('multi-Vault API isolates contract, wallet and strategy state and requires 
     env,
     origin,
     chainRuntimes: [first, second],
-  } as Parameters<typeof buildApp>[0] & { chainRuntimes: readonly M3ChainRuntime[] };
+  } as Parameters<typeof buildM3App>[0];
   await assert.rejects(
     () =>
-      buildApp({
+      buildM3App({
         ...multiOptions,
         dbPath: resolve(directory, 'duplicate-ledger.sqlite'),
         chainRuntimes: [first, first],
       }),
     /DUPLICATE_CHAIN_RUNTIME/,
   );
-  const { app } = await buildApp(multiOptions);
+  const { app } = await buildM3App(multiOptions);
   t.after(async () => {
     await app.close();
     first.close();
@@ -431,8 +459,8 @@ test('multi-Vault API isolates contract, wallet and strategy state and requires 
   );
 
   const ambiguous = await app.inject({ url: `/api/v1/chain/vaults/${OWNER}`, headers });
-  assert.equal(ambiguous.statusCode, 409, ambiguous.body);
-  assert.equal(ambiguous.json().error, 'CHAIN_VAULT_SELECTION_REQUIRED');
+  assert.equal(ambiguous.statusCode, 400, ambiguous.body);
+  assert.equal(ambiguous.json().error, 'INVALID_REQUEST');
 
   const submitted = await app.inject({
     method: 'POST',

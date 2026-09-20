@@ -87,7 +87,7 @@
 
 **Interfaces:**
 
-- `buildApp` accepts a validated nonempty set of distinct `M3ChainRuntime` instances while retaining the existing one-runtime call shape.
+- `buildM3App` accepts a validated nonempty set of distinct `M3ChainRuntime` instances while retaining `buildApp`'s existing one-runtime call shape and historical provenance hash.
 - Adds contract-qualified read `GET /api/v1/chain/vaults/:contract/:owner`; the legacy owner-only route remains valid only for a one-runtime server.
 - Routes submissions by exact chain and target contract; unknown or duplicate runtime identities fail closed.
 - Confirms projection keys include chain, immutable Vault contract, owner wallet, and `m3-vault`; strategy identity remains a state field verified against the Vault and Strategy Pass at the same canonical block.
@@ -96,7 +96,7 @@
 - [x] Run `node --test test/chain-api.test.ts test/chain-store.test.ts test/chain-vault-integration.test.ts` and confirm expected RED failures.
 - [x] Implement the minimal runtime registry and exact dispatch rules.
 - [x] Run focused tests and the complete chain test set; verify no cross-Vault reads, writes, closures, or sync health leakage.
-- [ ] Commit this independently reviewable isolation batch.
+- [x] Commit this independently reviewable isolation batch (`bec0f2d`).
 
 ### Task 4: Recovery matrix, UI/API handoff, and non-broadcast smoke procedure
 
@@ -115,7 +115,37 @@
 - Defines `SUBMISSION_AMBIGUOUS` as a browser-only pending recovery condition: no backend operation is created without a txHash and no automatic resend occurs.
 - Defines a smoke run that stops before signing/broadcast unless separately authorized and records chain, manifest, ABI/runtime hashes, wallet, target, spender, calldata, simulation, and expected event/view evidence.
 
-- [ ] Write the four operational documents from code/test evidence and mark real Testnet actions `NOT_RUN`.
-- [ ] Run format, typecheck, lint, full tests, secrets/privacy checks, and the environment admission check with the fixed toolchain.
-- [ ] Review the complete diff for scope, stale claims, accidental external-write paths, and sensitive data.
-- [ ] Commit source/docs, push the task branch, update Draft PR #23, and report the exact candidate SHA and results to Macbeth01.
+- [x] Write the four operational documents from code/test evidence and mark real Testnet actions `NOT_RUN`.
+- [x] Run format, typecheck, lint, full tests, secrets/privacy checks, and the environment admission check with the fixed toolchain.
+- [x] Review the complete diff for scope, stale claims, accidental external-write paths, and sensitive data.
+- [x] Commit source/docs, push the task branch, update Draft PR #23, and report the exact candidate SHA and results to Macbeth01.
+
+### Task 5: Manifest-bound StrategyPass transfer
+
+**Files:**
+
+- Create: `packages/chain-adapter/src/pass-abi.ts`
+- Create: `apps/server/src/m3-pass-integration.ts`
+- Modify: `packages/chain-adapter/src/index.ts`
+- Modify: `packages/chain-adapter/src/manifest.ts`
+- Modify: `apps/server/src/m3-chain-runtime.ts`
+- Modify: `apps/server/src/chain-routes.ts`
+- Test: `test/chain-rpc-manifest.test.ts`
+- Test: `test/chain-vault-abi.test.ts`
+- Test: `test/chain-vault-integration.test.ts`
+- Test: `test/chain-runtime.test.ts`
+- Test: `test/chain-api.test.ts`
+
+**Interfaces:**
+
+- Binds StrategyPass address, deployment block, ABI Keccak-256, and deployed runtime Keccak-256 into the trusted Vault manifest.
+- Uses Macbeth02 source `2ad816200e7edfbfad96d765b4a696bc8b838c2d` (evidence head `a13052993b6f408b7be835ecd6f4b13ef6df367d`) and StrategyPass ABI Keccak-256 `0xdd989644feeb7798baca69f7391ba75b6f9d09f47fb05bd90184f6072912923f`.
+- Produces exact `transfer(address,uint256)` encoding/decoding with selector `0xa9059cbb`, nonzero recipient, positive uint256 raw amount, and no `10^12` divisibility restriction.
+- Indexes canonical StrategyPass `Transfer` events, reconciles sender/recipient/amount and 18-decimal strategy identity, and exposes contract-qualified owner balance projections.
+- Accepts wallet submission only when target equals the manifest-bound StrategyPass; arbitrary ERC-20 targets and calldata remain invalid.
+
+- [x] Write failing manifest, transfer codec, target-binding, event reconciliation, and projection recovery tests.
+- [x] Run the focused tests and confirm failures are caused by the absent StrategyPass adapter/runtime.
+- [x] Implement the minimal pass ABI, second contract synchronizer, runtime identity checks, and routes.
+- [x] Run focused tests, the complete chain suite, typecheck, lint, and format checks.
+- [x] Commit the StrategyPass transfer batch and update the handoff/gap documents from HANDOFF_READY to implemented local evidence.

@@ -17,6 +17,8 @@ export interface ChainEvidenceRoutesOptions {
   readonly chainId: number;
   readonly contract: Address;
   readonly projectionKey: string;
+  readonly passContract?: Address;
+  readonly passProjectionKey?: string;
   readonly syncStatus: () => {
     readonly lastAttempt: 'NOT_RUN' | 'SUCCEEDED' | 'FAILED';
     readonly errorCode: 'M3_INDEXER_SYNC_FAILED' | null;
@@ -31,6 +33,9 @@ export interface ChainEvidenceRoutesOptions {
       readonly manifestDigest: string;
       readonly abiHash: string;
       readonly runtimeBytecodeHash: string;
+      readonly strategyPassAddress: Address;
+      readonly strategyPassAbiHash: string;
+      readonly strategyPassRuntimeBytecodeHash: string;
     };
   };
   readonly recordSubmission: (input: {
@@ -69,16 +74,36 @@ export function registerChainEvidenceRoutes(
     const identity = `${runtime.chainId}:${runtime.contract.toLowerCase()}`;
     if (identities.has(identity)) throw new Error('DUPLICATE_CHAIN_RUNTIME');
     identities.add(identity);
+    if ((runtime.passContract === undefined) !== (runtime.passProjectionKey === undefined))
+      throw new Error('INVALID_CHAIN_RUNTIME_SET');
+    if (runtime.passContract && runtime.passProjectionKey) {
+      if (!/^[A-Za-z][A-Za-z0-9._-]{0,127}$/.test(runtime.passProjectionKey))
+        throw new Error('INVALID_PROJECTION_KEY');
+      const passIdentity = `${runtime.chainId}:${runtime.passContract.toLowerCase()}`;
+      if (identities.has(passIdentity)) throw new Error('DUPLICATE_CHAIN_RUNTIME');
+      identities.add(passIdentity);
+    }
   }
   const runtimeForContract = (contract: Address) =>
     runtimes.find((runtime) => sameAddress(runtime.contract, contract)) ?? null;
-  const readProjection = (runtime: ChainEvidenceRoutesOptions, owner: Address) => {
+  const runtimeForTarget = (contract: Address) =>
+    runtimes.find(
+      (runtime) =>
+        sameAddress(runtime.contract, contract) ||
+        (runtime.passContract !== undefined && sameAddress(runtime.passContract, contract)),
+    ) ?? null;
+  const readProjection = (
+    runtime: ChainEvidenceRoutesOptions,
+    owner: Address,
+    contract = runtime.contract,
+    projectionKey = runtime.projectionKey,
+  ) => {
     if (runtime.syncStatus().lastAttempt === 'FAILED') throw new DomainError('CHAIN_PROJECTION_UNAVAILABLE');
     let projection;
     try {
-      if (!runtime.store.checkpoint(runtime.chainId, runtime.contract))
+      if (!runtime.store.checkpoint(runtime.chainId, contract))
         throw new DomainError('CHAIN_PROJECTION_UNAVAILABLE');
-      projection = runtime.store.projection(runtime.chainId, owner, runtime.contract, runtime.projectionKey);
+      projection = runtime.store.projection(runtime.chainId, owner, contract, projectionKey);
     } catch (error) {
       if (error instanceof DomainError) throw error;
       throw new DomainError('CHAIN_PROJECTION_UNAVAILABLE');
@@ -105,7 +130,7 @@ export function registerChainEvidenceRoutes(
       },
     },
     async (request) => {
-      const runtime = runtimeForContract(asAddress(request.params.contract));
+      const runtime = runtimeForTarget(asAddress(request.params.contract));
       if (!runtime) throw new DomainError('CHAIN_PROJECTION_NOT_FOUND');
       return runtime.syncStatus();
     },
@@ -139,7 +164,7 @@ export function registerChainEvidenceRoutes(
               type: 'string',
               pattern: '^0x(?:[0-9a-fA-F]{2})+$',
               minLength: 10,
-              maxLength: 74,
+              maxLength: 138,
             },
             txHash: { type: 'string', pattern: '^0x[0-9a-fA-F]{64}$', maxLength: 66 },
           },
@@ -152,7 +177,9 @@ export function registerChainEvidenceRoutes(
         const target = asAddress(request.body.target);
         const runtime = runtimes.find(
           (candidate) =>
-            candidate.chainId === request.body.chainId && sameAddress(candidate.contract, target),
+            candidate.chainId === request.body.chainId &&
+            (sameAddress(candidate.contract, target) ||
+              (candidate.passContract !== undefined && sameAddress(candidate.passContract, target))),
         );
         if (!runtime) throw new Error('INVALID_M3_WALLET_SUBMISSION');
         operation = runtime.recordSubmission({
@@ -206,7 +233,8 @@ export function registerChainEvidenceRoutes(
         const operation = runtime.store.operation(request.params.operationId);
         return operation &&
           operation.chainId === runtime.chainId &&
-          sameAddress(operation.target, runtime.contract) &&
+          (sameAddress(operation.target, runtime.contract) ||
+            (runtime.passContract !== undefined && sameAddress(operation.target, runtime.passContract))) &&
           sameAddress(operation.owner, owner)
           ? [{ runtime, operation }]
           : [];
@@ -215,9 +243,37 @@ export function registerChainEvidenceRoutes(
       const { runtime, operation } = matches[0]!;
       if (runtime.syncStatus().lastAttempt === 'FAILED')
         throw new DomainError('CHAIN_PROJECTION_UNAVAILABLE');
-      const evidence = runtime.store.operationEvidence(operation.operationId, runtime.projectionKey);
+      const projectionKey = sameAddress(operation.target, runtime.contract)
+        ? runtime.projectionKey
+        : runtime.passProjectionKey!;
+      const evidence = runtime.store.operationEvidence(operation.operationId, projectionKey);
       if (!evidence) throw new DomainError('CHAIN_OPERATION_NOT_FOUND');
       return { operationId: operation.operationId, ...evidence };
+    },
+  );
+  app.get<{ Params: { contract: string; owner: string } }>(
+    '/api/v1/chain/passes/:contract/:owner',
+    {
+      schema: {
+        params: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['contract', 'owner'],
+          properties: { contract: addressSchema, owner: addressSchema },
+        },
+      },
+    },
+    async (request) => {
+      const contract = asAddress(request.params.contract);
+      const runtime = runtimeForTarget(contract);
+      if (
+        !runtime ||
+        runtime.passContract === undefined ||
+        runtime.passProjectionKey === undefined ||
+        !sameAddress(runtime.passContract, contract)
+      )
+        throw new DomainError('CHAIN_PROJECTION_NOT_FOUND');
+      return readProjection(runtime, asAddress(request.params.owner), contract, runtime.passProjectionKey);
     },
   );
   app.get<{ Params: { contract: string; owner: string } }>(
@@ -251,7 +307,7 @@ export function registerChainEvidenceRoutes(
       },
     },
     async (request) => {
-      if (runtimes.length !== 1) throw new DomainError('CHAIN_VAULT_SELECTION_REQUIRED');
+      if (runtimes.length !== 1) throw new DomainError('INVALID_REQUEST');
       return readProjection(runtimes[0]!, asAddress(request.params.owner));
     },
   );
