@@ -101,6 +101,59 @@ def _signature(entry: dict) -> str:
     return f"{entry['name']}({inputs})"
 
 
+def _compiler_immutable_references(references: object, runtime_template: bytes) -> dict:
+    if not isinstance(references, dict):
+        raise ValueError('Compiler immutable references must be an object')
+
+    groups = []
+    occupied = []
+    for reference_id, raw_locations in references.items():
+        if not isinstance(reference_id, str) or not reference_id.isdecimal():
+            raise ValueError('Compiler immutable reference ID must be a decimal string')
+        if not isinstance(raw_locations, list) or not raw_locations:
+            raise ValueError(f'Compiler immutable reference {reference_id} has no locations')
+
+        locations = []
+        for raw_location in raw_locations:
+            if not isinstance(raw_location, dict):
+                raise ValueError(f'Compiler immutable reference {reference_id} location is invalid')
+            start = raw_location.get('start')
+            length = raw_location.get('length')
+            if type(start) is not int or start < 0 or type(length) is not int or length <= 0:
+                raise ValueError(f'Compiler immutable reference {reference_id} location is invalid')
+            end = start + length
+            if end > len(runtime_template):
+                raise ValueError(
+                    f'Compiler immutable reference {reference_id} is outside runtime template'
+                )
+            if any(runtime_template[start:end]):
+                raise ValueError(
+                    f'Compiler immutable reference {reference_id} points to nonzero runtime bytes'
+                )
+            occupied.append((start, end, reference_id))
+            locations.append({'start': start, 'length': length})
+
+        groups.append(
+            {
+                'compilerReferenceId': reference_id,
+                'locations': sorted(locations, key=lambda value: (value['start'], value['length'])),
+            }
+        )
+
+    occupied.sort()
+    for previous, current in zip(occupied, occupied[1:]):
+        if current[0] < previous[1]:
+            raise ValueError(
+                'Compiler immutable references overlap: '
+                f'{previous[2]}@{previous[0]} and {current[2]}@{current[0]}'
+            )
+
+    return {
+        'mappingStatus': 'COMPILER_REFERENCE_IDS_NOT_SOURCE_FIELD_MAPPED',
+        'groups': sorted(groups, key=lambda value: int(value['compilerReferenceId'])),
+    }
+
+
 def _state_immutables(name: str, artifact: dict, source_text: str) -> list[dict]:
     declarations = DECLARED_IMMUTABLES[name]
     observed = tuple(
@@ -185,6 +238,10 @@ def _contract_entry(
     runtime_template = bytes.fromhex(
         artifact['deployedBytecode']['object'].removeprefix('0x')
     )
+    immutable_references = _compiler_immutable_references(
+        artifact['deployedBytecode'].get('immutableReferences', {}),
+        runtime_template,
+    )
     methods = {
         signature: '0x' + selector
         for signature, selector in sorted(artifact['methodIdentifiers'].items())
@@ -195,9 +252,8 @@ def _contract_entry(
         'artifact': artifact_path,
         'constructor': _constructor(abi),
         'immutables': _state_immutables(name, artifact, source_text),
-        'immutableReferenceGroupCount': len(
-            artifact['deployedBytecode'].get('immutableReferences', {})
-        ),
+        'compilerImmutableReferences': immutable_references,
+        'immutableReferenceGroupCount': len(immutable_references['groups']),
         'methodIdentifiers': methods,
         'events': _events(abi),
         'errors': _errors(abi),
@@ -219,7 +275,7 @@ def _contract_entry(
 def build_manifest(contract_root: Path, artifact_root: Path) -> dict:
     lock = json.loads((contract_root / 'toolchain.lock.json').read_text())
     return {
-        'schemaVersion': 1,
+        'schemaVersion': 2,
         'status': 'LOCAL_COMPILED_NOT_DEPLOYED',
         'networkTarget': {
             'name': 'Robinhood Chain Testnet',
@@ -242,6 +298,7 @@ def build_manifest(contract_root: Path, artifact_root: Path) -> dict:
         'limitations': [
             'No external RPC, key, signature, deployment, transaction, broadcast or finality evidence.',
             'Compiler runtime template hashes contain zeroed immutable placeholders and are not deployed runtime hashes.',
+            'Compiler immutable reference IDs and offsets are preserved verbatim but are not mapped to source field names.',
             'PassLocker is constructed by AlphaForgeVault; its deployed address and runtime depend on Vault parameters.',
             'AlphaForgeTest assets and venue are TESTNET_ONLY and are not production asset representations.',
         ],

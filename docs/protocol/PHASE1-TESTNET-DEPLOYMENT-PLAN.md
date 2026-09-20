@@ -27,20 +27,31 @@ RPC write, key use, signature, deployment, initialization or transaction broadca
 Private keys, seed phrases, RPC credentials and signed transactions must never be written to this
 table, the repository, PR comments, logs or chat.
 
-## Exact deployment order and constructors
+## Compiled inventory and minimum deployment boundary
+
+The artifact manifest contains eight compiled contracts so every reviewed constructor, ABI and
+bytecode identity remains reproducible. Inclusion in that compiler inventory does not approve or
+require Testnet deployment.
+
+The minimum candidate for the Phase One transfer/deposit/withdraw/close/rescue lifecycle contains
+the three distinct test assets, Strategy Pass and Vault. Its exact deployment order is:
 
 1. `AlphaForgeTestUSDC(uint256 fixedSupply_, address recipient_)`.
 2. `AlphaForgeTestETH(uint256 fixedSupply_, address recipient_)`.
 3. `AlphaForgeTestBTC(uint256 fixedSupply_, address recipient_)`.
 4. `StrategyPass(string name_, string symbol_, bytes32 strategyId_, uint256 fixedSupply_, address recipient_)`.
-5. `AlphaForgeTestVenue(address afUsdc_, address afEth_, address afBtc_)`.
-6. `AlphaForgeSwapAdapter(address venue_, address afUsdc_, address afEth_, address afBtc_)`.
-7. `AlphaForgeVault(address owner_, address strategyCreator_, bytes32 strategyId_, bytes32 strategyRef_, address pass_, address afUsdc_, address afEth_, address afBtc_)`.
+5. `AlphaForgeVault(address owner_, address strategyCreator_, bytes32 strategyId_, bytes32 strategyRef_, address pass_, address afUsdc_, address afEth_, address afBtc_)`.
 
 `AlphaForgeVault` constructs its `PassLocker(address vault_, address owner_, IERC20 pass_)`
 internally. A separate PassLocker deployment is invalid for this lifecycle. All token addresses
 must be nonzero and distinct. Pass must report 18 decimals, AF-USDC must report 6 decimals, and
 the Pass `strategyId()` must equal the Vault `strategyId_`.
+
+`AlphaForgeTestVenue` and `AlphaForgeSwapAdapter` remain in the compiled inventory but are excluded
+from the minimum deployment candidate. Vault construction does not reference either contract, and
+Phase One excludes strategy execution, swaps, AMMs and liquidity operations. Deploying either one
+would require a separately reviewed scope, parameter set and explicit authorization; this plan
+does not default to those extra deployments.
 
 ## Offline preflight
 
@@ -61,8 +72,8 @@ These steps remain blocked until Macbeth01 obtains and records the applicable au
 
 1. Read `eth_chainId` and reject any value other than `0xb626` before preparing a transaction.
 2. Confirm the selected account equals the reviewed deployer and has only Testnet funds.
-3. Simulate each constructor transaction and record sanitized gas estimates without secret or RPC
-   metadata.
+3. Simulate each approved minimum-candidate constructor transaction and record sanitized gas
+   estimates without secret or RPC metadata. Do not infer approval for other compiled artifacts.
 4. Present the exact chain, sender, constructor, argument values, value and expected artifact hash
    for human wallet review before each signature.
 5. Broadcast once. An ambiguous submission is recorded and reconciled by transaction identity;

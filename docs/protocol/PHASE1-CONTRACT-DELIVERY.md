@@ -31,10 +31,13 @@ same implementation would create downstream drift without closing a real gap.
 
 This task adds evidence that was not previously packaged as one repeatable delivery:
 
-1. `contracts/deployment/phase1-contract-artifacts.json` records all eight deployment-relevant
-   compiler artifacts. For each contract it includes the constructor, immutable runtime offsets,
-   complete method selectors, event topics, custom-error selectors, canonical ABI hash, creation
-   bytecode hash and compiler runtime-template hash.
+1. `contracts/deployment/phase1-contract-artifacts.json` records the complete eight-contract
+   compiler inventory. For each contract it includes the constructor, source-declared immutable
+   fields, compiler immutable reference IDs with every runtime `start`/`length`, complete method
+   selectors, event topics, custom-error selectors, canonical ABI hash, creation bytecode hash and
+   compiler runtime-template hash. The compiler reference IDs are deliberately not claimed as a
+   mapping to immutable field names because the pinned artifacts do not carry enough AST context
+   to prove that association.
 2. `contracts/script/build_phase1_contract_manifest.py` deterministically rebuilds that manifest
    from the pinned Forge artifacts. Check mode rejects any source, ABI, selector, event, error,
    constructor, immutable or bytecode drift.
@@ -63,7 +66,8 @@ recorded separately after constructor values are embedded.
 | `PassLocker` | `0x3cd4ab8da2123200b3e4b931cb94a5cc11b5662360c4ed70d6643f173ff53b21` | `0xacc5aca165af774f0292aa7249567376e434e09712983be29dcfa33b0b9d2d68` | `0x3a23133c185856bb68e825ae1ecac929de131bdcbaf2154c3c7e4e24098bc494` |
 
 The machine-readable manifest is authoritative for the remaining five test-environment contracts
-and for complete constructor, immutable, selector, topic and error lists.
+and for complete constructor, declared-immutable, compiler-reference, selector, topic and error
+lists. It is a compiler inventory, not an authorization to deploy every listed artifact.
 
 ## Rebuild and verify
 
@@ -73,9 +77,11 @@ From the repository root:
 bash contracts/script/check-phase1-contracts.sh
 ```
 
-The current candidate result is 126 passing Solidity tests, 20 passing Python dependency/ABI
-mutation tests, fuzz and invariant suites, Slither with no findings, Vault ABI equality, manifest
-equality and two passing isolated deployment-rehearsal tests.
+The corrected candidate result is 134 passing Solidity tests, 24 passing Python dependency/ABI/
+manifest mutation tests, fuzz and invariant suites, Slither with no findings, Vault ABI equality,
+manifest equality and two passing isolated deployment-rehearsal tests. Forge coverage reports
+100% line, statement, branch and function coverage for the Phase One authorization/accounting
+core: `AlphaForgeVault`, `PassLocker` and `StrategyPass`.
 
 To intentionally rebuild the manifest after an authorized contract change, first run the pinned
 contract build, then from `contracts/` run:

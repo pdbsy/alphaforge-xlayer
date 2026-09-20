@@ -3,7 +3,7 @@
 - Agent: `Macbeth02`
 - Task: `M3-02-PHASE1-CONTRACTS`
 - Base: `18f5352070910a867b9729b031aa2e3951785e01`
-- Verified implementation source C: `e5eff6805d9705745bc0b4483de83466e5693ffa`
+- Initial verified implementation source C: `e5eff6805d9705745bc0b4483de83466e5693ffa`
 - Draft PR: `https://github.com/pdbsy/quantpass-arbitrum-hackathon/pull/24`
 - Delivery state: `READY FOR REVIEW / LOCAL / NOT_DEPLOYED`
 
@@ -21,14 +21,29 @@ layer:
 - three atomic rollback regressions for adverse Pass/AF-USDC settlement behavior;
 - a versioned contract handoff and a real Testnet parameter/evidence plan.
 
+Manager review correctly identified two evidence gaps in the first delivery: the immutable
+reference locations were described but not serialized, and the Testnet plan treated the complete
+compiled inventory as one deployment order. The correction preserves raw compiler reference IDs
+and all `start`/`length` locations without claiming an unproved source-field mapping. It also makes
+the minimum Phase One candidate explicit and excludes TestVenue/SwapAdapter unless separately
+reviewed and authorized.
+
+An exact coverage rerun also found meaningful boundary gaps in the core lifecycle. Added tests
+cover terminal state, withdrawal bounds, empty rescue, missing Strategy Pass identity, asset
+aliasing, accounting overflow, unfunded tracked positions and escrow deficit. Production Solidity
+and the frozen ABI remain unchanged.
+
 This avoided duplicating the prior implementation after confirming PR #21's squash tree and
 semantics.
 
 ## Verification on source C
 
-- Phase One contract gate: 126/126 Solidity tests, 20/20 Python tests, fuzz and invariant suites,
+- Phase One contract gate: 134/134 Solidity tests, 24/24 Python tests, fuzz and invariant suites,
   Slither with no findings, frozen Vault ABI equality, eight-contract manifest equality and two
   deployment-rehearsal tests.
+- Pinned Forge coverage: `AlphaForgeVault`, `PassLocker` and `StrategyPass` each reach 100% lines,
+  statements, branches and functions. Repository-total coverage remains reported separately and
+  is not represented as 100%.
 - Negative manifest mutation: rejected as expected.
 - Agent identity, formatting, diff, privacy and secret checks: passed.
 - Root test suite: 591/591 passed, as did every root gate before management evidence.

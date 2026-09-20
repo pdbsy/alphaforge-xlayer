@@ -3,6 +3,83 @@
     "AlphaForgeSwapAdapter": {
       "abiKeccak256": "0xccfcd65e70b2cef219b13690cb25085196bf0a743ba4b4a066a689990f1a76dd",
       "artifact": "AlphaForgeSwapAdapter.sol/AlphaForgeSwapAdapter.json",
+      "compilerImmutableReferences": {
+        "groups": [
+          {
+            "compilerReferenceId": "7439",
+            "locations": [
+              {
+                "length": 32,
+                "start": 298
+              },
+              {
+                "length": 32,
+                "start": 932
+              },
+              {
+                "length": 32,
+                "start": 1008
+              },
+              {
+                "length": 32,
+                "start": 1227
+              }
+            ]
+          },
+          {
+            "compilerReferenceId": "7441",
+            "locations": [
+              {
+                "length": 32,
+                "start": 262
+              },
+              {
+                "length": 32,
+                "start": 1882
+              },
+              {
+                "length": 32,
+                "start": 2140
+              }
+            ]
+          },
+          {
+            "compilerReferenceId": "7443",
+            "locations": [
+              {
+                "length": 32,
+                "start": 1774
+              },
+              {
+                "length": 32,
+                "start": 1968
+              },
+              {
+                "length": 32,
+                "start": 2226
+              }
+            ]
+          },
+          {
+            "compilerReferenceId": "7445",
+            "locations": [
+              {
+                "length": 32,
+                "start": 334
+              },
+              {
+                "length": 32,
+                "start": 2053
+              },
+              {
+                "length": 32,
+                "start": 2311
+              }
+            ]
+          }
+        ],
+        "mappingStatus": "COMPILER_REFERENCE_IDS_NOT_SOURCE_FIELD_MAPPED"
+      },
       "compilerRuntimeTemplate": {
         "keccak256": "0x28b5aa70edf9adf7da186df42c0337a7a4c42985c5e6a7b58c540a18c950bc24",
         "lengthBytes": 4916,
@@ -109,6 +186,10 @@
     "AlphaForgeTestBTC": {
       "abiKeccak256": "0x41799b765fe317c21f24b0a29ae158289298f1d290d8b5647914f8eec65665ee",
       "artifact": "AlphaForgeTestAsset.sol/AlphaForgeTestBTC.json",
+      "compilerImmutableReferences": {
+        "groups": [],
+        "mappingStatus": "COMPILER_REFERENCE_IDS_NOT_SOURCE_FIELD_MAPPED"
+      },
       "compilerRuntimeTemplate": {
         "keccak256": "0xd0c0edc9bd55314a44109254a22f9e77d3541a08c3fd3e4119bbd7cf21ba841b",
         "lengthBytes": 3616,
@@ -187,6 +268,10 @@
     "AlphaForgeTestETH": {
       "abiKeccak256": "0x41799b765fe317c21f24b0a29ae158289298f1d290d8b5647914f8eec65665ee",
       "artifact": "AlphaForgeTestAsset.sol/AlphaForgeTestETH.json",
+      "compilerImmutableReferences": {
+        "groups": [],
+        "mappingStatus": "COMPILER_REFERENCE_IDS_NOT_SOURCE_FIELD_MAPPED"
+      },
       "compilerRuntimeTemplate": {
         "keccak256": "0xd0c0edc9bd55314a44109254a22f9e77d3541a08c3fd3e4119bbd7cf21ba841b",
         "lengthBytes": 3616,
@@ -265,6 +350,10 @@
     "AlphaForgeTestUSDC": {
       "abiKeccak256": "0x3752a148d6bf7582463092736b5418e31dcfadf3a7559d994dd08dd4c7b50268",
       "artifact": "AlphaForgeTestAsset.sol/AlphaForgeTestUSDC.json",
+      "compilerImmutableReferences": {
+        "groups": [],
+        "mappingStatus": "COMPILER_REFERENCE_IDS_NOT_SOURCE_FIELD_MAPPED"
+      },
       "compilerRuntimeTemplate": {
         "keccak256": "0xca65250d8e5606789ad09ce6a0293a01d21dda2a4dcda0a711d393e8cca29ab4",
         "lengthBytes": 3616,
@@ -343,6 +432,62 @@
     "AlphaForgeTestVenue": {
       "abiKeccak256": "0x1e2e6a19fdc9a4da9f8e553acbd006cbe7111466886e447d5321122c16d1d316",
       "artifact": "AlphaForgeTestVenue.sol/AlphaForgeTestVenue.json",
+      "compilerImmutableReferences": {
+        "groups": [
+          {
+            "compilerReferenceId": "8041",
+            "locations": [
+              {
+                "length": 32,
+                "start": 395
+              },
+              {
+                "length": 32,
+                "start": 2363
+              },
+              {
+                "length": 32,
+                "start": 2632
+              }
+            ]
+          },
+          {
+            "compilerReferenceId": "8043",
+            "locations": [
+              {
+                "length": 32,
+                "start": 2254
+              },
+              {
+                "length": 32,
+                "start": 2449
+              },
+              {
+                "length": 32,
+                "start": 2718
+              }
+            ]
+          },
+          {
+            "compilerReferenceId": "8045",
+            "locations": [
+              {
+                "length": 32,
+                "start": 1142
+              },
+              {
+                "length": 32,
+                "start": 2534
+              },
+              {
+                "length": 32,
+                "start": 2803
+              }
+            ]
+          }
+        ],
+        "mappingStatus": "COMPILER_REFERENCE_IDS_NOT_SOURCE_FIELD_MAPPED"
+      },
       "compilerRuntimeTemplate": {
         "keccak256": "0xb4c65629f4344e8a5224d416fdb38ad50bafaeb99313dac6b8198e50357ff174",
         "lengthBytes": 5845,
@@ -452,6 +597,252 @@
     "AlphaForgeVault": {
       "abiKeccak256": "0x264b4498cf396008e4619664c59bf8d8eac0a04f04b80e760df3cfbc00846977",
       "artifact": "AlphaForgeVault.sol/AlphaForgeVault.json",
+      "compilerImmutableReferences": {
+        "groups": [
+          {
+            "compilerReferenceId": "8781",
+            "locations": [
+              {
+                "length": 32,
+                "start": 1929
+              },
+              {
+                "length": 32,
+                "start": 2518
+              },
+              {
+                "length": 32,
+                "start": 2705
+              },
+              {
+                "length": 32,
+                "start": 2852
+              },
+              {
+                "length": 32,
+                "start": 3478
+              },
+              {
+                "length": 32,
+                "start": 3674
+              },
+              {
+                "length": 32,
+                "start": 3867
+              },
+              {
+                "length": 32,
+                "start": 4276
+              },
+              {
+                "length": 32,
+                "start": 4315
+              },
+              {
+                "length": 32,
+                "start": 4780
+              },
+              {
+                "length": 32,
+                "start": 4954
+              },
+              {
+                "length": 32,
+                "start": 5624
+              },
+              {
+                "length": 32,
+                "start": 6409
+              },
+              {
+                "length": 32,
+                "start": 6708
+              },
+              {
+                "length": 32,
+                "start": 6747
+              }
+            ]
+          },
+          {
+            "compilerReferenceId": "8784",
+            "locations": [
+              {
+                "length": 32,
+                "start": 4497
+              }
+            ]
+          },
+          {
+            "compilerReferenceId": "8787",
+            "locations": [
+              {
+                "length": 32,
+                "start": 4461
+              }
+            ]
+          },
+          {
+            "compilerReferenceId": "8790",
+            "locations": [
+              {
+                "length": 32,
+                "start": 6335
+              }
+            ]
+          },
+          {
+            "compilerReferenceId": "8793",
+            "locations": [
+              {
+                "length": 32,
+                "start": 4816
+              },
+              {
+                "length": 32,
+                "start": 6092
+              },
+              {
+                "length": 32,
+                "start": 8572
+              },
+              {
+                "length": 32,
+                "start": 8798
+              },
+              {
+                "length": 32,
+                "start": 8871
+              },
+              {
+                "length": 32,
+                "start": 9121
+              }
+            ]
+          },
+          {
+            "compilerReferenceId": "8796",
+            "locations": [
+              {
+                "length": 32,
+                "start": 2485
+              },
+              {
+                "length": 32,
+                "start": 3445
+              },
+              {
+                "length": 32,
+                "start": 4744
+              },
+              {
+                "length": 32,
+                "start": 5758
+              },
+              {
+                "length": 32,
+                "start": 8015
+              },
+              {
+                "length": 32,
+                "start": 8177
+              },
+              {
+                "length": 32,
+                "start": 8250
+              },
+              {
+                "length": 32,
+                "start": 8468
+              }
+            ]
+          },
+          {
+            "compilerReferenceId": "8799",
+            "locations": [
+              {
+                "length": 32,
+                "start": 3308
+              },
+              {
+                "length": 32,
+                "start": 5851
+              },
+              {
+                "length": 32,
+                "start": 6371
+              },
+              {
+                "length": 32,
+                "start": 7458
+              }
+            ]
+          },
+          {
+            "compilerReferenceId": "8802",
+            "locations": [
+              {
+                "length": 32,
+                "start": 3351
+              },
+              {
+                "length": 32,
+                "start": 4852
+              },
+              {
+                "length": 32,
+                "start": 5936
+              },
+              {
+                "length": 32,
+                "start": 7545
+              }
+            ]
+          },
+          {
+            "compilerReferenceId": "8805",
+            "locations": [
+              {
+                "length": 32,
+                "start": 2565
+              },
+              {
+                "length": 32,
+                "start": 3160
+              },
+              {
+                "length": 32,
+                "start": 3526
+              },
+              {
+                "length": 32,
+                "start": 4888
+              },
+              {
+                "length": 32,
+                "start": 5485
+              },
+              {
+                "length": 32,
+                "start": 6175
+              },
+              {
+                "length": 32,
+                "start": 8632
+              },
+              {
+                "length": 32,
+                "start": 8764
+              },
+              {
+                "length": 32,
+                "start": 8931
+              }
+            ]
+          }
+        ],
+        "mappingStatus": "COMPILER_REFERENCE_IDS_NOT_SOURCE_FIELD_MAPPED"
+      },
       "compilerRuntimeTemplate": {
         "keccak256": "0x84ba496c3b70467dda328768dc78e53820a94db9e19127b7d63f4b167f0c4908",
         "lengthBytes": 11516,
@@ -696,6 +1087,82 @@
     "PassLocker": {
       "abiKeccak256": "0x3cd4ab8da2123200b3e4b931cb94a5cc11b5662360c4ed70d6643f173ff53b21",
       "artifact": "PassLocker.sol/PassLocker.json",
+      "compilerImmutableReferences": {
+        "groups": [
+          {
+            "compilerReferenceId": "10055",
+            "locations": [
+              {
+                "length": 32,
+                "start": 1482
+              },
+              {
+                "length": 32,
+                "start": 1518
+              }
+            ]
+          },
+          {
+            "compilerReferenceId": "10057",
+            "locations": [
+              {
+                "length": 32,
+                "start": 436
+              },
+              {
+                "length": 32,
+                "start": 736
+              },
+              {
+                "length": 32,
+                "start": 864
+              },
+              {
+                "length": 32,
+                "start": 1358
+              },
+              {
+                "length": 32,
+                "start": 1785
+              },
+              {
+                "length": 32,
+                "start": 1916
+              },
+              {
+                "length": 32,
+                "start": 2082
+              }
+            ]
+          },
+          {
+            "compilerReferenceId": "10060",
+            "locations": [
+              {
+                "length": 32,
+                "start": 900
+              },
+              {
+                "length": 32,
+                "start": 1012
+              },
+              {
+                "length": 32,
+                "start": 1725
+              },
+              {
+                "length": 32,
+                "start": 1950
+              },
+              {
+                "length": 32,
+                "start": 2022
+              }
+            ]
+          }
+        ],
+        "mappingStatus": "COMPILER_REFERENCE_IDS_NOT_SOURCE_FIELD_MAPPED"
+      },
       "compilerRuntimeTemplate": {
         "keccak256": "0x3a23133c185856bb68e825ae1ecac929de131bdcbaf2154c3c7e4e24098bc494",
         "lengthBytes": 3296,
@@ -801,6 +1268,20 @@
     "StrategyPass": {
       "abiKeccak256": "0xdd989644feeb7798baca69f7391ba75b6f9d09f47fb05bd90184f6072912923f",
       "artifact": "StrategyPass.sol/StrategyPass.json",
+      "compilerImmutableReferences": {
+        "groups": [
+          {
+            "compilerReferenceId": "10359",
+            "locations": [
+              {
+                "length": 32,
+                "start": 802
+              }
+            ]
+          }
+        ],
+        "mappingStatus": "COMPILER_REFERENCE_IDS_NOT_SOURCE_FIELD_MAPPED"
+      },
       "compilerRuntimeTemplate": {
         "keccak256": "0x1ecd66286e0c94cb5f8d98308f59f086103b5c95f2b07dc524bc5e2919b1435e",
         "lengthBytes": 3745,
@@ -902,6 +1383,7 @@
   "limitations": [
     "No external RPC, key, signature, deployment, transaction, broadcast or finality evidence.",
     "Compiler runtime template hashes contain zeroed immutable placeholders and are not deployed runtime hashes.",
+    "Compiler immutable reference IDs and offsets are preserved verbatim but are not mapped to source field names.",
     "PassLocker is constructed by AlphaForgeVault; its deployed address and runtime depend on Vault parameters.",
     "AlphaForgeTest assets and venue are TESTNET_ONLY and are not production asset representations."
   ],
@@ -910,7 +1392,7 @@
     "externalWritePerformed": false,
     "name": "Robinhood Chain Testnet"
   },
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "status": "LOCAL_COMPILED_NOT_DEPLOYED",
   "toolchain": {
     "bytecodeHash": "none",

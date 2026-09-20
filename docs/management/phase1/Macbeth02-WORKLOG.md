@@ -5,8 +5,8 @@
 - Branch: `macbeth02/m3-phase1-contracts`
 - Draft PR: `https://github.com/pdbsy/quantpass-arbitrum-hackathon/pull/24`
 - Public ACK: `https://github.com/pdbsy/quantpass-arbitrum-hackathon/pull/24#issuecomment-5747141328`
-- Status: `ACTIVE / LOCAL / NOT_DEPLOYED`
-- Verified implementation source C: `e5eff6805d9705745bc0b4483de83466e5693ffa`
+- Status: `CORRECTION ACTIVE / LOCAL / NOT_DEPLOYED`
+- Initial verified implementation source C: `e5eff6805d9705745bc0b4483de83466e5693ffa`
 
 ## Intake and baseline
 
@@ -37,15 +37,30 @@ deployment rehearsal, adverse-transfer atomicity regressions and Testnet prepara
   unlock after AF-USDC movement;
 - Phase One contract delivery and Testnet deployment-plan documents.
 
+Manager review found that the first manifest described immutable offsets without actually storing
+the compiler `start`/`length` locations. The correction records every compiler reference ID and
+location, marks the reference IDs as not source-field-mapped, and adds four negative/unit
+regressions. The deployment plan now distinguishes the eight-contract compiled inventory from the
+five-contract minimum candidate; TestVenue and SwapAdapter require separate scope and approval.
+
+Coverage review also found real untested branches in terminal state, withdrawal bounds, rescue
+bounds, identity validation, accounting overflow, tracked-position funding and Pass escrow
+deficits. Eight business boundary tests close those paths without changing production code or any
+threshold. `AlphaForgeVault`, `PassLocker` and `StrategyPass` now each report 100% lines,
+statements, branches and functions under the pinned Forge coverage tool.
+
 No external RPC, signature, deployment, transaction or broadcast was performed.
 
 ## Current verification
 
-- `bash contracts/script/check-phase1-contracts.sh`: PASS; 126 Solidity tests, 20 Python
-  dependency/ABI mutation tests, fuzz and invariants, Slither with no findings, frozen Vault ABI
-  equality, eight-contract manifest equality and two isolated deployment-rehearsal tests.
-- Manifest negative mutation: PASS; a changed status field was rejected with
-  `Phase One contract manifest differs from compiler artifacts`.
+- `bash contracts/script/check-phase1-contracts.sh`: PASS; 134 Solidity tests, 24 Python
+  dependency/ABI/manifest mutation tests, fuzz and invariants, Slither with no findings, frozen
+  Vault ABI equality, eight-contract manifest equality and two deployment-rehearsal tests.
+- Pinned Forge coverage: PASS for the frozen core; `AlphaForgeVault`, `PassLocker` and
+  `StrategyPass` each report 100% lines, statements, branches and functions. Full totals and scope
+  limits are preserved in `Macbeth02-COVERAGE.md`.
+- Manifest negative mutation: PASS; changed manifest content is rejected, and malformed,
+  out-of-bounds, overlapping or non-placeholder immutable references are rejected.
 - Root formatting, privacy and secret checks: PASS.
 - Root `npm run check`: 591/591 tests and all checks before management passed; final command remains
   FAIL at manager-owned `management:check` with `RECORDED_GIT_BRANCH_MISMATCH`.
