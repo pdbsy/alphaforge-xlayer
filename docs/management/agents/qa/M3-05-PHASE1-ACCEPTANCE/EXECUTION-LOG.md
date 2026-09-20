@@ -17,14 +17,14 @@ All product and implementation files at `df9ff670...` equal the exact base; that
 
 ## Environment and admission
 
-| Check                       | Result    | Notes                                                                                                                                                                                                                                                         |
-| --------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Isolated dependency install | `PASS`    | `npm ci --ignore-scripts --prefer-offline`; 193 packages in this worktree only                                                                                                                                                                                |
-| Agent identity              | `PASS`    | `npm run verify:agent-identity`; one worker provenance record                                                                                                                                                                                                 |
-| Environment admission       | `BLOCKED` | All host, tool, repository, workspace, isolation, port and local/mock checks passed. Manager registration is deliberately not inherited from registration commit `48cccb8...`, so `manager` is `BLOCKED` and contracts are `NOT_RUN` at this admission layer. |
-| Host/toolchain              | `PASS`    | Darwin 25.6 arm64; Node 24.21.0; npm 11.19.1; Git 2.50.1; GitHub CLI 2.97.0                                                                                                                                                                                   |
+| Check                       | Result | Notes                                                                                                                                                                                                                                                                                  |
+| --------------------------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Isolated dependency install | `PASS` | `npm ci --ignore-scripts --prefer-offline`; 193 packages in this worktree only                                                                                                                                                                                                         |
+| Agent identity              | `PASS` | `npm run verify:agent-identity`; one worker provenance record                                                                                                                                                                                                                          |
+| Environment admission       | `PASS` | The first run was `BLOCKED` because fnm had not initialized its multishell environment. After `eval "$(/opt/homebrew/bin/fnm env --shell bash)"` and `fnm use 24.21.0`, the same gate passed with `eligibleForEvidence: true`; `contracts` remained `NOT_RUN` by this admission layer. |
+| Host/toolchain              | `PASS` | Darwin 25.6 arm64; Node 24.21.0; npm 11.19.1; Git 2.50.1; GitHub CLI 2.97.0                                                                                                                                                                                                            |
 
-The admission result is an expected integration dependency. This task does not merge or cherry-pick the manager registration commit and does not edit generated management evidence.
+The earlier explanation that `manager` meant worker registration was incorrect. In this gate it means the fnm Node version manager and checks `fnm current`, `FNM_MULTISHELL_PATH`, and the actual Node path. The corrected run passed every executed admission check, including `manager`; its log SHA-256 is `85bc98e0db419481d5041689c06f980ea9f4a7b9ebb00b8912c5ab8e9293071b`. The separate `management:check` C/R/S branch mismatch remains an integration dependency. This task does not merge or cherry-pick the registration commit and does not edit shared generated management evidence.
 
 ## JavaScript and TypeScript engineering checks
 
@@ -41,9 +41,11 @@ The complete top-level test list was executed under Node's built-in coverage wit
 | Loaded-file lines                        |   91.67% |                 90% overall | Insufficient proof |
 | Loaded-file branches                     |   84.67% | 90% overall / 100% critical | `FAIL`             |
 | Loaded-file functions                    |   94.30% |                 90% overall | Informational      |
-| First-party executable files represented |  77 / 99 |        Complete denominator | `FAIL`             |
+| First-party executable files represented |  77 / 98 |        Complete denominator | `FAIL`             |
 
-The 91.67% line figure applies only to loaded files and is not reported as whole-repository coverage. Critical branch examples below 100% include server `chain-store` 79.65%, `chain-sync` 81.29%, `m3-vault-integration` 80.43%; web `chain-wallet` 77.08%, `m3-browser-runtime` 76.09%, `m3-chain-action-flow` 76.19%, `m3-vault-allowance` 72.00%, `m3-vault-client` 80.52%, `m3-vault-live-reader` 85.71%; chain adapter `rpc` 52.69%, `vault-abi` 80.72%; domain `money` 92.31% and `vault` 98.77%.
+The 91.67% line figure applies only to loaded files and is not reported as whole-repository coverage. The earlier checkpoint mistakenly said 77 / 99 and 22 missing because its inventory retained `apps/web/src/vite-env.d.ts` while its written method excluded declarations. Rebuilding the exact base inventory gives 98 executable files after excluding `.d.ts`; 77 are represented and 21 are not. [Coverage Gaps](COVERAGE-GAPS.md) records the full denominator, missing-file list, exact command, tool limits, and uncovered branch positions.
+
+Critical branch examples below 100% include server `chain-store` 79.65%, `chain-sync` 81.29%, `m3-vault-integration` 80.43%; web `chain-wallet` 77.08%, `m3-browser-runtime` 76.09%, `m3-chain-action-flow` 76.19%, `m3-vault-allowance` 72.00%, `m3-vault-client` 80.52%, `m3-vault-live-reader` 85.71%; chain adapter `rpc` 52.69%, `vault-abi` 80.72%; domain `money` 92.31% and `vault` 98.77%.
 
 Evidence: `/private/tmp/AlphaForge-M3-05-PHASE1-EVIDENCE/coverage-all.log`, 717 lines / 66,007 bytes, SHA-256 `e692fd96f71a0ed70a0c2cdc9279002e3e78af04c69ab2364204ec3dcf108f43`.
 

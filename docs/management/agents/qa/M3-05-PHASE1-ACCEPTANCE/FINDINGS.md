@@ -18,7 +18,7 @@ Reproduction: run all 591 top-level tests under Node built-in coverage with the 
 
 Expected: actual overall automated coverage is at least 90% with a complete stated denominator, and critical authorization/accounting branches are 100% covered.
 
-Actual: Node reports 91.67% lines, 84.67% branches, and 94.30% functions for loaded files, but only 77 of 99 first-party executable files appear. Critical JS/TS branches include values from 52.69% to 98.77%. First-party Solidity totals 95.24% lines and 66.23% branches; AlphaForgeVault has 65.12% branch coverage and PassLocker 77.78%.
+Actual: Node reports 91.67% lines, 84.67% branches, and 94.30% functions for loaded files, but only 77 of 98 first-party executable files appear. Critical JS/TS branches include values from 52.69% to 98.77%. First-party Solidity totals 95.24% lines and 66.23% branches; AlphaForgeVault has 65.12% branch coverage and PassLocker 77.78%. The earlier 99/22 checkpoint was an off-by-one inventory error caused by retaining one `.d.ts` declaration in a list whose stated method excluded declarations; [Coverage Gaps](COVERAGE-GAPS.md) preserves the correction and complete evidence.
 
 Impact: the base cannot demonstrate the project quality bar and leaves authorization, accounting, RPC, ABI, recovery, and allowance branches unexercised.
 
