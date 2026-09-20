@@ -5,7 +5,7 @@
 - Goal: complete the real product-entry loop for Phase One Pass and Vault operations, preserve truthful runtime provenance, and produce reproducible browser acceptance evidence.
 - Repository: `git@github.com:pdbsy/quantpass-arbitrum-hackathon.git`
 - Default branch: `master`
-- Worktree: `/Users/ikol/.codex/worktrees/m3-phase1-product/AlphaForge`
+- Worktree: independent Macbeth04 task worktree; local path intentionally omitted
 - Branch: `macbeth04/m3-phase1-product`
 - HEAD / base: `18f5352070910a867b9729b031aa2e3951785e01`
 - Registration source read-only: `48cccb8743d2e77ec8001187c00e95044a3d2f40` from Draft PR #22; it is not merged or cherry-picked into this branch.

@@ -93,11 +93,10 @@ class M3BrowserRuntimeSet implements M3SelectableProductRuntime {
     for (const listener of this.#listeners) listener();
   }
 
-  #bind<T extends object>(review: T): T {
-    this.#reviews.set(review, {
-      runtime: this.#selected.runtime,
-      generation: this.#generation,
-    });
+  #bind<T extends object>(review: T, binding: ReviewBinding): T {
+    if (binding.generation !== this.#generation || binding.runtime !== this.#selected.runtime)
+      throw new Error('M3_VAULT_SELECTION_CHANGED');
+    this.#reviews.set(review, binding);
     return review;
   }
 
@@ -135,7 +134,8 @@ class M3BrowserRuntimeSet implements M3SelectableProductRuntime {
   }
 
   async reviewAction(request: M3ProductActionRequest): Promise<M3ProductActionReview> {
-    return this.#bind(await this.#selected.runtime.reviewAction(request));
+    const binding = { runtime: this.#selected.runtime, generation: this.#generation };
+    return this.#bind(await binding.runtime.reviewAction(request), binding);
   }
 
   async confirmAction(review: M3ProductActionReview): Promise<WalletSubmission> {
@@ -143,9 +143,9 @@ class M3BrowserRuntimeSet implements M3SelectableProductRuntime {
   }
 
   async reviewPassTransfer(request: M3PassTransferRequest): Promise<M3PassTransferReview> {
-    const runtime = this.#selected.runtime;
-    if (!runtime.reviewPassTransfer) throw new Error('PASS_TRANSFER_UNAVAILABLE');
-    return this.#bind(await runtime.reviewPassTransfer(request));
+    const binding = { runtime: this.#selected.runtime, generation: this.#generation };
+    if (!binding.runtime.reviewPassTransfer) throw new Error('PASS_TRANSFER_UNAVAILABLE');
+    return this.#bind(await binding.runtime.reviewPassTransfer(request), binding);
   }
 
   async confirmPassTransfer(review: M3PassTransferReview): Promise<WalletSubmission> {
@@ -157,9 +157,9 @@ class M3BrowserRuntimeSet implements M3SelectableProductRuntime {
   async reviewDepositApprovals(
     request: Extract<M3ProductActionRequest, { readonly kind: 'deposit' }>,
   ): Promise<M3DepositApprovalReview> {
-    const runtime = this.#selected.runtime;
-    if (!runtime.reviewDepositApprovals) throw new Error('DEPOSIT_APPROVAL_UNAVAILABLE');
-    return this.#bind(await runtime.reviewDepositApprovals(request));
+    const binding = { runtime: this.#selected.runtime, generation: this.#generation };
+    if (!binding.runtime.reviewDepositApprovals) throw new Error('DEPOSIT_APPROVAL_UNAVAILABLE');
+    return this.#bind(await binding.runtime.reviewDepositApprovals(request), binding);
   }
 
   async confirmDepositApproval(

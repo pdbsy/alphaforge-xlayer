@@ -8,7 +8,7 @@
 
 **Tech Stack:** TypeScript 6, Node 24 test runner, browser EIP-1193 provider, Fastify same-origin Chain API, Vite.
 
-**Spec:** `docs/chain/PHASE1-MACBETH04-API-HANDOFF.md` at Macbeth03 source `67b7d48e7e393133b1b231aa4dc20d1319665278`, plus Macbeth01's M3 closeout instruction dated 2026-09-20.
+**Spec:** `docs/chain/PHASE1-MACBETH04-API-HANDOFF.md` at final Macbeth03 source `28ff3d4b5c6e70ff0c6ea1b11ad0fea4283887fd`, plus Macbeth01's M3 closeout instruction dated 2026-09-20.
 
 ## Global Constraints
 
@@ -36,7 +36,7 @@
 - Produces: `M3RuntimeStatusSnapshot` and `M3VaultReader.readRuntimeStatus?()`.
 - Consumes: the selected `M3BrowserDeploymentConfig` as the only trust source.
 
-- [ ] **Step 1: Write failing client tests for exact contract-qualified runtime status**
+- [x] **Step 1: Write failing client tests for exact contract-qualified runtime status**
 
 ```ts
 const status = await client.readRuntimeStatus();
@@ -55,13 +55,13 @@ assert.deepEqual(status.deployment, {
 
 Add malformed, wrong-contract, and unhealthy payload cases. The production change caught by these tests is accepting a runtime-status response that cannot be tied to the selected reviewed Vault.
 
-- [ ] **Step 2: Run the client test and verify RED**
+- [x] **Step 2: Run the client test and verify RED**
 
 Run: `fnm exec --using=24.21.0 node --test --test-name-pattern="runtime status" test/ui-m3-vault-client.test.ts`
 
 Expected: FAIL because `readRuntimeStatus` does not exist.
 
-- [ ] **Step 3: Implement strict status parsing and the contract-qualified GET**
+- [x] **Step 3: Implement strict status parsing and the contract-qualified GET**
 
 ```ts
 interface M3RuntimeStatusSnapshot {
@@ -87,7 +87,7 @@ interface M3RuntimeStatusSnapshot {
 
 Reject arrays, missing fields, extra authority inference, invalid addresses/hashes, unhealthy database evidence, and `lastAttempt: FAILED`.
 
-- [ ] **Step 4: Write and run a failing browser-runtime identity mismatch test**
+- [x] **Step 4: Write and run a failing browser-runtime identity mismatch test**
 
 Provide a reader whose Vault and Pass projections are otherwise valid but whose runtime status names another Vault. Expect the selected runtime to remain fail-closed for canonical writes.
 
@@ -95,11 +95,11 @@ Run: `fnm exec --using=24.21.0 node --test --test-name-pattern="runtime status i
 
 Expected: FAIL because the browser runtime does not call or compare runtime status.
 
-- [ ] **Step 5: Add the minimal identity/health comparison before canonical reads**
+- [x] **Step 5: Add the minimal identity/health comparison before canonical reads**
 
 Compare all status deployment hashes and addresses with the reviewed config. Keep `deploymentBlock` and `abiVersion` sourced from the allowlist because the status route does not expose them. A mismatch throws `M3_RUNTIME_STATUS_MISMATCH`; unavailable/unhealthy status throws `M3_RUNTIME_STATUS_UNAVAILABLE`.
 
-- [ ] **Step 6: Run Task 1 tests and commit**
+- [x] **Step 6: Run Task 1 tests and commit**
 
 Run: `fnm exec --using=24.21.0 node --test test/ui-m3-vault-client.test.ts test/m3-browser-runtime.test.ts`
 
@@ -122,7 +122,7 @@ Commit: `[Macbeth04][M3-04-PHASE1-PRODUCT] Cross-check selected runtime identity
 - Produces: `M3VaultSelection`, `M3VaultSelectionState`, `M3SelectableProductRuntime`, and `createM3BrowserRuntimeSet(options)`.
 - Consumes: `createM3BrowserRuntime`, a shared provider, and one optional reader factory per reviewed deployment.
 
-- [ ] **Step 1: Write the failing selection and shared-Pass tests**
+- [x] **Step 1: Write the failing selection and shared-Pass tests**
 
 ```ts
 const runtime = createM3BrowserRuntimeSet({
@@ -145,13 +145,13 @@ await assert.rejects(runtime.confirmAction(oldReview), /M3_VAULT_SELECTION_CHANG
 
 Also assert that A and B use distinct owners, allowance spenders, Vault targets, and operation evidence while returning the same Pass address/balance source. The production changes caught are global Pass uniqueness, stale selected rights, or dispatching A's prepared action to B.
 
-- [ ] **Step 2: Run the new test and verify RED**
+- [x] **Step 2: Run the new test and verify RED**
 
 Run: `fnm exec --using=24.21.0 node --test test/m3-browser-runtime-set.test.ts`
 
 Expected: FAIL because the runtime-set module does not exist.
 
-- [ ] **Step 3: Implement the minimal runtime-set proxy**
+- [x] **Step 3: Implement the minimal runtime-set proxy**
 
 ```ts
 export interface M3VaultSelection {
@@ -167,7 +167,7 @@ export interface M3SelectableProductRuntime extends M3ProductRuntime {
 
 Reject an empty set, duplicate `(chainId, vaultAddress)` entries, and unknown selections. Permit repeated StrategyPass addresses. Keep one underlying runtime per Vault. On selection, advance a generation, refresh the newly selected runtime, and publish only its snapshot. Bind action, approval, and Pass-transfer reviews to both the selected runtime and generation; delete bindings before confirmation.
 
-- [ ] **Step 4: Run Task 2 tests and commit**
+- [x] **Step 4: Run Task 2 tests and commit**
 
 Run: `fnm exec --using=24.21.0 node --test test/m3-browser-runtime-set.test.ts test/m3-browser-runtime.test.ts`
 
@@ -192,7 +192,7 @@ Commit: `[Macbeth04][M3-04-PHASE1-PRODUCT] Isolate allowlisted Vault selections`
 - Consumes: `M3SelectableProductRuntime.vaultSelection` and `selectVault`.
 - Produces: a `<select data-chain-vault-select>` whose value encodes the exact chain/Vault pair.
 
-- [ ] **Step 1: Write failing presentation tests for two reviewed Vault choices**
+- [x] **Step 1: Write failing presentation tests for two reviewed Vault choices**
 
 Render a chain presentation with two choices that share a Pass address. Assert both escaped Vault addresses appear, exactly one is selected, the displayed Pass remains the shared token, and the copy describes a reviewed allowlist rather than discovery or deployment.
 
@@ -200,11 +200,11 @@ Run: `fnm exec --using=24.21.0 node --test --test-name-pattern="Vault selection"
 
 Expected: FAIL because the selector is not rendered.
 
-- [ ] **Step 2: Implement selector presentation and product event handling**
+- [x] **Step 2: Implement selector presentation and product event handling**
 
 On `change`, parse the exact key, clear `onchainDraft` and `passTransferDraft`, close the dialog, and await `selectVault`. Do not synthesize a Vault from a URL label or backend status response.
 
-- [ ] **Step 3: Write failing two-owner injected-fixture tests**
+- [x] **Step 3: Write failing two-owner injected-fixture tests**
 
 The fixture uses Vault A and Vault B with separate owners and Lockers but the same StrategyPass. Connect as A, establish A allowance/operation state, switch to B, connect as B, and assert B starts with its own allowances/operation state. Switch back after changing the provider account and assert A owner writes remain disabled until a matching owner reconnects.
 
@@ -212,11 +212,11 @@ Run: `fnm exec --using=24.21.0 node --test --test-name-pattern="shared Pass" tes
 
 Expected: FAIL because the fixture exposes only one runtime.
 
-- [ ] **Step 4: Expand only the DEV fixture needed by the acceptance test**
+- [x] **Step 4: Expand only the DEV fixture needed by the acceptance test**
 
 Use one provider and shared Pass balance, two deployment records, two Vault readers, two owners, two Lockers, and independent per-Vault allowance/operation maps. Keep all addresses deterministic and explicitly mock-only.
 
-- [ ] **Step 5: Run Task 3 tests and commit**
+- [x] **Step 5: Run Task 3 tests and commit**
 
 Run: `fnm exec --using=24.21.0 node --test test/m3-product-ui.test.ts test/m3-injected-runtime.test.ts test/m3-product-dialog.test.ts`
 
@@ -238,11 +238,11 @@ Commit: `[Macbeth04][M3-04-PHASE1-PRODUCT] Add reviewed Vault selector`
 
 - Records: exact Macbeth03 source, shared-Pass ownership rule, allowlisted selection behavior, runtime-status trust boundary, and current NOT_DEPLOYED limits.
 
-- [ ] **Step 1: Update product and worker evidence**
+- [x] **Step 1: Update product and worker evidence**
 
 State that multi-runtime APIs exist, the product selects from complete reviewed deployment records, and runtime status only cross-checks identity/health. Record that shared Pass ownership is per Strategy while Vault/Locker/owner/allowance/operation state remains per Vault. Keep factory/on-chain discovery and real deployment excluded.
 
-- [ ] **Step 2: Run focused verification**
+- [x] **Step 2: Run focused verification**
 
 Run:
 
@@ -256,7 +256,7 @@ fnm exec --using=24.21.0 npm run build:web
 
 Expected: PASS.
 
-- [ ] **Step 3: Run the full suite and agent identity check**
+- [x] **Step 3: Run the full suite and agent identity check**
 
 Run:
 
@@ -267,11 +267,11 @@ fnm exec --using=24.21.0 npm run verify:agent-identity
 
 Expected: product tests PASS. If the known shared migration-provenance entry remains the only failure, record its exact expected/actual hashes for Macbeth01 without editing generated PASS evidence.
 
-- [ ] **Step 4: Re-run local browser acceptance**
+- [x] **Step 4: Re-run local browser acceptance**
 
 Verify two reviewed Vault choices, two owners, shared Pass display, per-Vault allowance/operation isolation, stale-review rejection after switching, wrong-network disabling, and one-raw-unit Pass transfer in the deterministic mock only.
 
-- [ ] **Step 5: Commit evidence, push, and update Draft PR #27**
+- [x] **Step 5: Commit evidence, push, and update Draft PR #27**
 
 Commit: `[Macbeth04][M3-04-PHASE1-PRODUCT] Record multi-Vault product acceptance`
 

@@ -97,12 +97,24 @@ const pendingEvidence: ProductOperationEvidence = Object.freeze({
 class Reader implements M3VaultReader {
   readonly value: M3VaultSnapshot;
   operationId: string | null = null;
+  readGate:
+    | {
+        readonly entered: () => void;
+        readonly wait: Promise<void>;
+      }
+    | undefined;
 
   constructor(value: M3VaultSnapshot) {
     this.value = value;
   }
 
   async readSnapshot(owner: Address): Promise<M3VaultSnapshot> {
+    const gate = this.readGate;
+    this.readGate = undefined;
+    if (gate) {
+      gate.entered();
+      await gate.wait;
+    }
     if (!sameAddress(owner, this.value.owner)) throw new Error('OWNER_PROJECTION_NOT_FOUND');
     return this.value;
   }
@@ -244,4 +256,28 @@ test('Vault selection isolates owner sessions, allowances, operations and stale 
   assert.equal(runtime.snapshot.onchain.owner, 'OWNER');
   assert.equal(runtime.snapshot.onchain.depositAuthorization?.spender, VAULT_A);
   assert.equal(runtime.snapshot.transaction.status, 'SUBMITTED');
+});
+
+test('Vault selection rejects a review whose simulation completes after the selected Vault changed', async () => {
+  const { provider, readers, runtime } = runtimeSet();
+  await runtime.connect();
+  const reader = readers.get(VAULT_A)!;
+  let entered!: () => void;
+  let release!: () => void;
+  const readEntered = new Promise<void>((resolve) => {
+    entered = resolve;
+  });
+  const wait = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  reader.readGate = { entered, wait };
+
+  const reviewing = runtime.reviewAction({ kind: 'withdraw', usdcBaseUnits: '1' });
+  await readEntered;
+  provider.account = OWNER_B;
+  await runtime.selectVault({ chainId: 46_630, vaultAddress: VAULT_B });
+  release();
+
+  await assert.rejects(reviewing, /M3_VAULT_SELECTION_CHANGED/);
+  assert.deepEqual(provider.sentTargets, []);
 });

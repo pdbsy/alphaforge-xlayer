@@ -8,8 +8,8 @@
 - Fixed base: `18f5352070910a867b9729b031aa2e3951785e01`
 - Contract handoff consumed read-only: `2ad816200e7edfbfad96d765b4a696bc8b838c2d`
 - Contract handoff evidence head: `a13052993b6f408b7be835ecd6f4b13ef6df367d`
-- Chain/API handoff consumed read-only: `500914b900d61ea5b26c32ab5cc39c4b0d829c3c`
-- Chain/API handoff tree: `f5257183b1b114295e565f1799b736a124797f72`
+- Chain/API handoff consumed read-only: `28ff3d4b5c6e70ff0c6ea1b11ad0fea4283887fd`
+- Chain/API handoff tree: `7f4abc27757e099c1b5b26a66509395015bdb7b7`
 - Chain/API review: Draft PR #26
 - Runtime boundary: `LOCAL / MOCK / NOT_DEPLOYED`
 
@@ -30,6 +30,14 @@ before confirmation, the browser reads the relevant runtime bytecode and compare
 hash with the reviewed manifest. A missing provider response, empty bytecode, or changed hash stops
 the write.
 
+The product accepts an explicit set of complete reviewed deployment records and selects one Vault by
+`(chainId, vaultContract)`. It cross-checks the selected Vault's backend runtime status against the
+allowlisted chain, Vault, manifest, ABI/runtime hashes, and StrategyPass identity. Runtime status does
+not add an address or fill missing deployment fields. Multiple Vault records may bind the same
+manifest-identical StrategyPass. Each selected Vault retains its own immutable Owner, PassLocker,
+allowance spender, accounting projection, and owner-operation state; the shared Pass balance remains
+keyed by the connected holder address.
+
 ## User-visible behavior
 
 The active `apps/web/index.html` entry continues to load the protected warm English prototype and
@@ -38,6 +46,7 @@ The active `apps/web/index.html` entry continues to load the protected warm Engl
 The Phase One panel now presents:
 
 - the connected wallet and Robinhood Chain Testnet identity;
+- a selector containing only complete reviewed Vault deployment records;
 - the selected immutable Vault address;
 - reviewed initial Pass supply and recipient when both constructor values exist in deployment
   metadata;
@@ -53,6 +62,10 @@ single-use, so a repeated confirmation cannot send another transaction. A return
 is also registered through the same backend operation route used by Vault writes. Missing or
 conflicting registration remains an explicit non-retryable ambiguous result and does not claim
 canonical evidence.
+
+Every action, approval, and Pass-transfer review is bound to the selected Vault generation. Changing
+Vault before or during simulation invalidates the old review, even if the user later switches back,
+so a prepared action for Vault A cannot be confirmed against Vault B.
 
 The `10^12` conversion is used only for AF-USDC principal capacity and deposit approval. It is not
 applied to ordinary Pass transfer. A transfer of `0.000000000000000001` Pass therefore prepares one
@@ -83,6 +96,6 @@ into `READY`.
 - No real wallet signature, external RPC write, deployment, or broadcast was performed.
 - No arbitrary token target is accepted for Pass transfer; the target is the reviewed manifest's
   StrategyPass, and the current Vault projection must bind the same address and strategy ID.
-- No Vault factory or multi-Vault discovery interface was invented. The current product selects the
-  single reviewed Vault in deployment metadata. Additional creation/discovery remains dependent on
-  an exact integrated interface.
+- No Vault factory, self-service deployment, or onchain discovery interface was invented. The current
+  product selects only from the complete allowlisted deployment set injected by reviewed
+  configuration. Real creation/deployment and adding a new record remain separate reviewed actions.

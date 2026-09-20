@@ -5,16 +5,16 @@
 - Task: `M3-04-PHASE1-PRODUCT`
 - Fixed base: `18f5352070910a867b9729b031aa2e3951785e01`
 - Intake/plan commit: `9c3a16eb2bfe9c3c3ad2af72d4aae09c5aa69485`
-- Product source candidate: `86f2f9036657eeda3a7357943b6fcac6de3e5dbe`
-- Product candidate tree: `ae90be8d3411d921bdaf37cf15d3fdea01ce22b3`
+- Initial product source candidate: `86f2f9036657eeda3a7357943b6fcac6de3e5dbe`
+- Initial product candidate tree: `ae90be8d3411d921bdaf37cf15d3fdea01ce22b3`
 - Macbeth02 contract implementation source consumed read-only:
   `2ad816200e7edfbfad96d765b4a696bc8b838c2d`
 - Macbeth02 evidence head: `a13052993b6f408b7be835ecd6f4b13ef6df367d`
 - Macbeth05 coverage-gap source consumed read-only:
   `49432db158bdee6f4130bcb5c8c9d9fd6cd65a1f`
 - Macbeth03 formal Chain/API source consumed read-only:
-  `500914b900d61ea5b26c32ab5cc39c4b0d829c3c`
-- Macbeth03 source tree: `f5257183b1b114295e565f1799b736a124797f72` (Draft PR #26)
+  `28ff3d4b5c6e70ff0c6ea1b11ad0fea4283887fd`
+- Macbeth03 source tree: `7f4abc27757e099c1b5b26a66509395015bdb7b7` (Draft PR #26)
 
 The branch contains no Macbeth02 commit. PR #24 was fetched to a read-only remote reference only to
 verify the exact manifest and delivery document. The corrected handoff retains the production
@@ -41,6 +41,14 @@ unmerged backend history.
   when the Pass projection conflicts with the Vault strategy.
 - Registered returned Pass transaction hashes with the backend operation evidence path; missing or
   conflicting registration stays explicitly ambiguous.
+- Added complete reviewed deployment-set selection keyed by `(chainId, vaultContract)` without
+  deriving trust from backend status or product labels.
+- Cross-checked the selected backend runtime's Vault, manifest, ABI/runtime hashes, and shared
+  StrategyPass identity before canonical writes.
+- Preserved two Vault Owners, PassLockers, allowance spenders, sessions, and operation states while
+  allowing both Vaults to bind the same manifest-identical StrategyPass.
+- Invalidated action, approval, and Pass-transfer reviews when Vault selection changes before or
+  during simulation.
 - Added production-page dialogs for Pass transfer and both rescue paths.
 - Marked paid Buy/Sell explicitly outside Phase One.
 - Extended the deterministic mock runtime and completed browser acceptance on loopback port `5194`.
@@ -51,12 +59,21 @@ unmerged backend history.
 - Typecheck: PASS
 - Lint: PASS
 - Format: PASS
-- Focused tests: `120/120` PASS
-- Assigned wallet/runtime coverage: `99.96%` lines, `98.51%` branches, `99.15%` functions
+- Focused multi-Vault product tests: `86/86` PASS
+- Focused multi-Vault product coverage: `93.53%` lines, `87.64%` branches, `91.15%`
+  functions; the new runtime-set module is `98.35%` lines, `90.57%` branches, `95.65%`
+  functions
 - Web build: PASS
+- Secrets check: PASS
+- Privacy check: PASS after removing a personal absolute worktree path from intake evidence
 - Agent identity: PASS for every committed Macbeth04 provenance record
-- Browser acceptance: PASS within local mock scope
-- Full test suite: `637/638` PASS; shared migration provenance hash update required
+- Browser acceptance: PASS within local mock scope. The two reviewed Vaults retained independent
+  owners, spenders, allowances, and operation state while displaying the same Pass. Switching from
+  Vault A with a prepared withdrawal closed the review before Vault B became selected. Vault A
+  retained its one-base-unit AF-USDC allowance while Vault B remained zero. A one-raw-unit Pass
+  transfer reduced the Owner B balance from `1000000000000000000` to `999999999999999999`, and the
+  wrong-network fixture disabled every Vault write and Pass transfer.
+- Full test suite: `642/643` PASS; shared migration provenance hash update required
 
 The first full test run inside the default sandbox also produced only `EPERM` failures when tests
 attempted to create `.checks` directories. The same command was rerun with the required worktree
@@ -66,17 +83,17 @@ intentional shared provenance mismatch described above.
 ## Integration requests and blockers
 
 1. Macbeth01 must update the shared migration provenance entry for `apps/web/src/product-ui.ts` to
-   SHA-256 `335dd498b1b70a4b52ec1029e59b2efda7f9f750f47f4d7b1459e80c4a75c0db` when integrating the
+   SHA-256 `dd368d5033b1d30dc7c4707c18523976e3fc37f6a746b4101c7a674ec94d7f99` when integrating the
    candidate. Macbeth04 did not edit the out-of-scope shared evidence.
-2. Multi-Vault creation/discovery remains blocked on an exact integrated factory/discovery
-   interface. The current product safely selects the one reviewed Vault address.
-3. Macbeth03's corrected Chain/API source and tree are now recorded and consumed without merging its
-   history. Multi-Vault startup/discovery still requires the manager's integrated runtime source.
+2. The product now selects multiple reviewed Vaults from explicit complete configuration. Factory,
+   self-service deployment, and onchain discovery remain outside this task; adding a new deployment
+   record still requires reviewed configuration.
+3. Macbeth03's final Chain/API source and tree are recorded and consumed without merging its history.
+   Its deterministic shared-Pass runtime ownership is compatible with the contract-qualified client.
 4. Real Testnet browser acceptance remains blocked on a separately authorized deployment and real
    manifest addresses.
-5. Push, Draft PR creation, and the worker's original PR/Forum ACK remain blocked because automatic
-   approval rejected both the exact branch push and cross-task status message. No workaround was
-   attempted.
+5. Draft PR #27 and the worker Forum ACK exist. Merge, deployment, signing, and broadcast remain
+   outside this worker's authorization.
 
 ## Retrospective
 
