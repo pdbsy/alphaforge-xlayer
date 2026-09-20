@@ -76,7 +76,10 @@ class M3BrowserRuntimeSet implements M3SelectableProductRuntime {
   }
 
   get snapshot() {
-    return this.#selected.runtime.snapshot;
+    return Object.freeze({
+      ...this.#selected.runtime.snapshot,
+      vaultSelection: this.vaultSelection,
+    });
   }
 
   get vaultSelection(): M3VaultSelectionState {

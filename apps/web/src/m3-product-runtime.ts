@@ -1,7 +1,12 @@
 import { parseUnits } from '../../../packages/domain/src/money.ts';
 import { asAddress, type Address } from '../../../packages/chain-adapter/src/types.ts';
 import type { WalletSubmission } from './chain-wallet.ts';
-import type { M3ProductChainPresentation, OnchainProductAction } from './m3-product-shell.ts';
+import type {
+  M3ProductChainPresentation,
+  M3VaultSelection,
+  M3VaultSelectionState,
+  OnchainProductAction,
+} from './m3-product-shell.ts';
 import type { DepositAuthorizationPresentation } from './m3-product-shell.ts';
 
 const PASS_BASE_UNITS_PER_AF_USDC_BASE_UNIT = 1_000_000_000_000n;
@@ -49,15 +54,7 @@ export interface M3DepositApprovalReview {
   readonly requirements: readonly [M3DepositApprovalRequirement, M3DepositApprovalRequirement];
 }
 
-export interface M3VaultSelection {
-  readonly chainId: 46_630;
-  readonly vaultAddress: Address;
-}
-
-export interface M3VaultSelectionState {
-  readonly selected: M3VaultSelection;
-  readonly options: readonly M3VaultSelection[];
-}
+export type { M3VaultSelection, M3VaultSelectionState } from './m3-product-shell.ts';
 
 export interface M3ProductRuntime {
   readonly snapshot: M3ProductChainPresentation;

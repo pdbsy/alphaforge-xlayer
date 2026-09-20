@@ -580,6 +580,42 @@ test('configured Pass capability offers transfer while paid sale remains outside
   assert.doesNotMatch(html, /Buy Pass · NOT IMPLEMENTED/);
 });
 
+test('Vault selection renders two reviewed choices while preserving a shared Pass identity', () => {
+  const vaultA = asAddress('0x2222222222222222222222222222222222222222');
+  const vaultB = asAddress('0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb');
+  const sharedPass = '0x4444444444444444444444444444444444444444';
+  const html = renderM3StrategyShell({
+    strategyId: 'trend',
+    contentProvenance: 'FIXTURE',
+    vaultSelection: {
+      selected: { chainId: 46_630, vaultAddress: vaultB },
+      options: [
+        { chainId: 46_630, vaultAddress: vaultA },
+        { chainId: 46_630, vaultAddress: vaultB },
+      ],
+    },
+    onchain: {
+      deployment: 'CONFIGURED',
+      health: 'LIVE',
+      readiness: 'FINALITY_UNKNOWN',
+      owner: 'OWNER',
+      writeMode: 'INJECTED_MOCK',
+      exitPath: 'SIMULATION',
+      supportedActions: ['deposit', 'withdraw', 'close'],
+      vaultAddress: vaultB,
+      passAddress: sharedPass,
+      passTransferMode: 'INJECTED_MOCK',
+    },
+  });
+
+  assert.match(html, /data-chain-vault-select/);
+  assert.match(html, new RegExp(`value="46630:${vaultA}"`));
+  assert.match(html, new RegExp(`value="46630:${vaultB}" selected`));
+  assert.match(html, /Reviewed deployment allowlist/);
+  assert.match(html, new RegExp(sharedPass));
+  assert.doesNotMatch(html, /Discover|Deploy new Vault/);
+});
+
 test('degraded indexer identifies a non-owner wallet without implying an owner exit path', () => {
   const html = renderM3StrategyShell({
     strategyId: 'trend',
