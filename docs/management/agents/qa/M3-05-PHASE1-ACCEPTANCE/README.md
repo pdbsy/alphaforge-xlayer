@@ -21,5 +21,6 @@ Current status: `BASE_REGRESSION_COMPLETE / FINAL_CANDIDATE_BLOCKED`. The exact 
 - [Findings](FINDINGS.md)
 - [Coverage Gaps](COVERAGE-GAPS.md)
 - [Complete Coverage Collection Method](COVERAGE-COLLECTION-METHOD.md)
+- [Final Candidate Acceptance Preparation](FINAL-CANDIDATE-ACCEPTANCE-PREP.md)
 
 Generated or temporary evidence remains isolated from source records and is referenced by exact path and hash. Base results are not an approval of a later candidate; every applicable item will be rerun or explicitly inherited against the exact final candidate supplied by Macbeth01.
