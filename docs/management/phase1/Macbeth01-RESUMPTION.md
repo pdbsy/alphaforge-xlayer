@@ -72,3 +72,9 @@ Current normal merges include 03 `a4d73bb197ff1f715fcf6ea9f1fe1daae2c75030`, 04 
 The user's exact GITLEAKS-FP-001 decision is now approved and implemented separately from raw scanner classification. The initial red test run showed three expected failures; the implementation's scanner/gate regression group passes 26/26. Its real pinned scanner and hosted CI still require execution on a clean new candidate, followed by 06 independent verification. Existing df23817 CI remains evidence of df23817 only.
 
 Source coverage qualification has a verified isolated 20-package tool graph and a real small Node/Chrome union probe. It is not admitted for overall measurement until TypeScript/prototype/mixed-runtime mappings and negative probes are proven. No overall percentage or P1-001 closure is claimed.
+
+## Real Gitleaks result for approved disposition implementation
+
+Clean source `990155afa2404c85aa9bbfa405d5fc3927022a8e` passed the real pinned Gitleaks 8.30.1 gate. It scanned 378 reachable commits across all fetched refs plus HEAD. The raw historical scanner still exited 10 and reported exactly the approved finding with `history.state: FAIL`; the separate exact-object disposition verified, current tracked files were clean, and root/deleted/side/tag/merge canaries plus redaction passed. Raw report SHA-256: `4fd6a8e0208a987154681fc90a98360bf6bf33f38ab3c0c23458fc4118a95fba`. No detector ignore, baseline, history rewrite or required-check change was used. 06 has the exact implementation commit for independent review; this local result is not yet hosted CI.
+
+The four-file QA evidence update `643f8d7d0f8c01e5812a0a90114ccaf80537bcb7` was subsequently integrated with original authors/history retained. It documents the PR26/PR27 independent checkpoints; later unified-source observations remain separately identified above. The source manifest now binds that accurate QA head.
