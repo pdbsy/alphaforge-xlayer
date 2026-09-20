@@ -1,0 +1,121 @@
+# M3 Phase 1 Chain Recovery Implementation Plan
+
+> **For agentic workers:** Execute this plan inline with the `executing-plans` workflow. Every behavior change follows RED, GREEN, refactor, and focused verification. No subagent is authorized for this task.
+
+**Goal:** Close the evidence-backed Phase 1 gaps in deployment identity verification, chain projection recovery, and multi-Vault isolation while preserving the merged transaction, reorg, and owner-exit behavior.
+
+**Architecture:** Keep each Vault indexed by its immutable chain and contract identity in SQLite. Verify a deployment manifest against the frozen ABI digest and independently read and hash live runtime bytecode before any block, log, or projection is accepted. Expose multiple configured Vault runtimes through one chain route registry without making product accounts or demo sessions authoritative. Add online SQLite backup and health inspection so a projection database can be restored and rebuilt without changing chain truth.
+
+**Tech Stack:** TypeScript 6, Node.js 24.21.0, node:sqlite, Fastify 5, EIP-1193/JSON-RPC, Node test runner.
+
+**Spec:** `docs/management/specs/PHASE1-CLOSEOUT-2026-09-20.md` at registration source `48cccb8743d2e77ec8001187c00e95044a3d2f40`; `docs/protocol/M3-VAULT-ABI-HANDOFF.md`; `docs/management/phase1/Macbeth03-TASK.md` at the same registration source.
+
+## Global Constraints
+
+- Base is `18f5352070910a867b9729b031aa2e3951785e01`; branch is `macbeth03/m3-phase1-recovery`.
+- Runtime remains Local / Mock / NOT_DEPLOYED. No external RPC write, signing, broadcast, deployment, secret, purchase, or merge.
+- AF-USDC uses 6 decimals, Pass uses 18 decimals, `softReadyDepth = 3`, and `reorgSearchLimit = 128`.
+- Runtime bytecode and ABI hashes use Keccak-256 as frozen by `docs/protocol/M3-VAULT-ABI-HANDOFF.md`.
+- A failed deployment identity check must persist no new chain evidence and must leave product projection reads unavailable.
+- The generic product health endpoint remains available during indexer failure; chain runtime status must expose the chain/database failure without private RPC or filesystem details.
+- Strategy execution, paid Pass sales, Buy/Sell, pricing, fees, AMMs, matching, and risk-permit execution remain out of scope.
+- Files stay within `packages/chain-adapter/**`, `apps/server/**`, `test/chain-*.test.ts`, new `docs/chain/PHASE1-*`, and own `docs/management/phase1/Macbeth03-*`.
+
+---
+
+### Task 1: Exact manifest, ABI, and live bytecode identity
+
+**Files:**
+
+- Create: `packages/chain-adapter/src/keccak.ts`
+- Modify: `packages/chain-adapter/src/index.ts`
+- Modify: `packages/chain-adapter/src/manifest.ts`
+- Modify: `packages/chain-adapter/src/rpc.ts`
+- Modify: `packages/chain-adapter/src/vault-abi.ts`
+- Modify: `apps/server/src/m3-chain-runtime.ts`
+- Test: `test/chain-rpc-manifest.test.ts`
+- Test: `test/chain-runtime.test.ts`
+- Test fixtures: manifest objects in `test/chain-api.test.ts`, `test/chain-startup.test.ts`, `test/chain-sync.test.ts`, and `test/chain-vault-integration.test.ts`
+
+**Interfaces:**
+
+- Produces `keccak256(data: HexData): BlockHash`, validated against the empty-string and `abc` Ethereum Keccak-256 vectors.
+- Extends `DeploymentManifestDocument` with mandatory `abiHash` and binds it into `manifestDigest`.
+- Produces `M3_VAULT_ABI_HASH = 0x264b4498cf396008e4619664c59bf8d8eac0a04f04b80e760df3cfbc00846977`.
+- Adds `ReadonlyRpc.code(address, block)` using allowlisted `eth_getCode`.
+- Before the first sync, verifies chain ID, nonempty code at the exact Vault address, and Keccak-256 runtime hash; mismatch throws a fixed public-safe code and persists no checkpoint/projection.
+
+- [x] Write Keccak vector, `eth_getCode`, mandatory ABI hash, zero contract address, and runtime mismatch tests.
+- [x] Run `node --test test/chain-rpc-manifest.test.ts test/chain-runtime.test.ts` and confirm failures are caused by the missing APIs/validation.
+- [x] Implement the minimal Keccak, manifest/RPC, and runtime identity code.
+- [x] Run the focused tests and the complete chain test set; keep startup connectivity degradation behavior intact.
+- [ ] Commit this independently reviewable identity batch.
+
+### Task 2: Projection database backup, restore, migration, and health
+
+**Files:**
+
+- Modify: `apps/server/src/chain-store.ts`
+- Modify: `apps/server/src/m3-chain-runtime.ts`
+- Modify: `apps/server/src/chain-routes.ts`
+- Test: `test/chain-store.test.ts`
+- Test: `test/chain-api.test.ts`
+
+**Interfaces:**
+
+- Adds `ChainStore.backupTo(target: string): Promise<string>` using SQLite online backup, exclusive destination creation, and no overwrite.
+- Adds `ChainStore.health()` returning only `{ status, schemaVersion, integrity }` with fixed values; SQL/file details remain internal.
+- Extends `/api/v1/chain/runtime-status` with database health and configured deployment identity while keeping indexer failure separate from generic product availability.
+- Restoring a backup means opening it through `ChainStore`, which runs supported migrations, validates schema/integrity, and preserves checkpoints, projections, operations, and idempotency.
+
+- [ ] Write a failing online backup/reopen/no-overwrite test and a failing runtime-status database-health test.
+- [ ] Run `node --test test/chain-store.test.ts test/chain-api.test.ts` and confirm expected RED failures.
+- [ ] Implement minimal backup and health methods plus the safe status projection.
+- [ ] Run focused tests and migration tests, including version-one and version-three fixtures.
+- [ ] Commit this independently reviewable recovery batch.
+
+### Task 3: Multi-Vault, multi-wallet, and multi-strategy isolation
+
+**Files:**
+
+- Modify: `apps/server/src/app.ts`
+- Modify: `apps/server/src/chain-routes.ts`
+- Modify: `apps/server/src/m3-chain-runtime.ts`
+- Test: `test/chain-api.test.ts`
+- Test: `test/chain-store.test.ts`
+- Test: `test/chain-vault-integration.test.ts`
+
+**Interfaces:**
+
+- `buildApp` accepts a validated nonempty set of distinct `M3ChainRuntime` instances while retaining the existing one-runtime call shape.
+- Adds contract-qualified read `GET /api/v1/chain/vaults/:contract/:owner`; the legacy owner-only route remains valid only for a one-runtime server.
+- Routes submissions by exact chain and target contract; unknown or duplicate runtime identities fail closed.
+- Confirms projection keys include chain, immutable Vault contract, owner wallet, and `m3-vault`; strategy identity remains a state field verified against the Vault and Strategy Pass at the same canonical block.
+
+- [ ] Write failing tests for two Vaults with different owners/strategies in the same database and contract-qualified API reads/submissions.
+- [ ] Run `node --test test/chain-api.test.ts test/chain-store.test.ts test/chain-vault-integration.test.ts` and confirm expected RED failures.
+- [ ] Implement the minimal runtime registry and exact dispatch rules.
+- [ ] Run focused tests and the complete chain test set; verify no cross-Vault reads, writes, closures, or sync health leakage.
+- [ ] Commit this independently reviewable isolation batch.
+
+### Task 4: Recovery matrix, UI/API handoff, and non-broadcast smoke procedure
+
+**Files:**
+
+- Create: `docs/chain/PHASE1-RECOVERY-GAP-MATRIX.md`
+- Create: `docs/chain/PHASE1-DATABASE-RECOVERY.md`
+- Create: `docs/chain/PHASE1-TESTNET-SMOKE.md`
+- Create: `docs/chain/PHASE1-MACBETH04-API-HANDOFF.md`
+- Create: `docs/management/phase1/Macbeth03-WORKER-REPORT.md`
+
+**Interfaces:**
+
+- Maps every assigned identity, lifecycle, failure, reorg, isolation, and recovery scenario to an exact test/evidence reference or `BLOCKED`/`NOT_RUN` disposition.
+- Documents Pass initial allocation as constructor-time deployment input, ordinary 18-decimal `transfer`, exact Vault selection by chain/contract/strategy, finite token approvals, and post-close rescue actions for Macbeth04 without implementing sales or Buy/Sell.
+- Defines `SUBMISSION_AMBIGUOUS` as a browser-only pending recovery condition: no backend operation is created without a txHash and no automatic resend occurs.
+- Defines a smoke run that stops before signing/broadcast unless separately authorized and records chain, manifest, ABI/runtime hashes, wallet, target, spender, calldata, simulation, and expected event/view evidence.
+
+- [ ] Write the four operational documents from code/test evidence and mark real Testnet actions `NOT_RUN`.
+- [ ] Run format, typecheck, lint, full tests, secrets/privacy checks, and the environment admission check with the fixed toolchain.
+- [ ] Review the complete diff for scope, stale claims, accidental external-write paths, and sensitive data.
+- [ ] Commit source/docs, push the task branch, update Draft PR #23, and report the exact candidate SHA and results to Macbeth01.

@@ -45,6 +45,7 @@ const HASH_100_ALT = asBlockHash(`0x${'15'.repeat(32)}`);
 const HASH_101 = asBlockHash(`0x${'11'.repeat(32)}`);
 const HASH_101_ALT = asBlockHash(`0x${'12'.repeat(32)}`);
 const HASH_102 = asBlockHash(`0x${'13'.repeat(32)}`);
+const ABI_HASH = asBlockHash(`0x${'66'.repeat(32)}`);
 
 const manifestBody = {
   schemaVersion: 1,
@@ -55,6 +56,7 @@ const manifestBody = {
   contractAddress: CONTRACT,
   deploymentBlock: '100',
   abiVersion: 'm3-owner-v1',
+  abiHash: ABI_HASH,
   runtimeBytecodeHash: asBlockHash(`0x${'77'.repeat(32)}`),
 } as const;
 const manifestDigest = deploymentManifestDigest(manifestBody);
@@ -122,6 +124,9 @@ class FixtureRpc implements ReadonlyRpc {
 
   async chainId() {
     return this.networkChainId;
+  }
+  async code() {
+    return asHexData('0x6000');
   }
   async block(number: bigint | 'latest') {
     return this.blocks.get(number === 'latest' ? this.head : number) ?? null;

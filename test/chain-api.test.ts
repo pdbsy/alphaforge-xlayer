@@ -11,7 +11,7 @@ import {
 } from '../packages/chain-adapter/src/manifest.ts';
 import type { ReadonlyRpc } from '../packages/chain-adapter/src/rpc.ts';
 import { asAddress, asBlockHash, asHexData, asTransactionHash } from '../packages/chain-adapter/src/types.ts';
-import { encodeM3VaultCall } from '../packages/chain-adapter/src/vault-abi.ts';
+import { encodeM3VaultCall, M3_VAULT_ABI_HASH } from '../packages/chain-adapter/src/vault-abi.ts';
 
 const CHAIN_ID = 46_630;
 const OWNER = asAddress('0x1111111111111111111111111111111111111111');
@@ -32,6 +32,7 @@ const manifestBody = {
   contractAddress: CONTRACT,
   deploymentBlock: '1',
   abiVersion: 'm3-vault-db620d6',
+  abiHash: M3_VAULT_ABI_HASH,
   runtimeBytecodeHash: asBlockHash(`0x${'99'.repeat(32)}`),
 } as const;
 const manifestDigest = deploymentManifestDigest(manifestBody);
@@ -52,6 +53,9 @@ class InertRpc implements ReadonlyRpc {
   }
   async logs() {
     return [];
+  }
+  async code() {
+    return asHexData('0x6000');
   }
   async call() {
     return asHexData('0x');

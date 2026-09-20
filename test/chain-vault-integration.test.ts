@@ -18,6 +18,7 @@ import type {
 } from '../packages/chain-adapter/src/rpc.ts';
 import type { CanonicalContractEvent } from '../packages/chain-adapter/src/reconciliation.ts';
 import {
+  M3_VAULT_ABI_HASH,
   M3_VAULT_REVIEW_ABI,
   decodeM3VaultEvent,
   encodeM3VaultCall,
@@ -56,6 +57,7 @@ const manifestBody = {
   contractAddress: CONTRACT,
   deploymentBlock: '100',
   abiVersion: 'm3-vault-db620d6',
+  abiHash: M3_VAULT_ABI_HASH,
   runtimeBytecodeHash: asBlockHash(`0x${'99'.repeat(32)}`),
 } as const;
 const manifestDigest = deploymentManifestDigest(manifestBody);
@@ -91,6 +93,9 @@ class ViewRpc implements ReadonlyRpc {
   }
   async logs() {
     return [];
+  }
+  async code() {
+    return asHexData('0x6000');
   }
   async call(request: ChainCall, blockReference: ChainCallBlock): Promise<HexData> {
     this.calls.push(request);

@@ -11,8 +11,10 @@ import type { DeploymentManifest } from '../../../packages/chain-adapter/src/man
 import { validateDeploymentManifest } from '../../../packages/chain-adapter/src/manifest.ts';
 import { m3ChainSyncPolicy, type ChainSyncPolicy } from '../../../packages/chain-adapter/src/policy.ts';
 import { JsonRpcClient, type ReadonlyRpc } from '../../../packages/chain-adapter/src/rpc.ts';
+import { keccak256 } from '../../../packages/chain-adapter/src/keccak.ts';
 import {
   decodeM3VaultCalldata,
+  M3_VAULT_ABI_HASH,
   M3_VAULT_ABI_VERSION,
 } from '../../../packages/chain-adapter/src/vault-abi.ts';
 import {
@@ -60,7 +62,8 @@ function assertM3VaultManifest(manifest: DeploymentManifest): void {
   if (
     manifest.contractName !== 'AlphaForgeVault' ||
     manifest.contractType !== 'vault' ||
-    manifest.abiVersion !== M3_VAULT_ABI_VERSION
+    manifest.abiVersion !== M3_VAULT_ABI_VERSION ||
+    manifest.abiHash.toLowerCase() !== M3_VAULT_ABI_HASH.toLowerCase()
   )
     throw new Error('M3_VAULT_ABI_MISMATCH');
 }
@@ -74,6 +77,8 @@ export class M3ChainRuntime {
   #lastSyncAttempt: 'NOT_RUN' | 'SUCCEEDED' | 'FAILED' = 'NOT_RUN';
   readonly #now: () => string;
   readonly #maxBlocksPerSync: number;
+  readonly #rpc: ReadonlyRpc;
+  #deploymentVerified = false;
   #operationCursor: string | null = null;
 
   constructor(options: {
@@ -87,6 +92,7 @@ export class M3ChainRuntime {
     assertM3VaultManifest(options.manifest);
     const policy = m3ChainSyncPolicy(options.policy);
     this.#now = options.now ?? (() => new Date().toISOString());
+    this.#rpc = options.rpc;
     this.#maxBlocksPerSync = options.maxBlocksPerSync ?? 2_000;
     this.manifest = options.manifest;
     this.store = new ChainStore(options.dbPath);
@@ -165,6 +171,14 @@ export class M3ChainRuntime {
   }
 
   async #syncToHead(): Promise<M3RuntimeSyncResult> {
+    if (!this.#deploymentVerified) {
+      if ((await this.#rpc.chainId()) !== this.manifest.chainId)
+        throw new Error('M3_DEPLOYMENT_CHAIN_MISMATCH');
+      const code = await this.#rpc.code(this.manifest.contractAddress, 'latest');
+      if (code === '0x' || keccak256(code).toLowerCase() !== this.manifest.runtimeBytecodeHash.toLowerCase())
+        throw new Error('M3_DEPLOYMENT_CODE_MISMATCH');
+      this.#deploymentVerified = true;
+    }
     const head = await this.synchronizer.head();
     const checkpoint = this.store.checkpoint(this.manifest.chainId, this.manifest.contractAddress);
     const start = checkpoint ? checkpoint.blockNumber + 1n : this.manifest.deploymentBlock;
