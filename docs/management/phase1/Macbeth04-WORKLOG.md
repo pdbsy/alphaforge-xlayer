@@ -12,6 +12,9 @@
 - Macbeth02 evidence head: `a13052993b6f408b7be835ecd6f4b13ef6df367d`
 - Macbeth05 coverage-gap source consumed read-only:
   `49432db158bdee6f4130bcb5c8c9d9fd6cd65a1f`
+- Macbeth03 formal Chain/API source consumed read-only:
+  `500914b900d61ea5b26c32ab5cc39c4b0d829c3c`
+- Macbeth03 source tree: `f5257183b1b114295e565f1799b736a124797f72` (Draft PR #26)
 
 The branch contains no Macbeth02 commit. PR #24 was fetched to a read-only remote reference only to
 verify the exact manifest and delivery document. The corrected handoff retains the production
@@ -20,6 +23,11 @@ consumer migration was required. Its changes are limited to reproducible immutab
 offsets, deployment-boundary documentation, and business-boundary tests. `TestVenue` and
 `SwapAdapter` are outside the default minimal deployment candidate.
 
+The branch also contains no Macbeth03 commit. Its corrected PR #26 source is consumed read-only by
+exact source and tree identity. The UI implements its contract-qualified Vault/Pass routes, manifest
+fields, live runtime-code checks, and submission-registration contract without importing the
+unmerged backend history.
+
 ## Completed
 
 - Added exact 18-decimal Pass transfer preparation and runtime review/confirmation.
@@ -27,6 +35,12 @@ offsets, deployment-boundary documentation, and business-boundary tests. `TestVe
 - Added owner-only token/native rescue after close through canonical and degraded live reads.
 - Kept open-Vault rescue rejected and closed-Vault deposit/withdraw/close disabled.
 - Added session, network, simulation, fixed-target, single-use review, and duplicate-submit guards.
+- Bound both contracts to exact reviewed ABI identifiers, nonzero deployment blocks, and runtime
+  bytecode hashes before review and confirmation.
+- Consumed canonical StrategyPass balance through the contract-qualified API and disabled transfer
+  when the Pass projection conflicts with the Vault strategy.
+- Registered returned Pass transaction hashes with the backend operation evidence path; missing or
+  conflicting registration stays explicitly ambiguous.
 - Added production-page dialogs for Pass transfer and both rescue paths.
 - Marked paid Buy/Sell explicitly outside Phase One.
 - Extended the deterministic mock runtime and completed browser acceptance on loopback port `5194`.
@@ -37,12 +51,12 @@ offsets, deployment-boundary documentation, and business-boundary tests. `TestVe
 - Typecheck: PASS
 - Lint: PASS
 - Format: PASS
-- Focused tests: `118/118` PASS
-- Assigned wallet/runtime coverage: `99.95%` lines, `98.97%` branches, `99.07%` functions
+- Focused tests: `120/120` PASS
+- Assigned wallet/runtime coverage: `99.96%` lines, `98.51%` branches, `99.15%` functions
 - Web build: PASS
 - Agent identity: PASS for every committed Macbeth04 provenance record
 - Browser acceptance: PASS within local mock scope
-- Full test suite: `632/633` PASS; shared migration provenance hash update required
+- Full test suite: `637/638` PASS; shared migration provenance hash update required
 
 The first full test run inside the default sandbox also produced only `EPERM` failures when tests
 attempted to create `.checks` directories. The same command was rerun with the required worktree
@@ -56,9 +70,8 @@ intentional shared provenance mismatch described above.
    candidate. Macbeth04 did not edit the out-of-scope shared evidence.
 2. Multi-Vault creation/discovery remains blocked on an exact integrated factory/discovery
    interface. The current product safely selects the one reviewed Vault address.
-3. Macbeth03 has described a Pass balance/transfer API and manifest extension, but its final
-   immutable candidate SHA has not been supplied. No unpublished type or local result is treated as
-   integrated evidence.
+3. Macbeth03's corrected Chain/API source and tree are now recorded and consumed without merging its
+   history. Multi-Vault startup/discovery still requires the manager's integrated runtime source.
 4. Real Testnet browser acceptance remains blocked on a separately authorized deployment and real
    manifest addresses.
 5. Push, Draft PR creation, and the worker's original PR/Forum ACK remain blocked because automatic

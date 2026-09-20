@@ -8,6 +8,9 @@
 - Fixed base: `18f5352070910a867b9729b031aa2e3951785e01`
 - Contract handoff consumed read-only: `2ad816200e7edfbfad96d765b4a696bc8b838c2d`
 - Contract handoff evidence head: `a13052993b6f408b7be835ecd6f4b13ef6df367d`
+- Chain/API handoff consumed read-only: `500914b900d61ea5b26c32ab5cc39c4b0d829c3c`
+- Chain/API handoff tree: `f5257183b1b114295e565f1799b736a124797f72`
+- Chain/API review: Draft PR #26
 - Runtime boundary: `LOCAL / MOCK / NOT_DEPLOYED`
 
 The contract handoff confirms that `StrategyPass`, `AlphaForgeVault`, and `PassLocker` retain the
@@ -18,6 +21,14 @@ business-boundary tests; production Solidity, constructor inputs, selectors, top
 ABI consumed by this UI are unchanged. `TestVenue` and `SwapAdapter` are outside the default minimal
 deployment candidate. No Macbeth02 commit is part of this worker branch; integration remains a
 Macbeth01 responsibility.
+
+The formal Macbeth03 handoff is consumed as a source reference without merging its history. The
+configured client now uses contract-qualified Vault and StrategyPass reads. Deployment metadata
+must bind nonzero Vault and StrategyPass addresses and deployment blocks, the exact reviewed Vault
+ABI version and both ABI hashes, plus both runtime bytecode hashes. Before every review and again
+before confirmation, the browser reads the relevant runtime bytecode and compares its EVM Keccak
+hash with the reviewed manifest. A missing provider response, empty bytecode, or changed hash stops
+the write.
 
 ## User-visible behavior
 
@@ -38,7 +49,10 @@ The Phase One panel now presents:
 Ordinary Pass transfer accepts a nonzero recipient and a positive canonical 18-decimal amount. The
 review binds the wallet owner, fixed Pass contract, recipient, raw amount, and operation ID. Review
 and confirmation each recheck the wallet session and simulate the exact transaction. A review is
-single-use, so a repeated confirmation cannot send another transaction.
+single-use, so a repeated confirmation cannot send another transaction. A returned transaction hash
+is also registered through the same backend operation route used by Vault writes. Missing or
+conflicting registration remains an explicit non-retryable ambiguous result and does not claim
+canonical evidence.
 
 The `10^12` conversion is used only for AF-USDC principal capacity and deposit approval. It is not
 applied to ordinary Pass transfer. A transfer of `0.000000000000000001` Pass therefore prepares one
@@ -67,8 +81,8 @@ into `READY`.
 - Paid issuance, Buy Pass, Sell Pass, pricing, fees, AMM, matching, and platform liquidity are
   `OUT OF PHASE ONE`.
 - No real wallet signature, external RPC write, deployment, or broadcast was performed.
-- No arbitrary token target is accepted for Pass transfer; the target comes from the current Vault
-  state and reviewed deployment context.
+- No arbitrary token target is accepted for Pass transfer; the target is the reviewed manifest's
+  StrategyPass, and the current Vault projection must bind the same address and strategy ID.
 - No Vault factory or multi-Vault discovery interface was invented. The current product selects the
   single reviewed Vault in deployment metadata. Additional creation/discovery remains dependent on
   an exact integrated interface.

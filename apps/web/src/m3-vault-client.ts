@@ -81,6 +81,22 @@ export interface M3VaultSnapshot {
   }>;
 }
 
+export interface M3PassSnapshot {
+  readonly chainId: 46_630;
+  readonly owner: Address;
+  readonly contract: Address;
+  readonly projectionKey: 'm3-strategy-pass';
+  readonly blockNumber: string;
+  readonly blockHash: BlockHash;
+  readonly state: Readonly<{
+    owner: Address;
+    pass: Address;
+    strategyId: HexData;
+    decimals: 18;
+    balanceRaw: string;
+  }>;
+}
+
 function object(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new M3VaultReadFailure();
   return value as Record<string, unknown>;
@@ -112,7 +128,7 @@ function bytes32(value: unknown): HexData {
   return asHexData(value);
 }
 
-function snapshot(value: unknown, expectedOwner: Address): M3VaultSnapshot {
+function snapshot(value: unknown, expectedOwner: Address, expectedContract?: Address): M3VaultSnapshot {
   const row = exactObject(value, [
     'chainId',
     'owner',
@@ -143,6 +159,7 @@ function snapshot(value: unknown, expectedOwner: Address): M3VaultSnapshot {
     'closed',
   ]);
   const owner = address(row.owner);
+  const contract = address(row.contract);
   const stateOwner = address(state.owner);
   const strategyId = bytes32(state.strategyId);
   const passStrategyId = bytes32(state.passStrategyId);
@@ -151,6 +168,7 @@ function snapshot(value: unknown, expectedOwner: Address): M3VaultSnapshot {
     row.projectionKey !== 'm3-vault' ||
     typeof state.closed !== 'boolean' ||
     !sameAddress(owner, expectedOwner) ||
+    (expectedContract !== undefined && !sameAddress(contract, expectedContract)) ||
     !sameAddress(stateOwner, expectedOwner) ||
     strategyId.toLowerCase() !== passStrategyId.toLowerCase()
   )
@@ -184,11 +202,61 @@ function snapshot(value: unknown, expectedOwner: Address): M3VaultSnapshot {
   return Object.freeze({
     chainId: 46_630,
     owner,
-    contract: address(row.contract),
+    contract,
     projectionKey: 'm3-vault',
     blockNumber: decimal(row.blockNumber),
     blockHash,
     state: normalizedState,
+  });
+}
+
+function passSnapshot(value: unknown, expectedOwner: Address, expectedContract: Address): M3PassSnapshot {
+  const row = exactObject(value, [
+    'chainId',
+    'owner',
+    'contract',
+    'projectionKey',
+    'blockNumber',
+    'blockHash',
+    'state',
+  ]);
+  const state = exactObject(row.state, ['owner', 'pass', 'strategyId', 'decimals', 'balanceRaw']);
+  const owner = address(row.owner);
+  const contract = address(row.contract);
+  const stateOwner = address(state.owner);
+  const pass = address(state.pass);
+  const strategyId = bytes32(state.strategyId);
+  if (
+    row.chainId !== 46_630 ||
+    row.projectionKey !== 'm3-strategy-pass' ||
+    !sameAddress(owner, expectedOwner) ||
+    !sameAddress(stateOwner, expectedOwner) ||
+    !sameAddress(contract, expectedContract) ||
+    !sameAddress(pass, expectedContract) ||
+    /^0x0{64}$/i.test(strategyId) ||
+    state.decimals !== 18
+  )
+    throw new M3VaultReadFailure();
+  let blockHash: BlockHash;
+  try {
+    blockHash = asBlockHash(String(row.blockHash));
+  } catch {
+    throw new M3VaultReadFailure();
+  }
+  return Object.freeze({
+    chainId: 46_630,
+    owner,
+    contract,
+    projectionKey: 'm3-strategy-pass',
+    blockNumber: decimal(row.blockNumber),
+    blockHash,
+    state: Object.freeze({
+      owner: stateOwner,
+      pass,
+      strategyId,
+      decimals: 18,
+      balanceRaw: decimal(state.balanceRaw),
+    }),
   });
 }
 
@@ -346,20 +414,46 @@ function operationEvidence(value: unknown, expectedOperationId: string): Product
 
 export class M3VaultApiClient {
   readonly #fetcher: typeof fetch;
+  readonly #vaultAddress: Address | null;
+  readonly #passAddress: Address | null;
 
-  constructor(fetcher: typeof fetch = fetch) {
+  constructor(
+    fetcher: typeof fetch = fetch,
+    contracts?: { readonly vaultAddress: Address; readonly passAddress: Address },
+  ) {
     this.#fetcher = fetcher;
+    this.#vaultAddress = contracts ? asAddress(contracts.vaultAddress) : null;
+    this.#passAddress = contracts ? asAddress(contracts.passAddress) : null;
   }
 
   async readSnapshot(owner: Address): Promise<M3VaultSnapshot> {
     try {
-      const response = await this.#fetcher(`/api/v1/chain/vaults/${owner}`, {
+      const path = this.#vaultAddress
+        ? `/api/v1/chain/vaults/${this.#vaultAddress}/${owner}`
+        : `/api/v1/chain/vaults/${owner}`;
+      const response = await this.#fetcher(path, {
         method: 'GET',
         credentials: 'same-origin',
         headers: { Accept: 'application/json' },
       });
       if (!response.ok) throw new M3VaultReadFailure();
-      return snapshot(await response.json(), owner);
+      return snapshot(await response.json(), owner, this.#vaultAddress ?? undefined);
+    } catch (error) {
+      if (error instanceof M3VaultReadFailure) throw error;
+      throw new M3VaultReadFailure();
+    }
+  }
+
+  async readPassSnapshot(owner: Address): Promise<M3PassSnapshot> {
+    try {
+      if (!this.#passAddress) throw new M3VaultReadFailure();
+      const response = await this.#fetcher(`/api/v1/chain/passes/${this.#passAddress}/${owner}`, {
+        method: 'GET',
+        credentials: 'same-origin',
+        headers: { Accept: 'application/json' },
+      });
+      if (!response.ok) throw new M3VaultReadFailure();
+      return passSnapshot(await response.json(), owner, this.#passAddress);
     } catch (error) {
       if (error instanceof M3VaultReadFailure) throw error;
       throw new M3VaultReadFailure();

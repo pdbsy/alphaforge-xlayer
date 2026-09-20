@@ -16,6 +16,7 @@ import {
 import type { Eip1193Provider, Eip1193Request } from './chain-wallet.ts';
 import type { M3ProductRuntime } from './m3-product-runtime.ts';
 import type { M3VaultSnapshot } from './m3-vault-client.ts';
+import { keccak256Evm } from './evm-keccak.ts';
 
 const OWNER = asAddress('0x1111111111111111111111111111111111111111');
 const NON_OWNER = asAddress('0x9999999999999999999999999999999999999999');
@@ -28,15 +29,22 @@ const TX_HASH = asTransactionHash(`0x${'ab'.repeat(32)}`);
 const BLOCK_HASH = asBlockHash(`0x${'cd'.repeat(32)}`);
 const STRATEGY_ID = asHexData(`0x${'01'.repeat(32)}`);
 const STRATEGY_REF = asHexData(`0x${'02'.repeat(32)}`);
+const VAULT_CODE = asHexData('0x6000');
+const PASS_CODE = asHexData('0x6001');
 
 const deployment: M3BrowserDeploymentConfig = Object.freeze({
   source: 'reviewed-deployment-manifest',
   chainId: 46_630,
   vaultAddress: VAULT,
   deploymentBlock: '1',
-  abiVersion: 'm3-dev-fixture-v1',
+  abiVersion: 'm3-vault-db620d6',
+  abiHash: asBlockHash('0x264b4498cf396008e4619664c59bf8d8eac0a04f04b80e760df3cfbc00846977'),
   manifestDigest: asBlockHash(`0x${'12'.repeat(32)}`),
-  runtimeBytecodeHash: asBlockHash(`0x${'34'.repeat(32)}`),
+  runtimeBytecodeHash: keccak256Evm(VAULT_CODE),
+  strategyPassAddress: PASS,
+  strategyPassDeploymentBlock: '2',
+  strategyPassAbiHash: asBlockHash('0xdd989644feeb7798baca69f7391ba75b6f9d09f47fb05bd90184f6072912923f'),
+  strategyPassRuntimeBytecodeHash: keccak256Evm(PASS_CODE),
   passInitialSupplyBaseUnits: '2000000000000000000',
   passInitialRecipient: OWNER,
 });
@@ -90,6 +98,8 @@ class DevProvider implements Eip1193Provider {
     if (input.method === 'eth_requestAccounts' || input.method === 'eth_accounts') return [this.account];
     if (input.method === 'eth_chainId') return `0x${this.chainId.toString(16)}`;
     if (input.method === 'eth_getBlockByNumber') return { number: '0x64', hash: BLOCK_HASH };
+    if (input.method === 'eth_getCode')
+      return sameAddress(asAddress(String(input.params?.[0])), PASS) ? PASS_CODE : VAULT_CODE;
     if (input.method === 'eth_sendTransaction') {
       const transaction = input.params?.[0] as { readonly data?: unknown; readonly to?: unknown } | undefined;
       const data = String(transaction?.data ?? '');

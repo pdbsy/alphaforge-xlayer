@@ -53,20 +53,99 @@ function payload() {
 
 test('web Vault client reads the canonical owner projection through the same-process API', async () => {
   const requests: Array<{ input: string; init: RequestInit | undefined }> = [];
-  const client = new M3VaultApiClient(async (input, init) => {
-    requests.push({ input: String(input), init });
-    return new Response(JSON.stringify(payload()), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  });
+  const client = new M3VaultApiClient(
+    async (input, init) => {
+      requests.push({ input: String(input), init });
+      return new Response(JSON.stringify(payload()), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    },
+    { vaultAddress: CONTRACT, passAddress: PASS },
+  );
   assert.deepEqual(await client.readSnapshot(OWNER), payload());
   assert.deepEqual(requests, [
     {
-      input: `/api/v1/chain/vaults/${OWNER}`,
+      input: `/api/v1/chain/vaults/${CONTRACT}/${OWNER}`,
       init: { method: 'GET', credentials: 'same-origin', headers: { Accept: 'application/json' } },
     },
   ]);
+});
+
+test('web Vault client reads an exact contract-qualified StrategyPass projection', async () => {
+  const passPayload = {
+    chainId: 46_630,
+    owner: OWNER,
+    contract: PASS,
+    projectionKey: 'm3-strategy-pass',
+    blockNumber: '101',
+    blockHash: BLOCK_HASH,
+    state: {
+      owner: OWNER,
+      pass: PASS,
+      strategyId: STRATEGY_ID,
+      decimals: 18,
+      balanceRaw: '1',
+    },
+  } as const;
+  const requests: string[] = [];
+  const client = new M3VaultApiClient(
+    async (input) => {
+      requests.push(String(input));
+      return new Response(JSON.stringify(passPayload), { status: 200 });
+    },
+    { vaultAddress: CONTRACT, passAddress: PASS },
+  );
+  assert.deepEqual(await client.readPassSnapshot(OWNER), passPayload);
+  assert.deepEqual(requests, [`/api/v1/chain/passes/${PASS}/${OWNER}`]);
+});
+
+test('web Vault client rejects malformed or conflicting StrategyPass projections', async () => {
+  const valid = {
+    chainId: 46_630,
+    owner: OWNER,
+    contract: PASS,
+    projectionKey: 'm3-strategy-pass',
+    blockNumber: '101',
+    blockHash: BLOCK_HASH,
+    state: {
+      owner: OWNER,
+      pass: PASS,
+      strategyId: STRATEGY_ID,
+      decimals: 18,
+      balanceRaw: '1',
+    },
+  };
+  const invalid = [
+    [],
+    { ...valid, contract: CONTRACT },
+    { ...valid, owner: CREATOR },
+    { ...valid, state: { ...valid.state, owner: CREATOR } },
+    { ...valid, state: { ...valid.state, pass: CONTRACT } },
+    { ...valid, state: { ...valid.state, strategyId: asHexData(`0x${'00'.repeat(32)}`) } },
+    { ...valid, state: { ...valid.state, decimals: 6 } },
+    { ...valid, state: { ...valid.state, balanceRaw: '01' } },
+    { ...valid, blockHash: '0x01' },
+  ];
+  for (const body of invalid) {
+    const client = new M3VaultApiClient(async () => new Response(JSON.stringify(body), { status: 200 }), {
+      vaultAddress: CONTRACT,
+      passAddress: PASS,
+    });
+    await assert.rejects(client.readPassSnapshot(OWNER), /M3_VAULT_READ_FAILED/);
+  }
+  const unavailable = new M3VaultApiClient(async () => new Response('{}', { status: 503 }), {
+    vaultAddress: CONTRACT,
+    passAddress: PASS,
+  });
+  await assert.rejects(unavailable.readPassSnapshot(OWNER), /M3_VAULT_READ_FAILED/);
+  const transport = new M3VaultApiClient(
+    async () => {
+      throw new Error('network detail');
+    },
+    { vaultAddress: CONTRACT, passAddress: PASS },
+  );
+  await assert.rejects(transport.readPassSnapshot(OWNER), /M3_VAULT_READ_FAILED/);
 });
 
 test('web Vault client rejects foreign owners, malformed state and unavailable projections', async () => {

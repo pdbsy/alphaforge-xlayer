@@ -20,6 +20,7 @@ import {
   type WalletSubmission,
 } from './chain-wallet.ts';
 import { M3ChainActionFlow, type M3ActionReview } from './m3-chain-action-flow.ts';
+import { keccak256Evm } from './evm-keccak.ts';
 import { transactionPresentationFromEvidence, type M3ProductChainPresentation } from './m3-product-shell.ts';
 import {
   type M3DepositApprovalKind,
@@ -33,7 +34,7 @@ import {
 import { createM3PassTransferFactory } from './m3-pass-actions.ts';
 import { createM3VaultActionFactory } from './m3-vault-actions.ts';
 import { readM3VaultDepositAuthorization, type M3DepositAuthorization } from './m3-vault-allowance.ts';
-import { M3VaultApiClient, type M3VaultSnapshot } from './m3-vault-client.ts';
+import { M3VaultApiClient, type M3PassSnapshot, type M3VaultSnapshot } from './m3-vault-client.ts';
 import { readM3VaultLiveSnapshot } from './m3-vault-live-reader.ts';
 import {
   type ProductOperationEvidence,
@@ -46,14 +47,20 @@ export interface M3BrowserDeploymentConfig {
   readonly vaultAddress: Address;
   readonly deploymentBlock: string;
   readonly abiVersion: string;
+  readonly abiHash: BlockHash;
   readonly manifestDigest: BlockHash;
   readonly runtimeBytecodeHash: BlockHash;
+  readonly strategyPassAddress: Address;
+  readonly strategyPassDeploymentBlock: string;
+  readonly strategyPassAbiHash: BlockHash;
+  readonly strategyPassRuntimeBytecodeHash: BlockHash;
   readonly passInitialSupplyBaseUnits?: string;
   readonly passInitialRecipient?: Address;
 }
 
 export interface M3VaultReader {
   readSnapshot(owner: Address): Promise<M3VaultSnapshot>;
+  readPassSnapshot?(owner: Address): Promise<M3PassSnapshot>;
   registerSubmission?(input: {
     readonly operationId: string;
     readonly chainId: 46_630;
@@ -75,9 +82,28 @@ export interface M3BrowserRuntimeOptions {
 
 const supportedOpenActions = ['deposit', 'withdraw', 'close'] as const;
 const supportedClosedActions = ['rescue-token', 'rescue-native'] as const;
+const reviewedVaultAbiVersion = 'm3-vault-db620d6';
+const reviewedVaultAbiHash = '0x264b4498cf396008e4619664c59bf8d8eac0a04f04b80e760df3cfbc00846977';
+const reviewedStrategyPassAbiHash = '0xdd989644feeb7798baca69f7391ba75b6f9d09f47fb05bd90184f6072912923f';
 type RuntimeSnapshot =
   | { readonly source: 'CANONICAL'; readonly value: M3VaultSnapshot }
   | { readonly source: 'LIVE_EXIT'; readonly value: M3VaultSnapshot };
+
+function deploymentAddress(value: unknown): Address {
+  try {
+    return asAddress(String(value));
+  } catch {
+    throw new Error('INVALID_M3_DEPLOYMENT_CONFIG');
+  }
+}
+
+function deploymentHash(value: unknown): BlockHash {
+  try {
+    return asBlockHash(String(value));
+  } catch {
+    throw new Error('INVALID_M3_DEPLOYMENT_CONFIG');
+  }
+}
 
 interface PendingOperation {
   readonly operationId: string;
@@ -99,13 +125,29 @@ function validDeployment(value: M3BrowserDeploymentConfig | undefined): M3Browse
   if (
     value.source !== 'reviewed-deployment-manifest' ||
     value.chainId !== ROBINHOOD_CHAIN_TESTNET.chainId ||
-    !/^(0|[1-9][0-9]*)$/.test(value.deploymentBlock) ||
-    !/^[A-Za-z][A-Za-z0-9._-]{0,63}$/.test(value.abiVersion)
+    !/^[1-9][0-9]*$/.test(value.deploymentBlock) ||
+    !/^[1-9][0-9]*$/.test(value.strategyPassDeploymentBlock) ||
+    value.abiVersion !== reviewedVaultAbiVersion
   )
     throw new Error('INVALID_M3_DEPLOYMENT_CONFIG');
   const hasInitialSupply = value.passInitialSupplyBaseUnits !== undefined;
   const hasInitialRecipient = value.passInitialRecipient !== undefined;
   if (hasInitialSupply !== hasInitialRecipient) throw new Error('INVALID_M3_DEPLOYMENT_CONFIG');
+  const vaultAddress = deploymentAddress(value.vaultAddress);
+  const strategyPassAddress = deploymentAddress(value.strategyPassAddress);
+  const abiHash = deploymentHash(value.abiHash);
+  const strategyPassAbiHash = deploymentHash(value.strategyPassAbiHash);
+  if (
+    /^0x0{40}$/i.test(vaultAddress) ||
+    /^0x0{40}$/i.test(strategyPassAddress) ||
+    sameAddress(vaultAddress, strategyPassAddress)
+  )
+    throw new Error('INVALID_M3_DEPLOYMENT_CONFIG');
+  if (
+    abiHash.toLowerCase() !== reviewedVaultAbiHash ||
+    strategyPassAbiHash.toLowerCase() !== reviewedStrategyPassAbiHash
+  )
+    throw new Error('INVALID_M3_DEPLOYMENT_CONFIG');
   let passInitialRecipient: Address | undefined;
   if (hasInitialSupply && hasInitialRecipient) {
     if (
@@ -113,14 +155,18 @@ function validDeployment(value: M3BrowserDeploymentConfig | undefined): M3Browse
       BigInt(value.passInitialSupplyBaseUnits!) >= 1n << 256n
     )
       throw new Error('INVALID_M3_DEPLOYMENT_CONFIG');
-    passInitialRecipient = asAddress(value.passInitialRecipient!);
+    passInitialRecipient = deploymentAddress(value.passInitialRecipient!);
     if (/^0x0{40}$/i.test(passInitialRecipient)) throw new Error('INVALID_M3_DEPLOYMENT_CONFIG');
   }
   return Object.freeze({
     ...value,
-    vaultAddress: asAddress(value.vaultAddress),
-    manifestDigest: asBlockHash(value.manifestDigest),
-    runtimeBytecodeHash: asBlockHash(value.runtimeBytecodeHash),
+    vaultAddress,
+    manifestDigest: deploymentHash(value.manifestDigest),
+    abiHash,
+    runtimeBytecodeHash: deploymentHash(value.runtimeBytecodeHash),
+    strategyPassAddress,
+    strategyPassAbiHash,
+    strategyPassRuntimeBytecodeHash: deploymentHash(value.strategyPassRuntimeBytecodeHash),
     ...(passInitialRecipient
       ? {
           passInitialSupplyBaseUnits: value.passInitialSupplyBaseUnits!,
@@ -145,6 +191,7 @@ function initialSnapshot(deployment: M3BrowserDeploymentConfig | null): M3Produc
           exitPath: 'UNAVAILABLE',
           supportedActions: supportedOpenActions,
           vaultAddress: deployment.vaultAddress,
+          passAddress: deployment.strategyPassAddress,
           ...(deployment.passInitialSupplyBaseUnits
             ? {
                 passInitialSupplyBaseUnits: deployment.passInitialSupplyBaseUnits,
@@ -200,7 +247,13 @@ class M3BrowserRuntime implements M3ProductRuntime {
   constructor(options: M3BrowserRuntimeOptions) {
     this.#provider = options.provider ?? null;
     this.#deployment = validDeployment(options.deployment);
-    this.#reader = this.#deployment ? (options.vaultReader ?? new M3VaultApiClient()) : null;
+    this.#reader = this.#deployment
+      ? (options.vaultReader ??
+        new M3VaultApiClient(undefined, {
+          vaultAddress: this.#deployment.vaultAddress,
+          passAddress: this.#deployment.strategyPassAddress,
+        }))
+      : null;
     this.#connection = this.#provider
       ? new Eip1193WalletConnection(this.#provider, ROBINHOOD_CHAIN_TESTNET.chainId)
       : null;
@@ -320,7 +373,10 @@ class M3BrowserRuntime implements M3ProductRuntime {
       snapshot.chainId !== this.#deployment.chainId ||
       !sameAddress(snapshot.contract, this.#deployment.vaultAddress) ||
       !sameAddress(snapshot.owner, owner) ||
-      !sameAddress(snapshot.state.owner, owner)
+      !sameAddress(snapshot.state.owner, owner) ||
+      !sameAddress(snapshot.state.pass, this.#deployment.strategyPassAddress) ||
+      /^0x0{64}$/i.test(snapshot.state.strategyId) ||
+      snapshot.state.strategyId.toLowerCase() !== snapshot.state.passStrategyId.toLowerCase()
     )
       throw new Error('M3_VAULT_SNAPSHOT_MISMATCH');
     return snapshot;
@@ -328,12 +384,19 @@ class M3BrowserRuntime implements M3ProductRuntime {
 
   async #readLiveExitSnapshot(): Promise<RuntimeSnapshot> {
     if (!this.#provider || !this.#deployment) throw new Error('M3_LIVE_EXIT_READ_UNAVAILABLE');
+    const value = await readM3VaultLiveSnapshot(this.#provider, {
+      chainId: this.#deployment.chainId,
+      vaultAddress: this.#deployment.vaultAddress,
+    });
+    if (
+      !sameAddress(value.state.pass, this.#deployment.strategyPassAddress) ||
+      /^0x0{64}$/i.test(value.state.strategyId) ||
+      value.state.strategyId.toLowerCase() !== value.state.passStrategyId.toLowerCase()
+    )
+      throw new Error('M3_STRATEGY_PASS_MISMATCH');
     return Object.freeze({
       source: 'LIVE_EXIT',
-      value: await readM3VaultLiveSnapshot(this.#provider, {
-        chainId: this.#deployment.chainId,
-        vaultAddress: this.#deployment.vaultAddress,
-      }),
+      value,
     });
   }
 
@@ -350,6 +413,7 @@ class M3BrowserRuntime implements M3ProductRuntime {
     snapshot: RuntimeSnapshot,
     authorization?: M3DepositAuthorization,
     passBalanceBaseUnits?: string,
+    passVerified = this.#snapshot.onchain.passTransferMode !== 'DISABLED',
   ): M3ProductChainPresentation {
     const contractOwner = snapshot.value.owner;
     const vaultAddress = snapshot.value.contract;
@@ -374,7 +438,7 @@ class M3BrowserRuntime implements M3ProductRuntime {
             }
           : {}),
         ...(passBalanceBaseUnits === undefined ? {} : { passBalanceBaseUnits }),
-        passTransferMode: this.#writeMode,
+        passTransferMode: passVerified ? this.#writeMode : 'DISABLED',
         writeMode: owner ? this.#writeMode : 'DISABLED',
         exitPath: owner ? 'SIMULATION' : 'UNAVAILABLE',
         supportedActions: closed
@@ -407,12 +471,43 @@ class M3BrowserRuntime implements M3ProductRuntime {
     });
   }
 
+  async #assertRuntimeCode(target: Address, expectedHash: BlockHash): Promise<void> {
+    if (!this.#provider) throw new Error('M3_RUNTIME_CODE_UNAVAILABLE');
+    let code: HexData;
+    try {
+      code = asHexData(
+        String(await this.#provider.request({ method: 'eth_getCode', params: [target, 'latest'] })),
+      );
+    } catch {
+      throw new Error('M3_RUNTIME_CODE_UNAVAILABLE');
+    }
+    if (code === '0x' || keccak256Evm(code).toLowerCase() !== expectedHash.toLowerCase())
+      throw new Error('M3_RUNTIME_CODE_MISMATCH');
+  }
+
   async #connectedPresentation(
     session: WalletSession,
     snapshot: RuntimeSnapshot,
   ): Promise<M3ProductChainPresentation> {
     let passBalanceBaseUnits: string | undefined;
-    if (this.#provider) {
+    let passVerified = snapshot.source === 'LIVE_EXIT' || !this.#reader?.readPassSnapshot;
+    if (snapshot.source === 'CANONICAL' && this.#reader?.readPassSnapshot) {
+      try {
+        const pass = await this.#reader.readPassSnapshot(session.account);
+        if (
+          !sameAddress(pass.contract, snapshot.value.state.pass) ||
+          !sameAddress(pass.state.pass, snapshot.value.state.pass) ||
+          pass.state.strategyId.toLowerCase() !== snapshot.value.state.strategyId.toLowerCase() ||
+          pass.state.decimals !== 18
+        )
+          throw new Error('M3_STRATEGY_PASS_MISMATCH');
+        passBalanceBaseUnits = pass.state.balanceRaw;
+        passVerified = true;
+      } catch {
+        passBalanceBaseUnits = undefined;
+        passVerified = false;
+      }
+    } else if (this.#provider) {
       try {
         const result = String(
           await this.#provider.request({
@@ -435,16 +530,17 @@ class M3BrowserRuntime implements M3ProductRuntime {
       }
     }
     if (snapshot.source === 'LIVE_EXIT')
-      return this.#presentation(session, snapshot, undefined, passBalanceBaseUnits);
+      return this.#presentation(session, snapshot, undefined, passBalanceBaseUnits, passVerified);
     try {
       return this.#presentation(
         session,
         snapshot,
         await this.#authorization(session, '1'),
         passBalanceBaseUnits,
+        passVerified,
       );
     } catch {
-      return this.#presentation(session, snapshot, undefined, passBalanceBaseUnits);
+      return this.#presentation(session, snapshot, undefined, passBalanceBaseUnits, passVerified);
     }
   }
 
@@ -614,6 +710,13 @@ class M3BrowserRuntime implements M3ProductRuntime {
   ): Promise<M3DepositApprovalReview> {
     const session = this.#session;
     if (!session || !this.#deployment) throw new Error('WALLET_CONNECTION_REQUIRED');
+    await Promise.all([
+      this.#assertRuntimeCode(this.#deployment.vaultAddress, this.#deployment.runtimeBytecodeHash),
+      this.#assertRuntimeCode(
+        this.#deployment.strategyPassAddress,
+        this.#deployment.strategyPassRuntimeBytecodeHash,
+      ),
+    ]);
     const snapshot = await this.#readCanonicalSnapshot(session.account);
     const authorization = await this.#authorization(session, request.usdcBaseUnits);
     this.#publish(
@@ -657,6 +760,12 @@ class M3BrowserRuntime implements M3ProductRuntime {
     this.#approvalReviews.delete(review);
     const requirement = kind === 'af-usdc' ? authorization.usdcApproval : authorization.passApproval;
     if (requirement.sufficient) throw new Error('DEPOSIT_APPROVAL_ALREADY_SUFFICIENT');
+    await this.#assertRuntimeCode(this.#deployment.vaultAddress, this.#deployment.runtimeBytecodeHash);
+    if (kind === 'pass')
+      await this.#assertRuntimeCode(
+        this.#deployment.strategyPassAddress,
+        this.#deployment.strategyPassRuntimeBytecodeHash,
+      );
     const wallet = new Eip1193Wallet(this.#provider, {
       chainId: this.#deployment.chainId,
       target: requirement.token,
@@ -685,6 +794,7 @@ class M3BrowserRuntime implements M3ProductRuntime {
 
   async reviewAction(request: M3ProductActionRequest): Promise<M3ProductActionReview> {
     if (!this.#flow || !this.#session) throw new Error('M3_DEPLOYMENT_NOT_CONFIGURED');
+    await this.#assertRuntimeCode(this.#deployment!.vaultAddress, this.#deployment!.runtimeBytecodeHash);
     if (request.kind === 'deposit') {
       const snapshot = await this.#readCanonicalSnapshot(this.#session.account);
       const authorization = await this.#authorization(this.#session, request.usdcBaseUnits);
@@ -714,6 +824,7 @@ class M3BrowserRuntime implements M3ProductRuntime {
     const internal = this.#actionReviews.get(review);
     if (!internal) throw new Error('INVALID_PRODUCT_REVIEW');
     this.#actionReviews.delete(review);
+    await this.#assertRuntimeCode(this.#deployment!.vaultAddress, this.#deployment!.runtimeBytecodeHash);
     this.#publish({ ...this.#snapshot, transaction: { status: 'WALLET_PENDING' } });
     const submission = await this.#flow.confirm(internal);
     this.#publish({
@@ -741,8 +852,12 @@ class M3BrowserRuntime implements M3ProductRuntime {
       !sameAddress(observedBefore.account, session.account)
     )
       throw new Error('WALLET_SESSION_CHANGED');
-    const snapshot = await this.#readFlowSnapshot(session.account);
-    const token = snapshot.value.state.pass;
+    await this.#assertRuntimeCode(
+      this.#deployment.strategyPassAddress,
+      this.#deployment.strategyPassRuntimeBytecodeHash,
+    );
+    await this.#readFlowSnapshot(session.account);
+    const token = this.#deployment.strategyPassAddress;
     const factory = createM3PassTransferFactory({ chainId: this.#deployment.chainId, target: token });
     const prepared = factory.prepare(
       {
@@ -800,8 +915,42 @@ class M3BrowserRuntime implements M3ProductRuntime {
     const pending = this.#passTransferReviews.get(review);
     if (!pending) throw new Error('INVALID_PASS_TRANSFER_REVIEW');
     this.#passTransferReviews.delete(review);
+    await this.#assertRuntimeCode(
+      this.#deployment!.strategyPassAddress,
+      this.#deployment!.strategyPassRuntimeBytecodeHash,
+    );
     this.#publish({ ...this.#snapshot, transaction: { status: 'WALLET_PENDING' } });
-    const submission = await pending.wallet.submit(pending.prepared);
+    let submission = await pending.wallet.submit(pending.prepared);
+    if (submission.state === 'SUBMITTED') {
+      try {
+        if (!this.#reader?.registerSubmission) throw new Error('M3_SUBMISSION_REGISTRATION_UNAVAILABLE');
+        await this.#reader.registerSubmission({
+          operationId: pending.prepared.operationId,
+          chainId: pending.prepared.chainId as 46_630,
+          owner: pending.prepared.owner,
+          target: pending.prepared.target,
+          calldata: pending.prepared.data,
+          txHash: submission.txHash,
+        });
+        this.#pendingOperation = Object.freeze({
+          operationId: pending.prepared.operationId,
+          owner: pending.prepared.owner,
+          txHash: submission.txHash,
+        });
+      } catch {
+        submission = Object.freeze({
+          operationId: pending.prepared.operationId,
+          requestedChainId: pending.prepared.chainId,
+          requestedOwner: pending.prepared.owner,
+          target: pending.prepared.target,
+          state: 'SUBMISSION_AMBIGUOUS',
+          txHash: submission.txHash,
+          observedAt: this.#now(),
+          reason: 'LOCAL_EVIDENCE_INVALID',
+          retryable: false,
+        });
+      }
+    }
     this.#publish({
       ...this.#snapshot,
       transaction:

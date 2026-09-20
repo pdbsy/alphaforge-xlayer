@@ -4,6 +4,8 @@
 
 - Product source candidate: `86f2f9036657eeda3a7357943b6fcac6de3e5dbe`
 - Candidate tree: `ae90be8d3411d921bdaf37cf15d3fdea01ce22b3`
+- Chain/API source consumed read-only: `500914b900d61ea5b26c32ab5cc39c4b0d829c3c`
+- Chain/API source tree: `f5257183b1b114295e565f1799b736a124797f72`
 - OS: macOS `26.6.2`, Apple Silicon
 - Node: `24.21.0`
 - npm: `11.19.1`
@@ -17,6 +19,12 @@ wrong network state with writes disabled; one shows the closed Vault with only t
 actions enabled; and one shows the final candidate's selected Vault and initial Pass allocation.
 The tool did not expose a repository file path for those captures, so this document does not claim
 an image artifact in Git.
+
+The interactive sequence was rerun after consuming the corrected Chain/API handoff. The explicit
+mock banner remained visible, runtime bytecode verification allowed the reviewed fixture contracts,
+the Pass submission registered successfully and displayed `SUBMITTED`, and the post-refresh balance
+again decreased by exactly one raw unit. Closed-Vault and wrong-network write states were also
+rechecked.
 
 ## Steps and observed results
 
@@ -52,11 +60,11 @@ The exact candidate passed:
 - `npm run build:web`
 - `npm run verify:agent-identity`
 
-The coverage follow-up measures the six assigned wallet/runtime modules at `99.95%` lines,
-`98.97%` branches, and `99.07%` functions; exact per-file results and residual defensive branches
+The coverage follow-up measures the seven assigned wallet/runtime modules at `99.96%` lines,
+`98.51%` branches, and `99.15%` functions; exact per-file results and residual defensive branches
 are recorded in `docs/product/PHASE1-COVERAGE-EVIDENCE.md`.
 
-`npm test` ran `633` tests: `632` passed and one shared provenance test failed. The only failure is
+`npm test` ran `638` tests: `637` passed and one shared provenance test failed. The only failure is
 `test/migration-provenance.test.mjs`, because
 `docs/migration/artifact-provenance.json` still records the previous `product-ui.ts` SHA-256
 `56c01e81072d10088eef3011d317ff8e34b8e7bd1d1dd19548baf812c82f3ea2`; the candidate file is

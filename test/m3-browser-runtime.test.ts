@@ -4,6 +4,7 @@ import { asAddress, asBlockHash, asHexData } from '../packages/chain-adapter/src
 import type { ProductOperationEvidence } from '../packages/chain-adapter/src/reconciliation.ts';
 import { encodeM3VaultCall } from '../packages/chain-adapter/src/vault-abi.ts';
 import { createM3BrowserRuntime } from '../apps/web/src/m3-browser-runtime.ts';
+import { keccak256Evm } from '../apps/web/src/evm-keccak.ts';
 import type { Eip1193Provider, Eip1193Request } from '../apps/web/src/chain-wallet.ts';
 import { onchainActionEnabled, renderM3StrategyShell } from '../apps/web/src/m3-product-shell.ts';
 import type { M3VaultSnapshot } from '../apps/web/src/m3-vault-client.ts';
@@ -13,6 +14,8 @@ const VAULT = asAddress('0x2222222222222222222222222222222222222222');
 const AF_USDC = asAddress('0x3333333333333333333333333333333333333333');
 const PASS = asAddress('0x4444444444444444444444444444444444444444');
 const TX_HASH = `0x${'ab'.repeat(32)}`;
+const VAULT_CODE = asHexData('0x6000');
+const PASS_CODE = asHexData('0x6001');
 
 const addressResult = (address: string) => `0x${address.slice(2).padStart(64, '0')}`;
 const uintResult = (value: bigint) => `0x${value.toString(16).padStart(64, '0')}`;
@@ -40,6 +43,8 @@ class ConfiguredProviderFixture extends ProviderFixture {
   passAllowance = 0n;
   passBalance = 0n;
   closed = false;
+  vaultCode = VAULT_CODE;
+  passCode = PASS_CODE;
 
   override async request(input: Eip1193Request): Promise<unknown> {
     this.requests.push(input);
@@ -47,6 +52,10 @@ class ConfiguredProviderFixture extends ProviderFixture {
       return this.account ? [this.account] : [];
     if (input.method === 'eth_chainId') return `0x${this.chainId.toString(16)}`;
     if (input.method === 'eth_getBlockByNumber') return { number: '0x64', hash: vaultSnapshot.blockHash };
+    if (input.method === 'eth_getCode') {
+      const target = String(input.params?.[0]).toLowerCase();
+      return target === PASS.toLowerCase() ? this.passCode : this.vaultCode;
+    }
     if (input.method === 'eth_sendTransaction') return TX_HASH;
     if (input.method === 'eth_call') {
       const call = input.params?.[0] as { readonly data?: unknown; readonly to?: unknown } | undefined;
@@ -115,9 +124,14 @@ const deployment = {
   chainId: 46_630 as const,
   vaultAddress: VAULT,
   deploymentBlock: '1',
-  abiVersion: 'm3-v1',
+  abiVersion: 'm3-vault-db620d6',
+  abiHash: asBlockHash('0x264b4498cf396008e4619664c59bf8d8eac0a04f04b80e760df3cfbc00846977'),
   manifestDigest: asBlockHash(`0x${'12'.repeat(32)}`),
-  runtimeBytecodeHash: asBlockHash(`0x${'34'.repeat(32)}`),
+  runtimeBytecodeHash: keccak256Evm(VAULT_CODE),
+  strategyPassAddress: PASS,
+  strategyPassDeploymentBlock: '2',
+  strategyPassAbiHash: asBlockHash('0xdd989644feeb7798baca69f7391ba75b6f9d09f47fb05bd90184f6072912923f'),
+  strategyPassRuntimeBytecodeHash: keccak256Evm(PASS_CODE),
 };
 
 test('production browser runtime is inert before connect and reports wrong chain without a deployment', async () => {
@@ -545,7 +559,16 @@ test('configured runtime transfers one raw Pass unit to the reviewed recipient e
     transfer.data,
     `0xa9059cbb${request.recipient.slice(2).padStart(64, '0')}${'1'.padStart(64, '0')}`,
   );
-  assert.deepEqual(registrations, []);
+  assert.deepEqual(registrations, [
+    {
+      operationId: review.operationId,
+      chainId: 46_630,
+      owner: OWNER,
+      target: PASS,
+      calldata: transfer.data,
+      txHash: TX_HASH,
+    },
+  ]);
   await assert.rejects(runtime.confirmPassTransfer!(review), /INVALID_PASS_TRANSFER_REVIEW/);
 });
 
@@ -572,11 +595,18 @@ test('reviewed deployment metadata exposes initial Pass allocation without inven
 });
 
 test('deployment validation rejects malformed identity and supply boundaries', () => {
+  const missingStrategyPass = { ...deployment } as Record<string, unknown>;
+  delete missingStrategyPass.strategyPassAddress;
   const invalidDeployments = [
     { ...deployment, source: 'unreviewed' },
     { ...deployment, chainId: 1 },
+    { ...deployment, deploymentBlock: '0' },
     { ...deployment, deploymentBlock: '01' },
-    { ...deployment, abiVersion: '1invalid' },
+    { ...deployment, strategyPassDeploymentBlock: '0' },
+    { ...deployment, abiVersion: 'm3-vault-other' },
+    { ...deployment, abiHash: asBlockHash(`0x${'aa'.repeat(32)}`) },
+    { ...deployment, strategyPassAbiHash: asBlockHash(`0x${'bb'.repeat(32)}`) },
+    { ...deployment, strategyPassRuntimeBytecodeHash: 'invalid' },
     { ...deployment, passInitialSupplyBaseUnits: '0', passInitialRecipient: OWNER },
     { ...deployment, passInitialSupplyBaseUnits: `${1n << 256n}`, passInitialRecipient: OWNER },
     {
@@ -584,6 +614,7 @@ test('deployment validation rejects malformed identity and supply boundaries', (
       passInitialSupplyBaseUnits: '1',
       passInitialRecipient: asAddress('0x0000000000000000000000000000000000000000'),
     },
+    missingStrategyPass,
   ];
   for (const invalid of invalidDeployments)
     assert.throws(
@@ -1071,4 +1102,135 @@ test('approval and Pass ambiguity retain a returned transaction hash', async () 
     txHash: TX_HASH,
     errorCode: 'POST_SUBMISSION_CHECK_FAILED',
   });
+});
+
+test('runtime code changes fail closed before Vault or Pass submission', async () => {
+  const vaultProvider = new ConfiguredProviderFixture();
+  const vaultRuntime = createM3BrowserRuntime({
+    provider: vaultProvider,
+    deployment,
+    vaultReader: { readSnapshot: async () => vaultSnapshot },
+  });
+  await vaultRuntime.connect();
+  vaultProvider.vaultCode = asHexData('0x6002');
+  await assert.rejects(
+    vaultRuntime.reviewAction({ kind: 'withdraw', usdcBaseUnits: '1' }),
+    /M3_RUNTIME_CODE_MISMATCH/,
+  );
+
+  const passProvider = new ConfiguredProviderFixture();
+  const passRuntime = createM3BrowserRuntime({
+    provider: passProvider,
+    deployment,
+    vaultReader: { readSnapshot: async () => vaultSnapshot },
+  });
+  await passRuntime.connect();
+  passProvider.passCode = asHexData('0x6002');
+  await assert.rejects(
+    passRuntime.reviewPassTransfer!({ recipient: VAULT, passBaseUnits: '1' }),
+    /M3_RUNTIME_CODE_MISMATCH/,
+  );
+
+  const unavailableProvider = new ConfiguredProviderFixture();
+  const unavailableRuntime = createM3BrowserRuntime({
+    provider: unavailableProvider,
+    deployment,
+    vaultReader: { readSnapshot: async () => vaultSnapshot },
+  });
+  await unavailableRuntime.connect();
+  const unavailableRequest = unavailableProvider.request.bind(unavailableProvider);
+  unavailableProvider.request = (input) =>
+    input.method === 'eth_getCode' ? Promise.reject(new Error('provider detail')) : unavailableRequest(input);
+  await assert.rejects(
+    unavailableRuntime.reviewAction({ kind: 'withdraw', usdcBaseUnits: '1' }),
+    /M3_RUNTIME_CODE_UNAVAILABLE/,
+  );
+
+  const changedAfterReviewProvider = new ConfiguredProviderFixture();
+  const changedAfterReview = createM3BrowserRuntime({
+    provider: changedAfterReviewProvider,
+    deployment,
+    vaultReader: {
+      readSnapshot: async () => vaultSnapshot,
+      registerSubmission: async () => ({ state: 'SUBMITTED' }),
+    },
+  });
+  await changedAfterReview.connect();
+  const reviewed = await changedAfterReview.reviewAction({ kind: 'withdraw', usdcBaseUnits: '1' });
+  changedAfterReviewProvider.vaultCode = asHexData('0x6002');
+  await assert.rejects(changedAfterReview.confirmAction(reviewed), /M3_RUNTIME_CODE_MISMATCH/);
+});
+
+test('configured runtime consumes canonical Pass identity and balance from the contract-qualified reader', async () => {
+  const provider = new ConfiguredProviderFixture();
+  provider.passBalance = 999n;
+  const runtime = createM3BrowserRuntime({
+    provider,
+    deployment,
+    vaultReader: {
+      readSnapshot: async () => vaultSnapshot,
+      readPassSnapshot: async () => ({
+        chainId: 46_630,
+        owner: OWNER,
+        contract: PASS,
+        projectionKey: 'm3-strategy-pass',
+        blockNumber: '101',
+        blockHash: vaultSnapshot.blockHash,
+        state: {
+          owner: OWNER,
+          pass: PASS,
+          strategyId: vaultSnapshot.state.strategyId,
+          decimals: 18,
+          balanceRaw: '7',
+        },
+      }),
+    },
+  });
+  await runtime.connect();
+  assert.equal(runtime.snapshot.onchain.passBalanceBaseUnits, '7');
+  assert.equal(runtime.snapshot.onchain.passTransferMode, 'LIVE_AUTHORIZED');
+
+  const mismatched = createM3BrowserRuntime({
+    provider: new ConfiguredProviderFixture(),
+    deployment,
+    vaultReader: {
+      readSnapshot: async () => vaultSnapshot,
+      readPassSnapshot: async () => ({
+        chainId: 46_630,
+        owner: OWNER,
+        contract: PASS,
+        projectionKey: 'm3-strategy-pass',
+        blockNumber: '101',
+        blockHash: vaultSnapshot.blockHash,
+        state: {
+          owner: OWNER,
+          pass: PASS,
+          strategyId: asHexData(`0x${'09'.repeat(32)}`),
+          decimals: 18,
+          balanceRaw: '7',
+        },
+      }),
+    },
+  });
+  await mismatched.connect();
+  assert.equal(mismatched.snapshot.onchain.passBalanceBaseUnits, undefined);
+  assert.equal(mismatched.snapshot.onchain.passTransferMode, 'DISABLED');
+});
+
+test('Pass submission without backend registration remains explicit and non-retryable', async () => {
+  const provider = new ConfiguredProviderFixture();
+  const runtime = createM3BrowserRuntime({
+    provider,
+    deployment,
+    vaultReader: { readSnapshot: async () => vaultSnapshot },
+    now: () => '2026-09-20T00:00:00.000Z',
+  });
+  await runtime.connect();
+  const review = await runtime.reviewPassTransfer!({ recipient: VAULT, passBaseUnits: '1' });
+  const result = await runtime.confirmPassTransfer!(review);
+  assert.equal(result.state, 'SUBMISSION_AMBIGUOUS');
+  if (result.state !== 'SUBMISSION_AMBIGUOUS') assert.fail('expected ambiguous submission');
+  assert.equal(result.txHash, TX_HASH);
+  assert.equal(result.reason, 'LOCAL_EVIDENCE_INVALID');
+  assert.equal(result.retryable, false);
 });
