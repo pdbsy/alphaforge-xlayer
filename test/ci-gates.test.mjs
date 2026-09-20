@@ -60,7 +60,16 @@ test('contract stages stop on bootstrap/probe/test failure and never invent ABI 
   });
   assert.equal(report.state, 'PASS');
   assert.equal(report.abi, 'PASS');
-  assert.deepEqual(calls[2], ['/bin/bash', ['contracts/script/check-m3-vault.sh']]);
+  assert.deepEqual(calls[2], ['/bin/bash', ['contracts/script/check-phase1-contracts.sh']]);
+});
+
+test('Phase One contract gate cannot skip artifact manifest and rehearsal failures', () => {
+  const report = runContractStages((_file, args) => ({
+    status: args.includes('contracts/script/check-phase1-contracts.sh') ? 1 : 0,
+    signal: null,
+  }));
+  assert.equal(report.state, 'FAIL');
+  assert.notEqual(report.abi, 'PASS');
 });
 
 async function sourceFixture(t, text, name = 'entry.tsx') {

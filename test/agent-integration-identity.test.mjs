@@ -9,7 +9,8 @@ const branch = 'macbeth01/AF-M3-CLOSEOUT';
 const repository = 'pdbsy/quantpass-arbitrum-hackathon';
 const repo = { full_name: repository };
 const title = '[Macbeth01][AF-M3-CLOSEOUT] Integrate reviewed sources';
-function fixture(t) {
+function fixture(t, profile = { branch, task: 'AF-M3-CLOSEOUT', title }) {
+  const { branch: integrationBranch, task: integrationTask, title: integrationTitle } = profile;
   const root = mkdtempSync(join(tmpdir(), 'af-integration-identity-'));
   t.after(() => rmSync(root, { recursive: true, force: true }));
   const env = { ...process.env, GIT_CONFIG_NOSYSTEM: '1', GIT_CONFIG_GLOBAL: '/dev/null' };
@@ -40,8 +41,8 @@ function fixture(t) {
     git('update-ref', `refs/remotes/origin/${sourceBranch}`, head);
     sources.push({ agent, task, branch: sourceBranch, head });
   }
-  git('switch', '-qc', branch, base);
-  const manager = (message = 'Integrate source', task = 'AF-M3-CLOSEOUT') => [
+  git('switch', '-qc', integrationBranch, base);
+  const manager = (message = 'Integrate source', task = integrationTask) => [
     '-m',
     `[Macbeth01][${task}] ${message}`,
     '-m',
@@ -51,8 +52,8 @@ function fixture(t) {
   const manifest = {
     schema_version: 1,
     repository: 'pdbsy/quantpass-arbitrum-hackathon',
-    branch,
-    task: 'AF-M3-CLOSEOUT',
+    branch: integrationBranch,
+    task: integrationTask,
     base,
     sources,
   };
@@ -67,9 +68,9 @@ function fixture(t) {
     const path = new URL(`../tools/${name}`, import.meta.url);
     if (existsSync(path)) copyFileSync(path, join(root, 'tools', name));
   }
-  function record(value = manifest, task = 'AF-M3-CLOSEOUT') {
+  function record(value = manifest, task = integrationTask) {
     writeFileSync(
-      join(root, 'docs/management/agents/integrations/AF-M3-CLOSEOUT.json'),
+      join(root, `docs/management/agents/integrations/${integrationTask}.json`),
       JSON.stringify(value),
     );
     git('add', 'docs');
@@ -89,8 +90,8 @@ function fixture(t) {
       const head = git('rev-parse', 'HEAD');
       const event = options.event ?? {
         pull_request: {
-          title,
-          head: { ref: branch, sha: head, repo },
+          title: integrationTitle,
+          head: { ref: integrationBranch, sha: head, repo },
           base: { ref: 'master', sha: base, repo },
         },
       };
@@ -118,6 +119,18 @@ function rejects(result, pattern) {
 test('registered integration accepts preserved mixed worker history and manager merge commits', (t) => {
   const s = fixture(t);
   succeeds(s.run());
+});
+test('Phase One integration preserves attribution and rejects incomplete source registration', (t) => {
+  const s = fixture(t, {
+    branch: 'macbeth01/m3-phase1-closeout',
+    task: 'M3-01-PHASE1-CLOSEOUT',
+    title: '[Macbeth01][M3-01-PHASE1-CLOSEOUT] Integrate Phase One sources',
+  });
+  succeeds(s.run());
+  s.record({ ...s.manifest, sources: s.sources.slice(0, 3) });
+  rejects(s.run(), /bounded registered sources/);
+  s.record(s.manifest, 'M3-01-UNRELATED');
+  rejects(s.run(), /PR, branch and commit metadata do not match/);
 });
 test('integration rejects an omitted imported worker source', (t) => {
   const s = fixture(t);

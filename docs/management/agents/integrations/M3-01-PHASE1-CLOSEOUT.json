@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "repository": "pdbsy/quantpass-arbitrum-hackathon",
+  "branch": "macbeth01/m3-phase1-closeout",
+  "task": "M3-01-PHASE1-CLOSEOUT",
+  "base": "18f5352070910a867b9729b031aa2e3951785e01",
+  "sources": [
+    {
+      "agent": "Macbeth02",
+      "task": "M3-02-PHASE1-CONTRACTS",
+      "branch": "macbeth02/m3-phase1-contracts",
+      "head": "a13052993b6f408b7be835ecd6f4b13ef6df367d"
+    },
+    {
+      "agent": "Macbeth03",
+      "task": "M3-03-PHASE1-RECOVERY",
+      "branch": "macbeth03/m3-phase1-recovery-final",
+      "head": "67b7d48e7e393133b1b231aa4dc20d1319665278"
+    },
+    {
+      "agent": "Macbeth04",
+      "task": "M3-04-PHASE1-PRODUCT",
+      "branch": "macbeth04/m3-phase1-product",
+      "head": "332549c07239c41c1f1c3735cc1e5e8f247d3d6b"
+    },
+    {
+      "agent": "Macbeth05",
+      "task": "M3-05-PHASE1-ACCEPTANCE",
+      "branch": "macbeth05/m3-phase1-acceptance",
+      "head": "a35f19bf0ed61efbd95490f340ceb7cb32159218"
+    }
+  ]
+}

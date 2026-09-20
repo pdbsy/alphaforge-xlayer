@@ -79,6 +79,19 @@ test('domain amounts roundtrip exactly and reject overflow, floats, exponents an
   assert.throws(() => parseUnits('1', 1.5));
 });
 
+test('signed accounting amounts accept both uint256 bounds and reject one-unit overflow', () => {
+  assert.equal(signed(MAX_INTEGER.toString()), MAX_INTEGER);
+  assert.equal(signed((-MAX_INTEGER).toString()), -MAX_INTEGER);
+  for (const value of [MAX_INTEGER + 1n, -MAX_INTEGER - 1n])
+    assert.throws(() => signed(value.toString()), /AMOUNT_OVERFLOW/);
+});
+
+test('amount display rejects invalid precision instead of shifting the displayed value', () => {
+  for (const decimals of [-1, 37, 1.5, Number.NaN, Number.POSITIVE_INFINITY])
+    assert.throws(() => formatUnits('1000000', decimals), /INVALID_PRECISION/);
+  assert.equal(formatUnits('1000000', 6), '1.000000');
+});
+
 test('S01-S03: Pass is allowance, deposit creates idle cash, withdrawal requires confirmation', () => {
   const h = harness();
   assert.equal(balances(h.state).allowance, BigInt(u('1000')));

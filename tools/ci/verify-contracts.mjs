@@ -16,7 +16,7 @@ export function runContractStages(execute) {
   const stages = [
     ['bootstrap', 'python3.12', ['contracts/script/bootstrap.py']],
     ['compiler-probe', './.checks/af-chain01/toolchain/bin/solc', ['--version']],
-    ['contracts-and-abi', '/bin/bash', ['contracts/script/check-m3-vault.sh']],
+    ['contracts-and-abi', '/bin/bash', ['contracts/script/check-phase1-contracts.sh']],
   ];
   const results = [];
   for (const [stage, file, args] of stages) {

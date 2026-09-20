@@ -1298,7 +1298,7 @@
       "target_path": "tools/agent-identity.mjs",
       "method": "selective import; canonical repository allowlist and dashboard link adapted; reviewed PR11 closeout adaptation (see PR11-CLOSEOUT.md); PR11 review remediation: atomic product snapshot, identity lifecycle or bounded logical-message Forum as applicable; user-authorized Macbeth06 CI/gate role registration (2026-09-20), historical source identity unchanged",
       "original_sha256": "f1b67a9cdb2ce0fa25c95d7927dbffda16cd5320d636891a9b60b721491395a6",
-      "migrated_sha256": "4ac390783fe996e0f3107fb3156e1bbffae1f211b0189f3ad8301be314048aeb",
+      "migrated_sha256": "b88730d1350a71a13c7fbbbb2bd13a1a9c4b3c5c402b90d17376949ac3f17527",
       "subsequent_adaptations": [
         {
           "task": "AF-M3-IDENTITY",
@@ -1311,6 +1311,12 @@
           "base_commit": "919505b45572916a3868ecf355691fb09fa1e2c3",
           "previous_sha256": "30da493bb90d9efac75a534e7e5cf2804e8c033379aea74b739642bb99fb4807",
           "reason": "Register explicitly assigned partial-onchain integration while preserving bounded source admission and repair job-scoped private CodeQL metadata-read permission."
+        },
+        {
+          "task": "M3-01-PHASE1-CLOSEOUT",
+          "base_commit": "18f5352070910a867b9729b031aa2e3951785e01",
+          "previous_sha256": "4ac390783fe996e0f3107fb3156e1bbffae1f211b0189f3ad8301be314048aeb",
+          "reason": "Restore exact Phase One manager branch registration with unchanged fixed-base, bounded-source and per-commit attribution validation after loss of temporary workspace."
         }
       ]
     },
