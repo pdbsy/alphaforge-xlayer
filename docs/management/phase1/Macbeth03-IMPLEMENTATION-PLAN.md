@@ -49,7 +49,7 @@
 - [x] Run `node --test test/chain-rpc-manifest.test.ts test/chain-runtime.test.ts` and confirm failures are caused by the missing APIs/validation.
 - [x] Implement the minimal Keccak, manifest/RPC, and runtime identity code.
 - [x] Run the focused tests and the complete chain test set; keep startup connectivity degradation behavior intact.
-- [ ] Commit this independently reviewable identity batch.
+- [x] Commit this independently reviewable identity batch (`e2e7d97`).
 
 ### Task 2: Projection database backup, restore, migration, and health
 
@@ -68,10 +68,10 @@
 - Extends `/api/v1/chain/runtime-status` with database health and configured deployment identity while keeping indexer failure separate from generic product availability.
 - Restoring a backup means opening it through `ChainStore`, which runs supported migrations, validates schema/integrity, and preserves checkpoints, projections, operations, and idempotency.
 
-- [ ] Write a failing online backup/reopen/no-overwrite test and a failing runtime-status database-health test.
-- [ ] Run `node --test test/chain-store.test.ts test/chain-api.test.ts` and confirm expected RED failures.
-- [ ] Implement minimal backup and health methods plus the safe status projection.
-- [ ] Run focused tests and migration tests, including version-one and version-three fixtures.
+- [x] Write a failing online backup/reopen/no-overwrite test and a failing runtime-status database-health test.
+- [x] Run `node --test test/chain-store.test.ts test/chain-api.test.ts` and confirm expected RED failures.
+- [x] Implement minimal backup and health methods plus the safe status projection.
+- [x] Run focused tests and migration tests, including version-one and version-three fixtures.
 - [ ] Commit this independently reviewable recovery batch.
 
 ### Task 3: Multi-Vault, multi-wallet, and multi-strategy isolation

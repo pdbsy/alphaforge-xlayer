@@ -20,6 +20,18 @@ export interface ChainEvidenceRoutesOptions {
   readonly syncStatus: () => {
     readonly lastAttempt: 'NOT_RUN' | 'SUCCEEDED' | 'FAILED';
     readonly errorCode: 'M3_INDEXER_SYNC_FAILED' | null;
+    readonly database: {
+      readonly status: 'HEALTHY' | 'UNHEALTHY';
+      readonly schemaVersion: number | null;
+      readonly integrity: 'OK' | 'FAILED';
+    };
+    readonly deployment: {
+      readonly chainId: number;
+      readonly contract: Address;
+      readonly manifestDigest: string;
+      readonly abiHash: string;
+      readonly runtimeBytecodeHash: string;
+    };
   };
   readonly recordSubmission: (input: {
     readonly operationId: string;
