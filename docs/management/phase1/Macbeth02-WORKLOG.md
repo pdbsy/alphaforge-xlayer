@@ -5,8 +5,9 @@
 - Branch: `macbeth02/m3-phase1-contracts`
 - Draft PR: `https://github.com/pdbsy/quantpass-arbitrum-hackathon/pull/24`
 - Public ACK: `https://github.com/pdbsy/quantpass-arbitrum-hackathon/pull/24#issuecomment-5747141328`
-- Status: `CORRECTION ACTIVE / LOCAL / NOT_DEPLOYED`
+- Status: `READY FOR REVIEW / LOCAL / NOT_DEPLOYED`
 - Initial verified implementation source C: `e5eff6805d9705745bc0b4483de83466e5693ffa`
+- Corrected implementation source C: `2ad816200e7edfbfad96d765b4a696bc8b838c2d`
 
 ## Intake and baseline
 

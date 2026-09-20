@@ -1,6 +1,7 @@
 # Macbeth02 Phase One Contract Coverage
 
 - Task: `M3-02-PHASE1-CONTRACTS`
+- Corrected implementation source C: `2ad816200e7edfbfad96d765b4a696bc8b838c2d`
 - Tool: pinned Forge `1.5.1`
 - Mode: offline, optimizer and via-IR disabled by Forge for accurate source maps
 - Status: `LOCAL EVIDENCE / NOT DEPLOYMENT EVIDENCE`

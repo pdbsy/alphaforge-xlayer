@@ -4,6 +4,7 @@
 - Task: `M3-02-PHASE1-CONTRACTS`
 - Base: `18f5352070910a867b9729b031aa2e3951785e01`
 - Initial verified implementation source C: `e5eff6805d9705745bc0b4483de83466e5693ffa`
+- Corrected implementation source C: `2ad816200e7edfbfad96d765b4a696bc8b838c2d`
 - Draft PR: `https://github.com/pdbsy/quantpass-arbitrum-hackathon/pull/24`
 - Delivery state: `READY FOR REVIEW / LOCAL / NOT_DEPLOYED`
 
