@@ -34,7 +34,12 @@ import {
 import { createM3PassTransferFactory } from './m3-pass-actions.ts';
 import { createM3VaultActionFactory } from './m3-vault-actions.ts';
 import { readM3VaultDepositAuthorization, type M3DepositAuthorization } from './m3-vault-allowance.ts';
-import { M3VaultApiClient, type M3PassSnapshot, type M3VaultSnapshot } from './m3-vault-client.ts';
+import {
+  M3VaultApiClient,
+  type M3PassSnapshot,
+  type M3RuntimeStatusSnapshot,
+  type M3VaultSnapshot,
+} from './m3-vault-client.ts';
 import { readM3VaultLiveSnapshot } from './m3-vault-live-reader.ts';
 import {
   type ProductOperationEvidence,
@@ -59,6 +64,7 @@ export interface M3BrowserDeploymentConfig {
 }
 
 export interface M3VaultReader {
+  readRuntimeStatus?(): Promise<M3RuntimeStatusSnapshot>;
   readSnapshot(owner: Address): Promise<M3VaultSnapshot>;
   readPassSnapshot?(owner: Address): Promise<M3PassSnapshot>;
   registerSubmission?(input: {
@@ -368,6 +374,7 @@ class M3BrowserRuntime implements M3ProductRuntime {
 
   async #readCanonicalSnapshot(owner: Address): Promise<M3VaultSnapshot> {
     if (!this.#reader || !this.#deployment) throw new Error('M3_DEPLOYMENT_NOT_CONFIGURED');
+    await this.#assertRuntimeStatus();
     const snapshot = await this.#reader.readSnapshot(owner);
     if (
       snapshot.chainId !== this.#deployment.chainId ||
@@ -380,6 +387,29 @@ class M3BrowserRuntime implements M3ProductRuntime {
     )
       throw new Error('M3_VAULT_SNAPSHOT_MISMATCH');
     return snapshot;
+  }
+
+  async #assertRuntimeStatus(): Promise<void> {
+    if (!this.#reader?.readRuntimeStatus || !this.#deployment) return;
+    let status: M3RuntimeStatusSnapshot;
+    try {
+      status = await this.#reader.readRuntimeStatus();
+    } catch {
+      throw new Error('M3_RUNTIME_STATUS_UNAVAILABLE');
+    }
+    const actual = status.deployment;
+    if (
+      actual.chainId !== this.#deployment.chainId ||
+      !sameAddress(actual.contract, this.#deployment.vaultAddress) ||
+      !sameAddress(actual.strategyPassAddress, this.#deployment.strategyPassAddress) ||
+      actual.manifestDigest.toLowerCase() !== this.#deployment.manifestDigest.toLowerCase() ||
+      actual.abiHash.toLowerCase() !== this.#deployment.abiHash.toLowerCase() ||
+      actual.runtimeBytecodeHash.toLowerCase() !== this.#deployment.runtimeBytecodeHash.toLowerCase() ||
+      actual.strategyPassAbiHash.toLowerCase() !== this.#deployment.strategyPassAbiHash.toLowerCase() ||
+      actual.strategyPassRuntimeBytecodeHash.toLowerCase() !==
+        this.#deployment.strategyPassRuntimeBytecodeHash.toLowerCase()
+    )
+      throw new Error('M3_RUNTIME_STATUS_MISMATCH');
   }
 
   async #readLiveExitSnapshot(): Promise<RuntimeSnapshot> {

@@ -1,7 +1,12 @@
 import { parseUnits } from '../../../packages/domain/src/money.ts';
 import { asAddress, type Address } from '../../../packages/chain-adapter/src/types.ts';
 import type { WalletSubmission } from './chain-wallet.ts';
-import type { M3ProductChainPresentation, OnchainProductAction } from './m3-product-shell.ts';
+import type {
+  M3ProductChainPresentation,
+  M3VaultSelection,
+  M3VaultSelectionState,
+  OnchainProductAction,
+} from './m3-product-shell.ts';
 import type { DepositAuthorizationPresentation } from './m3-product-shell.ts';
 
 const PASS_BASE_UNITS_PER_AF_USDC_BASE_UNIT = 1_000_000_000_000n;
@@ -49,10 +54,14 @@ export interface M3DepositApprovalReview {
   readonly requirements: readonly [M3DepositApprovalRequirement, M3DepositApprovalRequirement];
 }
 
+export type { M3VaultSelection, M3VaultSelectionState } from './m3-product-shell.ts';
+
 export interface M3ProductRuntime {
   readonly snapshot: M3ProductChainPresentation;
+  readonly vaultSelection?: M3VaultSelectionState;
   connect(): Promise<void>;
   refresh(): Promise<void>;
+  selectVault?(selection: M3VaultSelection): Promise<void>;
   reviewAction(request: M3ProductActionRequest): Promise<M3ProductActionReview>;
   confirmAction(review: M3ProductActionReview): Promise<WalletSubmission>;
   reviewPassTransfer?(request: M3PassTransferRequest): Promise<M3PassTransferReview>;
@@ -65,6 +74,11 @@ export interface M3ProductRuntime {
     kind: M3DepositApprovalKind,
   ): Promise<WalletSubmission>;
   subscribe(listener: () => void): () => void;
+}
+
+export interface M3SelectableProductRuntime extends M3ProductRuntime {
+  readonly vaultSelection: M3VaultSelectionState;
+  selectVault(selection: M3VaultSelection): Promise<void>;
 }
 
 export interface RequiredDepositAllowances {

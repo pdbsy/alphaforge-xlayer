@@ -629,6 +629,38 @@ test('deployment validation rejects malformed identity and supply boundaries', (
   assert.equal(defaultReaderRuntime.snapshot.onchain.deployment, 'CONFIGURED');
 });
 
+test('runtime status identity mismatch fails closed before canonical deposit approval', async () => {
+  const provider = new ConfiguredProviderFixture();
+  const runtime = createM3BrowserRuntime({
+    provider,
+    deployment,
+    vaultReader: {
+      readRuntimeStatus: async () => ({
+        lastAttempt: 'SUCCEEDED' as const,
+        errorCode: null,
+        database: { status: 'HEALTHY' as const, schemaVersion: 6, integrity: 'OK' as const },
+        deployment: {
+          chainId: 46_630 as const,
+          contract: asAddress('0x9999999999999999999999999999999999999999'),
+          manifestDigest: deployment.manifestDigest,
+          abiHash: deployment.abiHash,
+          runtimeBytecodeHash: deployment.runtimeBytecodeHash,
+          strategyPassAddress: deployment.strategyPassAddress,
+          strategyPassAbiHash: deployment.strategyPassAbiHash,
+          strategyPassRuntimeBytecodeHash: deployment.strategyPassRuntimeBytecodeHash,
+        },
+      }),
+      readSnapshot: async () => vaultSnapshot,
+    },
+  });
+  await runtime.connect();
+
+  await assert.rejects(
+    runtime.reviewDepositApprovals!({ kind: 'deposit', usdcBaseUnits: '1' }),
+    /M3_RUNTIME_STATUS_MISMATCH/,
+  );
+});
+
 test('operation ids fail closed when browser randomness is absent or malformed', async () => {
   const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'crypto');
   const runtime = createM3BrowserRuntime({

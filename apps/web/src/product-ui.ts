@@ -1,6 +1,7 @@
 import { ProductAdapter, type ProductVault, type StrategySummary } from './product-adapter.ts';
 import type { CommandFields, CommandReview, CommandType } from './product-client.ts';
 import { createM3BrowserRuntime, type M3BrowserDeploymentConfig } from './m3-browser-runtime.ts';
+import { createM3BrowserRuntimeSet } from './m3-browser-runtime-set.ts';
 import type { Eip1193Provider } from './chain-wallet.ts';
 import { renderM3DepositApprovalDialog, runM3DialogAction } from './m3-product-dialog.ts';
 import { extendM3ProductPages, onchainActionEnabled } from './m3-product-shell.ts';
@@ -30,6 +31,7 @@ interface Prototype {
   };
   m3OnchainRuntime?: M3ProductRuntime;
   m3Deployment?: M3BrowserDeploymentConfig;
+  m3Deployments?: readonly M3BrowserDeploymentConfig[];
 }
 declare global {
   interface Window {
@@ -45,10 +47,16 @@ if (!onchainRuntime && import.meta.env.DEV && new URLSearchParams(location.searc
   onchainRuntime = fixture.runtime;
   fixtureModule.installM3InjectedRuntimeControls(fixture);
 }
-onchainRuntime ??= createM3BrowserRuntime({
-  ...(window.ethereum ? { provider: window.ethereum } : {}),
-  ...(AF.m3Deployment ? { deployment: AF.m3Deployment } : {}),
-});
+onchainRuntime ??=
+  AF.m3Deployments !== undefined
+    ? createM3BrowserRuntimeSet({
+        ...(window.ethereum ? { provider: window.ethereum } : {}),
+        deployments: AF.m3Deployments,
+      })
+    : createM3BrowserRuntime({
+        ...(window.ethereum ? { provider: window.ethereum } : {}),
+        ...(AF.m3Deployment ? { deployment: AF.m3Deployment } : {}),
+      });
 const adapter = new ProductAdapter();
 const client = adapter.client;
 const esc = (value: unknown) =>
@@ -558,6 +566,21 @@ document.addEventListener('input', (event) => {
 });
 document.addEventListener('change', (event) => {
   const input = event.target as HTMLSelectElement;
+  if (input.hasAttribute('data-chain-vault-select')) {
+    const selection = onchainRuntime?.vaultSelection?.options.find(
+      (option) => `${option.chainId}:${option.vaultAddress}` === input.value,
+    );
+    if (!onchainRuntime?.selectVault || !selection) {
+      localError = 'M3_VAULT_SELECTION_NOT_ALLOWLISTED';
+      render();
+      return;
+    }
+    onchainDraft = null;
+    passTransferDraft = null;
+    AF.app.closeDialog();
+    void run(() => onchainRuntime.selectVault!(selection));
+    return;
+  }
   if (input.hasAttribute('data-product-status-filter')) statusFilter = input.value;
   else if (input.hasAttribute('data-product-environment-filter')) environment = input.value;
   else return;

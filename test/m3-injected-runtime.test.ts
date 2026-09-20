@@ -126,3 +126,45 @@ test('injected runtime controls exercise provider network and non-owner state th
   assert.equal(fixture.runtime.snapshot.onchain.owner, 'NON_OWNER');
   assert.equal(fixture.runtime.snapshot.onchain.writeMode, 'DISABLED');
 });
+
+test('injected runtime isolates two Vault owners and allowances while both selections share one Pass', async () => {
+  const fixture = createM3InjectedRuntimeFixture();
+  fixture.setCorrectNetwork();
+  await fixture.runtime.connect();
+  const vaultA = asAddress('0x2222222222222222222222222222222222222222');
+  const vaultB = asAddress('0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb');
+  const sharedPass = asAddress('0x4444444444444444444444444444444444444444');
+  assert.deepEqual(fixture.runtime.vaultSelection?.options, [
+    { chainId: 46_630, vaultAddress: vaultA },
+    { chainId: 46_630, vaultAddress: vaultB },
+  ]);
+
+  const deposit = { kind: 'deposit' as const, usdcBaseUnits: '1' };
+  const firstUsdc = await fixture.runtime.reviewDepositApprovals!(deposit);
+  await fixture.runtime.confirmDepositApproval!(firstUsdc, 'af-usdc');
+  const firstPass = await fixture.runtime.reviewDepositApprovals!(deposit);
+  await fixture.runtime.confirmDepositApproval!(firstPass, 'pass');
+  const stale = await fixture.runtime.reviewAction({ kind: 'withdraw', usdcBaseUnits: '1' });
+
+  await fixture.selectSecondVault();
+  await fixture.setSecondOwner();
+  await fixture.runtime.connect();
+  assert.equal(fixture.runtime.snapshot.onchain.vaultAddress, vaultB);
+  assert.equal(fixture.runtime.snapshot.onchain.passAddress, sharedPass);
+  assert.equal(fixture.runtime.snapshot.onchain.owner, 'OWNER');
+  assert.equal(fixture.runtime.snapshot.onchain.depositAuthorization?.spender, vaultB);
+  assert.equal(fixture.runtime.snapshot.onchain.depositAuthorization?.afUsdcAllowanceBaseUnits, '0');
+  assert.equal(fixture.runtime.snapshot.onchain.depositAuthorization?.passAllowanceBaseUnits, '0');
+  await assert.rejects(fixture.runtime.confirmAction(stale), /M3_VAULT_SELECTION_CHANGED/);
+
+  await fixture.setOwner();
+  await fixture.selectFirstVault();
+  assert.equal(fixture.runtime.snapshot.onchain.vaultAddress, vaultA);
+  assert.equal(fixture.runtime.snapshot.onchain.passAddress, sharedPass);
+  assert.equal(fixture.runtime.snapshot.onchain.depositAuthorization?.spender, vaultA);
+  assert.equal(fixture.runtime.snapshot.onchain.depositAuthorization?.afUsdcAllowanceBaseUnits, '1');
+  assert.equal(
+    fixture.runtime.snapshot.onchain.depositAuthorization?.passAllowanceBaseUnits,
+    '1000000000000',
+  );
+});

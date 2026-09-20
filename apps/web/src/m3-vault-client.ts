@@ -97,6 +97,26 @@ export interface M3PassSnapshot {
   }>;
 }
 
+export interface M3RuntimeStatusSnapshot {
+  readonly lastAttempt: 'NOT_RUN' | 'SUCCEEDED';
+  readonly errorCode: null;
+  readonly database: Readonly<{
+    status: 'HEALTHY';
+    schemaVersion: number;
+    integrity: 'OK';
+  }>;
+  readonly deployment: Readonly<{
+    chainId: 46_630;
+    contract: Address;
+    manifestDigest: BlockHash;
+    abiHash: BlockHash;
+    runtimeBytecodeHash: BlockHash;
+    strategyPassAddress: Address;
+    strategyPassAbiHash: BlockHash;
+    strategyPassRuntimeBytecodeHash: BlockHash;
+  }>;
+}
+
 function object(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new M3VaultReadFailure();
   return value as Record<string, unknown>;
@@ -256,6 +276,66 @@ function passSnapshot(value: unknown, expectedOwner: Address, expectedContract: 
       strategyId,
       decimals: 18,
       balanceRaw: decimal(state.balanceRaw),
+    }),
+  });
+}
+
+function blockHash(value: unknown): BlockHash {
+  try {
+    return asBlockHash(String(value));
+  } catch {
+    throw new M3VaultReadFailure();
+  }
+}
+
+function runtimeStatus(
+  value: unknown,
+  expectedVault: Address,
+  expectedPass: Address,
+): M3RuntimeStatusSnapshot {
+  const row = exactObject(value, ['lastAttempt', 'errorCode', 'database', 'deployment']);
+  const database = exactObject(row.database, ['status', 'schemaVersion', 'integrity']);
+  const deployment = exactObject(row.deployment, [
+    'chainId',
+    'contract',
+    'manifestDigest',
+    'abiHash',
+    'runtimeBytecodeHash',
+    'strategyPassAddress',
+    'strategyPassAbiHash',
+    'strategyPassRuntimeBytecodeHash',
+  ]);
+  const contract = address(deployment.contract);
+  const strategyPassAddress = address(deployment.strategyPassAddress);
+  if (
+    !['NOT_RUN', 'SUCCEEDED'].includes(String(row.lastAttempt)) ||
+    row.errorCode !== null ||
+    database.status !== 'HEALTHY' ||
+    database.integrity !== 'OK' ||
+    !Number.isSafeInteger(database.schemaVersion) ||
+    Number(database.schemaVersion) < 1 ||
+    deployment.chainId !== 46_630 ||
+    !sameAddress(contract, expectedVault) ||
+    !sameAddress(strategyPassAddress, expectedPass)
+  )
+    throw new M3VaultReadFailure();
+  return Object.freeze({
+    lastAttempt: row.lastAttempt as M3RuntimeStatusSnapshot['lastAttempt'],
+    errorCode: null,
+    database: Object.freeze({
+      status: 'HEALTHY',
+      schemaVersion: database.schemaVersion as number,
+      integrity: 'OK',
+    }),
+    deployment: Object.freeze({
+      chainId: 46_630,
+      contract,
+      manifestDigest: blockHash(deployment.manifestDigest),
+      abiHash: blockHash(deployment.abiHash),
+      runtimeBytecodeHash: blockHash(deployment.runtimeBytecodeHash),
+      strategyPassAddress,
+      strategyPassAbiHash: blockHash(deployment.strategyPassAbiHash),
+      strategyPassRuntimeBytecodeHash: blockHash(deployment.strategyPassRuntimeBytecodeHash),
     }),
   });
 }
@@ -454,6 +534,22 @@ export class M3VaultApiClient {
       });
       if (!response.ok) throw new M3VaultReadFailure();
       return passSnapshot(await response.json(), owner, this.#passAddress);
+    } catch (error) {
+      if (error instanceof M3VaultReadFailure) throw error;
+      throw new M3VaultReadFailure();
+    }
+  }
+
+  async readRuntimeStatus(): Promise<M3RuntimeStatusSnapshot> {
+    try {
+      if (!this.#vaultAddress || !this.#passAddress) throw new M3VaultReadFailure();
+      const response = await this.#fetcher(`/api/v1/chain/runtime-status/${this.#vaultAddress}`, {
+        method: 'GET',
+        credentials: 'same-origin',
+        headers: { Accept: 'application/json' },
+      });
+      if (!response.ok) throw new M3VaultReadFailure();
+      return runtimeStatus(await response.json(), this.#vaultAddress, this.#passAddress);
     } catch (error) {
       if (error instanceof M3VaultReadFailure) throw error;
       throw new M3VaultReadFailure();
