@@ -10,6 +10,8 @@
 - Macbeth02 contract implementation source consumed read-only:
   `2ad816200e7edfbfad96d765b4a696bc8b838c2d`
 - Macbeth02 evidence head: `a13052993b6f408b7be835ecd6f4b13ef6df367d`
+- Macbeth05 coverage-gap source consumed read-only:
+  `49432db158bdee6f4130bcb5c8c9d9fd6cd65a1f`
 
 The branch contains no Macbeth02 commit. PR #24 was fetched to a read-only remote reference only to
 verify the exact manifest and delivery document. The corrected handoff retains the production
@@ -35,11 +37,12 @@ offsets, deployment-boundary documentation, and business-boundary tests. `TestVe
 - Typecheck: PASS
 - Lint: PASS
 - Format: PASS
-- Focused tests: `84/84` PASS
+- Focused tests: `118/118` PASS
+- Assigned wallet/runtime coverage: `99.95%` lines, `98.97%` branches, `99.07%` functions
 - Web build: PASS
-- Agent identity: PASS for both worker commits
+- Agent identity: PASS for every committed Macbeth04 provenance record
 - Browser acceptance: PASS within local mock scope
-- Full test suite: `601/602` PASS; shared migration provenance hash update required
+- Full test suite: `632/633` PASS; shared migration provenance hash update required
 
 The first full test run inside the default sandbox also produced only `EPERM` failures when tests
 attempted to create `.checks` directories. The same command was rerun with the required worktree
@@ -53,9 +56,12 @@ intentional shared provenance mismatch described above.
    candidate. Macbeth04 did not edit the out-of-scope shared evidence.
 2. Multi-Vault creation/discovery remains blocked on an exact integrated factory/discovery
    interface. The current product safely selects the one reviewed Vault address.
-3. Real Testnet browser acceptance remains blocked on a separately authorized deployment and real
+3. Macbeth03 has described a Pass balance/transfer API and manifest extension, but its final
+   immutable candidate SHA has not been supplied. No unpublished type or local result is treated as
+   integrated evidence.
+4. Real Testnet browser acceptance remains blocked on a separately authorized deployment and real
    manifest addresses.
-4. Push, Draft PR creation, and the worker's original PR/Forum ACK remain blocked because automatic
+5. Push, Draft PR creation, and the worker's original PR/Forum ACK remain blocked because automatic
    approval rejected both the exact branch push and cross-task status message. No workaround was
    attempted.
 

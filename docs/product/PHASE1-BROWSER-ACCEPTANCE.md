@@ -48,11 +48,15 @@ The exact candidate passed:
 - `npm run typecheck`
 - `npm run lint`
 - `npm run format:check`
-- ten focused wallet, Pass, Vault, runtime, dialog, allowance, and live-reader test files: `84/84`
+- ten focused wallet, Pass, Vault, runtime, dialog, allowance, and live-reader test files: `118/118`
 - `npm run build:web`
 - `npm run verify:agent-identity`
 
-`npm test` ran `602` tests: `601` passed and one shared provenance test failed. The only failure is
+The coverage follow-up measures the six assigned wallet/runtime modules at `99.95%` lines,
+`98.97%` branches, and `99.07%` functions; exact per-file results and residual defensive branches
+are recorded in `docs/product/PHASE1-COVERAGE-EVIDENCE.md`.
+
+`npm test` ran `633` tests: `632` passed and one shared provenance test failed. The only failure is
 `test/migration-provenance.test.mjs`, because
 `docs/migration/artifact-provenance.json` still records the previous `product-ui.ts` SHA-256
 `56c01e81072d10088eef3011d317ff8e34b8e7bd1d1dd19548baf812c82f3ea2`; the candidate file is

@@ -570,3 +570,505 @@ test('reviewed deployment metadata exposes initial Pass allocation without inven
     }),
   );
 });
+
+test('deployment validation rejects malformed identity and supply boundaries', () => {
+  const invalidDeployments = [
+    { ...deployment, source: 'unreviewed' },
+    { ...deployment, chainId: 1 },
+    { ...deployment, deploymentBlock: '01' },
+    { ...deployment, abiVersion: '1invalid' },
+    { ...deployment, passInitialSupplyBaseUnits: '0', passInitialRecipient: OWNER },
+    { ...deployment, passInitialSupplyBaseUnits: `${1n << 256n}`, passInitialRecipient: OWNER },
+    {
+      ...deployment,
+      passInitialSupplyBaseUnits: '1',
+      passInitialRecipient: asAddress('0x0000000000000000000000000000000000000000'),
+    },
+  ];
+  for (const invalid of invalidDeployments)
+    assert.throws(
+      () => createM3BrowserRuntime({ deployment: invalid as typeof deployment }),
+      /INVALID_M3_DEPLOYMENT_CONFIG/,
+    );
+
+  const defaultReaderRuntime = createM3BrowserRuntime({
+    provider: new ConfiguredProviderFixture(),
+    deployment,
+  });
+  assert.equal(defaultReaderRuntime.snapshot.onchain.deployment, 'CONFIGURED');
+});
+
+test('operation ids fail closed when browser randomness is absent or malformed', async () => {
+  const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'crypto');
+  const runtime = createM3BrowserRuntime({
+    provider: new ConfiguredProviderFixture(),
+    deployment,
+    vaultReader: { readSnapshot: async () => vaultSnapshot },
+  });
+  await runtime.connect();
+  try {
+    Object.defineProperty(globalThis, 'crypto', { value: {}, configurable: true });
+    await assert.rejects(
+      runtime.reviewAction({ kind: 'withdraw', usdcBaseUnits: '1' }),
+      /M3_OPERATION_ID_UNAVAILABLE/,
+    );
+    Object.defineProperty(globalThis, 'crypto', {
+      value: { randomUUID: () => '?' },
+      configurable: true,
+    });
+    await assert.rejects(
+      runtime.reviewAction({ kind: 'withdraw', usdcBaseUnits: '1' }),
+      /INVALID_OPERATION_ID/,
+    );
+  } finally {
+    if (descriptor) Object.defineProperty(globalThis, 'crypto', descriptor);
+    else delete (globalThis as { crypto?: Crypto }).crypto;
+  }
+});
+
+test('mock mode publishes state changes, supports close review and unsubscribes listeners', async () => {
+  const provider = new ConfiguredProviderFixture();
+  const runtime = createM3BrowserRuntime({
+    provider,
+    deployment,
+    vaultReader: { readSnapshot: async () => vaultSnapshot },
+    transportProvenance: 'DEV_MOCK',
+  });
+  let publications = 0;
+  const unsubscribe = runtime.subscribe(() => {
+    publications += 1;
+  });
+  await runtime.connect();
+  assert.equal(runtime.snapshot.onchain.writeMode, 'INJECTED_MOCK');
+  assert.equal(runtime.snapshot.onchain.passTransferMode, 'INJECTED_MOCK');
+  assert.ok(publications > 0);
+  const close = await runtime.reviewAction({ kind: 'close' });
+  assert.equal(close.request.kind, 'close');
+  unsubscribe();
+  const before = publications;
+  await runtime.refresh();
+  assert.equal(publications, before);
+});
+
+test('runtime treats a connected non-owner as read-only and rejects owner actions', async () => {
+  const provider = new ConfiguredProviderFixture();
+  provider.account = asAddress('0x9999999999999999999999999999999999999999');
+  const runtime = createM3BrowserRuntime({
+    provider,
+    deployment,
+    vaultReader: { readSnapshot: async () => vaultSnapshot },
+  });
+  await runtime.connect();
+  assert.equal(runtime.snapshot.onchain.owner, 'NON_OWNER');
+  assert.equal(runtime.snapshot.onchain.writeMode, 'DISABLED');
+  assert.equal(runtime.snapshot.onchain.exitPath, 'UNAVAILABLE');
+  await assert.rejects(
+    runtime.reviewAction({ kind: 'withdraw', usdcBaseUnits: '1' }),
+    /M3_VAULT_OWNER_REQUIRED/,
+  );
+});
+
+test('closed state and live simulation failures block ordinary Vault actions', async () => {
+  const closedProvider = new ConfiguredProviderFixture();
+  closedProvider.closed = true;
+  const closedRuntime = createM3BrowserRuntime({
+    provider: closedProvider,
+    deployment,
+    vaultReader: {
+      readSnapshot: async () => ({ ...vaultSnapshot, state: { ...vaultSnapshot.state, closed: true } }),
+    },
+  });
+  await closedRuntime.connect();
+  await assert.rejects(
+    closedRuntime.reviewAction({ kind: 'withdraw', usdcBaseUnits: '1' }),
+    /M3_VAULT_CLOSED/,
+  );
+
+  const provider = new ConfiguredProviderFixture();
+  const runtime = createM3BrowserRuntime({
+    provider,
+    deployment,
+    vaultReader: { readSnapshot: async () => vaultSnapshot },
+  });
+  await runtime.connect();
+  const request = provider.request.bind(provider);
+  provider.request = (input) => {
+    const call = input.params?.[0] as { data?: string } | undefined;
+    if (input.method === 'eth_call' && call?.data === encodeM3VaultCall('withdraw(uint256)', [1n]))
+      return Promise.reject(new Error('simulation detail'));
+    return request(input);
+  };
+  await assert.rejects(
+    runtime.reviewAction({ kind: 'withdraw', usdcBaseUnits: '1' }),
+    /M3_LIVE_SIMULATION_FAILED/,
+  );
+});
+
+test('action submission fails closed when registration or provider result is unavailable', async () => {
+  const unregisteredProvider = new ConfiguredProviderFixture();
+  const unregistered = createM3BrowserRuntime({
+    provider: unregisteredProvider,
+    deployment,
+    vaultReader: { readSnapshot: async () => vaultSnapshot },
+    now: () => '2026-09-20T00:00:00.000Z',
+  });
+  await unregistered.connect();
+  const unregisteredReview = await unregistered.reviewAction({ kind: 'withdraw', usdcBaseUnits: '1' });
+  const unregisteredResult = await unregistered.confirmAction(unregisteredReview);
+  assert.equal(unregisteredResult.state, 'SUBMISSION_AMBIGUOUS');
+  assert.equal(unregistered.snapshot.transaction.status, 'SUBMISSION_AMBIGUOUS');
+
+  const provider = new ConfiguredProviderFixture();
+  const request = provider.request.bind(provider);
+  provider.request = (input) =>
+    input.method === 'eth_sendTransaction' ? Promise.resolve('invalid-hash') : request(input);
+  const ambiguous = createM3BrowserRuntime({
+    provider,
+    deployment,
+    vaultReader: {
+      readSnapshot: async () => vaultSnapshot,
+      registerSubmission: async () => ({ state: 'SUBMITTED' }),
+    },
+    now: () => '2026-09-20T00:00:00.000Z',
+  });
+  await ambiguous.connect();
+  const review = await ambiguous.reviewAction({ kind: 'withdraw', usdcBaseUnits: '1' });
+  const result = await ambiguous.confirmAction(review);
+  assert.equal(result.state, 'SUBMISSION_AMBIGUOUS');
+  assert.equal(ambiguous.snapshot.transaction.status, 'SUBMISSION_AMBIGUOUS');
+});
+
+test('connected presentation omits malformed Pass balance and failed allowance reads', async () => {
+  const provider = new ConfiguredProviderFixture();
+  const request = provider.request.bind(provider);
+  provider.request = (input) => {
+    const call = input.params?.[0] as { data?: string; to?: string } | undefined;
+    if (input.method === 'eth_call' && String(call?.data).startsWith('0x70a08231'))
+      return Promise.resolve('0x01');
+    if (input.method === 'eth_call' && String(call?.data).startsWith('0xdd62ed3e'))
+      return Promise.reject(new Error('allowance detail'));
+    return request(input);
+  };
+  const runtime = createM3BrowserRuntime({
+    provider,
+    deployment,
+    vaultReader: { readSnapshot: async () => vaultSnapshot },
+  });
+  await runtime.connect();
+  assert.equal(runtime.snapshot.onchain.passBalanceBaseUnits, undefined);
+  assert.equal(runtime.snapshot.onchain.depositAuthorization, undefined);
+});
+
+test('approval review enforces connection, canonical identity, finite need and single-use authority', async () => {
+  const provider = new ConfiguredProviderFixture();
+  const runtime = createM3BrowserRuntime({
+    provider,
+    deployment,
+    vaultReader: { readSnapshot: async () => vaultSnapshot },
+  });
+  await assert.rejects(
+    runtime.reviewDepositApprovals!({ kind: 'deposit', usdcBaseUnits: '1' }),
+    /WALLET_CONNECTION_REQUIRED/,
+  );
+  await assert.rejects(
+    runtime.confirmDepositApproval!({} as never, 'af-usdc'),
+    /INVALID_DEPOSIT_APPROVAL_REVIEW/,
+  );
+  await runtime.connect();
+  provider.usdcAllowance = 1n;
+  provider.passAllowance = 1_000_000_000_000n;
+  const sufficient = await runtime.reviewDepositApprovals!({ kind: 'deposit', usdcBaseUnits: '1' });
+  await assert.rejects(
+    runtime.confirmDepositApproval!(sufficient, 'af-usdc'),
+    /DEPOSIT_APPROVAL_ALREADY_SUFFICIENT/,
+  );
+
+  provider.usdcAllowance = 0n;
+  const action = await runtime.reviewDepositApprovals!({ kind: 'deposit', usdcBaseUnits: '1' });
+  const request = provider.request.bind(provider);
+  provider.request = (input) =>
+    input.method === 'eth_sendTransaction' ? Promise.resolve('invalid-hash') : request(input);
+  const ambiguous = await runtime.confirmDepositApproval!(action, 'af-usdc');
+  assert.equal(ambiguous.state, 'SUBMISSION_AMBIGUOUS');
+
+  await assert.rejects(
+    runtime.reviewAction({ kind: 'deposit', usdcBaseUnits: '2' }),
+    /DEPOSIT_APPROVAL_REQUIRED/,
+  );
+
+  const mismatch = createM3BrowserRuntime({
+    provider: new ConfiguredProviderFixture(),
+    deployment,
+    vaultReader: { readSnapshot: async () => ({ ...vaultSnapshot, contract: AF_USDC }) },
+  });
+  await mismatch.connect();
+  await assert.rejects(
+    mismatch.reviewDepositApprovals!({ kind: 'deposit', usdcBaseUnits: '1' }),
+    /M3_VAULT_SNAPSHOT_MISMATCH/,
+  );
+});
+
+test('connect failure presentation distinguishes rejection, disconnection and canonical read failure', async () => {
+  const rejectedProvider = new ProviderFixture();
+  rejectedProvider.chainId = 46_630;
+  const rejectedRequest = rejectedProvider.request.bind(rejectedProvider);
+  rejectedProvider.request = (input) =>
+    input.method === 'eth_requestAccounts' ? Promise.reject({ code: 4001 }) : rejectedRequest(input);
+  const rejected = createM3BrowserRuntime({ provider: rejectedProvider });
+  await assert.rejects(rejected.connect(), /WALLET_REJECTED/);
+  assert.equal(rejected.snapshot.wallet.status, 'CONNECTION_REJECTED');
+  assert.equal(rejected.snapshot.network.status, 'CORRECT');
+
+  const disconnectedProvider = new ProviderFixture();
+  disconnectedProvider.chainId = 46_630;
+  disconnectedProvider.request = async (input) => (input.method === 'eth_chainId' ? '0xb626' : []);
+  const disconnected = createM3BrowserRuntime({ provider: disconnectedProvider });
+  await assert.rejects(disconnected.connect(), /WALLET_DISCONNECTED/);
+  assert.equal(disconnected.snapshot.network.status, 'UNAVAILABLE');
+
+  const wrongProvider = new ProviderFixture();
+  const wrongRequest = wrongProvider.request.bind(wrongProvider);
+  wrongProvider.request = (input) =>
+    input.method === 'eth_accounts' ? Promise.reject(new Error('observe detail')) : wrongRequest(input);
+  const wrong = createM3BrowserRuntime({ provider: wrongProvider });
+  await assert.rejects(wrong.connect(), /WALLET_WRONG_CHAIN/);
+  assert.equal(wrong.snapshot.network.status, 'WRONG');
+
+  const failedProvider = new ConfiguredProviderFixture();
+  const failedRequest = failedProvider.request.bind(failedProvider);
+  failedProvider.request = (input) =>
+    input.method === 'eth_getBlockByNumber' ? Promise.reject(new Error('rpc detail')) : failedRequest(input);
+  const failed = createM3BrowserRuntime({
+    provider: failedProvider,
+    deployment,
+    vaultReader: {
+      readSnapshot: async () => {
+        throw new Error('index detail');
+      },
+    },
+  });
+  await assert.rejects(failed.connect(), /M3_LIVE_READ_FAILED/);
+  assert.equal(failed.snapshot.network.status, 'CORRECT');
+  assert.equal(failed.snapshot.wallet.status, 'DISCONNECTED');
+});
+
+test('refresh handles absent connection, account change and the no-deployment presentation', async () => {
+  const absent = createM3BrowserRuntime({});
+  await absent.refresh();
+  assert.equal(absent.snapshot.wallet.status, 'DISCONNECTED');
+
+  const provider = new ProviderFixture();
+  provider.chainId = 46_630;
+  const noDeployment = createM3BrowserRuntime({ provider });
+  await noDeployment.connect();
+  await noDeployment.refresh();
+  assert.equal(noDeployment.snapshot.onchain.deployment, 'UNAVAILABLE');
+
+  const configuredProvider = new ConfiguredProviderFixture();
+  const configured = createM3BrowserRuntime({
+    provider: configuredProvider,
+    deployment,
+    vaultReader: { readSnapshot: async () => vaultSnapshot },
+  });
+  await configured.connect();
+  configuredProvider.account = asAddress('0x9999999999999999999999999999999999999999');
+  await configured.refresh();
+  assert.equal(configured.snapshot.wallet.status, 'ACCOUNT_CHANGED');
+  assert.equal(configured.snapshot.onchain.writeMode, 'DISABLED');
+});
+
+test('evidence read failures use live exit and degrade safely if live exit also fails', async () => {
+  for (const liveFails of [false, true]) {
+    const provider = new ConfiguredProviderFixture();
+    const runtime = createM3BrowserRuntime({
+      provider,
+      deployment,
+      vaultReader: {
+        readSnapshot: async () => vaultSnapshot,
+        registerSubmission: async () => ({ state: 'SUBMITTED' }),
+        readOperationEvidence: async () => {
+          throw new Error('evidence detail');
+        },
+      },
+    });
+    await runtime.connect();
+    const review = await runtime.reviewAction({ kind: 'withdraw', usdcBaseUnits: '1' });
+    await runtime.confirmAction(review);
+    if (liveFails) {
+      const request = provider.request.bind(provider);
+      provider.request = (input) =>
+        input.method === 'eth_getBlockByNumber' ? Promise.reject(new Error('live detail')) : request(input);
+    }
+    await runtime.refresh();
+    assert.equal(runtime.snapshot.onchain.health, 'DEGRADED');
+    assert.equal(runtime.snapshot.transaction.status, 'SUBMITTED');
+  }
+});
+
+test('Pass transfer rejects stale sessions, simulation failure and ambiguous submission', async () => {
+  const unconfigured = createM3BrowserRuntime({ provider: new ConfiguredProviderFixture() });
+  await assert.rejects(
+    unconfigured.reviewPassTransfer!({ recipient: VAULT, passBaseUnits: '1' }),
+    /M3_DEPLOYMENT_NOT_CONFIGURED/,
+  );
+
+  const staleProvider = new ConfiguredProviderFixture();
+  const stale = createM3BrowserRuntime({
+    provider: staleProvider,
+    deployment,
+    vaultReader: { readSnapshot: async () => vaultSnapshot },
+  });
+  await stale.connect();
+  staleProvider.account = asAddress('0x9999999999999999999999999999999999999999');
+  await assert.rejects(
+    stale.reviewPassTransfer!({ recipient: VAULT, passBaseUnits: '1' }),
+    /WALLET_SESSION_CHANGED/,
+  );
+
+  const simulationProvider = new ConfiguredProviderFixture();
+  const simulation = createM3BrowserRuntime({
+    provider: simulationProvider,
+    deployment,
+    vaultReader: { readSnapshot: async () => vaultSnapshot },
+  });
+  await simulation.connect();
+  const simulationRequest = simulationProvider.request.bind(simulationProvider);
+  simulationProvider.request = (input) => {
+    const call = input.params?.[0] as { data?: string } | undefined;
+    if (input.method === 'eth_call' && String(call?.data).startsWith('0xa9059cbb'))
+      return Promise.reject(new Error('simulation detail'));
+    return simulationRequest(input);
+  };
+  await assert.rejects(
+    simulation.reviewPassTransfer!({ recipient: VAULT, passBaseUnits: '1' }),
+    /M3_PASS_TRANSFER_SIMULATION_FAILED/,
+  );
+
+  const changedProvider = new ConfiguredProviderFixture();
+  const changed = createM3BrowserRuntime({
+    provider: changedProvider,
+    deployment,
+    vaultReader: { readSnapshot: async () => vaultSnapshot },
+  });
+  await changed.connect();
+  const changedRequest = changedProvider.request.bind(changedProvider);
+  changedProvider.request = async (input) => {
+    const result = await changedRequest(input);
+    const call = input.params?.[0] as { data?: string } | undefined;
+    if (input.method === 'eth_call' && String(call?.data).startsWith('0xa9059cbb'))
+      changedProvider.account = asAddress('0x9999999999999999999999999999999999999999');
+    return result;
+  };
+  await assert.rejects(
+    changed.reviewPassTransfer!({ recipient: VAULT, passBaseUnits: '1' }),
+    /WALLET_SESSION_CHANGED/,
+  );
+
+  const ambiguousProvider = new ConfiguredProviderFixture();
+  const ambiguous = createM3BrowserRuntime({
+    provider: ambiguousProvider,
+    deployment,
+    vaultReader: { readSnapshot: async () => vaultSnapshot },
+    now: () => '2026-09-20T00:00:00.000Z',
+  });
+  await ambiguous.connect();
+  const transfer = await ambiguous.reviewPassTransfer!({ recipient: VAULT, passBaseUnits: '1' });
+  const ambiguousRequest = ambiguousProvider.request.bind(ambiguousProvider);
+  ambiguousProvider.request = (input) =>
+    input.method === 'eth_sendTransaction' ? Promise.resolve('invalid-hash') : ambiguousRequest(input);
+  const result = await ambiguous.confirmPassTransfer!(transfer);
+  assert.equal(result.state, 'SUBMISSION_AMBIGUOUS');
+  assert.equal(ambiguous.snapshot.transaction.status, 'SUBMISSION_AMBIGUOUS');
+});
+
+test('live-exit state rejects a request whose kind mutates into deposit before preparation', async () => {
+  const provider = new ConfiguredProviderFixture();
+  const runtime = createM3BrowserRuntime({
+    provider,
+    deployment,
+    vaultReader: {
+      readSnapshot: async () => {
+        throw new Error('index detail');
+      },
+    },
+  });
+  await runtime.connect();
+  let kindReads = 0;
+  const request = new Proxy(
+    { kind: 'deposit' as const, usdcBaseUnits: '1' },
+    {
+      get(target, property, receiver) {
+        if (property === 'kind') return kindReads++ === 0 ? 'withdraw' : 'deposit';
+        return Reflect.get(target, property, receiver);
+      },
+    },
+  );
+  await assert.rejects(runtime.reviewAction(request), /M3_CANONICAL_PROJECTION_REQUIRED/);
+});
+
+test('account change records the simultaneously wrong network and confirm requires a configured flow', async () => {
+  const provider = new ConfiguredProviderFixture();
+  const runtime = createM3BrowserRuntime({
+    provider,
+    deployment,
+    vaultReader: { readSnapshot: async () => vaultSnapshot },
+  });
+  await runtime.connect();
+  provider.account = asAddress('0x9999999999999999999999999999999999999999');
+  provider.chainId = 1;
+  await runtime.refresh();
+  assert.equal(runtime.snapshot.wallet.status, 'ACCOUNT_CHANGED');
+  assert.equal(runtime.snapshot.network.status, 'WRONG');
+
+  await assert.rejects(createM3BrowserRuntime({}).confirmAction({} as never), /M3_DEPLOYMENT_NOT_CONFIGURED/);
+});
+
+test('approval and Pass ambiguity retain a returned transaction hash', async () => {
+  const approvalProvider = new ConfiguredProviderFixture();
+  const approvalRuntime = createM3BrowserRuntime({
+    provider: approvalProvider,
+    deployment,
+    vaultReader: { readSnapshot: async () => vaultSnapshot },
+    now: () => '2026-09-20T00:00:00.000Z',
+  });
+  await approvalRuntime.connect();
+  const approval = await approvalRuntime.reviewDepositApprovals!({ kind: 'deposit', usdcBaseUnits: '1' });
+  const approvalRequest = approvalProvider.request.bind(approvalProvider);
+  approvalProvider.request = async (input) => {
+    const result = await approvalRequest(input);
+    if (input.method === 'eth_sendTransaction')
+      approvalProvider.account = asAddress('0x9999999999999999999999999999999999999999');
+    return result;
+  };
+  const approvalResult = await approvalRuntime.confirmDepositApproval!(approval, 'af-usdc');
+  assert.equal(approvalResult.state, 'SUBMISSION_AMBIGUOUS');
+  assert.deepEqual(approvalRuntime.snapshot.transaction, {
+    status: 'SUBMISSION_AMBIGUOUS',
+    txHash: TX_HASH,
+    errorCode: 'POST_SUBMISSION_CHECK_FAILED',
+  });
+
+  const passProvider = new ConfiguredProviderFixture();
+  const passRuntime = createM3BrowserRuntime({
+    provider: passProvider,
+    deployment,
+    vaultReader: { readSnapshot: async () => vaultSnapshot },
+    now: () => '2026-09-20T00:00:00.000Z',
+  });
+  await passRuntime.connect();
+  const transfer = await passRuntime.reviewPassTransfer!({ recipient: VAULT, passBaseUnits: '1' });
+  const passRequest = passProvider.request.bind(passProvider);
+  passProvider.request = async (input) => {
+    const result = await passRequest(input);
+    if (input.method === 'eth_sendTransaction')
+      passProvider.account = asAddress('0x9999999999999999999999999999999999999999');
+    return result;
+  };
+  const passResult = await passRuntime.confirmPassTransfer!(transfer);
+  assert.equal(passResult.state, 'SUBMISSION_AMBIGUOUS');
+  assert.deepEqual(passRuntime.snapshot.transaction, {
+    status: 'SUBMISSION_AMBIGUOUS',
+    txHash: TX_HASH,
+    errorCode: 'POST_SUBMISSION_CHECK_FAILED',
+  });
+});

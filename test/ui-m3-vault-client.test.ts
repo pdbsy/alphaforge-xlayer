@@ -227,3 +227,122 @@ test('web Vault client rejects evidence with a conflicting operation id or extra
     );
   }
 });
+
+test('web Vault client rejects malformed identity, bytes and block fields', async () => {
+  const bodies = [
+    [],
+    { ...payload(), owner: 'invalid' },
+    { ...payload(), state: { ...payload().state, strategyId: '0x01' } },
+    { ...payload(), blockHash: '0x01' },
+  ];
+  for (const body of bodies) {
+    const client = new M3VaultApiClient(async () => new Response(JSON.stringify(body), { status: 200 }));
+    await assert.rejects(client.readSnapshot(OWNER), /M3_VAULT_READ_FAILED/);
+  }
+});
+
+test('web Vault submission validates operation, chain, transport and response identity', async () => {
+  const valid = {
+    operationId: 'web-submission-3',
+    chainId: 46_630,
+    owner: OWNER,
+    target: CONTRACT,
+    calldata: encodeM3VaultCall('close()', []),
+    txHash: asTransactionHash(`0x${'dd'.repeat(32)}`),
+  } as const;
+  for (const input of [
+    { ...valid, operationId: 'invalid operation' },
+    { ...valid, chainId: 1 },
+  ]) {
+    const client = new M3VaultApiClient(async () => new Response('{}', { status: 202 }));
+    await assert.rejects(client.registerSubmission(input as typeof valid), /M3_VAULT_SUBMISSION_FAILED/);
+  }
+
+  const malformedResponse = new M3VaultApiClient(
+    async () =>
+      new Response(
+        JSON.stringify({
+          ...valid,
+          owner: 'invalid',
+          state: 'SUBMITTED',
+          submittedAt: '2026-09-20T00:00:00.000Z',
+        }),
+        { status: 202 },
+      ),
+  );
+  await assert.rejects(malformedResponse.registerSubmission(valid), /M3_VAULT_SUBMISSION_FAILED/);
+
+  const unavailable = new M3VaultApiClient(async () => new Response('{}', { status: 409 }));
+  await assert.rejects(unavailable.registerSubmission(valid), /M3_VAULT_SUBMISSION_FAILED/);
+
+  const transport = new M3VaultApiClient(async () => {
+    throw new Error('network detail');
+  });
+  await assert.rejects(transport.registerSubmission(valid), /M3_VAULT_SUBMISSION_FAILED/);
+});
+
+test('web Vault evidence accepts both explicit degraded reasons and rejects unavailable transport', async () => {
+  const baseEvidence = {
+    operationId: 'web-submission-4',
+    lifecycle: 'REORGED',
+    receipt: 'PENDING',
+    receiptCanonical: false,
+    confirmations: 0,
+    reconciliation: 'PENDING',
+    projection: 'STALE',
+    chainStatus: 'REORGED',
+    l1Status: 'UNKNOWN',
+    finalityStatus: 'UNKNOWN',
+    indexerStatus: 'DEGRADED',
+    productReady: false,
+  } as const;
+  for (const degradedReason of ['CHAIN_REORG_DEPTH_EXCEEDED', 'CHAIN_REORG_NO_COMMON_ANCESTOR'] as const) {
+    const client = new M3VaultApiClient(
+      async () => new Response(JSON.stringify({ ...baseEvidence, degradedReason }), { status: 200 }),
+    );
+    assert.equal(
+      (await client.readOperationEvidence('web-submission-4', OWNER)).degradedReason,
+      degradedReason,
+    );
+  }
+
+  const unavailable = new M3VaultApiClient(async () => new Response('{}', { status: 503 }));
+  await assert.rejects(unavailable.readOperationEvidence('web-submission-4', OWNER), /M3_VAULT_READ_FAILED/);
+  const transport = new M3VaultApiClient(async () => {
+    throw new Error('network detail');
+  });
+  await assert.rejects(transport.readOperationEvidence('web-submission-4', OWNER), /M3_VAULT_READ_FAILED/);
+  await assert.rejects(transport.readSnapshot(OWNER), /M3_VAULT_READ_FAILED/);
+});
+
+test('web Vault submission sanitizes unexpected response property failures', async () => {
+  const input = {
+    operationId: 'web-submission-5',
+    chainId: 46_630,
+    owner: OWNER,
+    target: CONTRACT,
+    calldata: encodeM3VaultCall('close()', []),
+    txHash: asTransactionHash(`0x${'ee'.repeat(32)}`),
+  } as const;
+  const response = new Proxy(
+    {
+      ...input,
+      state: 'SUBMITTED',
+      submittedAt: '2026-09-20T00:00:00.000Z',
+    },
+    {
+      get(target, property, receiver) {
+        if (property === 'state') throw new Error('private response detail');
+        return Reflect.get(target, property, receiver);
+      },
+    },
+  );
+  const client = new M3VaultApiClient((async () => ({
+    status: 202,
+    json: async () => response,
+  })) as unknown as typeof fetch);
+  await assert.rejects(
+    client.registerSubmission(input),
+    (error: unknown) => error instanceof M3VaultSubmissionFailure && !error.message.includes('private'),
+  );
+});
