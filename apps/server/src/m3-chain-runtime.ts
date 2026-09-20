@@ -79,9 +79,10 @@ export class M3ChainRuntime {
   readonly synchronizer: ChainSynchronizer;
   readonly passSynchronizer: ChainSynchronizer;
   readonly manifest: DeploymentManifest;
-  readonly chainEvidence: ChainEvidenceRoutesOptions;
   #closed = false;
   #lastSyncAttempt: 'NOT_RUN' | 'SUCCEEDED' | 'FAILED' = 'NOT_RUN';
+  #ownsStrategyPassProjection = true;
+  #strategyPassOwnershipConfigured = false;
   readonly #now: () => string;
   readonly #maxBlocksPerSync: number;
   readonly #rpc: ReadonlyRpc;
@@ -137,13 +138,20 @@ export class M3ChainRuntime {
       this.store.close();
       throw error;
     }
-    this.chainEvidence = Object.freeze({
+  }
+
+  get chainEvidence(): ChainEvidenceRoutesOptions {
+    return Object.freeze({
       store: this.store,
-      chainId: options.manifest.chainId,
-      contract: options.manifest.contractAddress,
+      chainId: this.manifest.chainId,
+      contract: this.manifest.contractAddress,
       projectionKey: M3_VAULT_PROJECTION_KEY,
-      passContract: options.manifest.strategyPassAddress,
-      passProjectionKey: M3_PASS_PROJECTION_KEY,
+      ...(this.#ownsStrategyPassProjection
+        ? {
+            passContract: this.manifest.strategyPassAddress,
+            passProjectionKey: M3_PASS_PROJECTION_KEY,
+          }
+        : {}),
       syncStatus: () => ({
         lastAttempt: this.#lastSyncAttempt,
         errorCode: this.#lastSyncAttempt === 'FAILED' ? ('M3_INDEXER_SYNC_FAILED' as const) : null,
@@ -163,12 +171,23 @@ export class M3ChainRuntime {
     });
   }
 
+  configureStrategyPassProjectionOwnership(ownsProjection: boolean): void {
+    if (
+      (this.#strategyPassOwnershipConfigured && this.#ownsStrategyPassProjection !== ownsProjection) ||
+      this.#lastSyncAttempt !== 'NOT_RUN'
+    )
+      throw new Error('M3_STRATEGY_PASS_OWNERSHIP_LOCKED');
+    this.#ownsStrategyPassProjection = ownsProjection;
+    this.#strategyPassOwnershipConfigured = true;
+  }
+
   recordSubmission(input: ObservedWalletSubmission): ChainOperation {
     if (
       input.chainId !== this.manifest.chainId ||
       !(
         (sameAddress(input.target, this.manifest.contractAddress) && decodeM3VaultCalldata(input.calldata)) ||
-        (sameAddress(input.target, this.manifest.strategyPassAddress) &&
+        (this.#ownsStrategyPassProjection &&
+          sameAddress(input.target, this.manifest.strategyPassAddress) &&
           decodeM3StrategyPassCalldata(input.calldata))
       )
     )
@@ -252,11 +271,16 @@ export class M3ChainRuntime {
       this.manifest.contractAddress,
       this.manifest.deploymentBlock,
     );
-    const passSync = await syncContract(
-      this.passSynchronizer,
-      this.manifest.strategyPassAddress,
-      this.manifest.strategyPassDeploymentBlock,
-    );
+    const passSync = this.#ownsStrategyPassProjection
+      ? await syncContract(
+          this.passSynchronizer,
+          this.manifest.strategyPassAddress,
+          this.manifest.strategyPassDeploymentBlock,
+        )
+      : Object.freeze({
+          result: Object.freeze({ scannedBlocks: 0, insertedEvents: 0, reorgedBlocks: 0 }),
+          caughtUp: true,
+        });
     const result: ChainSyncResult = Object.freeze({
       scannedBlocks: Math.max(vaultSync.result.scannedBlocks, passSync.result.scannedBlocks),
       insertedEvents: vaultSync.result.insertedEvents + passSync.result.insertedEvents,
@@ -270,12 +294,14 @@ export class M3ChainRuntime {
       100,
       this.#vaultOperationCursor,
     );
-    const passOperations = this.store.trackableOperationIds(
-      this.manifest.chainId,
-      this.manifest.strategyPassAddress,
-      100,
-      this.#passOperationCursor,
-    );
+    const passOperations = this.#ownsStrategyPassProjection
+      ? this.store.trackableOperationIds(
+          this.manifest.chainId,
+          this.manifest.strategyPassAddress,
+          100,
+          this.#passOperationCursor,
+        )
+      : [];
     const operations: Array<
       Readonly<{ operationId: string; synchronizer: ChainSynchronizer; target: Address }>
     > = [];
@@ -318,6 +344,34 @@ export class M3ChainRuntime {
     if (this.#closed) return;
     this.#closed = true;
     this.store.close();
+  }
+}
+
+export function configureM3StrategyPassProjectionOwners(runtimes: readonly M3ChainRuntime[]): void {
+  const groups = new Map<string, M3ChainRuntime[]>();
+  for (const runtime of runtimes) {
+    const key = `${runtime.manifest.chainId}:${runtime.manifest.strategyPassAddress.toLowerCase()}`;
+    const group = groups.get(key);
+    if (group) group.push(runtime);
+    else groups.set(key, [runtime]);
+  }
+  for (const group of groups.values()) {
+    const reference = group[0]!.manifest;
+    if (
+      group.some(
+        (runtime) =>
+          runtime.manifest.strategyPassDeploymentBlock !== reference.strategyPassDeploymentBlock ||
+          runtime.manifest.strategyPassAbiHash.toLowerCase() !==
+            reference.strategyPassAbiHash.toLowerCase() ||
+          runtime.manifest.strategyPassRuntimeBytecodeHash.toLowerCase() !==
+            reference.strategyPassRuntimeBytecodeHash.toLowerCase(),
+      )
+    )
+      throw new Error('M3_SHARED_STRATEGY_PASS_IDENTITY_CONFLICT');
+    const owner = [...group].sort((left, right) =>
+      left.manifest.contractAddress.toLowerCase().localeCompare(right.manifest.contractAddress.toLowerCase()),
+    )[0]!;
+    for (const runtime of group) runtime.configureStrategyPassProjectionOwnership(runtime === owner);
   }
 }
 

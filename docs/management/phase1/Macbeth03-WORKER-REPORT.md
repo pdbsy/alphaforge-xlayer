@@ -11,9 +11,11 @@ Runtime boundary: Local / Mock / NOT_DEPLOYED
 - Deployment identity now binds the exact Vault and StrategyPass addresses, deployment blocks, ABI hashes, deployed runtime bytecode hashes, and manifest digest. Runtime checks chain ID and both live code hashes before indexing.
 - SQLite projection recovery includes online no-overwrite backup, fixed health output, supported migrations, bounded catch-up, canonical reorg recovery, and fail-closed reads.
 - Multiple Vault runtimes remain isolated by chain, contract, wallet, strategy, checkpoint, projection, operation target, and SQLite file. The real `startM3Server` path composes and synchronizes the deployment set while the historical `app.ts` provenance hash is preserved through the additive `m3-app.ts` layer.
+- Multiple Owner/Vault runtimes may share the same StrategyPass when its deployment block, ABI hash, and runtime bytecode hash agree. The Vault with the lexically first address is the sole Pass synchronization, projection-storage, operation, and route owner; every Vault still verifies the same live Pass and strategy identity while keeping its Owner, PassLocker, accounting, and exit history separate.
 - StrategyPass transfer is pinned to Macbeth02 source `2ad816200e7edfbfad96d765b4a696bc8b838c2d`, evidence head `a13052993b6f408b7be835ecd6f4b13ef6df367d`, and ABI Keccak-256 `0xdd989644feeb7798baca69f7391ba75b6f9d09f47fb05bd90184f6072912923f`.
 - The Pass adapter accepts only manifest-bound `transfer(address,uint256)` with a nonzero recipient and a positive uint256 raw amount. It preserves full 18-decimal precision, including one raw unit.
 - A separate StrategyPass synchronizer indexes canonical `Transfer` events, reconciles sender/recipient/amount, verifies decimals and strategy identity, reads actual canonical balances, and serves `GET /api/v1/chain/passes/:contract/:owner`.
+- Shared-Pass regression coverage proves deterministic ownership independent of deployment-list order, two-holder balance routes, per-Vault close-operation routing, conflicting shared identity rejection, and fail-closed reads after owner-runtime synchronization degradation.
 - Operational documents cover the recovery matrix, database restore, Macbeth04 API handoff, and a smoke procedure that stops before signing or broadcast.
 - A three-sample local recovery drill measures online backup, reopen/health, and 128-block catch-up separately. The recorded fixture result is explicitly not a Testnet or production SLA.
 - Keccak regression coverage includes the 135/136/137/272-byte sponge-rate boundaries independently supplied by Macbeth01.
@@ -24,7 +26,7 @@ Runtime boundary: Local / Mock / NOT_DEPLOYED
 - `npm run typecheck`: PASS.
 - `npm run lint`: PASS.
 - `npm run format:check`: PASS.
-- `npm test`: PASS, 617/617.
+- `npm test`: PASS, 619/619.
 - `npm run secrets:check`: PASS.
 - `npm run privacy:check`: PASS.
 - `npm run env:check`: exit 0; local/mock admission, workspace warning for the intentional task diff, contracts `NOT_RUN`.

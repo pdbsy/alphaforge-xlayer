@@ -18,6 +18,8 @@ The browser and backend must consume one allowlisted deployment record per Vault
 
 Product strategy labels never replace this identity. The selected strategy must resolve to one reviewed Vault manifest, and live reads must verify that Vault's strategy ID and StrategyPass identity.
 
+Multiple Owner/Vault records for the same strategy may bind the same StrategyPass. Every Vault address and chain database remains unique. Repeated `(chainId, StrategyPass)` entries must agree on the Pass deployment block, ABI hash, and deployed runtime bytecode hash or startup fails closed with `M3_SHARED_STRATEGY_PASS_IDENTITY_CONFLICT`. The runtime whose Vault address sorts first owns that shared Pass's synchronization, projection storage, operation registration, and Pass routes; the other Vault runtimes still verify Pass bytecode and their own `Vault.pass()` / `Vault.strategyId()` binding at the canonical block.
+
 ## Backend routes
 
 | Method and path                                                  | Purpose                                                                                                                |
@@ -29,6 +31,8 @@ Product strategy labels never replace this identity. The selected strategy must 
 | `GET /api/v1/chain/vaults/:owner`                                | Compatibility route for a one-Vault server only; multi-Vault servers reject it as `INVALID_REQUEST`.                   |
 | `POST /api/v1/chain/operations`                                  | Register a concrete wallet tx hash for independent backend tracking. Target and chain must match a configured runtime. |
 | `GET /api/v1/chain/operations/:operationId/evidence?owner=0x...` | Server-computed receipt/event/view/projection evidence.                                                                |
+
+For a shared Pass, the Pass-qualified status, balance, submission, and evidence routes resolve to its single deterministic owner runtime. Vault-qualified routes and Owner exit operations continue to resolve to each selected Vault's independent runtime and SQLite file.
 
 The backend registration body is exactly:
 
@@ -73,6 +77,8 @@ Selection key is `(chainId, vaultContract)`. After selection, read the immutable
 - `Vault.strategyId() == StrategyPass.strategyId()`;
 - provider account/chain unchanged after reads and simulation;
 - exact contract-qualified backend route.
+
+Two selected Vaults may therefore expose the same Pass and strategy ID while retaining different immutable Owners, PassLockers, accounting state, and owner-only operation histories. A shared Pass balance is keyed by holder address and is not treated as Vault ownership.
 
 An AlphaForge account, demo cookie, strategy card, URL label, or client body never grants authority.
 

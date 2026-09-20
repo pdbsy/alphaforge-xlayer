@@ -1,5 +1,5 @@
 import { buildApp } from './app.ts';
-import type { M3ChainRuntime } from './m3-chain-runtime.ts';
+import { configureM3StrategyPassProjectionOwners, type M3ChainRuntime } from './m3-chain-runtime.ts';
 
 type BuildAppOptions = Parameters<typeof buildApp>[0];
 
@@ -13,6 +13,7 @@ export async function buildM3App(
   if (options.chainRuntimes && options.chainRuntimes.length === 0)
     throw new Error('INVALID_CHAIN_RUNTIME_SET');
   const runtimes = options.chainRuntimes ?? (options.chainRuntime ? [options.chainRuntime] : []);
+  configureM3StrategyPassProjectionOwners(runtimes);
   const appOptions = {
     dbPath: options.dbPath,
     env: options.env,
