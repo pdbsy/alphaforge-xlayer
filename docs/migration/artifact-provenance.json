@@ -1396,7 +1396,7 @@
       "target_path": "docs/management/agents/COMMON-PROTOCOL.md",
       "method": "protocol import with current repository/authority preamble; reviewed PR11 closeout adaptation (see PR11-CLOSEOUT.md); PR11 review remediation: atomic product snapshot, identity lifecycle or bounded logical-message Forum as applicable; user-authorized Macbeth06 CI/gate role registration (2026-09-20), historical source identity unchanged",
       "original_sha256": "9ac5209eb9777fdcec2697ae4180cda66526ac2f4d51f9e4e6255f7c3effd2b9",
-      "migrated_sha256": "91a7ebb21552d9a0832fa2c7dac019b835ed4c8f485abf07daf27704ea3bba04",
+      "migrated_sha256": "bfc8234f081372014cd56f7db1ac50b25acdcec0cf1c0e1fb59d30e6f207234c",
       "subsequent_adaptations": [
         {
           "task": "AF-M3-IDENTITY",
@@ -1409,6 +1409,12 @@
           "base_commit": "7ecba357d5a19f387e86f578822af04a6261fed2",
           "previous_sha256": "3e63031465f7b009b4b95a909ced7caf7c3f1a6f5d6b4a765bca3328615e41f0",
           "reason": "Register user-authorized Macbeth04 implementation branch and fixed baseline; original source preserved."
+        },
+        {
+          "task": "M3-01-PHASE1-CLOSEOUT",
+          "base_commit": "18f5352070910a867b9729b031aa2e3951785e01",
+          "previous_sha256": "91a7ebb21552d9a0832fa2c7dac019b835ed4c8f485abf07daf27704ea3bba04",
+          "reason": "User-authorized Phase One task registration and current-baseline notice; original source and all historical adaptation records remain unchanged."
         }
       ]
     },
@@ -1456,7 +1462,7 @@
       "target_path": "docs/management/agents/bootstrap/Macbeth02.md",
       "method": "protocol import with current repository/authority preamble",
       "original_sha256": "28773702ff4544e828035e76c166ff35b61eeddbfbf3690a77e6fb1dd67508c9",
-      "migrated_sha256": "13906a9157c2627b4c47e029e4a22b0272b7641c1165f70549e6a634c2936be5",
+      "migrated_sha256": "019063dfd20543691a1ab52d9175f80f9d3cce78ef38f3cc219833cfad2eae37",
       "subsequent_adaptations": [
         {
           "task": "AF-M3-IDENTITY",
@@ -1469,6 +1475,12 @@
           "base_commit": "3915c48dc25c4763f8b47b4b93834ae20113a9dd",
           "previous_sha256": "68059612195a9ca14ba0a64222bf61ea8c3b6cbf860c57a704ee22fd6452aca7",
           "reason": "Align current worker bootstrap and assignment metadata with explicitly required Macbeth branch prefixes; preserve historical aliases and evidence."
+        },
+        {
+          "task": "M3-01-PHASE1-CLOSEOUT",
+          "base_commit": "18f5352070910a867b9729b031aa2e3951785e01",
+          "previous_sha256": "13906a9157c2627b4c47e029e4a22b0272b7641c1165f70549e6a634c2936be5",
+          "reason": "User-authorized Phase One task registration and current-baseline notice; original source and all historical adaptation records remain unchanged."
         }
       ]
     },
@@ -1480,7 +1492,7 @@
       "target_path": "docs/management/agents/bootstrap/Macbeth03.md",
       "method": "protocol import with current repository/authority preamble",
       "original_sha256": "22747392888ddd5bbc8145ebadc8006aa0c8041f226625b4fe5be6524f656f4d",
-      "migrated_sha256": "ac1a07f086c902eb3f7cd9b5e9ebc79a7d9dca38716e48aee7a2571bd527b1cc",
+      "migrated_sha256": "79a1d1440de31ec8da6833d27a6316be9a8ea2a66271532ce914474b10f28ee7",
       "subsequent_adaptations": [
         {
           "task": "AF-M3-IDENTITY",
@@ -1493,6 +1505,12 @@
           "base_commit": "3915c48dc25c4763f8b47b4b93834ae20113a9dd",
           "previous_sha256": "eea3ce9ffc4ec5baf3b920334f1513a1690142cb5ab92153a23c0656f1d2891f",
           "reason": "Align current worker bootstrap and assignment metadata with explicitly required Macbeth branch prefixes; preserve historical aliases and evidence."
+        },
+        {
+          "task": "M3-01-PHASE1-CLOSEOUT",
+          "base_commit": "18f5352070910a867b9729b031aa2e3951785e01",
+          "previous_sha256": "ac1a07f086c902eb3f7cd9b5e9ebc79a7d9dca38716e48aee7a2571bd527b1cc",
+          "reason": "User-authorized Phase One task registration and current-baseline notice; original source and all historical adaptation records remain unchanged."
         }
       ]
     },
@@ -1504,7 +1522,7 @@
       "target_path": "docs/management/agents/bootstrap/Macbeth04.md",
       "method": "protocol import with current repository/authority preamble",
       "original_sha256": "46ff73062c73b043a204f07bdee932f5450272c4fbc29b20bbd7141670d4ddd5",
-      "migrated_sha256": "ed56ce44f8584c0ca75c4cd6a72fd5b1c5f5e78876a08e34c007f54b72b85667",
+      "migrated_sha256": "6f9b1be6ee13cfdc541f246661d95f5ce084e4a640300fd2f126bee8db804725",
       "subsequent_adaptations": [
         {
           "task": "AF-M3-IDENTITY",
@@ -1517,6 +1535,12 @@
           "base_commit": "7ecba357d5a19f387e86f578822af04a6261fed2",
           "previous_sha256": "3d203fd4d3c3ff4dcaf208f3a9481b12c7238478295bce833800da8bdd78ec74",
           "reason": "Register user-authorized Macbeth04 implementation branch and fixed baseline; original source preserved."
+        },
+        {
+          "task": "M3-01-PHASE1-CLOSEOUT",
+          "base_commit": "18f5352070910a867b9729b031aa2e3951785e01",
+          "previous_sha256": "ed56ce44f8584c0ca75c4cd6a72fd5b1c5f5e78876a08e34c007f54b72b85667",
+          "reason": "User-authorized Phase One task registration and current-baseline notice; original source and all historical adaptation records remain unchanged."
         }
       ]
     },
@@ -1528,7 +1552,7 @@
       "target_path": "docs/management/agents/bootstrap/Macbeth05.md",
       "method": "protocol import with current repository/authority preamble",
       "original_sha256": "5d5bc59b892ed0009ca8e161135c233ff7f4aafe912511c1c2a4a391b579cd10",
-      "migrated_sha256": "ada52fbacbe729aca039dceeb389a81dc795946097cb635e17f298f46b5bc835",
+      "migrated_sha256": "ea03c934ec596353791a233279aba3bc1c01372d99ce61a7161d01091c9f641b",
       "subsequent_adaptations": [
         {
           "task": "AF-M3-IDENTITY",
@@ -1541,6 +1565,12 @@
           "base_commit": "7ecba357d5a19f387e86f578822af04a6261fed2",
           "previous_sha256": "72a501d45868fff4db669219da453c5bed797fd26aac88ddb3ad9f235edd3cb1",
           "reason": "Register user-assigned Macbeth05 acceptance task and preserve unresolved candidate gates; original sources remain unchanged."
+        },
+        {
+          "task": "M3-01-PHASE1-CLOSEOUT",
+          "base_commit": "18f5352070910a867b9729b031aa2e3951785e01",
+          "previous_sha256": "ada52fbacbe729aca039dceeb389a81dc795946097cb635e17f298f46b5bc835",
+          "reason": "User-authorized Phase One task registration and current-baseline notice; original source and all historical adaptation records remain unchanged."
         }
       ]
     },
@@ -1552,7 +1582,7 @@
       "target_path": "docs/management/agents/registry.json",
       "method": "registry migrated; historical confirmations reset for canonical repository; user-authorized Macbeth06 CI/gate role registration (2026-09-20), historical source identity unchanged",
       "original_sha256": "ecb05bfdcccf1abb036c4e4fdd16155e959ae706395020db4a1dac49e43f50b6",
-      "migrated_sha256": "855fe12cb2026a2fa4a4aa7eb0ddde82c20b321a36e84debdfa726315d093c12",
+      "migrated_sha256": "c9e0e5b3b958d9ffebd61740c93015f626129979c6cbe34dd55eceeaf13f879a",
       "subsequent_adaptations": [
         {
           "task": "AF-M3-IDENTITY",
@@ -1601,6 +1631,12 @@
           "base_commit": "3915c48dc25c4763f8b47b4b93834ae20113a9dd",
           "previous_sha256": "b1babae3a2497eaf7303d2ecc8745a4b844c5a2b6f80c4cfa64e38c5633dc7a9",
           "reason": "Align current worker bootstrap and assignment metadata with explicitly required Macbeth branch prefixes; preserve historical aliases and evidence."
+        },
+        {
+          "task": "M3-01-PHASE1-CLOSEOUT",
+          "base_commit": "18f5352070910a867b9729b031aa2e3951785e01",
+          "previous_sha256": "855fe12cb2026a2fa4a4aa7eb0ddde82c20b321a36e84debdfa726315d093c12",
+          "reason": "User-authorized Phase One task registration and current-baseline notice; original source and all historical adaptation records remain unchanged."
         }
       ]
     },

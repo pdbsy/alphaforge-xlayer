@@ -132,12 +132,12 @@
       "base_sha": "18f5352070910a867b9729b031aa2e3951785e01",
       "owner": "04",
       "collaborators": "02/03/05",
-      "dependencies": "PH1-02/04；付费机制由PH1-16决定",
+      "dependencies": "PH1-02/04；PH1-16已明确仅首发分配与转账",
       "deliverables": "操作闭环、精确接口和浏览器用例",
       "acceptance": "1 PASS容量不等于价格；转账18位；创建显式Owner；已支持路径可复現",
       "evidence": "新02/03/04交接",
-      "blocker_type": "BUSINESS_PARTIAL",
-      "requires_user_decision": true
+      "blocker_type": "IMPLEMENTATION",
+      "requires_user_decision": false
     },
     {
       "task_id": "PH1-10",
@@ -232,17 +232,17 @@
     {
       "task_id": "PH1-16",
       "source": "用户第3C节；先前规范未冻结交易机制",
-      "goal": "首发付费、Buy/Sell、真实二级交易第一阶段范围",
-      "status": "WAITING_BUSINESS_DECISION",
+      "goal": "首发分配与转账纳入；付费销售和真实Buy/Sell由用户明确移出第一阶段",
+      "status": "USER_DECIDED_OUT_OF_PHASE_FOR_PAID_TRADING",
       "base_sha": "18f5352070910a867b9729b031aa2e3951785e01",
       "owner": "用户",
       "collaborators": "01/02/04",
-      "dependencies": "已问最小范围问题",
-      "deliverables": "明确纳入/移出第一阶段及必要价格/结算/费率/流动性决定",
-      "acceptance": "仅用户决定；不得从容量推断价格或擅建AMM/撮合",
-      "evidence": "本轮异步问题；M3规范mock边界",
-      "blocker_type": "BUSINESS_DECISION",
-      "requires_user_decision": true
+      "dependencies": "无；2026-09-20 用户已决定",
+      "deliverables": "落实分配/转账及诚实Mock标识",
+      "acceptance": "不实现付费机制；不重复询问已确认范围",
+      "evidence": "docs/management/phase1/DECISIONS.md；用户本轮异步答复",
+      "blocker_type": "NONE",
+      "requires_user_decision": false
     },
     {
       "task_id": "PH1-17",
