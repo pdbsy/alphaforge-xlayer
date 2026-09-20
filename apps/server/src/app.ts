@@ -52,19 +52,8 @@ export async function buildApp(options: {
   origin: string;
   webRoot?: string;
   chainRuntime?: M3ChainRuntime;
-  chainRuntimes?: readonly M3ChainRuntime[];
 }) {
   readConfig(options.env);
-  if (options.chainRuntime && options.chainRuntimes) throw new Error('INVALID_CHAIN_RUNTIME_SET');
-  if (options.chainRuntimes && options.chainRuntimes.length === 0)
-    throw new Error('INVALID_CHAIN_RUNTIME_SET');
-  const chainRuntimes = options.chainRuntimes ?? (options.chainRuntime ? [options.chainRuntime] : []);
-  const chainRuntimeIdentities = new Set<string>();
-  for (const runtime of chainRuntimes) {
-    const identity = `${runtime.manifest.chainId}:${runtime.manifest.contractAddress.toLowerCase()}`;
-    if (chainRuntimeIdentities.has(identity)) throw new Error('DUPLICATE_CHAIN_RUNTIME');
-    chainRuntimeIdentities.add(identity);
-  }
   const origin = new URL(options.origin);
   if (origin.protocol !== 'http:' || !['127.0.0.1', 'localhost'].includes(origin.hostname))
     throw new Error('LOOPBACK_ORIGIN_REQUIRED');
@@ -86,7 +75,7 @@ export async function buildApp(options: {
   };
   app.addHook('onClose', async () => {
     store.close();
-    for (const runtime of chainRuntimes) runtime.close();
+    options.chainRuntime?.close();
   });
   await app.register(cookie);
   app.addHook('onRequest', async (request, reply) => {
@@ -301,11 +290,7 @@ export async function buildApp(options: {
       },
     );
   registerProductRoutes(app, store, session);
-  if (chainRuntimes.length)
-    registerChainEvidenceRoutes(
-      app,
-      chainRuntimes.map((runtime) => runtime.chainEvidence),
-    );
+  if (options.chainRuntime) registerChainEvidenceRoutes(app, options.chainRuntime.chainEvidence);
   if (options.webRoot)
     await app.register(staticFiles, {
       root: options.webRoot,

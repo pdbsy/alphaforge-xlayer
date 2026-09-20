@@ -20,6 +20,9 @@ const BLOCK_HASH = asBlockHash(`0x${'44'.repeat(32)}`);
 const PARENT_HASH = asBlockHash(`0x${'55'.repeat(32)}`);
 const RUNTIME_HASH = asBlockHash(`0x${'77'.repeat(32)}`);
 const ABI_HASH = asBlockHash('0x264b4498cf396008e4619664c59bf8d8eac0a04f04b80e760df3cfbc00846977');
+const PASS = asAddress('0x6666666666666666666666666666666666666666');
+const PASS_ABI_HASH = asBlockHash('0xdd989644feeb7798baca69f7391ba75b6f9d09f47fb05bd90184f6072912923f');
+const PASS_RUNTIME_HASH = asBlockHash(`0x${'88'.repeat(32)}`);
 const ENDPOINT = 'https://rpc.testnet.chain.robinhood.com';
 
 const manifestBody = {
@@ -33,6 +36,10 @@ const manifestBody = {
   abiVersion: 'm3-owner-v1',
   abiHash: ABI_HASH,
   runtimeBytecodeHash: RUNTIME_HASH,
+  strategyPassAddress: PASS,
+  strategyPassDeploymentBlock: '90',
+  strategyPassAbiHash: PASS_ABI_HASH,
+  strategyPassRuntimeBytecodeHash: PASS_RUNTIME_HASH,
 };
 const DIGEST = asBlockHash(`0x${createHash('sha256').update(JSON.stringify(manifestBody)).digest('hex')}`);
 const manifestInput = { ...manifestBody, manifestDigest: DIGEST };
@@ -48,6 +55,10 @@ test('deployment manifest is accepted only when exact trusted identity matches',
   assert.equal(manifest.deploymentBlock, 100n);
   assert.equal(manifest.abiHash, ABI_HASH);
   assert.equal(manifest.runtimeBytecodeHash, RUNTIME_HASH);
+  assert.equal(manifest.strategyPassAddress, PASS);
+  assert.equal(manifest.strategyPassDeploymentBlock, 90n);
+  assert.equal(manifest.strategyPassAbiHash, PASS_ABI_HASH);
+  assert.equal(manifest.strategyPassRuntimeBytecodeHash, PASS_RUNTIME_HASH);
   assert.ok(Object.isFrozen(manifest));
   for (const changed of [
     { ...manifestInput, chainId: 1 },
@@ -58,6 +69,10 @@ test('deployment manifest is accepted only when exact trusted identity matches',
     { ...manifestInput, deploymentBlock: '101' },
     { ...manifestInput, abiHash: BLOCK_HASH },
     { ...manifestInput, runtimeBytecodeHash: BLOCK_HASH },
+    { ...manifestInput, strategyPassAddress: CONTRACT },
+    { ...manifestInput, strategyPassDeploymentBlock: '-1' },
+    { ...manifestInput, strategyPassAbiHash: BLOCK_HASH },
+    { ...manifestInput, strategyPassRuntimeBytecodeHash: BLOCK_HASH },
     { ...manifestInput, unexpected: true },
   ]) {
     const expectation =
@@ -172,6 +187,67 @@ test('read-only RPC verifies chain identity and normalizes receipt, block, logs 
   assert.equal(await rpc.call({ to: CONTRACT, data: asHexData('0x1234') }, 120n), '0x1234');
 });
 
+test('RPC preserves null lookup results and exact reverted contract-creation receipts', async () => {
+  const nullRpc = new JsonRpcClient([ENDPOINT], {
+    transport: transportFor({ eth_getBlockByNumber: null, eth_getTransactionReceipt: null }),
+  });
+  assert.equal(await nullRpc.block(120n), null);
+  assert.equal(await nullRpc.receipt(TX_HASH), null);
+
+  const reverted = new JsonRpcClient([ENDPOINT], {
+    transport: transportFor({
+      eth_getTransactionReceipt: {
+        transactionHash: TX_HASH,
+        blockNumber: '0x78',
+        blockHash: BLOCK_HASH,
+        transactionIndex: '0x0',
+        from: OWNER,
+        to: null,
+        status: '0x0',
+        logs: [],
+      },
+    }),
+  });
+  assert.deepEqual(await reverted.receipt(TX_HASH), {
+    transactionHash: TX_HASH,
+    blockNumber: 120n,
+    blockHash: BLOCK_HASH,
+    transactionIndex: 0,
+    from: OWNER,
+    to: null,
+    status: 'REVERTED',
+    logs: [],
+  });
+});
+
+test('RPC rejects malformed receipt authority, finality and index fields', async () => {
+  const base = {
+    transactionHash: TX_HASH,
+    blockNumber: '0x78',
+    blockHash: BLOCK_HASH,
+    transactionIndex: '0x0',
+    from: OWNER,
+    to: CONTRACT,
+    status: '0x1',
+    logs: [],
+  };
+  for (const malformed of [
+    { ...base, status: '0x2' },
+    { ...base, to: 1 },
+    { ...base, logs: {} },
+    { ...base, transactionIndex: `0x${Number.MAX_SAFE_INTEGER + 1}` },
+    { ...base, from: '0x00' },
+  ]) {
+    const rpc = new JsonRpcClient([ENDPOINT], {
+      transport: transportFor({ eth_getTransactionReceipt: malformed }),
+    });
+    await assert.rejects(
+      () => rpc.receipt(TX_HASH),
+      (error: unknown) => error instanceof RpcFailure && error.code === 'RPC_INVALID_RESPONSE',
+    );
+  }
+});
+
 test('read-only RPC uses only allowlisted methods and canonical quantity encoding', async () => {
   const requests: { method: string; params: readonly unknown[] }[] = [];
   const transport: RpcTransport = async (_endpoint, request) => {
@@ -229,6 +305,78 @@ test('RPC rotates endpoints for bounded retryable failures', async () => {
   });
   assert.equal(await rpc.chainId(), 46_630);
   assert.deepEqual(endpoints, ['https://rpc-one.example/', 'https://rpc-two.example/']);
+});
+
+test('RPC rejects unsafe endpoints, policies, request ranges and malformed method results', async () => {
+  for (const endpoints of [
+    [],
+    Array.from({ length: 9 }, () => ENDPOINT),
+    ['http://rpc.example'],
+    ['not a url'],
+  ])
+    assert.throws(() => new JsonRpcClient(endpoints), RpcFailure);
+  for (const options of [
+    { timeoutMs: 99 },
+    { timeoutMs: 30_001 },
+    { maxAttempts: 0 },
+    { maxAttempts: 9 },
+    { maxResponseBytes: 63 },
+    { maxResponseBytes: 10_000_001 },
+  ])
+    assert.throws(() => new JsonRpcClient([ENDPOINT], options), /RPC_INVALID_POLICY/);
+
+  const resultRpc = (method: string, result: unknown) =>
+    new JsonRpcClient([ENDPOINT], { transport: transportFor({ [method]: result }) });
+  await assert.rejects(() => resultRpc('eth_chainId', `0x${'f'.repeat(32)}`).chainId(), {
+    code: 'RPC_INVALID_RESPONSE',
+  });
+  await assert.rejects(
+    () => resultRpc('eth_getLogs', {}).logs({ address: CONTRACT, fromBlock: 0n, toBlock: 1n }),
+    { code: 'RPC_INVALID_RESPONSE' },
+  );
+  await assert.rejects(
+    () => resultRpc('eth_getLogs', []).logs({ address: CONTRACT, fromBlock: 2n, toBlock: 1n }),
+    { code: 'RPC_INVALID_REQUEST' },
+  );
+  await assert.rejects(() => resultRpc('eth_getCode', 'invalid').code(CONTRACT, 'latest'), {
+    code: 'RPC_INVALID_RESPONSE',
+  });
+  await assert.rejects(() => resultRpc('eth_call', '0x').call({ to: CONTRACT, data: asHexData('0x') }, -1n), {
+    code: 'RPC_INVALID_REQUEST',
+  });
+  for (const reference of [
+    null,
+    { blockHash: BLOCK_HASH, requireCanonical: false },
+    { blockHash: BLOCK_HASH, requireCanonical: true, extra: true },
+    { blockHash: 'invalid', requireCanonical: true },
+  ])
+    await assert.rejects(
+      () => resultRpc('eth_call', '0x').call({ to: CONTRACT, data: asHexData('0x') }, reference as never),
+      { code: 'RPC_INVALID_REQUEST' },
+    );
+  await assert.rejects(
+    () => resultRpc('eth_call', 'invalid').call({ to: CONTRACT, data: asHexData('0x') }, 'latest'),
+    { code: 'RPC_INVALID_RESPONSE' },
+  );
+});
+
+test('RPC transport retry and envelope failures remain bounded and public-safe', async () => {
+  for (const response of [
+    { status: 400, body: '' },
+    { status: 500, body: '' },
+    { status: 200, body: JSON.stringify({ jsonrpc: '2.0', id: 1 }) },
+    { status: 200, body: JSON.stringify({ jsonrpc: '2.0', id: 1, result: 1, error: {} }) },
+  ]) {
+    const rpc = new JsonRpcClient([ENDPOINT], { maxAttempts: 1, transport: async () => response });
+    await assert.rejects(() => rpc.chainId(), RpcFailure);
+  }
+  const rpc = new JsonRpcClient([ENDPOINT], {
+    maxAttempts: 2,
+    transport: async () => {
+      throw new RpcFailure('RPC_INVALID_RESPONSE');
+    },
+  });
+  await assert.rejects(() => rpc.chainId(), { code: 'RPC_INVALID_RESPONSE' });
 });
 
 test('RPC fails closed on JSON-RPC errors, malformed data and oversized responses', async () => {
@@ -300,4 +448,23 @@ test('default fetch transport stops reading once the response byte budget is exc
     (error: unknown) => error instanceof RpcFailure && error.code === 'RPC_RESPONSE_TOO_LARGE',
   );
   assert.equal(cancelled, true);
+});
+
+test('fetch transport enforces status, declared size, empty body and UTF-8 boundaries', async () => {
+  const request = { jsonrpc: '2.0' as const, id: 1, method: 'eth_chainId', params: [] };
+  const signal = AbortSignal.timeout(1_000);
+  const nonSuccess = createFetchTransport(async () => new Response('private', { status: 403 }));
+  assert.deepEqual(await nonSuccess(ENDPOINT, request, signal, 128), { status: 403, body: '' });
+  const declared = createFetchTransport(
+    async () => new Response('x', { status: 200, headers: { 'content-length': '129' } }),
+  );
+  await assert.rejects(() => declared(ENDPOINT, request, signal, 128), { code: 'RPC_RESPONSE_TOO_LARGE' });
+  const empty = createFetchTransport(async () => new Response(null, { status: 204 }));
+  assert.deepEqual(await empty(ENDPOINT, request, signal, 128), { status: 204, body: '' });
+  const invalidUtf8 = createFetchTransport(
+    async () => new Response(new Uint8Array([0xc3, 0x28]), { status: 200 }),
+  );
+  await assert.rejects(() => invalidUtf8(ENDPOINT, request, signal, 128), {
+    code: 'RPC_INVALID_RESPONSE',
+  });
 });
