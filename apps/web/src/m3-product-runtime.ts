@@ -49,10 +49,22 @@ export interface M3DepositApprovalReview {
   readonly requirements: readonly [M3DepositApprovalRequirement, M3DepositApprovalRequirement];
 }
 
+export interface M3VaultSelection {
+  readonly chainId: 46_630;
+  readonly vaultAddress: Address;
+}
+
+export interface M3VaultSelectionState {
+  readonly selected: M3VaultSelection;
+  readonly options: readonly M3VaultSelection[];
+}
+
 export interface M3ProductRuntime {
   readonly snapshot: M3ProductChainPresentation;
+  readonly vaultSelection?: M3VaultSelectionState;
   connect(): Promise<void>;
   refresh(): Promise<void>;
+  selectVault?(selection: M3VaultSelection): Promise<void>;
   reviewAction(request: M3ProductActionRequest): Promise<M3ProductActionReview>;
   confirmAction(review: M3ProductActionReview): Promise<WalletSubmission>;
   reviewPassTransfer?(request: M3PassTransferRequest): Promise<M3PassTransferReview>;
@@ -65,6 +77,11 @@ export interface M3ProductRuntime {
     kind: M3DepositApprovalKind,
   ): Promise<WalletSubmission>;
   subscribe(listener: () => void): () => void;
+}
+
+export interface M3SelectableProductRuntime extends M3ProductRuntime {
+  readonly vaultSelection: M3VaultSelectionState;
+  selectVault(selection: M3VaultSelection): Promise<void>;
 }
 
 export interface RequiredDepositAllowances {
