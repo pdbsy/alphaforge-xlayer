@@ -1908,13 +1908,19 @@
       "target_path": "apps/web/src/product-ui.ts",
       "method": "selective source integration; shared-file resolution recorded in CONFLICTS.md; M3-04-PRODUCT-UI adds the manifest-bound Vault runtime, finite approval review and canonical evidence readback",
       "original_sha256": "c094739b2c8308526a0d1470f72c32ac74de6c2157a3dcc0b0972584da755d38",
-      "migrated_sha256": "335dd498b1b70a4b52ec1029e59b2efda7f9f750f47f4d7b1459e80c4a75c0db",
+      "migrated_sha256": "dd368d5033b1d30dc7c4707c18523976e3fc37f6a746b4101c7a674ec94d7f99",
       "subsequent_adaptations": [
         {
           "task": "M3-01-PHASE1-CLOSEOUT",
           "base_commit": "18f5352070910a867b9729b031aa2e3951785e01",
           "previous_sha256": "56c01e81072d10088eef3011d317ff8e34b8e7bd1d1dd19548baf812c82f3ea2",
           "reason": "Integrate the exact Macbeth04 Phase One product implementation; preserve original migration source identity."
+        },
+        {
+          "task": "M3-01-PHASE1-CLOSEOUT",
+          "base_commit": "18f5352070910a867b9729b031aa2e3951785e01",
+          "previous_sha256": "335dd498b1b70a4b52ec1029e59b2efda7f9f750f47f4d7b1459e80c4a75c0db",
+          "reason": "Integrate reviewed Macbeth04 allowlisted Vault selection and register its real regression suite; preserve original migration evidence."
         }
       ]
     },

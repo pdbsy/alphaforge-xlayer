@@ -15,19 +15,19 @@
       "agent": "Macbeth03",
       "task": "M3-03-PHASE1-RECOVERY",
       "branch": "macbeth03/m3-phase1-recovery-final",
-      "head": "28ff3d4b5c6e70ff0c6ea1b11ad0fea4283887fd"
+      "head": "a4d73bb197ff1f715fcf6ea9f1fe1daae2c75030"
     },
     {
       "agent": "Macbeth04",
       "task": "M3-04-PHASE1-PRODUCT",
       "branch": "macbeth04/m3-phase1-product",
-      "head": "332549c07239c41c1f1c3735cc1e5e8f247d3d6b"
+      "head": "ffe7d08b0aa4fc2a71e01418033ced942526bfdf"
     },
     {
       "agent": "Macbeth05",
       "task": "M3-05-PHASE1-ACCEPTANCE",
       "branch": "macbeth05/m3-phase1-acceptance",
-      "head": "a35f19bf0ed61efbd95490f340ceb7cb32159218"
+      "head": "c27c869371d1a98f3a5f23832d5c8cfa5099375a"
     }
   ]
 }

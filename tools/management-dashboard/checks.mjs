@@ -8,6 +8,7 @@ import { validateCheckReport } from './schema.mjs';
 import { collectGitState as collectRepositoryGitState } from './sources.mjs';
 
 const unitTests = [
+  'test/m3-browser-runtime-set.test.ts',
   'test/ui-evm-keccak.test.ts',
   'test/ci-gates.test.mjs',
   'test/security-scanners.test.mjs',
