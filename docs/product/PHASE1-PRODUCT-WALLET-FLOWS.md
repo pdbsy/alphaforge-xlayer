@@ -8,8 +8,10 @@
 - Fixed base: `18f5352070910a867b9729b031aa2e3951785e01`
 - Contract handoff consumed read-only: `2ad816200e7edfbfad96d765b4a696bc8b838c2d`
 - Contract handoff evidence head: `a13052993b6f408b7be835ecd6f4b13ef6df367d`
-- Chain/API handoff consumed read-only: `28ff3d4b5c6e70ff0c6ea1b11ad0fea4283887fd`
-- Chain/API handoff tree: `7f4abc27757e099c1b5b26a66509395015bdb7b7`
+- Chain handoff source consumed read-only:
+  `28ff3d4b5c6e70ff0c6ea1b11ad0fea4283887fd`
+- Chain handoff tree:
+  `7f4abc27757e099c1b5b26a66509395015bdb7b7`
 - Chain/API review: Draft PR #26
 - Runtime boundary: `LOCAL / MOCK / NOT_DEPLOYED`
 

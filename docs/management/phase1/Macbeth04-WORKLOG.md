@@ -94,6 +94,11 @@ intentional shared provenance mismatch described above.
    manifest addresses.
 5. Draft PR #27 and the worker Forum ACK exist. Merge, deployment, signing, and broadcast remain
    outside this worker's authorization.
+6. The remote full-history Gitleaks job reports the Git tree identity in the final product evidence
+   commit as a `generic-api-key` because the original evidence label contained `API` on the same
+   line. The current tree separates the Git evidence label and value. The flagged ancestor remains
+   immutable under the worker's no-history-rewrite rule, so Macbeth01 and the security gate owner
+   must select the authorized repository-level remediation before integration.
 
 ## Retrospective
 
