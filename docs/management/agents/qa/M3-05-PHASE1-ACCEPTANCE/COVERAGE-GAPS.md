@@ -179,6 +179,26 @@ union duplicated the branch denominator and is retained as a counterexample rath
 coverage. The production browser build with hidden source maps produced the same JavaScript and CSS
 bytes as the ordinary build, but byte equality alone does not solve the semantic branch mapping.
 
+An independent tracked-file recount at `3a78e34...` finds 112 non-test `.js`, `.mjs`, `.ts` and
+`.tsx` paths, including the sole declaration `apps/web/src/vite-env.d.ts`; 111 remain after excluding
+that declaration. Five executable tracked paths sit outside the old source globs:
+
+- `apps/web/vite.config.ts`;
+- `docs/management/dashboard/agent-forum-app.js`;
+- `docs/management/dashboard/app.js`;
+- `docs/task-board.js`;
+- `eslint.config.mjs`.
+
+`docs/management/dashboard/agent-forum-app.js` and `tools/agent-forum-app.js` are byte-identical at
+SHA-256 `2788e38b53c585297ffa53aecee58115f72ac58d796dcb5bb60976ef35b5d68b`; the build tool copies the
+latter to the former and its check mode enforces equality. They may share one semantic denominator
+only while that exact generation relationship is proved. The other four paths have distinct bytes
+and executable behavior and must be included unless the acceptance scope explicitly excludes their
+runtime class. The tracked prototype inline script is additional executable source outside the
+extension inventory. Therefore neither the old 98-file list nor a naive 112-file count is the final
+semantic denominator; the admitted counter must inventory all tracked executable source, exclude
+declarations by proof and deduplicate only exact generated copies.
+
 For a process intentionally terminated by `SIGKILL`, missing or incomplete coverage output may be
 treated only as zero hits on the complete canonical denominator. If the conservative union still
 exceeds 90%, it can establish a mathematical lower bound; it cannot claim that the killed lifecycle
