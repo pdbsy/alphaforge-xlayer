@@ -215,6 +215,68 @@ test('degraded indexer evidence remains readable and cannot claim product readin
   assert.equal(response.json().productReady, false);
 });
 
+test('operation evidence fails closed after the runtime synchronization attempt fails', async (t) => {
+  const directory = await folder();
+  const runtime = new M3ChainRuntime({
+    dbPath: resolve(directory, 'chain.sqlite'),
+    rpc: new InertRpc(),
+    manifest,
+  });
+  runtime.store.saveOperation(submitted('operation-failed-sync'));
+  await assert.rejects(() => runtime.syncToHead(), /M3_DEPLOYMENT_CODE_MISMATCH/);
+  const { app } = await buildApp({
+    dbPath: resolve(directory, 'ledger.sqlite'),
+    env,
+    origin,
+    chainRuntime: runtime,
+  });
+  t.after(async () => app.close());
+
+  const response = await app.inject({
+    url: `/api/v1/chain/operations/operation-failed-sync/evidence?owner=${OWNER}`,
+    headers,
+  });
+  assert.equal(response.statusCode, 503, response.body);
+  assert.equal(response.json().error, 'CHAIN_PROJECTION_UNAVAILABLE');
+});
+
+test('operation evidence returns not found when the matched operation disappears before snapshot read', async (t) => {
+  const directory = await folder();
+  const runtime = new M3ChainRuntime({
+    dbPath: resolve(directory, 'chain.sqlite'),
+    rpc: new InertRpc(),
+    manifest,
+  });
+  runtime.store.saveOperation(submitted('operation-deleted-before-evidence'));
+  const originalOperation = runtime.store.operation.bind(runtime.store);
+  let firstRead = true;
+  Object.defineProperty(runtime.store, 'operation', {
+    configurable: true,
+    value(operationId: string) {
+      const operation = originalOperation(operationId);
+      if (firstRead && operation) {
+        firstRead = false;
+        runtime.store.db.prepare('DELETE FROM chain_transactions WHERE operation_id = ?').run(operationId);
+      }
+      return operation;
+    },
+  });
+  const { app } = await buildApp({
+    dbPath: resolve(directory, 'ledger.sqlite'),
+    env,
+    origin,
+    chainRuntime: runtime,
+  });
+  t.after(async () => app.close());
+
+  const response = await app.inject({
+    url: `/api/v1/chain/operations/operation-deleted-before-evidence/evidence?owner=${OWNER}`,
+    headers,
+  });
+  assert.equal(response.statusCode, 404, response.body);
+  assert.equal(response.json().error, 'CHAIN_OPERATION_NOT_FOUND');
+});
+
 test('same-process runtime exposes a recoverable owner projection without a demo identity', async (t) => {
   const directory = await folder();
   const runtime = new M3ChainRuntime({

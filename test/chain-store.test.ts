@@ -71,6 +71,21 @@ test('transaction identity conflicts use a fixed store error', async () => {
   store.close();
 });
 
+test('an existing operation id cannot be rebound to another owner', async () => {
+  const store = new ChainStore(await databasePath());
+  const awaiting = createOperation({
+    operationId: 'fixed-operation-identity',
+    chainId: CHAIN_ID,
+    owner: OWNER_A,
+    target: CONTRACT,
+    state: 'AWAITING_SIGNATURE',
+  });
+  store.saveOperation(awaiting);
+  assert.throws(() => store.saveOperation({ ...awaiting, owner: OWNER_B }), /OPERATION_IDENTITY_CONFLICT/);
+  assert.equal(store.operation('fixed-operation-identity')?.owner, OWNER_A);
+  store.close();
+});
+
 test('duplicate chain event observation is idempotent across restart', async () => {
   const path = await databasePath();
   let store = new ChainStore(path);
@@ -112,6 +127,45 @@ test('canonical events are read in block, transaction and log order', async () =
       [TX_B, 0],
     ],
   );
+  store.close();
+});
+
+test('one canonical block cannot contain duplicate transaction-log identities', async () => {
+  const store = new ChainStore(await databasePath());
+  const block = { number: 100n, hash: BLOCK_100, parentHash: BLOCK_99, timestamp: 1_000n };
+  assert.throws(
+    () =>
+      store.recordCanonicalBlock(CHAIN_ID, CONTRACT, block, [event(), event({ data: asHexData('0xffff') })]),
+    /CHAIN_EVENT_CONFLICT/,
+  );
+  assert.equal(store.checkpoint(CHAIN_ID, CONTRACT), null);
+  assert.equal(store.canonicalEvents(CHAIN_ID, CONTRACT).length, 0);
+  store.close();
+});
+
+test('canonical block commit fails closed if its checkpoint disappears before target update', async () => {
+  const store = new ChainStore(await databasePath());
+  store.db.exec(`
+    CREATE TRIGGER delete_new_checkpoint
+    AFTER INSERT ON chain_checkpoints
+    BEGIN
+      DELETE FROM chain_checkpoints
+      WHERE chain_id = NEW.chain_id AND contract_address = NEW.contract_address;
+    END;
+  `);
+  assert.throws(
+    () =>
+      store.recordCanonicalBlock(
+        CHAIN_ID,
+        CONTRACT,
+        { number: 100n, hash: BLOCK_100, parentHash: BLOCK_99, timestamp: 1_000n },
+        [],
+        101n,
+      ),
+    /CHAIN_CHECKPOINT_NOT_FOUND/,
+  );
+  assert.equal(store.checkpoint(CHAIN_ID, CONTRACT), null);
+  assert.equal(store.canonicalBlock(CHAIN_ID, CONTRACT, 100n), null);
   store.close();
 });
 
@@ -392,6 +446,203 @@ test('product readiness is computed under one canonical database snapshot', asyn
     productReady: true,
   });
   store.close();
+});
+
+test('operation evidence maps every terminal and in-flight lifecycle without inventing readiness', async () => {
+  const store = new ChainStore(await databasePath());
+  const unsigned = (operationId: string) =>
+    createOperation({
+      operationId,
+      chainId: CHAIN_ID,
+      owner: OWNER_A,
+      target: CONTRACT,
+      state: 'AWAITING_SIGNATURE',
+    });
+  const submit = (operationId: string, byte: string) =>
+    transitionOperation(unsigned(operationId), {
+      state: 'SUBMITTED',
+      txHash: asTransactionHash(`0x${byte.repeat(64)}`),
+      submittedAt: '2026-09-20T00:00:00.000Z',
+    });
+  const mine = (operationId: string, byte: string) =>
+    transitionOperation(submit(operationId, byte), {
+      state: 'MINED',
+      blockNumber: 100n,
+      blockHash: BLOCK_100,
+      receiptStatus: 'SUCCESS',
+    });
+  const cases = [
+    {
+      operation: unsigned('evidence-awaiting'),
+      chainStatus: 'PENDING',
+      reconciliation: 'PENDING',
+      receipt: 'PENDING',
+      receiptCanonical: false,
+    },
+    {
+      operation: mine('evidence-mined', '1'),
+      chainStatus: 'INCLUDED',
+      reconciliation: 'PENDING',
+      receipt: 'SUCCESS',
+      receiptCanonical: true,
+    },
+    {
+      operation: transitionOperation(unsigned('evidence-rejected'), {
+        state: 'REJECTED',
+        errorCode: 'WALLET_REJECTED',
+      }),
+      chainStatus: 'FAILED',
+      reconciliation: 'PENDING',
+      receipt: 'PENDING',
+      receiptCanonical: false,
+    },
+    {
+      operation: transitionOperation(submit('evidence-reverted', '2'), {
+        state: 'REVERTED',
+        blockNumber: 100n,
+        blockHash: BLOCK_100,
+        receiptStatus: 'REVERTED',
+        errorCode: 'TRANSACTION_REVERTED',
+      }),
+      chainStatus: 'FAILED',
+      reconciliation: 'PENDING',
+      receipt: 'REVERTED',
+      receiptCanonical: true,
+    },
+    {
+      operation: transitionOperation(submit('evidence-replaced', '3'), {
+        state: 'REPLACED',
+        replacementTxHash: asTransactionHash(`0x${'4'.repeat(64)}`),
+        errorCode: 'TRANSACTION_REPLACED',
+      }),
+      chainStatus: 'FAILED',
+      reconciliation: 'PENDING',
+      receipt: 'PENDING',
+      receiptCanonical: false,
+    },
+    {
+      operation: transitionOperation(mine('evidence-reorged', '5'), {
+        state: 'REORGED',
+        errorCode: 'CHAIN_REORG',
+      }),
+      chainStatus: 'REORGED',
+      reconciliation: 'PENDING',
+      receipt: 'SUCCESS',
+      receiptCanonical: false,
+    },
+    {
+      operation: transitionOperation(mine('evidence-reconciliation-failed', '6'), {
+        state: 'RECONCILIATION_FAILED',
+        errorCode: 'EVENT_EVIDENCE_MISMATCH',
+      }),
+      chainStatus: 'FAILED',
+      reconciliation: 'FAILED',
+      receipt: 'SUCCESS',
+      receiptCanonical: true,
+    },
+  ] as const;
+
+  for (const value of cases) {
+    store.saveOperation(value.operation);
+    const evidence = store.operationEvidence(value.operation.operationId, 'vault-a');
+    assert.equal(evidence?.lifecycle, value.operation.state);
+    assert.equal(evidence?.chainStatus, value.chainStatus);
+    assert.equal(evidence?.reconciliation, value.reconciliation);
+    assert.equal(evidence?.receipt, value.receipt);
+    assert.equal(evidence?.receiptCanonical, value.receiptCanonical);
+    assert.equal(evidence?.indexerStatus, 'SYNCING');
+    assert.equal(evidence?.projection, value.operation.state === 'REORGED' ? 'STALE' : 'PENDING');
+    assert.equal(evidence?.productReady, false);
+  }
+  store.close();
+});
+
+test('an incomplete checkpoint remains syncing and exposes no degraded reason', async () => {
+  const store = new ChainStore(await databasePath());
+  store.recordCanonicalBlock(
+    CHAIN_ID,
+    CONTRACT,
+    { number: 100n, hash: BLOCK_100, parentHash: BLOCK_99, timestamp: 1_000n },
+    [],
+    101n,
+  );
+  const operation = transitionOperation(
+    createOperation({
+      operationId: 'evidence-incomplete-sync',
+      chainId: CHAIN_ID,
+      owner: OWNER_A,
+      target: CONTRACT,
+      state: 'AWAITING_SIGNATURE',
+    }),
+    { state: 'SUBMITTED', txHash: TX_A, submittedAt: '2026-09-20T00:00:00.000Z' },
+  );
+  store.saveOperation(operation);
+  const evidence = store.operationEvidence(operation.operationId, 'vault-a');
+  assert.equal(evidence?.indexerStatus, 'SYNCING');
+  assert.equal(evidence?.degradedReason, null);
+  assert.equal(evidence?.productReady, false);
+  store.close();
+});
+
+test('projection commits fail closed when canonical evidence changes inside the commit boundary', async () => {
+  const block = { number: 100n, hash: BLOCK_100, parentHash: BLOCK_99, timestamp: 1_000n };
+  const projection = {
+    chainId: CHAIN_ID,
+    owner: OWNER_A,
+    contract: CONTRACT,
+    projectionKey: 'vault-a',
+    blockNumber: 100n,
+    blockHash: BLOCK_100,
+    state: { principal: '1000000' },
+  } as const;
+
+  const checkpointRace = new ChainStore(await databasePath());
+  checkpointRace.recordCanonicalBlock(CHAIN_ID, CONTRACT, block, []);
+  const originalCheckpointCanonical = checkpointRace.canonicalBlock.bind(checkpointRace);
+  let checkpointReads = 0;
+  Object.defineProperty(checkpointRace, 'canonicalBlock', {
+    configurable: true,
+    value: (...args: Parameters<ChainStore['canonicalBlock']>) =>
+      ++checkpointReads === 2 ? null : originalCheckpointCanonical(...args),
+  });
+  assert.throws(
+    () => checkpointRace.commitProjections(CHAIN_ID, CONTRACT, block, []),
+    /PROJECTION_BLOCK_NOT_CANONICAL/,
+  );
+  assert.equal(checkpointRace.projectionCheckpoint(CHAIN_ID, CONTRACT), null);
+  checkpointRace.close();
+
+  const projectionRace = new ChainStore(await databasePath());
+  projectionRace.recordCanonicalBlock(CHAIN_ID, CONTRACT, block, []);
+  const originalProjectionCanonical = projectionRace.canonicalBlock.bind(projectionRace);
+  let projectionReads = 0;
+  Object.defineProperty(projectionRace, 'canonicalBlock', {
+    configurable: true,
+    value: (...args: Parameters<ChainStore['canonicalBlock']>) =>
+      ++projectionReads === 4 ? null : originalProjectionCanonical(...args),
+  });
+  assert.throws(
+    () => projectionRace.commitProjections(CHAIN_ID, CONTRACT, block, [projection]),
+    /PROJECTION_BLOCK_NOT_CANONICAL/,
+  );
+  assert.equal(projectionRace.projectionCheckpoint(CHAIN_ID, CONTRACT), null);
+  projectionRace.close();
+
+  const updateRace = new ChainStore(await databasePath());
+  updateRace.recordCanonicalBlock(CHAIN_ID, CONTRACT, block, []);
+  updateRace.db.exec(`
+    CREATE TRIGGER ignore_projection_checkpoint_update
+    BEFORE UPDATE OF projected_block_number ON chain_checkpoints
+    BEGIN
+      SELECT RAISE(IGNORE);
+    END;
+  `);
+  assert.throws(
+    () => updateRace.commitProjections(CHAIN_ID, CONTRACT, block, []),
+    /CHAIN_CHECKPOINT_CHANGED/,
+  );
+  assert.equal(updateRace.projectionCheckpoint(CHAIN_ID, CONTRACT), null);
+  updateRace.close();
 });
 
 test('server readiness rejects a projection hash from a competing fork', async () => {

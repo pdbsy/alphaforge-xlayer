@@ -26,12 +26,12 @@ Runtime boundary: Local / Mock / NOT_DEPLOYED
 - `npm run typecheck`: PASS.
 - `npm run lint`: PASS.
 - `npm run format:check`: PASS.
-- `npm test`: PASS, 627/627.
+- `npm test`: PASS, 643/643 after the critical authorization/accounting gap tests.
 - `npm run secrets:check`: PASS.
 - `npm run privacy:check`: PASS.
 - `npm run env:check`: exit 0; local/mock admission, workspace warning for the intentional task diff, contracts `NOT_RUN`.
 
-Macbeth05's full-suite runner measured the 13 critical chain/API files on the current candidate:
+The first local full-suite runner measurement on source head `28ff3d4b5c6e70ff0c6ea1b11ad0fea4283887fd`, before the final critical-branch gap tests, was:
 
 | Module | Lines | Branches | Functions |
 | --- | ---: | ---: | ---: |
@@ -49,11 +49,21 @@ Macbeth05's full-suite runner measured the 13 critical chain/API files on the cu
 | `packages/chain-adapter/src/rpc.ts` | 393/400 (98.25%) | 131/140 (93.57%) | 23/23 (100.00%) |
 | `packages/chain-adapter/src/vault-abi.ts` | 282/282 (100.00%) | 88/88 (100.00%) | 19/19 (100.00%) |
 
-Critical-file totals: 96.59% lines, 92.26% branches, and 98.56% functions. Manifest, Keccak, Pass/Vault ABI, and Pass/Vault reconciliation authorization and accounting branches are 100% covered.
+That first local measurement totaled 96.59% lines, 92.26% branches, and 98.56% functions. Macbeth05's independent run on the same `28ff3d4` source measured 96.59% lines, 92.11% branches, and 98.56% functions (raw LCOV SHA-256 `99989cc423ebc590e22fca9c53f5071a26f25e577d2bfbc9e25817cb8e422e2e`). Both source results are retained; the 0.15 percentage-point branch difference is not normalized away.
+
+After Macbeth05 enumerated the remaining authorization/accounting zero-hit records, the added tests exercise failed-runtime evidence reads, operation disappearance between route match and snapshot read, malformed RPC block/log/topic/quantity evidence, bounded retry exhaustion, duplicate event identity, operation identity rebinding, checkpoint and projection commit races, every operation-evidence lifecycle mapping, incomplete sync, unavailable reorg ancestry, projection recovery and supersession, wrong block numbers, stale completion, replaced checkpoints, non-canonical receipts, terminal-operation early returns, and the maximum-safe-height range overflow.
+
+The resulting local runner evidence is 643/643 tests with 97.37% lines, 95.39% branches, and 98.56% functions across the same 13 files. Relevant branch results are `chain-routes.ts` 100.00%, `chain-store.ts` 88.81%, `chain-sync.ts` 99.39%, and `rpc.ts` 99.34%. Every concrete zero-hit record in Macbeth05's frozen authorization/accounting list is now exercised locally. Two raw instrumentation records remain outside that list: the unconditional `finally` entry in `ChainSynchronizer.syncTo`, and the closing brace after `JsonRpcClient.#request`'s retry loop. The first has no source condition and always releases the serialized turn; the second precedes a fallback that cannot be reached because every final-attempt path returns or throws. Neither is removed or counted as covered. Independent Macbeth05 rerun remains required before final acceptance.
 
 The focused report is not an overall repository coverage claim. Remaining `chain-store` branches are primarily schema-corruption, impossible concurrent mutation, migration, and rollback failure paths; they remain visible rather than being deleted or presented as covered. New tests exercise actual amount/precision, target/chain identity, receipt/finality, close/rescue settlement state, stale checkpoint, sync range, unknown log, malformed projection, and corrupt persisted JSON behavior.
 
-Recorded raw LCOV SHA-256: `673bc4634643ad5ac8ce819eb1254692a90070f242bffe06cc141a1983375c88`.
+Earlier local raw LCOV SHA-256: `673bc4634643ad5ac8ce819eb1254692a90070f242bffe06cc141a1983375c88`.
+
+Post-gap local raw evidence:
+
+- Full test/coverage log SHA-256: `40572353708adbc324748785ac2f8bd851b3a12876219788e74be28f849ea9e8`.
+- Raw LCOV SHA-256: `85266fd59cfa22e11492dc2c096ad8c5e1ac9a926b1fa717f272e4b7ae535da5`.
+- Raw zero-branch summary SHA-256: `128e8df6bd70c1d8228a077431b96dbb0f0e1d5cdb27c693868ea7813ca94199`.
 
 ## External-state boundary
 
