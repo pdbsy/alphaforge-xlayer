@@ -13,8 +13,8 @@
 - Macbeth05 coverage-gap source consumed read-only:
   `49432db158bdee6f4130bcb5c8c9d9fd6cd65a1f`
 - Macbeth03 formal Chain/API source consumed read-only:
-  `28ff3d4b5c6e70ff0c6ea1b11ad0fea4283887fd`
-- Macbeth03 source tree: `7f4abc27757e099c1b5b26a66509395015bdb7b7` (Draft PR #26)
+  `a4d73bb197ff1f715fcf6ea9f1fe1daae2c75030`
+- Macbeth03 source tree: `bf9726cd560c51a7c60e320e1bdfe45501c9a91b` (Draft PR #26)
 
 The branch contains no Macbeth02 commit. PR #24 was fetched to a read-only remote reference only to
 verify the exact manifest and delivery document. The corrected handoff retains the production

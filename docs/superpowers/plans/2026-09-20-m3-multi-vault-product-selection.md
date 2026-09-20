@@ -8,7 +8,9 @@
 
 **Tech Stack:** TypeScript 6, Node 24 test runner, browser EIP-1193 provider, Fastify same-origin Chain API, Vite.
 
-**Spec:** `docs/chain/PHASE1-MACBETH04-API-HANDOFF.md` at final Macbeth03 source `28ff3d4b5c6e70ff0c6ea1b11ad0fea4283887fd`, plus Macbeth01's M3 closeout instruction dated 2026-09-20.
+**Spec:** `docs/chain/PHASE1-MACBETH04-API-HANDOFF.md` at final Macbeth03 source
+`a4d73bb197ff1f715fcf6ea9f1fe1daae2c75030`, plus Macbeth01's M3 closeout instruction dated
+2026-09-20.
 
 ## Global Constraints
 
