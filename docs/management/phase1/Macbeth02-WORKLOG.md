@@ -6,6 +6,7 @@
 - Draft PR: `https://github.com/pdbsy/quantpass-arbitrum-hackathon/pull/24`
 - Public ACK: `https://github.com/pdbsy/quantpass-arbitrum-hackathon/pull/24#issuecomment-5747141328`
 - Status: `ACTIVE / LOCAL / NOT_DEPLOYED`
+- Verified implementation source C: `e5eff6805d9705745bc0b4483de83466e5693ffa`
 
 ## Intake and baseline
 
@@ -48,3 +49,4 @@ No external RPC, signature, deployment, transaction or broadcast was performed.
 - Root formatting, privacy and secret checks: PASS.
 - Root `npm run check`: 591/591 tests and all checks before management passed; final command remains
   FAIL at manager-owned `management:check` with `RECORDED_GIT_BRANCH_MISMATCH`.
+- `npm run build:web`: PASS when run separately after the management-owned stop.
