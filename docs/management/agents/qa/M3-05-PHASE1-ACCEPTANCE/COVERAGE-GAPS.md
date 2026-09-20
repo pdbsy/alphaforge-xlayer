@@ -6,15 +6,17 @@ Recorded: 2026-09-20 (Asia/Shanghai)
 
 The effective rule is versioned in `docs/TASK-BOARD.md` on this base: line 108 requires 100% branch coverage for critical authorization and accounting paths, and line 109 sets the overall automated coverage target at no less than 90%. This report does not reinterpret test count as either threshold.
 
-## Corrected executable-file denominator
+## Extension-based candidate inventory
 
-The executable first-party denominator is every regular `.ts`, `.tsx`, `.mjs`, and `.js` file below `apps/server/src`, `apps/web/src`, `packages`, `src`, and `tools`. It excludes `.d.ts`, CSS, HTML, JSON, YAML, lock data, tests, generated outputs, dependencies, and Solidity, which has a separate Forge report.
+The initial static inventory selected every regular `.ts`, `.tsx`, `.mjs`, and `.js` file below `apps/server/src`, `apps/web/src`, `packages`, `src`, and `tools`. It excluded `.d.ts`, CSS, HTML, JSON, YAML, lock data, tests, generated outputs, dependencies, and Solidity, which has a separate Forge report.
 
-This produces 98 executable files. Node's coverage report contains 77, leaving 21 unrepresented. The earlier 99/22 checkpoint was an off-by-one error: `apps/web/src/vite-env.d.ts` remained in the inventory even though the written method excluded declaration files. No test result changes; only the denominator statement is corrected.
+This produces 98 extension-based candidate files. Node's test coverage report contains 77, leaving 21 candidate files unrepresented. The earlier 99/22 checkpoint was an off-by-one error: `apps/web/src/vite-env.d.ts` remained in the inventory even though the written method excluded declaration files. No test result changes.
 
-Full 98-file list: `/private/tmp/AlphaForge-M3-05-PHASE1-EVIDENCE/first-party-executable-98.txt`, SHA-256 `ccffd7aefa1c4075883bbdee1c04934a18a2fe90682dbf9a6e3b3dc82734a9d8`.
+The 98-file list is not an exact executable-code denominator. Static follow-up established that `packages/chain-adapter/src/reconciliation.ts` contains only type imports and interface/type declarations; locked TypeScript 6.0.3 emits only the module marker `export {};`, with no product runtime behavior. Conversely, the tracked `apps/web/prototype/AlphaForge_v3_EN.html` contains the 603-line first-party product script that is deterministically emitted as `user-ui.js`, but the extension filter omitted it. A full executable-line/function/branch denominator therefore remains `NOT_MEASURED` rather than 98 files.
 
-The 21 unrepresented files are:
+Historical 98-file candidate list: `/private/tmp/AlphaForge-M3-05-PHASE1-EVIDENCE/first-party-executable-98.txt`, SHA-256 `ccffd7aefa1c4075883bbdee1c04934a18a2fe90682dbf9a6e3b3dc82734a9d8`. The filename predates this classification correction and is retained as evidence, not as a current denominator claim.
+
+The 21 unrepresented candidate files in the test-only probe are:
 
 ```text
 apps/server/src/m3-main.ts
@@ -40,7 +42,7 @@ tools/verify-management-browser.mjs
 tools/verify-ui-browser.mjs
 ```
 
-Missing-list evidence: `/private/tmp/AlphaForge-M3-05-PHASE1-EVIDENCE/coverage-unrepresented-21.txt`, SHA-256 `af4bbc5763c6f7ebbe4d292fba34aff9b496d5b338ed75168dcb542f9e7811d2`.
+Missing-list evidence: `/private/tmp/AlphaForge-M3-05-PHASE1-EVIDENCE/coverage-unrepresented-21.txt`, SHA-256 `af4bbc5763c6f7ebbe4d292fba34aff9b496d5b338ed75168dcb542f9e7811d2`. This retained artifact is an extension-candidate comparison, not an executable-code denominator.
 
 ## Reproduction command and limits
 
