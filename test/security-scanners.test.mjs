@@ -9,6 +9,10 @@ import { mkdtempSync, mkdirSync, writeFileSync, symlinkSync, rmSync } from 'node
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
+import {
+  adjudicateGitleaksHistory,
+  readGitleaksExceptionProof,
+} from '../tools/security/gitleaks-disposition.mjs';
 import { historyCoverage } from '../tools/ci/check-gitleaks.mjs';
 
 const pin = (name, version) => `${name}==${version} --hash=sha256:${'a'.repeat(64)}\n`;
@@ -255,4 +259,146 @@ test('Gitleaks history coverage includes deleted files and side refs, rejects sh
   assert.ok(report.refs.some((r) => r.name === 'refs/tags/retained'));
   writeFileSync(join(dir, '.git', 'shallow'), exec('rev-parse', 'HEAD') + '\n');
   assert.throws(() => historyCoverage(dir));
+});
+
+// Hand-checked immutable provenance evidence; no credential or blanket hash allowance.
+const approvedFinding = {
+  RuleID: 'generic-api-key',
+  File: 'docs/product/PHASE1-PRODUCT-WALLET-FLOWS.md',
+  StartLine: 12,
+  EndLine: 12,
+  Commit: '69330dfffeceb86cf793fa0163ff4f72a466f3eb',
+  Secret: 'REDACTED',
+  Match: 'REDACTED',
+  Email: 'must-not-be-emitted@example.test',
+};
+function realExceptionProof() {
+  const read = (...args) => execFileSync('git', ['--no-replace-objects', ...args]);
+  return {
+    historicalCommit: read('cat-file', 'commit', '69330dfffeceb86cf793fa0163ff4f72a466f3eb'),
+    blobOid: read(
+      'rev-parse',
+      '69330dfffeceb86cf793fa0163ff4f72a466f3eb:docs/product/PHASE1-PRODUCT-WALLET-FLOWS.md',
+    )
+      .toString()
+      .trim(),
+    blob: read('cat-file', 'blob', 'b118b774535825efd5d7afe8931e134827f4f974'),
+    sourceCommit: read('cat-file', 'commit', '28ff3d4b5c6e70ff0c6ea1b11ad0fea4283887fd'),
+    tree: read('cat-file', 'tree', '7f4abc27757e099c1b5b26a66509395015bdb7b7'),
+  };
+}
+const dispositionTime = new Date('2026-09-20T12:00:00Z');
+
+test('one approved historical tree finding passes only through an auditable disposition, retaining raw FAIL', () => {
+  const value = { status: 10, report: [approvedFinding] };
+  const before = JSON.stringify(value);
+  const result = adjudicateGitleaksHistory(value, realExceptionProof(), dispositionTime);
+  assert.equal(result.state, 'PASS');
+  assert.equal(result.raw.state, 'FAIL');
+  assert.equal(result.raw.findings.length, 1);
+  assert.equal(result.dispositions.length, 1);
+  assert.equal(result.dispositions[0].id, 'GITLEAKS-FP-001');
+  assert.equal(result.dispositions[0].proof, 'VERIFIED');
+  assert.equal(JSON.stringify(value), before);
+  assert.ok(!JSON.stringify(result).includes('must-not-be-emitted'));
+  assert.ok(!JSON.stringify(result).includes('REDACTED'));
+});
+
+test('changed finding identity, multiline finding, duplicates and additional findings remain blocking', () => {
+  const proof = realExceptionProof();
+  for (const patch of [
+    { RuleID: 'github-pat' },
+    { File: 'different.md' },
+    { StartLine: 13 },
+    { EndLine: 13 },
+    { EndLine: undefined },
+    { Commit: 'a'.repeat(40) },
+    { Commit: '' },
+  ]) {
+    const result = adjudicateGitleaksHistory(
+      { status: 10, report: [{ ...approvedFinding, ...patch }] },
+      proof,
+      dispositionTime,
+    );
+    assert.equal(result.state, 'FAIL');
+    assert.deepEqual(result.dispositions, []);
+  }
+  for (const extra of [approvedFinding, { ...approvedFinding, File: 'another.txt' }]) {
+    const result = adjudicateGitleaksHistory(
+      { status: 10, report: [approvedFinding, extra] },
+      proof,
+      dispositionTime,
+    );
+    assert.equal(result.state, 'FAIL');
+    assert.deepEqual(result.dispositions, []);
+    assert.equal(result.raw.findings.length, 2);
+  }
+});
+
+test('missing and altered immutable objects cannot substantiate the authorized exception', () => {
+  const proof = realExceptionProof();
+  for (const field of Object.keys(proof)) {
+    for (const bad of [undefined, field === 'blobOid' ? 'c'.repeat(40) : Buffer.from('altered object\n')]) {
+      const result = adjudicateGitleaksHistory(
+        { status: 10, report: [approvedFinding] },
+        { ...proof, [field]: bad },
+        dispositionTime,
+      );
+      assert.equal(result.state, 'BLOCKED', field);
+      assert.equal(result.raw.state, 'FAIL');
+      assert.deepEqual(result.dispositions, []);
+    }
+  }
+});
+
+test('scanner errors, missing reports and inconsistent finding exits cannot use a disposition', () => {
+  const proof = realExceptionProof();
+  for (const patch of [
+    { status: 0 },
+    { status: 1 },
+    { status: null },
+    { signal: 'SIGTERM' },
+    { error: new Error('sensitive detail') },
+    { report: null },
+    { report: {} },
+    { report: [{ ...approvedFinding, StartLine: '12' }] },
+  ]) {
+    const result = adjudicateGitleaksHistory(
+      { status: 10, report: [approvedFinding], ...patch },
+      proof,
+      dispositionTime,
+    );
+    assert.equal(result.state, 'BLOCKED');
+    assert.deepEqual(result.dispositions, []);
+    assert.ok(!JSON.stringify(result).includes('sensitive detail'));
+  }
+  assert.equal(adjudicateGitleaksHistory({ status: 0, report: [] }, null, dispositionTime).state, 'PASS');
+});
+
+test('expired, premature or invalid exception time fails closed without changing a clean scan', () => {
+  for (const time of [
+    new Date('2026-10-20T00:00:00Z'),
+    new Date('2026-09-19T23:59:59Z'),
+    new Date('invalid'),
+  ]) {
+    const result = adjudicateGitleaksHistory(
+      { status: 10, report: [approvedFinding] },
+      realExceptionProof(),
+      time,
+    );
+    assert.equal(result.state, 'BLOCKED');
+    assert.deepEqual(result.dispositions, []);
+  }
+});
+
+test('the production proof reader uses actual Git objects and missing history remains blocked', (t) => {
+  assert.deepEqual(readGitleaksExceptionProof(process.cwd()), realExceptionProof());
+  const dir = mkdtempSync(join(tmpdir(), 'af-gitleaks-missing-proof-'));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  const proof = readGitleaksExceptionProof(dir);
+  assert.equal(proof, null);
+  assert.equal(
+    adjudicateGitleaksHistory({ status: 10, report: [approvedFinding] }, proof, dispositionTime).state,
+    'BLOCKED',
+  );
 });

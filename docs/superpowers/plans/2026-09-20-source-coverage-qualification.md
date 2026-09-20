@@ -6,7 +6,7 @@
 
 **Architecture:** Collect raw V8 data from real Node and browser workflows into isolated directories belonging to one exact candidate. Qualify one fixed mapper against small independently understood fixtures before admitting it for repository measurement. Preserve existing Node/Forge evidence and classify unsupported inputs as NOT_MEASURED.
 
-**Tech Stack:** Approved Node 24.21.0, npm 11.19.1, TypeScript 6.0.3, Vite 8.2.2; existing isolated Chrome test transport. Mapper candidate: monocart-coverage-reports 2.12.12, MIT, official Git commit `970c489200daa7e32dc942a341ce2a840212ac8a`. Candidate is not installed or admitted by this plan.
+**Tech Stack:** Approved Node 24.21.0, npm 11.19.1, TypeScript 6.0.3, Vite 8.2.2; separately qualified isolated Chrome transport candidate playwright-core 1.62.1 (Apache-2.0, official commit `26a9e470a7b3c7822084b09fb7f13902c5f37b51`). Prior product functional tests used Codex IAB; its internal transport is not a raw-coverage interface and is not reused here. Mapper candidate: monocart-coverage-reports 2.12.12, MIT, official Git commit `970c489200daa7e32dc942a341ce2a840212ac8a`. These are qualification inputs only, not yet an admitted project-wide coverage method.
 
 **Spec:** `docs/management/specs/PHASE1-CLOSEOUT-2026-09-20.md`; `docs/management/agents/qa/M3-05-PHASE1-ACCEPTANCE/COVERAGE-COLLECTION-METHOD.md`; `FINAL-CANDIDATE-ACCEPTANCE-PREP.md` in the same QA directory.
 
@@ -118,4 +118,12 @@ export type OptionalIdentity = Identity | null;
 - Mapper capability documentation: https://github.com/cenfun/monocart-coverage-reports
 - Browser coverage collection API: https://playwright.dev/docs/api/class-coverage
 
-The package documentation supports selecting this candidate for evaluation. It is not evidence that AlphaForge's TypeScript/prototype/mixed-runtime mappings already work. No new measurement dependency has been installed by preparing this plan.
+The package documentation supports selecting this candidate for evaluation. It is not evidence that AlphaForge's TypeScript/prototype/mixed-runtime mappings already work. After this plan, 20 exact packages were installed only under the ignored isolated qualification directory; artifact and initial fixture evidence is recorded below. Product dependencies and production maps remain unchanged.
+
+## Execution checkpoint: artifact and small runtime-union probe
+
+At clean manager source `9be28063e40700179a222816a9de200137ce79a9`, the isolated exact lock resolved 20 packages. Each tarball matched its official registry SHA-512; all license texts and source repositories were identified; lifecycle scripts were disabled. All 470 installed regular files matched the reviewed archive bytes. The exact graph's npm audit reported zero advisories at collection time. These observations are not a claim that a dependency cannot contain undisclosed problems.
+
+A real Node 24.21.0 fixture and a separately launched empty-profile Chrome 153.0.8010.50 fixture executed opposite `classify` branches. The fixed mapper reported one of two branches per runtime and two of two in the union, with the unused function still uncovered. The never-imported file retained three uncovered lines, one uncovered function and two uncovered branches. These are tiny fixture measurements only; no project-wide percentage follows. The type-only, TypeScript/bundle/prototype mapping, mixed-callback and negative-input probes remain incomplete.
+
+Evidence is in the manager worktree's ignored `.checks/source-coverage-qualification/`: exact registry records, lockfile, tarballs, `artifact-review.json`, `audit.json`, raw Node/Chrome output, fixture driver and `union-result.json`. No user browser profile, wallet, RPC, external service or production source-map setting was used. Overall project coverage remains NOT_MEASURED; method admission remains pending.

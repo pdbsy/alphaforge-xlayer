@@ -1,7 +1,7 @@
 # Phase One Robinhood Chain Testnet Deployment Plan
 
-Status: **PLAN READY / NOT AUTHORIZED / NOT DEPLOYED**  
-Chain: Robinhood Chain Testnet, chain ID `46630` (`0xb626`)  
+Status: **PLAN READY / NOT AUTHORIZED / NOT DEPLOYED**
+Chain: Robinhood Chain Testnet, chain ID `46630` (`0xb626`)
 Contract source: the exact candidate that passes `contracts/script/check-phase1-contracts.sh`
 
 This plan prepares the real Testnet parameters and evidence sequence. It does not authorize an
