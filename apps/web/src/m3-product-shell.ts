@@ -1,4 +1,5 @@
 import { ROBINHOOD_CHAIN_TESTNET } from '../../../packages/robinhood-chain/src/network.ts';
+import { formatUnits } from '../../../packages/domain/src/money.ts';
 import type { WalletSubmission } from './chain-wallet.ts';
 import type { ProductOperationEvidence } from './strategy-adapter.ts';
 
@@ -62,7 +63,7 @@ export interface TransactionPresentation {
   readonly errorMessage?: string;
 }
 
-export type OnchainProductAction = 'deposit' | 'withdraw' | 'close';
+export type OnchainProductAction = 'deposit' | 'withdraw' | 'close' | 'rescue-token' | 'rescue-native';
 export type OnchainReadiness = 'UNKNOWN' | 'SOFT_READY' | 'FINALITY_UNKNOWN' | 'REORGED';
 
 export interface DepositAuthorizationPresentation {
@@ -82,6 +83,11 @@ export interface OnchainProductPresentation {
   readonly supportedActions: readonly OnchainProductAction[];
   readonly vaultAddress?: string;
   readonly vaultClosed?: boolean;
+  readonly passAddress?: string;
+  readonly passBalanceBaseUnits?: string;
+  readonly passInitialSupplyBaseUnits?: string;
+  readonly passInitialRecipient?: string;
+  readonly passTransferMode?: 'DISABLED' | 'INJECTED_MOCK' | 'LIVE_AUTHORIZED';
   readonly depositAuthorization?: DepositAuthorizationPresentation;
 }
 
@@ -278,18 +284,14 @@ function transactionCard(transaction: TransactionPresentation): string {
 }
 
 function disabledActions(): string {
-  return `<div class="inline-actions" aria-label="Testnet asset actions">${[
-    'Buy Pass',
-    'Sell Pass',
-    'Deposit',
-    'Withdraw',
-    'Approve',
-  ]
+  return `<div class="inline-actions" aria-label="Testnet asset actions">${['Deposit', 'Withdraw', 'Approve']
     .map(
       (action) =>
         `<button class="outline-btn" disabled title="Requires reviewed Macbeth02 contract capability and Macbeth03 chain adapter">${action} · NOT IMPLEMENTED</button>`,
     )
-    .join('')}</div>`;
+    .join(
+      '',
+    )}<button class="outline-btn" data-pass-transfer disabled>Transfer Pass</button><button class="outline-btn" disabled>Buy Pass · OUT OF PHASE ONE</button><button class="outline-btn" disabled>Sell Pass · OUT OF PHASE ONE</button></div>`;
 }
 
 const readinessMessages: Record<OnchainReadiness, string> = {
@@ -303,8 +305,8 @@ export function onchainActionEnabled(
   onchain: OnchainProductPresentation,
   action: OnchainProductAction,
 ): boolean {
+  const rescue = action === 'rescue-token' || action === 'rescue-native';
   if (
-    onchain.vaultClosed === true ||
     onchain.deployment !== 'CONFIGURED' ||
     onchain.health === 'UNAVAILABLE' ||
     onchain.owner !== 'OWNER' ||
@@ -312,6 +314,8 @@ export function onchainActionEnabled(
     !onchain.supportedActions.includes(action)
   )
     return false;
+  if ((onchain.vaultClosed === true) !== rescue) return false;
+  if (rescue) return onchain.exitPath === 'LIVE_RPC' || onchain.exitPath === 'SIMULATION';
   if (action === 'deposit') {
     const authorization = onchain.depositAuthorization;
     const validUnits = (value: string) => /^(0|[1-9][0-9]*)$/.test(value);
@@ -341,6 +345,8 @@ function onchainActions(onchain: OnchainProductPresentation): string {
     ['deposit', 'Deposit'],
     ['withdraw', 'Withdraw'],
     ['close', 'Close'],
+    ['rescue-token', 'Rescue untracked token'],
+    ['rescue-native', 'Rescue native'],
   ];
   return `<div class="inline-actions" aria-label="Testnet contract actions">${labels
     .map(([action, label]) => {
@@ -355,9 +361,13 @@ function unsupportedOnchainActions(onchain: OnchainProductPresentation): string 
     onchain.depositAuthorization?.approvalCapability === 'AVAILABLE'
       ? 'Approve · USE DEPOSIT REVIEW'
       : 'Approve · NOT AVAILABLE';
-  return `<div class="inline-actions" aria-label="Unavailable Testnet actions">${['Buy Pass', 'Sell Pass']
-    .map((label) => `<button class="outline-btn" disabled>${label} · NOT IMPLEMENTED</button>`)
-    .join('')}<button class="outline-btn" disabled>${approval}</button></div>`;
+  const passConfigured = /^0x[0-9a-fA-F]{40}$/.test(onchain.passAddress ?? '');
+  const transferEnabled =
+    passConfigured && onchain.passTransferMode !== undefined && onchain.passTransferMode !== 'DISABLED';
+  const passBalance = /^(0|[1-9][0-9]*)$/.test(onchain.passBalanceBaseUnits ?? '')
+    ? `${escapeHtml(formatUnits(onchain.passBalanceBaseUnits!, 18))} Pass · ${escapeHtml(onchain.passBalanceBaseUnits)} base unit${onchain.passBalanceBaseUnits === '1' ? '' : 's'}`
+    : 'Unavailable';
+  return `<p><strong>Pass contract</strong> · ${passConfigured ? escapeHtml(onchain.passAddress) : 'Unavailable'}</p><p><strong>Wallet Pass balance</strong> · ${passBalance}</p><div class="inline-actions" aria-label="Testnet Pass actions"><button class="outline-btn" data-pass-transfer ${transferEnabled ? '' : 'disabled'}>Transfer Pass</button><button class="outline-btn" disabled>Buy Pass · OUT OF PHASE ONE</button><button class="outline-btn" disabled>Sell Pass · OUT OF PHASE ONE</button><button class="outline-btn" disabled>${approval}</button></div>`;
 }
 
 function onchainCard(onchain: OnchainProductPresentation): string {
@@ -366,7 +376,11 @@ function onchainCard(onchain: OnchainProductPresentation): string {
       ? 'Verified deployment metadata is configured.'
       : 'NOT DEPLOYED — no verified Vault address or deployment manifest is configured.';
   const healthMessage = onchain.vaultClosed
-    ? `${onchain.health === 'DEGRADED' ? 'INDEXER DEGRADED. ' : ''}VAULT CLOSED. Deposit, withdraw and close are unavailable.`
+    ? `${onchain.health === 'DEGRADED' ? 'INDEXER DEGRADED. ' : ''}VAULT CLOSED. Deposit, withdraw and close are unavailable.${
+        onchain.owner === 'OWNER' && (onchain.exitPath === 'LIVE_RPC' || onchain.exitPath === 'SIMULATION')
+          ? ' Owner-only post-close rescue remains available.'
+          : ''
+      }`
     : onchain.health === 'DEGRADED'
       ? onchain.owner === 'NON_OWNER'
         ? 'INDEXER DEGRADED. Current wallet is not the Vault owner; owner exits are unavailable.'
@@ -391,6 +405,11 @@ function onchainCard(onchain: OnchainProductPresentation): string {
         ? 'Live wallet actions require an explicit review and confirmation.'
         : 'Chain writes are disabled.';
   const authorization = onchain.depositAuthorization;
+  const initialAllocation =
+    /^(0|[1-9][0-9]*)$/.test(onchain.passInitialSupplyBaseUnits ?? '') &&
+    /^0x[0-9a-fA-F]{40}$/.test(onchain.passInitialRecipient ?? '')
+      ? `${escapeHtml(formatUnits(onchain.passInitialSupplyBaseUnits!, 18))} Pass to ${escapeHtml(onchain.passInitialRecipient)}`
+      : 'Unavailable until reviewed deployment constructor values are configured.';
   const depositAuthorization = authorization
     ? `<div class="receipt"><div class="receipt-lines"><div><span>AF-USDC allowance</span><span>${escapeHtml(
         authorization.afUsdcAllowanceBaseUnits,
@@ -406,7 +425,7 @@ function onchainCard(onchain: OnchainProductPresentation): string {
     : '<p>Deposit allowances are unavailable. Deposit remains disabled until both AF-USDC and Pass allowances are read for the configured Vault.</p>';
   return `<article class="sketch-box"><span class="section-label">PASS + VAULT / TESTNET</span><h3>${escapeHtml(
     onchain.readiness.replaceAll('_', ' '),
-  )}</h3><p><strong>Deployment</strong> · ${escapeHtml(deploymentMessage)}</p><p>${escapeHtml(
+  )}</h3><p><strong>Deployment</strong> · ${escapeHtml(deploymentMessage)}</p><p><strong>Selected Vault</strong> · ${escapeHtml(onchain.vaultAddress ?? 'Unavailable')}</p><p><strong>Initial Pass allocation</strong> · ${initialAllocation}</p><p>${escapeHtml(
     readinessMessages[onchain.readiness],
   )}</p><p>${escapeHtml(
     healthMessage,
