@@ -12,10 +12,11 @@
 - Transport: production browser runtime with `DEV_MOCK`; loopback only, no external RPC or broadcast
 - Date: `2026-09-20`, Asia/Shanghai
 
-Two screenshots were captured in the task record through the computer-use tool: one shows the wrong
-network state with writes disabled; the other shows the closed Vault with only the two owner rescue
-actions enabled. The tool did not expose a repository file path for those captures, so this document
-does not claim an image artifact in Git.
+Three screenshots were captured in the task record through the computer-use tool: one shows the
+wrong network state with writes disabled; one shows the closed Vault with only the two owner rescue
+actions enabled; and one shows the final candidate's selected Vault and initial Pass allocation.
+The tool did not expose a repository file path for those captures, so this document does not claim
+an image artifact in Git.
 
 ## Steps and observed results
 
@@ -66,4 +67,3 @@ integration. This failure remains recorded and is not reclassified as a pass.
 - Hosted CI and independent Macbeth05 acceptance against the unified candidate: `NOT_RUN`.
 - Multi-Vault creation/discovery browser flow: `NOT_RUN` because no exact integrated factory or
   discovery interface exists.
-
