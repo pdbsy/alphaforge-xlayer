@@ -6,6 +6,8 @@ Public receipt: [Draft PR #5](https://github.com/pdbsy/alphaforge-xlayer/pull/5)
 
 ## Decision
 
+Later combined-source fixture verification and the separate pending-review P2 blocker are recorded in [COMBINED-RETEST.md](COMBINED-RETEST.md). Results below retain their original source bindings.
+
 READY FOR REVIEW of the QA artifacts. The imported production baseline fails the new acceptance suite: **18 PASS / 8 FAIL**. Independently tested candidate O passes **26/26 new QA tests and 72/72 focused chain tests**, with typecheck PASS. These runs contain no skipped, cancelled or TODO tests.
 
 XLQA-MANIFEST-01 and XLQA-API-01 are closed for O. Final combined product acceptance remains BLOCKED on the actual integrated source and applicable environment, CI, browser and contract evidence. This report supplies no merge/deployment approval or formal generated C/R/S evidence. The [matrix](ACCEPTANCE-MATRIX.md) distinguishes local behavior from unexecuted acceptance.
