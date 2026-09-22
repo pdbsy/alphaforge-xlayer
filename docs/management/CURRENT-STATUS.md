@@ -1,14 +1,18 @@
 # AlphaForge X Layer — current manager checkpoint
 
-Date: 2026-09-22. Manager: XLayerPM. Canonical repository: pdbsy/alphaforge-xlayer. Task: AF-XLAYER-MIGRATION. Status: IN_PROGRESS / LOCAL_MOCK / NOT_DEPLOYED.
+Date: 2026-09-22. Project: AlphaForge-XLayer. Track: X Layer. Manager: XLayerPM. Canonical repository: pdbsy/alphaforge-xlayer. Task: AF-XLAYER-MIGRATION. Status: IN_PROGRESS / LOCAL_MOCK / NOT_DEPLOYED.
 
-The public repository imports master 18f5352070910a867b9729b031aa2e3951785e01 with full source history, original authors and evidence refs. Migration intake and offline network foundation: https://github.com/pdbsy/alphaforge-xlayer/pull/1. Source repository work is preserved.
+The public repository preserves upstream master 18f5352070910a867b9729b031aa2e3951785e01, source authors and evidence refs. The integrated candidate is https://github.com/pdbsy/alphaforge-xlayer/pull/1. Every assignment carries XLayer ownership; parallel Robinhood tasks and workspaces remain independent.
 
-Foundation candidate 3190b6e: 599/599 application tests passed, typecheck/lint/format/configuration and inherited policy checks passed through Forum consistency. The old management snapshot correctly rejected the new branch (RECORDED_GIT_BRANCH_MISMATCH); fresh source C -> manifest R -> snapshot S collection is the next step. These results do not assert hosted CI or contract acceptance. Foundation engineering review found no P1/P2 issue at 33f47d9; the separate registry provenance update was also reviewed.
+02 contract templates/tests,03 trusted runtime/API isolation,04 explicit network UI/session guards,05 adversarial QA and06 repository/CI bindings are integrated as review candidates. `npm run xlayer:build` produces the X Layer 1952/OKB frontend. The package and generated SBOM name this edition; all 217 dependency entries, production contracts, ABI and workflow jobs/pins remain unchanged.
 
-Worker assignments and actual receipt links are in [X Layer assignments](../xlayer/ASSIGNMENTS.md). 02 contracts, 03 adapter, 04 UI, 05 QA and 06 CI are active. Their Draft PRs are review candidates, not accepted deliverables. Default runtime cutover, real X Layer RPC/VM checks, deployment, signing, broadcasting, external governance and final integrated acceptance remain outside this bootstrap completion.
+Latest runtime checkpoint `5ae84a7`:697/697 tests and typecheck passed. The original combined QA21/26 failure was traced to an inadequate single-listener mock and read-count assertions; its corrected event semantics pass26/26. Separate independent review found three genuine stale-session paths;04 source `fe8a7ac` fixes them, and03 independently passed 85 existing plus 8 added tests, including post-send evidence retention. Full source details and public receipts are in [the integration record](../xlayer/INTEGRATION.md).
 
-The inherited material below belongs to the upstream project and retains its original dates and scope. It does not grant merge authority or X Layer approval.
+02 independently ran the combined source `0e31259` contract component: 28 Python and 127 Solidity tests, ABI equivalence and Slither passed. Contract subtree63857df59e7f222d0cdcbf4b84369e7adb1a6b0c remains unchanged; this is component evidence for that exact source, not a claim that every later head was executed.
+
+06's new manager identity comparison required two further fixes after independent counterexamples. Final combined identity/QA, real source C -> manifest R -> snapshot S and exact-head hosted results remain pending at this source checkpoint. Previous foundation C9c10e8a/Rf26d117/Sd982e32 and599-test success are historical. Gitleaks historical findings retain their original failure; bounded independent content classification is not a scanner PASS. Local reserved ports remain occupied by unrelated work.
+
+No deployment, signing, broadcasting, mainnet, real funds, merge or external approval is claimed. The inherited material below remains upstream history with its original dates and scope.
 
 ---
 

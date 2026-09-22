@@ -46,4 +46,16 @@
 - [x] Publish five specific assignments and deliver the intake link to existing Macbeth02–06 tasks. Require independent clones and an actual receipt.
 - [x] Collect acknowledgements without interrupting protected upstream work; distinguish delivered from accepted.
 - [x] Record candidate PRs and request focused engineering review. Keep any unrun checks BLOCKED/NOT_RUN and preserve upstream evidence.
-- [ ] End this bootstrap at reviewable foundation; subsequent deployment and default-runtime cutover retain their own acceptance gates.
+- [x] Publish the reviewable foundation at d982e32; subsequent deployment and default-runtime cutover retain their own acceptance gates.
+
+### Task 4: User-authorized combined adaptation
+
+Authorization: the user requested immediate migration and then continuing all tasks. Project AlphaForge-XLayer; Repository pdbsy/alphaforge-xlayer; Manager XLayerPM. All worker routing remains explicitly separate from Robinhood.
+
+- [x] Review and import02–06 deliverables with source authors/messages preserved and exact source mapping.
+- [x] Register independent QA and explicit X Layer build; preserve the dependency graph and compatibility defaults.
+- [x] Reproduce and fix the multi-listener QA fixture; retain original21/26 failure.
+- [x] Independently reproduce three session races, fix them, preserve post-send ambiguity, and obtain bounded cross-review.
+- [ ] Complete strict integration identity, including real relocated-hunk and arbitrary-byte negative cases.
+- [ ] Freeze the final combination, collect genuine C/R/S and obtain05 independent acceptance.
+- [ ] Publish exact candidate and report actual hosted results, preserving any remaining failure or prerequisite gap.

@@ -1,16 +1,18 @@
 # AlphaForge X Layer work queue — 2026-09-22
 
+Project: AlphaForge-XLayer. Track: X Layer. Repository: pdbsy/alphaforge-xlayer. Manager: XLayerPM. Use `[XLayer][AF-XLAYER-...]` in every dispatch/receipt; Robinhood is a separate project.
+
 | Task | Owner | Current state / source |
 | --- | --- | --- |
-| AF-XLAYER-MIGRATION foundation | XLayerPM | PR #1; local offline foundation implemented, 599 tests passed; new C/R/S refresh pending |
-| AF-XLAYER-02-CONTRACTS | Macbeth02 | PR #2; compatibility/template implementation in progress |
-| AF-XLAYER-03-ADAPTER | Macbeth03 | PR #4; strict network/manifest adaptation in progress |
-| AF-XLAYER-04-UI | Macbeth04 | PR #3; network presentation and session guards in progress |
-| AF-XLAYER-05-QA | Macbeth05 | PR #5; negative/isolation testing in progress; combined acceptance pending |
-| AF-XLAYER-06-CI | Macbeth06 | Active repository/Forum/supply binding migration; exact-head hosted results pending |
-| Runtime default cutover | XLayerPM | Depends on reviewed backend/UI/CI integration; NOT_DEPLOYED |
+| AF-XLAYER-MIGRATION integration | XLayerPM | PR1; 697 runtime tests passed; exact combined identity, C/R/S and hosted acceptance pending |
+| AF-XLAYER-02-CONTRACTS | Macbeth02 | PR2; component at `0e31259`:28 Python/127 Solidity/ABI/Slither passed; subtree bound |
+| AF-XLAYER-03-ADAPTER | Macbeth03 | PR4; delivered network/API isolation; independent UI fix review passed; CI comparison re-review pending |
+| AF-XLAYER-04-UI | Macbeth04 | PR3; explicit network presentation and stale-session fix delivered at `fe8a7ac`; source receipts at `8e99890` |
+| AF-XLAYER-05-QA | Macbeth05 | PR5;26-case fixture correction delivered at `5c843e6`; final combined acceptance pending |
+| AF-XLAYER-06-CI | Macbeth06 | PR6; repository bindings integrated; exact-source provenance comparison fixes under independent review |
+| X Layer live network/deployment | Separate future scope | NOT_RUN / NOT_DEPLOYED; metadata and local tests are not deployment authorization |
 
-All PR numbers in this new section belong to https://github.com/pdbsy/alphaforge-xlayer. The historical queue below remains upstream context only. No merge, deployment, signing, broadcasting or mainnet operation is authorized by this queue.
+All PR numbers above belong to https://github.com/pdbsy/alphaforge-xlayer. The queue below is upstream history and does not authorize merge, deployment, signing or broadcasting for this project.
 
 ---
 

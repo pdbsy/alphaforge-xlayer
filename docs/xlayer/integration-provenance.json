@@ -20,7 +20,7 @@
       "agent": "Macbeth02",
       "task": "AF-XLAYER-02-CONTRACTS",
       "branch": "macbeth02/xlayer-contracts",
-      "head": "000063f5b6bc257d63bc3426ee5ec20423aa475c",
+      "head": "e86728cb4692550dcf98124108c19f085d28b3f6",
       "commits": [
         {
           "source": "c4c796ef823c271604a2fbc03895ff64c84e516f",
@@ -37,6 +37,10 @@
         {
           "source": "000063f5b6bc257d63bc3426ee5ec20423aa475c",
           "imported": "b6454d321952eeed86fa12007ac43d266b1fdcdd"
+        },
+        {
+          "source": "e86728cb4692550dcf98124108c19f085d28b3f6",
+          "imported": "5df2fcd7f7d6eab000a3aeb2b3ee4ce8500e57f5"
         }
       ]
     },
@@ -64,7 +68,7 @@
       "agent": "Macbeth04",
       "task": "AF-XLAYER-04-UI",
       "branch": "macbeth04/xlayer-ui",
-      "head": "37e6045de7ca87f9e06cc45237d6c495d3442f7f",
+      "head": "8e998902a3d391b987c419833ca96a72f1fe881b",
       "commits": [
         {
           "source": "0c170d5f3a273028eb5ef79e26830b069778c833",
@@ -81,6 +85,14 @@
         {
           "source": "37e6045de7ca87f9e06cc45237d6c495d3442f7f",
           "imported": "03e1496f461edfe85a3570ff584479cc5d470510"
+        },
+        {
+          "source": "fe8a7ac967cb057112483666174d3efa537ebb2f",
+          "imported": "5ae84a7683f23c7b2509fd02b511139f67be2654"
+        },
+        {
+          "source": "8e998902a3d391b987c419833ca96a72f1fe881b",
+          "imported": "b43389af9a3ef1eff6f1805bb6b7d157526bcd6f"
         }
       ]
     },
@@ -88,7 +100,7 @@
       "agent": "Macbeth05",
       "task": "AF-XLAYER-05-QA",
       "branch": "macbeth05/xlayer-qa",
-      "head": "9b36168368f4743edd1a6e575bed389a84969a15",
+      "head": "5c843e6c16d418d8584c4d484b4937c5fb396170",
       "commits": [
         {
           "source": "07183230c921206e4a030263326b6742952995bb",
@@ -105,6 +117,14 @@
         {
           "source": "9b36168368f4743edd1a6e575bed389a84969a15",
           "imported": "24af1ffcd134d81d8b8dd337df4d21bc9e9d9489"
+        },
+        {
+          "source": "7f2ccf0b1ab847d8743d80d5dcb9e33fc5d86885",
+          "imported": "880e2f98cdb13b7372f984123357450758bdf951"
+        },
+        {
+          "source": "5c843e6c16d418d8584c4d484b4937c5fb396170",
+          "imported": "a8de348549ea2e541918efedfaa8dd97259ae741"
         }
       ]
     },
@@ -112,7 +132,7 @@
       "agent": "Macbeth06",
       "task": "AF-XLAYER-06-CI",
       "branch": "macbeth06/xlayer-ci-bindings",
-      "head": "0244de746dd532336a8314ac72ce34d84a75f0bc",
+      "head": "a4a490a82b662be5a4684bbc2da3021dd002013d",
       "commits": [
         {
           "source": "a270b36d7cde2fd87e283580d20b107249d072bf",
@@ -129,6 +149,18 @@
         {
           "source": "0244de746dd532336a8314ac72ce34d84a75f0bc",
           "imported": "963650eedaf070c1624938ac89dd96b1c3c3062c"
+        },
+        {
+          "source": "46efeeaa6a4b1394432b9e00f38de020a5826377",
+          "imported": "cbf4047029af5f8dc9dd2b4a4e4cc76913a9360e"
+        },
+        {
+          "source": "d11b81dbbef1edbb6568c6a9e13813c82e6ba6df",
+          "imported": "174d4a0b1f3fffdd1e8db250bdeba20a46c807c7"
+        },
+        {
+          "source": "a4a490a82b662be5a4684bbc2da3021dd002013d",
+          "imported": "a4ffd6955e18970ba72c11385277d5c327c30f62"
         }
       ]
     }

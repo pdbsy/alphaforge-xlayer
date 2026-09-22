@@ -40,6 +40,7 @@ const unitTests = [
   'test/xlayer-chain.test.ts',
   'test/xlayer-qa-integration.test.mjs',
   'test/xlayer-qa-api.integration.test.mjs',
+  'test/xlayer-integration-identity.test.mjs',
   'test/governance.test.mjs',
   'test/supply-chain.test.mjs',
   'test/threat-model.test.mjs',
