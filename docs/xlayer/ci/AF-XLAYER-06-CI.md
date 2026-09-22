@@ -33,7 +33,9 @@ Tests must verify behavior before implementation. Existing workflow names, event
 
 The targeted RED run failed 13/85 tests against the unchanged implementation. The separate Forum UI RED run failed the historical-count behavior. After implementation the combined targeted suite passed 86/86. Raw logs are retained locally under ignored `.checks/xlayer-ci/`.
 
-The complete sandbox check reached tests after typecheck, lint and formatting, then reported loopback `listen EPERM` and a historical provenance hash mismatch. `test/migration-provenance.test.mjs` now verifies the original six evolved Forum artifacts from fixed imported master `18f5352070910a867b9729b031aa2e3951785e01`; every original manifest hash is preserved and checked, other artifacts still bind their working-tree bytes. Its three tests pass. Full native rerun is pending.
+The complete sandbox check reached tests after typecheck, lint and formatting, then reported loopback `listen EPERM` and a migration provenance mismatch. Native execution passed 596/596 tests, then reached management validation while source changes were still in progress. A clean-source full rerun is pending.
+
+The manager explicitly approved the existing `subsequent_adaptations` workflow for only the six changed, registered Forum tools/tests. Those rows preserve original source identities and prior adaptations, append AF-XLAYER-06-CI with the imported base, previous hash, reason and implementation source commit, and update their current migrated hash. `test/migration-provenance.test.mjs` retains its original current-byte comparison. The temporary old-blob test approach was withdrawn in a follow-up commit; registry and other workers' rows are untouched.
 
 Actual environment observation admits the new repository, tools, history and dependency/data isolation; local port 4180 is occupied by an existing process, so developer admission remains FAIL and ineligible. No other task's process is stopped. Hosted CI must establish its own environment on the exact submitted source. The independently installed lock remains SHA-256 `67f717aaad4f0f7f0a24fb658095ce1953fcd323c63a9a9fc052e46edc33a26b`.
 
