@@ -6,6 +6,8 @@ Public receipt: [Draft PR #5](https://github.com/pdbsy/alphaforge-xlayer/pull/5)
 
 ## Decision
 
+Final actual-combination acceptance is now recorded in [FINAL-ACCEPTANCE.md](FINAL-ACCEPTANCE.md); it closes the later session/provenance defects at its exact C while retaining hosted/admission limits. This earlier report is unchanged evidence for the sources below.
+
 Later combined-source fixture verification and the separate pending-review P2 blocker are recorded in [COMBINED-RETEST.md](COMBINED-RETEST.md). Results below retain their original source bindings.
 
 READY FOR REVIEW of the QA artifacts. The imported production baseline fails the new acceptance suite: **18 PASS / 8 FAIL**. Independently tested candidate O passes **26/26 new QA tests and 72/72 focused chain tests**, with typecheck PASS. These runs contain no skipped, cancelled or TODO tests.

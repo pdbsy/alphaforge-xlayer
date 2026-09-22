@@ -5,6 +5,8 @@ Worker: Macbeth05. Task-ID: AF-XLAYER-05-QA. Date: 2026-09-22.
 
 ## Decision and source
 
+Subsequent actual C/R/S acceptance is recorded in [FINAL-ACCEPTANCE.md](FINAL-ACCEPTANCE.md). The pending state below describes this earlier G/C2 checkpoint, not the later candidate.
+
 The five failures found during manager integration were reproduced and corrected in the QA fixture. This is **PASS_LOCAL_QA_FIXTURE_RETEST**, not final product acceptance. A separate pending-review session race remains **BLOCKED** pending 04's production fix and a new exact combined source.
 
 Manager source G: `0e31259c583fed08375c09018f778a4de8bc7c7d`, tree `22357dd43da276fbc5f69ee30c9a61ff364f6a50`. Its parent is `24af1ffcd134d81d8b8dd337df4d21bc9e9d9489`, where the manager first reported 21 PASS / 5 FAIL. Public API confirmed G's SHA/tree. GitHub Git transport failed repeatedly; the manager supplied a complete Git bundle with SHA-256 `dfaf011a1070b319a32d43242b0039011833a64be9f2b9648a5e904614ca0105`. QA verified that digest and `git bundle verify`, then cloned independently and restored the canonical public origin. The clone is not shallow and begins clean at G.

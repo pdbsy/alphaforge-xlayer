@@ -52,4 +52,4 @@ Create `test/xlayer-qa-integration.test.mjs`; consume `validateDeploymentManifes
 - [x] Independently reproduce G `0e31259`'s 21 PASS / 5 FAIL; diagnose concurrent EIP-1193 listener semantics and overly strict read counts.
 - [x] Correct only the QA fixture in C2 `7f2ccf0`; retain strict no-sign/send and stale-session rejection assertions. Independently execute G plus this test file: 26/26, with 71/71 related wallet/controller regressions.
 - [x] Record the distinct async controller review P2 as BLOCKED, assigned to 04; do not mistake the fixture repair for its closure.
-- [ ] After manager supplies the repaired exact combined source, independently verify the async-review fix and final acceptance evidence. This remains dependent on 04/manager delivery.
+- [x] Verify final source C `727a8a5`: 727 application tests, types, 26 QA, 18 independent session cases and 4 provenance mutation cases; inspect restricted R `4ed0ae8` / S `2ea7496`, management and identity. Publish local engineering acceptance with hosted/formal admission limits in FINAL-ACCEPTANCE.md.
