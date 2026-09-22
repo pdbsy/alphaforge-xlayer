@@ -46,3 +46,10 @@ Create `test/xlayer-qa-integration.test.mjs`; consume `validateDeploymentManifes
 - [x] Review the new tests for false positives, no network effects and scope compliance. No production fix is permitted in this QA branch.
 - [x] Independently retest manager-specified 03 source `6a2350f` with exact foundation file from `728c3df` and tests from C; record 26/26 QA and 72/72 focused PASS with composite source identity.
 - [x] Publish intake ACK; report exact candidate results and blockers to the manager and request shared registration of both new files. Final documentation is prepared for the same Draft PR; final integrated acceptance stays BLOCKED.
+
+## Task 4 — Manager integration follow-up
+
+- [x] Independently reproduce G `0e31259`'s 21 PASS / 5 FAIL; diagnose concurrent EIP-1193 listener semantics and overly strict read counts.
+- [x] Correct only the QA fixture in C2 `7f2ccf0`; retain strict no-sign/send and stale-session rejection assertions. Independently execute G plus this test file: 26/26, with 71/71 related wallet/controller regressions.
+- [x] Record the distinct async controller review P2 as BLOCKED, assigned to 04; do not mistake the fixture repair for its closure.
+- [ ] After manager supplies the repaired exact combined source, independently verify the async-review fix and final acceptance evidence. This remains dependent on 04/manager delivery.
