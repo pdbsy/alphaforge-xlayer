@@ -1,0 +1,285 @@
+public_transcript_policy=task-root path redacted; trailing whitespace normalized; raw preserved
+raw_path=.checks/xlayer02/template-red.log
+raw_sha256=d7efcb15d66e6df44f99485471b6a95ace6272c3ec7fed0cde0122ba5658b2e1
+
+test_accepts_unconfigured_testnet_template (test_xlayer_template.XLayerTemplateTests.test_accepts_unconfigured_testnet_template) ... ok
+test_cli_refuses_options_and_does_not_echo_values (test_xlayer_template.XLayerTemplateTests.test_cli_refuses_options_and_does_not_echo_values) ... FAIL
+test_preserves_precision_tool_pins_and_authority (test_xlayer_template.XLayerTemplateTests.test_preserves_precision_tool_pins_and_authority) ... FAIL
+test_refuses_unexpected_missing_or_wrong_type_fields (test_xlayer_template.XLayerTemplateTests.test_refuses_unexpected_missing_or_wrong_type_fields) ... FAIL
+test_refuses_writes_and_fabricated_finality (test_xlayer_template.XLayerTemplateTests.test_refuses_writes_and_fabricated_finality) ... FAIL
+test_rejects_deployment_or_artifact_claims (test_xlayer_template.XLayerTemplateTests.test_rejects_deployment_or_artifact_claims) ... FAIL
+test_rejects_endpoint_injection_without_echoing_it (test_xlayer_template.XLayerTemplateTests.test_rejects_endpoint_injection_without_echoing_it) ...
+  test_rejects_endpoint_injection_without_echoing_it (test_xlayer_template.XLayerTemplateTests.test_rejects_endpoint_injection_without_echoing_it) (field='rpcUrl') ... FAIL
+  test_rejects_endpoint_injection_without_echoing_it (test_xlayer_template.XLayerTemplateTests.test_rejects_endpoint_injection_without_echoing_it) (field='rpcUrl') ... FAIL
+  test_rejects_endpoint_injection_without_echoing_it (test_xlayer_template.XLayerTemplateTests.test_rejects_endpoint_injection_without_echoing_it) (field='rpcUrl') ... FAIL
+  test_rejects_endpoint_injection_without_echoing_it (test_xlayer_template.XLayerTemplateTests.test_rejects_endpoint_injection_without_echoing_it) (field='alternateRpcUrl') ... FAIL
+  test_rejects_endpoint_injection_without_echoing_it (test_xlayer_template.XLayerTemplateTests.test_rejects_endpoint_injection_without_echoing_it) (field='alternateRpcUrl') ... FAIL
+  test_rejects_endpoint_injection_without_echoing_it (test_xlayer_template.XLayerTemplateTests.test_rejects_endpoint_injection_without_echoing_it) (field='alternateRpcUrl') ... FAIL
+  test_rejects_endpoint_injection_without_echoing_it (test_xlayer_template.XLayerTemplateTests.test_rejects_endpoint_injection_without_echoing_it) (field='explorerUrl') ... FAIL
+  test_rejects_endpoint_injection_without_echoing_it (test_xlayer_template.XLayerTemplateTests.test_rejects_endpoint_injection_without_echoing_it) (field='explorerUrl') ... FAIL
+  test_rejects_endpoint_injection_without_echoing_it (test_xlayer_template.XLayerTemplateTests.test_rejects_endpoint_injection_without_echoing_it) (field='explorerUrl') ... FAIL
+test_rejects_wrong_or_coerced_networks (test_xlayer_template.XLayerTemplateTests.test_rejects_wrong_or_coerced_networks) ...
+  test_rejects_wrong_or_coerced_networks (test_xlayer_template.XLayerTemplateTests.test_rejects_wrong_or_coerced_networks) (chain=46630) ... FAIL
+  test_rejects_wrong_or_coerced_networks (test_xlayer_template.XLayerTemplateTests.test_rejects_wrong_or_coerced_networks) (chain=195) ... FAIL
+  test_rejects_wrong_or_coerced_networks (test_xlayer_template.XLayerTemplateTests.test_rejects_wrong_or_coerced_networks) (chain=196) ... FAIL
+  test_rejects_wrong_or_coerced_networks (test_xlayer_template.XLayerTemplateTests.test_rejects_wrong_or_coerced_networks) (chain=1) ... FAIL
+  test_rejects_wrong_or_coerced_networks (test_xlayer_template.XLayerTemplateTests.test_rejects_wrong_or_coerced_networks) (chain='1952') ... FAIL
+  test_rejects_wrong_or_coerced_networks (test_xlayer_template.XLayerTemplateTests.test_rejects_wrong_or_coerced_networks) (chain=1952.0) ... FAIL
+  test_rejects_wrong_or_coerced_networks (test_xlayer_template.XLayerTemplateTests.test_rejects_wrong_or_coerced_networks) (chain=True) ... FAIL
+  test_rejects_wrong_or_coerced_networks (test_xlayer_template.XLayerTemplateTests.test_rejects_wrong_or_coerced_networks) (chain=None) ... FAIL
+test_rejects_wrong_or_coerced_networks (test_xlayer_template.XLayerTemplateTests.test_rejects_wrong_or_coerced_networks) ... FAIL
+
+======================================================================
+FAIL: test_cli_refuses_options_and_does_not_echo_values (test_xlayer_template.XLayerTemplateTests.test_cli_refuses_options_and_does_not_echo_values)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<TASK_ROOT>/contracts/script/tests/test_xlayer_template.py", line 95, in test_cli_refuses_options_and_does_not_echo_values
+    self.assertEqual(result.returncode, 2)
+AssertionError: 0 != 2
+
+======================================================================
+FAIL: test_preserves_precision_tool_pins_and_authority (test_xlayer_template.XLayerTemplateTests.test_preserves_precision_tool_pins_and_authority)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<TASK_ROOT>/contracts/script/tests/test_xlayer_template.py", line 61, in test_preserves_precision_tool_pins_and_authority
+    self.reject(['tokenMetadata', 'afUsdc', 'decimals'], 18)
+  File "<TASK_ROOT>/contracts/script/tests/test_xlayer_template.py", line 25, in reject
+    with self.assertRaises(ValueError) as error:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_refuses_unexpected_missing_or_wrong_type_fields (test_xlayer_template.XLayerTemplateTests.test_refuses_unexpected_missing_or_wrong_type_fields)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<TASK_ROOT>/contracts/script/tests/test_xlayer_template.py", line 82, in test_refuses_unexpected_missing_or_wrong_type_fields
+    self.reject(['extra'], 'secret')
+  File "<TASK_ROOT>/contracts/script/tests/test_xlayer_template.py", line 25, in reject
+    with self.assertRaises(ValueError) as error:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_refuses_writes_and_fabricated_finality (test_xlayer_template.XLayerTemplateTests.test_refuses_writes_and_fabricated_finality)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<TASK_ROOT>/contracts/script/tests/test_xlayer_template.py", line 71, in test_refuses_writes_and_fabricated_finality
+    self.reject(['boundary', key], True)
+  File "<TASK_ROOT>/contracts/script/tests/test_xlayer_template.py", line 25, in reject
+    with self.assertRaises(ValueError) as error:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_rejects_deployment_or_artifact_claims (test_xlayer_template.XLayerTemplateTests.test_rejects_deployment_or_artifact_claims)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<TASK_ROOT>/contracts/script/tests/test_xlayer_template.py", line 47, in test_rejects_deployment_or_artifact_claims
+    self.reject(['deploymentStatus'], 'DEPLOYED')
+  File "<TASK_ROOT>/contracts/script/tests/test_xlayer_template.py", line 25, in reject
+    with self.assertRaises(ValueError) as error:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_rejects_endpoint_injection_without_echoing_it (test_xlayer_template.XLayerTemplateTests.test_rejects_endpoint_injection_without_echoing_it) (field='rpcUrl')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<TASK_ROOT>/contracts/script/tests/test_xlayer_template.py", line 44, in test_rejects_endpoint_injection_without_echoing_it
+    self.reject([key], value)
+  File "<TASK_ROOT>/contracts/script/tests/test_xlayer_template.py", line 25, in reject
+    with self.assertRaises(ValueError) as error:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_rejects_endpoint_injection_without_echoing_it (test_xlayer_template.XLayerTemplateTests.test_rejects_endpoint_injection_without_echoing_it) (field='rpcUrl')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<TASK_ROOT>/contracts/script/tests/test_xlayer_template.py", line 44, in test_rejects_endpoint_injection_without_echoing_it
+    self.reject([key], value)
+  File "<TASK_ROOT>/contracts/script/tests/test_xlayer_template.py", line 25, in reject
+    with self.assertRaises(ValueError) as error:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_rejects_endpoint_injection_without_echoing_it (test_xlayer_template.XLayerTemplateTests.test_rejects_endpoint_injection_without_echoing_it) (field='rpcUrl')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<TASK_ROOT>/contracts/script/tests/test_xlayer_template.py", line 44, in test_rejects_endpoint_injection_without_echoing_it
+    self.reject([key], value)
+  File "<TASK_ROOT>/contracts/script/tests/test_xlayer_template.py", line 25, in reject
+    with self.assertRaises(ValueError) as error:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_rejects_endpoint_injection_without_echoing_it (test_xlayer_template.XLayerTemplateTests.test_rejects_endpoint_injection_without_echoing_it) (field='alternateRpcUrl')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<TASK_ROOT>/contracts/script/tests/test_xlayer_template.py", line 44, in test_rejects_endpoint_injection_without_echoing_it
+    self.reject([key], value)
+  File "<TASK_ROOT>/contracts/script/tests/test_xlayer_template.py", line 25, in reject
+    with self.assertRaises(ValueError) as error:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_rejects_endpoint_injection_without_echoing_it (test_xlayer_template.XLayerTemplateTests.test_rejects_endpoint_injection_without_echoing_it) (field='alternateRpcUrl')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<TASK_ROOT>/contracts/script/tests/test_xlayer_template.py", line 44, in test_rejects_endpoint_injection_without_echoing_it
+    self.reject([key], value)
+  File "<TASK_ROOT>/contracts/script/tests/test_xlayer_template.py", line 25, in reject
+    with self.assertRaises(ValueError) as error:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_rejects_endpoint_injection_without_echoing_it (test_xlayer_template.XLayerTemplateTests.test_rejects_endpoint_injection_without_echoing_it) (field='alternateRpcUrl')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<TASK_ROOT>/contracts/script/tests/test_xlayer_template.py", line 44, in test_rejects_endpoint_injection_without_echoing_it
+    self.reject([key], value)
+  File "<TASK_ROOT>/contracts/script/tests/test_xlayer_template.py", line 25, in reject
+    with self.assertRaises(ValueError) as error:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_rejects_endpoint_injection_without_echoing_it (test_xlayer_template.XLayerTemplateTests.test_rejects_endpoint_injection_without_echoing_it) (field='explorerUrl')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<TASK_ROOT>/contracts/script/tests/test_xlayer_template.py", line 44, in test_rejects_endpoint_injection_without_echoing_it
+    self.reject([key], value)
+  File "<TASK_ROOT>/contracts/script/tests/test_xlayer_template.py", line 25, in reject
+    with self.assertRaises(ValueError) as error:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_rejects_endpoint_injection_without_echoing_it (test_xlayer_template.XLayerTemplateTests.test_rejects_endpoint_injection_without_echoing_it) (field='explorerUrl')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<TASK_ROOT>/contracts/script/tests/test_xlayer_template.py", line 44, in test_rejects_endpoint_injection_without_echoing_it
+    self.reject([key], value)
+  File "<TASK_ROOT>/contracts/script/tests/test_xlayer_template.py", line 25, in reject
+    with self.assertRaises(ValueError) as error:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_rejects_endpoint_injection_without_echoing_it (test_xlayer_template.XLayerTemplateTests.test_rejects_endpoint_injection_without_echoing_it) (field='explorerUrl')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<TASK_ROOT>/contracts/script/tests/test_xlayer_template.py", line 44, in test_rejects_endpoint_injection_without_echoing_it
+    self.reject([key], value)
+  File "<TASK_ROOT>/contracts/script/tests/test_xlayer_template.py", line 25, in reject
+    with self.assertRaises(ValueError) as error:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_rejects_wrong_or_coerced_networks (test_xlayer_template.XLayerTemplateTests.test_rejects_wrong_or_coerced_networks) (chain=46630)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<TASK_ROOT>/contracts/script/tests/test_xlayer_template.py", line 35, in test_rejects_wrong_or_coerced_networks
+    self.reject(['chainId'], chain)
+  File "<TASK_ROOT>/contracts/script/tests/test_xlayer_template.py", line 25, in reject
+    with self.assertRaises(ValueError) as error:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_rejects_wrong_or_coerced_networks (test_xlayer_template.XLayerTemplateTests.test_rejects_wrong_or_coerced_networks) (chain=195)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<TASK_ROOT>/contracts/script/tests/test_xlayer_template.py", line 35, in test_rejects_wrong_or_coerced_networks
+    self.reject(['chainId'], chain)
+  File "<TASK_ROOT>/contracts/script/tests/test_xlayer_template.py", line 25, in reject
+    with self.assertRaises(ValueError) as error:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_rejects_wrong_or_coerced_networks (test_xlayer_template.XLayerTemplateTests.test_rejects_wrong_or_coerced_networks) (chain=196)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<TASK_ROOT>/contracts/script/tests/test_xlayer_template.py", line 35, in test_rejects_wrong_or_coerced_networks
+    self.reject(['chainId'], chain)
+  File "<TASK_ROOT>/contracts/script/tests/test_xlayer_template.py", line 25, in reject
+    with self.assertRaises(ValueError) as error:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_rejects_wrong_or_coerced_networks (test_xlayer_template.XLayerTemplateTests.test_rejects_wrong_or_coerced_networks) (chain=1)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<TASK_ROOT>/contracts/script/tests/test_xlayer_template.py", line 35, in test_rejects_wrong_or_coerced_networks
+    self.reject(['chainId'], chain)
+  File "<TASK_ROOT>/contracts/script/tests/test_xlayer_template.py", line 25, in reject
+    with self.assertRaises(ValueError) as error:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_rejects_wrong_or_coerced_networks (test_xlayer_template.XLayerTemplateTests.test_rejects_wrong_or_coerced_networks) (chain='1952')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<TASK_ROOT>/contracts/script/tests/test_xlayer_template.py", line 35, in test_rejects_wrong_or_coerced_networks
+    self.reject(['chainId'], chain)
+  File "<TASK_ROOT>/contracts/script/tests/test_xlayer_template.py", line 25, in reject
+    with self.assertRaises(ValueError) as error:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_rejects_wrong_or_coerced_networks (test_xlayer_template.XLayerTemplateTests.test_rejects_wrong_or_coerced_networks) (chain=1952.0)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<TASK_ROOT>/contracts/script/tests/test_xlayer_template.py", line 35, in test_rejects_wrong_or_coerced_networks
+    self.reject(['chainId'], chain)
+  File "<TASK_ROOT>/contracts/script/tests/test_xlayer_template.py", line 25, in reject
+    with self.assertRaises(ValueError) as error:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_rejects_wrong_or_coerced_networks (test_xlayer_template.XLayerTemplateTests.test_rejects_wrong_or_coerced_networks) (chain=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<TASK_ROOT>/contracts/script/tests/test_xlayer_template.py", line 35, in test_rejects_wrong_or_coerced_networks
+    self.reject(['chainId'], chain)
+  File "<TASK_ROOT>/contracts/script/tests/test_xlayer_template.py", line 25, in reject
+    with self.assertRaises(ValueError) as error:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_rejects_wrong_or_coerced_networks (test_xlayer_template.XLayerTemplateTests.test_rejects_wrong_or_coerced_networks) (chain=None)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<TASK_ROOT>/contracts/script/tests/test_xlayer_template.py", line 35, in test_rejects_wrong_or_coerced_networks
+    self.reject(['chainId'], chain)
+  File "<TASK_ROOT>/contracts/script/tests/test_xlayer_template.py", line 25, in reject
+    with self.assertRaises(ValueError) as error:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_rejects_wrong_or_coerced_networks (test_xlayer_template.XLayerTemplateTests.test_rejects_wrong_or_coerced_networks)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<TASK_ROOT>/contracts/script/tests/test_xlayer_template.py", line 36, in test_rejects_wrong_or_coerced_networks
+    self.reject(['networkKey'], 'robinhood-chain-testnet')
+  File "<TASK_ROOT>/contracts/script/tests/test_xlayer_template.py", line 25, in reject
+    with self.assertRaises(ValueError) as error:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.026s
+
+FAILED (failures=23)
