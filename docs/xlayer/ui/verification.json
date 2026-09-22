@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "project": "AlphaForge-XLayer",
+  "track": "X Layer",
+  "repository": "pdbsy/alphaforge-xlayer",
+  "manager": "XLayerPM",
+  "agent": "Macbeth04",
+  "taskId": "AF-XLAYER-04-UI",
+  "source": {
+    "commit": "5e4f4a77d2d8f0bb598952605aaed6cf1f7d5f77",
+    "tree": "3cac70aa093efcfd8d799d7ec7cfd333f03502c9",
+    "base": "18f5352070910a867b9729b031aa2e3951785e01"
+  },
+  "qualifiedOverlay": {
+    "commit": "728c3df217f586fb7f7d86f595406dc46372ac1a",
+    "path": "packages/xlayer-chain/src/network.ts",
+    "blob": "27266cf5b188cf22eec22c410573d253275194d4",
+    "sha256": "af3ec6f9edce2a1cd0764a6eadb85d6af2d940ba98aa6b05115ed532b1fcd683",
+    "includedInWorkerBranch": false
+  },
+  "result": "QUALIFIED_LOCAL_ENGINEERING_PASS",
+  "tests": {
+    "passed": 632,
+    "failed": 0,
+    "skipped": 0
+  },
+  "hostedCi": {
+    "run": 35714437703,
+    "head": "5e4f4a77d2d8f0bb598952605aaed6cf1f7d5f77",
+    "conclusion": "failure",
+    "reason": "Exact npm bootstrap BLOCKED at inputs"
+  },
+  "environmentAdmission": "FAIL",
+  "standaloneDependency": "BLOCKED",
+  "independentApproval": "NOT_RUN",
+  "integratedSnapshotS": "NOT_RUN",
+  "deployment": "NOT_DEPLOYED",
+  "logs": [
+    {
+      "name": "af-xlayer04-source-c-test.log",
+      "sha256": "7153b4a7177c36e31d2d2703e654d0bf52c7bf1f6f6bdcd9f696578d811ecf19",
+      "scope": "local-output-not-hosted-artifact"
+    },
+    {
+      "name": "af-xlayer04-build-robinhood.log",
+      "sha256": "049a7148c9dd498586f6fcd5a5176f69a246d66fba324866841c25a0afa7d50e",
+      "scope": "local-output-not-hosted-artifact"
+    },
+    {
+      "name": "af-xlayer04-build-xlayer.log",
+      "sha256": "fb5f5b1f8db537f15c5030c428385de0c6690fc348750cc75772e0552b375936",
+      "scope": "local-output-not-hosted-artifact"
+    },
+    {
+      "name": "af-xlayer04-env-check.log",
+      "sha256": "9b55eddccca51db829db3ac7deb723993ef48776a24ef7b743a8efaf41780453",
+      "scope": "local-output-not-hosted-artifact"
+    },
+    {
+      "name": "af-xlayer04-env-active.log",
+      "sha256": "991c3e45098d599c68295113aed06b6fd5e0dac2ec91916acb32f71b4f58d65c",
+      "scope": "local-output-not-hosted-artifact"
+    },
+    {
+      "name": "af-xlayer04-ci-failed.log",
+      "sha256": "5529544bc0e6d6d1a52afa0fe61b995168e0133c83ee967769d1bc84b291a944",
+      "scope": "local-output-not-hosted-artifact"
+    }
+  ]
+}
