@@ -1356,7 +1356,7 @@
       "target_path": "tools/check-agent-identity.mjs",
       "method": "selective import; canonical repository allowlist and dashboard link adapted; PR11 review remediation: atomic product snapshot, identity lifecycle or bounded logical-message Forum as applicable",
       "original_sha256": "d3cebb25a3334804f336e867a92c00e60d71cfb20e11191a5469fdbad24d6e3e",
-      "migrated_sha256": "306af6bf2043be0bc2701ae536b7773f9bd71537e1d352aded696a2a78dc788e",
+      "migrated_sha256": "798e0f307b5a494dd29c43aeafd800760fb0c7233a0e0cfc06be59372c3ab667",
       "subsequent_adaptations": [
         {
           "task": "AF-M3-IDENTITY",
@@ -1381,6 +1381,13 @@
           "base_commit": "919505b45572916a3868ecf355691fb09fa1e2c3",
           "previous_sha256": "e08bbea8e63e84dad081c9060911a3a640cb553c3428d7c7f7bf37f2c2cbefed",
           "reason": "Register explicitly assigned partial-onchain integration while preserving bounded source admission and repair job-scoped private CodeQL metadata-read permission."
+        },
+        {
+          "task": "AF-XLAYER-06-CI",
+          "base_commit": "18f5352070910a867b9729b031aa2e3951785e01",
+          "previous_sha256": "306af6bf2043be0bc2701ae536b7773f9bd71537e1d352aded696a2a78dc788e",
+          "source_commit": "46efeeaa6a4b1394432b9e00f38de020a5826377",
+          "reason": "Add the explicitly assigned X Layer integration dispatch and reject unbound queue history; preserve both historical integration profiles and worker validation."
         }
       ]
     },
