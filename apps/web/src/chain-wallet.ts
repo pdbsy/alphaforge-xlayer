@@ -150,7 +150,7 @@ export type WalletSubmission = SubmittedOperation | AmbiguousSubmission;
 
 export interface BrowserWalletPort {
   connect(): Promise<WalletSession>;
-  submit(prepared: PreparedAction): Promise<WalletSubmission>;
+  submit(prepared: PreparedAction, assertSession?: () => void): Promise<WalletSubmission>;
 }
 
 export interface BrowserWalletConnectionPort {
@@ -328,13 +328,22 @@ export class Eip1193Wallet implements BrowserWalletPort {
     }
   }
 
-  async submit(prepared: PreparedAction): Promise<WalletSubmission> {
+  async submit(prepared: PreparedAction, assertSession?: () => void): Promise<WalletSubmission> {
     if (!prepared || typeof prepared !== 'object' || trustedActions.get(prepared) !== this.#actionAuthority)
       throw new WalletFailure('UNTRUSTED_PREPARED_ACTION');
     if (prepared.chainId !== this.#chainId || !sameAddress(prepared.target, this.#target))
       throw new WalletFailure('UNTRUSTED_PREPARED_ACTION');
 
     const session = { changed: false };
+    const assertCurrent = () => {
+      try {
+        assertSession?.();
+      } catch (error) {
+        session.changed = true;
+        throw error;
+      }
+    };
+    assertCurrent();
     const invalidateSession = () => {
       session.changed = true;
     };
@@ -349,6 +358,7 @@ export class Eip1193Wallet implements BrowserWalletPort {
         registeredEvents.push(event);
       }
       const current = await this.#connection.observe();
+      assertCurrent();
       if (!current) throw new WalletFailure('WALLET_DISCONNECTED');
       if (!sameAddress(current.account, prepared.owner)) throw new WalletFailure('WALLET_ACCOUNT_CHANGED');
       if (current.chainId !== this.#chainId) throw new WalletFailure('WALLET_WRONG_CHAIN');
@@ -370,12 +380,14 @@ export class Eip1193Wallet implements BrowserWalletPort {
         throw new WalletFailure('WALLET_SIMULATION_FAILED');
       }
 
+      assertCurrent();
       const preSubmit = await this.#connection.observe();
       if (!preSubmit) throw new WalletFailure('WALLET_DISCONNECTED');
       if (!sameAddress(preSubmit.account, prepared.owner)) throw new WalletFailure('WALLET_ACCOUNT_CHANGED');
       if (preSubmit.chainId !== this.#chainId) throw new WalletFailure('WALLET_WRONG_CHAIN');
       if (session.changed) throw new WalletFailure('WALLET_SESSION_CHANGED');
 
+      assertCurrent();
       let result: unknown;
       try {
         result = await this.#provider.request({
@@ -397,7 +409,9 @@ export class Eip1193Wallet implements BrowserWalletPort {
 
       let sessionMatches = false;
       try {
+        assertCurrent();
         const current = await this.#connection.observe();
+        assertCurrent();
         sessionMatches =
           !session.changed &&
           Boolean(current) &&

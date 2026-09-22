@@ -32,3 +32,7 @@ Agent: Macbeth04. Manager: XLayerPM. Assignment: public PR #1 and its frozen mig
 ## Execution receipt
 
 Implementation and qualified local validation are complete at source C `5e4f4a77d2d8f0bb598952605aaed6cf1f7d5f77`. The foundation dependency was consumed only in a separate validation clone as authorized by XLayerPM. See VERIFICATION.md and verification.json for exact source/overlay references, 632/632 tests, build/browser checks, RED failures and environment/CI/integration blockers. Draft PR #3 carries the actual ACK. No additional worker was started; engineering review was requested through the existing manager/QA assignment.
+
+## AF-XLAYER-04-UI-FIX: pending review invalidation
+
+XLayerPM assigned a narrow P2 correction after Macbeth03 reproduced an old pending review completing after wrong-chain refresh and same-wallet reconnect. Replacing WeakMaps alone does not invalidate in-flight writers. Bind action and allowance review/read/prepare/publish/store/confirm work to a session epoch incremented by every clearSession. Check before wallet submission; if a request has already reached the wallet, preserve any returned hash as a non-retryable ambiguous result without publishing into the new session. Reproduce RED, implement the guard, run focused and full regressions using the declared foundation overlay, and publish a new exact source SHA for existing Macbeth05 QA. No new feature or manager-checkout edits; Robinhood task remains separate.

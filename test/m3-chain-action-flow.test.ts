@@ -125,3 +125,30 @@ test('a failed reconnect clears the previous wallet session', async () => {
   await assert.rejects(flow.connect(), /WALLET_DISCONNECTED/);
   await assert.rejects(flow.review({ kind: 'close' }), /WALLET_CONNECTION_REQUIRED/);
 });
+
+test('flow stops after a delayed prepare if its caller invalidated the session', async () => {
+  const { adapter, wallet, events } = fixture();
+  const entered = Promise.withResolvers<void>();
+  const resume = Promise.withResolvers<void>();
+  const originalPrepare = adapter.prepareAction;
+  adapter.prepareAction = async (action) => {
+    const result = await originalPrepare(action);
+    entered.resolve();
+    await resume.promise;
+    return result;
+  };
+  let current = true;
+  const flow = new M3ChainActionFlow(adapter, wallet);
+  await flow.connect();
+  const pending = flow.review({ kind: 'close' }, () => {
+    if (!current) throw new Error('WALLET_SESSION_CHANGED');
+  });
+  await entered.promise;
+  current = false;
+  resume.resolve();
+  await assert.rejects(pending, /WALLET_SESSION_CHANGED/);
+  assert.equal(
+    events.some((event) => event.startsWith('adapter.simulate') || event.startsWith('wallet.submit')),
+    false,
+  );
+});

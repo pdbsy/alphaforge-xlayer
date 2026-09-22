@@ -675,3 +675,291 @@ test('reconnecting cannot reuse a product review from an invalidated session', a
     false,
   );
 });
+
+for (const phase of [
+  'action-read',
+  'action-simulation',
+  'deposit-read',
+  'deposit-allowance',
+  'approval-read',
+  'approval-allowance',
+] as const) {
+  test(`pending ${phase} cannot revive a review after wrong-chain refresh and same-wallet reconnect`, async () => {
+    const provider = new SessionProviderFixture();
+    provider.usdcAllowance = 1n;
+    provider.passAllowance = 1_000_000_000_000n;
+    const started = Promise.withResolvers<void>();
+    const resume = Promise.withResolvers<void>();
+    let pause = false;
+    const original = provider.request.bind(provider);
+    provider.request = async (request) => {
+      const result = await original(request);
+      const data = String((request.params?.[0] as { data?: unknown } | undefined)?.data);
+      if (
+        pause &&
+        request.method === 'eth_call' &&
+        (phase.endsWith('allowance')
+          ? data.startsWith('0xdd62ed3e')
+          : phase === 'action-simulation' && data === encodeM3VaultCall('close()', []))
+      ) {
+        pause = false;
+        started.resolve();
+        await resume.promise;
+      }
+      return result;
+    };
+    const runtime = createM3BrowserRuntime({
+      provider,
+      deployment,
+      transportProvenance: 'DEV_MOCK',
+      vaultReader: {
+        async readSnapshot() {
+          if (pause && phase.endsWith('read')) {
+            pause = false;
+            started.resolve();
+            await resume.promise;
+          }
+          return vaultSnapshot;
+        },
+      },
+    });
+    await runtime.connect();
+    pause = true;
+    const pending = phase.startsWith('approval')
+      ? runtime.reviewDepositApprovals!({ kind: 'deposit', usdcBaseUnits: '1' })
+      : runtime.reviewAction(
+          phase.startsWith('deposit') ? { kind: 'deposit', usdcBaseUnits: '1' } : { kind: 'close' },
+        );
+    await started.promise;
+    provider.chainId = 196;
+    await runtime.refresh();
+    provider.chainId = 46630;
+    await runtime.connect();
+    const fresh = runtime.snapshot;
+    resume.resolve();
+    await assert.rejects(pending, /WALLET_SESSION_CHANGED/);
+    assert.deepEqual(runtime.snapshot, fresh);
+    assert.equal(
+      provider.requests.some(({ method }) => method === 'eth_sendTransaction'),
+      false,
+    );
+    assert.equal(
+      [...provider.listeners.values()].every((listeners) => listeners.size === 0),
+      true,
+    );
+  });
+}
+
+for (const phase of [
+  'action-read',
+  'action-simulation',
+  'action-wallet-simulation',
+  'approval-wallet-simulation',
+] as const) {
+  test(`pending confirmation ${phase} cannot send after session invalidation without provider events`, async () => {
+    const provider = new SessionProviderFixture();
+    const started = Promise.withResolvers<void>();
+    const resume = Promise.withResolvers<void>();
+    let pause = false;
+    let simulations = 0;
+    const original = provider.request.bind(provider);
+    provider.request = async (request) => {
+      const result = await original(request);
+      const data = String((request.params?.[0] as { data?: unknown } | undefined)?.data);
+      if (
+        pause &&
+        request.method === 'eth_call' &&
+        (data === encodeM3VaultCall('close()', []) || data.startsWith('0x095ea7b3'))
+      ) {
+        simulations += 1;
+        if (phase !== 'action-read' && simulations === (phase === 'action-wallet-simulation' ? 2 : 1)) {
+          pause = false;
+          started.resolve();
+          await resume.promise;
+        }
+      }
+      return result;
+    };
+    const runtime = createM3BrowserRuntime({
+      provider,
+      deployment,
+      transportProvenance: 'DEV_MOCK',
+      vaultReader: {
+        async readSnapshot() {
+          if (pause && phase === 'action-read') {
+            pause = false;
+            started.resolve();
+            await resume.promise;
+          }
+          return vaultSnapshot;
+        },
+      },
+    });
+    await runtime.connect();
+    const approval = phase.startsWith('approval')
+      ? await runtime.reviewDepositApprovals!({ kind: 'deposit', usdcBaseUnits: '1' })
+      : null;
+    const action = approval ? null : await runtime.reviewAction({ kind: 'close' });
+    pause = true;
+    const pending = approval
+      ? runtime.confirmDepositApproval!(approval, 'af-usdc')
+      : runtime.confirmAction(action!);
+    await started.promise;
+    provider.chainId = 196;
+    await runtime.refresh();
+    provider.chainId = 46630;
+    await runtime.connect();
+    const fresh = runtime.snapshot;
+    resume.resolve();
+    await assert.rejects(pending, /WALLET_SESSION_CHANGED/);
+    assert.deepEqual(runtime.snapshot, fresh);
+    assert.equal(
+      provider.requests.some(({ method }) => method === 'eth_sendTransaction'),
+      false,
+    );
+  });
+}
+
+for (const kind of ['action', 'approval'] as const) {
+  test(`late ${kind} wallet hash remains ambiguous and cannot overwrite the reconnected session`, async () => {
+    const provider = new SessionProviderFixture();
+    const started = Promise.withResolvers<void>();
+    const resume = Promise.withResolvers<void>();
+    const original = provider.request.bind(provider);
+    provider.request = async (request) => {
+      const result = await original(request);
+      if (request.method === 'eth_sendTransaction') {
+        started.resolve();
+        await resume.promise;
+      }
+      return result;
+    };
+    const runtime = createM3BrowserRuntime({
+      provider,
+      deployment,
+      transportProvenance: 'DEV_MOCK',
+      vaultReader: {
+        async readSnapshot() {
+          return vaultSnapshot;
+        },
+        async registerSubmission() {},
+      },
+    });
+    await runtime.connect();
+    const approval =
+      kind === 'approval'
+        ? await runtime.reviewDepositApprovals!({ kind: 'deposit', usdcBaseUnits: '1' })
+        : null;
+    const action = approval ? null : await runtime.reviewAction({ kind: 'close' });
+    const pending = approval
+      ? runtime.confirmDepositApproval!(approval, 'af-usdc')
+      : runtime.confirmAction(action!);
+    await started.promise;
+    provider.chainId = 196;
+    await runtime.refresh();
+    provider.chainId = 46630;
+    await runtime.connect();
+    const fresh = runtime.snapshot;
+    resume.resolve();
+    const result = await pending;
+    assert.equal(result.state, 'SUBMISSION_AMBIGUOUS');
+    if (result.state !== 'SUBMISSION_AMBIGUOUS') assert.fail('expected ambiguous stale submission');
+    assert.equal(result.reason, 'SESSION_CHANGED');
+    assert.equal(result.txHash, TX_HASH);
+    assert.equal(result.retryable, false);
+    assert.deepEqual(runtime.snapshot, fresh);
+    assert.equal(provider.requests.filter(({ method }) => method === 'eth_sendTransaction').length, 1);
+  });
+}
+
+for (const operation of ['review-action', 'review-approval', 'confirm-action'] as const) {
+  test(`${operation} rejects an event-invalidated pending read without reconnecting`, async () => {
+    const provider = new SessionProviderFixture();
+    const started = Promise.withResolvers<void>();
+    const resume = Promise.withResolvers<void>();
+    let pause = false;
+    const runtime = createM3BrowserRuntime({
+      provider,
+      deployment,
+      transportProvenance: 'DEV_MOCK',
+      vaultReader: {
+        async readSnapshot() {
+          if (pause) {
+            pause = false;
+            started.resolve();
+            await resume.promise;
+          }
+          return vaultSnapshot;
+        },
+      },
+    });
+    await runtime.connect();
+    const review = operation === 'confirm-action' ? await runtime.reviewAction({ kind: 'close' }) : null;
+    pause = true;
+    const pending = review
+      ? runtime.confirmAction(review)
+      : operation === 'review-approval'
+        ? runtime.reviewDepositApprovals!({ kind: 'deposit', usdcBaseUnits: '1' })
+        : runtime.reviewAction({ kind: 'close' });
+    await started.promise;
+    provider.chainId = 196;
+    provider.emit('chainChanged');
+    await runtime.refresh();
+    provider.chainId = 46630;
+    provider.emit('chainChanged');
+    const invalidated = runtime.snapshot;
+    resume.resolve();
+    await assert.rejects(pending, /WALLET_SESSION_CHANGED/);
+    assert.deepEqual(runtime.snapshot, invalidated);
+    assert.equal(runtime.snapshot.onchain.writeMode, 'DISABLED');
+    assert.equal(
+      provider.requests.some(({ method }) => method === 'eth_sendTransaction'),
+      false,
+    );
+  });
+}
+
+test('late submission registration keeps its hash without attaching the old operation to a new session', async () => {
+  const provider = new SessionProviderFixture();
+  const started = Promise.withResolvers<void>();
+  const resume = Promise.withResolvers<void>();
+  const observedOperations: string[] = [];
+  const runtime = createM3BrowserRuntime({
+    provider,
+    deployment,
+    transportProvenance: 'DEV_MOCK',
+    vaultReader: {
+      async readSnapshot() {
+        return vaultSnapshot;
+      },
+      async registerSubmission() {
+        started.resolve();
+        await resume.promise;
+      },
+      async readOperationEvidence(operationId) {
+        observedOperations.push(operationId);
+        throw new Error('UNEXPECTED_OLD_OPERATION');
+      },
+    },
+  });
+  await runtime.connect();
+  const review = await runtime.reviewAction({ kind: 'close' });
+  const pending = runtime.confirmAction(review);
+  await started.promise;
+  provider.chainId = 196;
+  await runtime.refresh();
+  provider.chainId = 46630;
+  await runtime.connect();
+  const fresh = runtime.snapshot;
+  resume.resolve();
+  const result = await pending;
+  assert.equal(result.state, 'SUBMISSION_AMBIGUOUS');
+  if (result.state !== 'SUBMISSION_AMBIGUOUS') assert.fail('expected ambiguous late registration');
+  assert.equal(result.reason, 'SESSION_CHANGED');
+  assert.equal(result.txHash, TX_HASH);
+  assert.equal(result.retryable, false);
+  assert.deepEqual(runtime.snapshot, fresh);
+  await runtime.refresh();
+  assert.deepEqual(observedOperations, []);
+  assert.equal(provider.requests.filter(({ method }) => method === 'eth_sendTransaction').length, 1);
+});
