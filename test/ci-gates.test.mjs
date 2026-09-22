@@ -60,7 +60,7 @@ test('contract stages stop on bootstrap/probe/test failure and never invent ABI 
   });
   assert.equal(report.state, 'PASS');
   assert.equal(report.abi, 'PASS');
-  assert.deepEqual(calls[2], ['/bin/bash', ['contracts/script/check-m3-vault.sh']]);
+  assert.deepEqual(calls[2], ['/bin/bash', ['contracts/script/check-xlayer-contracts.sh']]);
 });
 
 async function sourceFixture(t, text, name = 'entry.tsx') {

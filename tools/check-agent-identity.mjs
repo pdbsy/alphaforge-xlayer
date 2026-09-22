@@ -66,11 +66,12 @@ export function check() {
       `${group.base_sha}..${group.head_sha}`,
       '--',
       ...MANAGER_INTEGRATIONS.map(({ task }) => `docs/management/agents/integrations/${task}.json`),
+      'docs/xlayer/integration-provenance.json',
     );
     if (
       manifestHistory ||
       range.some((commit) =>
-        MANAGER_INTEGRATIONS.some(
+        [...MANAGER_INTEGRATIONS, { task: 'AF-XLAYER-MIGRATION' }].some(
           ({ task }) =>
             commit.body.split(/\r?\n/).some((line) => line.match(/^Task-ID:\s*(\S+)\s*$/i)?.[1] === task) ||
             commit.subject.includes(`[${task}]`),
@@ -78,6 +79,15 @@ export function check() {
       )
     )
       throw new Error('Integration merge queue is not authorized without trusted PR/source binding');
+  }
+  if (branch === 'codex/xlayer-bootstrap') {
+    const exactHead = git('rev-parse', '--verify', `${head}^{commit}`);
+    return import('./xlayer-integration-identity.mjs').then(({ verifyXLayerIntegration }) => {
+      const result = verifyXLayerIntegration(root, { branch, head: exactHead, pull });
+      console.log(
+        `X Layer integration identity: ${result.verified} records verified; ${result.imported} preserved imports and ${result.manager} manager records`,
+      );
+    });
   }
   if (MANAGER_INTEGRATIONS.some((profile) => profile.branch === branch)) {
     if (
