@@ -1,5 +1,7 @@
 # X Layer QA Implementation Plan
 
+Project: AlphaForge-XLayer. Track: X Layer. Repository: pdbsy/alphaforge-xlayer. Manager: XLayerPM (AF_Xlayer). Worker: Macbeth05. Task-ID: AF-XLAYER-05-QA.
+
 > **For agentic workers:** use the executing-plans workflow task by task. Changes remain inside the QA-owned paths; code review can use a bounded read-only reviewer.
 
 **Goal:** Produce reproducible offline checks and an honest exact-source acceptance matrix for AF-XLAYER-05-QA.
@@ -22,18 +24,19 @@
 
 - [x] Read exact public spec, imported toolchain/agent instructions and package scripts.
 - [x] Verify fresh full clone and approved tool versions; record environmental failures.
-- [ ] Publish intake-only Draft PR with current verification and dependencies before substantive tests.
-- [ ] Run locked dependency installation in this clone and the focused inherited manifest/store/wallet regression baseline; save raw logs privately.
+- [x] Publish intake-only Draft PR with current verification and dependencies before substantive tests.
+- [x] Run locked dependency installation in this clone and the focused inherited manifest/store/wallet regression baseline; save raw logs privately.
 
 ## Task 2 — Behavioral QA tests
 
 Create `test/xlayer-qa-integration.test.mjs`; consume `validateDeploymentManifest`, `deploymentManifestDigest`, `JsonRpcClient`, `ChainStore`, `createOperation`/`transitionOperation`, `PreparedActionFactory`/`Eip1193Wallet`.
 
-- [ ] Construct synthetic documents for `(xlayer-testnet,1952)` and `(robinhood-chain-testnet,46630)`. Assert trusted digest/address requirements. Recompute attacker-supplied digests for invalid pairs and assert rejection even when an expectation repeats the invalid pair.
-- [ ] Inject local RPC transports returning 195,196,46630 instead of 1952; require `CHAIN_MISMATCH` before data reads. No fetch or public RPC.
-- [ ] Store identical contract/owner/transaction/block identifiers on both chains with different amount strings. Assert idempotency, restart persistence, per-chain checkpoint/projection isolation and X Layer-only rollback.
-- [ ] Prepare X Layer actions using the public wallet API. Simulate wrong-chain and chain-change-during-simulation responses via an in-memory provider; assert zero send/sign requests.
-- [ ] Run `node --test test/xlayer-qa-integration.test.mjs`. Preserve actual failures; inspect causal production code and report actionable findings without weakening assertions.
+- [x] Construct synthetic documents for `(xlayer-testnet,1952)` and `(robinhood-chain-testnet,46630)`. Assert trusted digest/address requirements. Recompute attacker-supplied digests for invalid pairs and assert rejection even when an expectation repeats the invalid pair.
+- [x] Inject local RPC transports returning 195,196,46630 instead of 1952; require `CHAIN_ID_MISMATCH` before data reads. No fetch or public RPC.
+- [x] Store identical contract/owner/transaction/block identifiers on both chains with different amount strings. Assert idempotency, restart persistence, per-chain checkpoint/projection isolation and X Layer-only rollback.
+- [x] Prepare X Layer actions using the public wallet API. Simulate wrong-chain and chain-change-during-simulation responses via an in-memory provider; assert zero send/sign requests.
+- [x] Run `node --test test/xlayer-qa-integration.test.mjs`. Preserve actual failures; inspect causal production code and report actionable findings without weakening assertions.
+- [x] Add `test/xlayer-qa-api.integration.test.mjs` to independently reproduce the evidence-route isolation gap first reported by 03; include matching and wrong-owner controls. Use Fastify injection without an HTTP listener.
 
 ## Task 3 — Evidence and review
 

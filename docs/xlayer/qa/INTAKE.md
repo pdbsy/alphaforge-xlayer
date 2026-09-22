@@ -2,6 +2,10 @@
 
 Agent: Macbeth05. Task-ID: AF-XLAYER-05-QA. Date: 2026-09-22.
 
+Project: AlphaForge-XLayer. Track: X Layer. Repository: pdbsy/alphaforge-xlayer. Manager: XLayerPM (AF_Xlayer).
+
+This assignment does not replace, pause or relabel the separate Robinhood track. Checkouts, dependencies, data, results and blockers remain separate by track.
+
 ## Authority and exact source
 
 The user confirmed the new repository and continuing this task. Public assignment: [migration PR #1](https://github.com/pdbsy/alphaforge-xlayer/pull/1), read at head `955f0fccd38be76ab6b7f7e9715a91eecbf3aa14`; its `docs/xlayer/MIGRATION.md` and `ASSIGNMENTS.md` define this scope.
@@ -19,7 +23,7 @@ The user confirmed the new repository and continuing this task. Public assignmen
 
 Deliver an exact-candidate engineering acceptance matrix and executable offline negative/integration tests for X Layer identity and cross-chain state separation. Only new `docs/xlayer/qa/` documents and new X Layer integration tests are owned here.
 
-Expected files: this intake, `PLAN.md`, `ACCEPTANCE-MATRIX.md`, `RESULTS.md`, and `test/xlayer-qa-integration.test.mjs`. Shared npm/CI registration is proposed to the manager, not edited by QA.
+Expected files: this intake, `PLAN.md`, `ACCEPTANCE-MATRIX.md`, `RESULTS.md`, `test/xlayer-qa-integration.test.mjs` and `test/xlayer-qa-api.integration.test.mjs`. Shared npm/CI registration is proposed to the manager, not edited by QA.
 
 Protected: production contracts/backend/UI, `packages/xlayer-chain/`, root scripts/lock, shared planning/ADR, generated C/R/S records and historical PASS evidence. Preserve authors and every existing gate. No manager/worker commit cherry-picks into this worker branch.
 
