@@ -1,5 +1,12 @@
 # AlphaForge X Layer local contract compatibility
 
+- Project: AlphaForge-XLayer
+- Track: X Layer
+- Repository: `pdbsy/alphaforge-xlayer`
+- Manager: XLayerPM (AF_Xlayer task)
+- Worker: Macbeth02
+- Task-ID: AF-XLAYER-02-CONTRACTS
+
 - Agent / task: Macbeth02 / AF-XLAYER-02-CONTRACTS
 - Repository: `pdbsy/alphaforge-xlayer`
 - Draft delivery: [PR #2](https://github.com/pdbsy/alphaforge-xlayer/pull/2)

@@ -1,5 +1,12 @@
 # X Layer Local Contract Compatibility Plan
 
+- Project: AlphaForge-XLayer
+- Track: X Layer
+- Repository: `pdbsy/alphaforge-xlayer`
+- Manager: XLayerPM (AF_Xlayer task)
+- Worker: Macbeth02
+- Task-ID: AF-XLAYER-02-CONTRACTS
+
 > **For agentic workers:** Use `executing-plans` inline. No additional worker is assigned.
 
 **Goal:** Deliver an additive, offline X Layer Testnet contract compatibility candidate with
