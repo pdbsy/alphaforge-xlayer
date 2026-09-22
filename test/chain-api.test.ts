@@ -306,3 +306,53 @@ test('submission API accepts only pending identity and rejects forged state or c
     assert.equal(rejected.json().error, 'INVALID_REQUEST');
   }
 });
+
+for (const network of [
+  { environment: 'robinhood-chain-testnet', chainId: 46_630 },
+  { environment: 'xlayer-testnet', chainId: 1952 },
+] as const) {
+  test(`${network.environment} evidence route hides operations from another chain or Vault`, async (t) => {
+    const directory = await folder();
+    const body = { ...manifestBody, ...network };
+    const digest = deploymentManifestDigest(body);
+    const runtime = new M3ChainRuntime({
+      dbPath: resolve(directory, 'chain.sqlite'),
+      rpc: new InertRpc(),
+      manifest: validateDeploymentManifest(
+        { ...body, manifestDigest: digest },
+        { ...network, manifestDigest: digest, contractAddress: CONTRACT },
+      ),
+    });
+    runtime.store.saveOperation({ ...submitted('selected-operation'), chainId: network.chainId });
+    runtime.store.saveOperation({
+      ...submitted('foreign-chain-operation'),
+      chainId: network.chainId === 1952 ? CHAIN_ID : 1952,
+    });
+    runtime.store.saveOperation({
+      ...submitted('foreign-vault-operation'),
+      chainId: network.chainId,
+      target: OTHER_OWNER,
+      txHash: asTransactionHash(`0x${'dd'.repeat(32)}`),
+    });
+    const { app } = await buildApp({
+      dbPath: resolve(directory, 'ledger.sqlite'),
+      env,
+      origin,
+      chainRuntime: runtime,
+    });
+    t.after(async () => app.close());
+    const selected = await app.inject({
+      url: `/api/v1/chain/operations/selected-operation/evidence?owner=${OWNER}`,
+      headers,
+    });
+    assert.equal(selected.statusCode, 200, selected.body);
+    for (const operationId of ['foreign-chain-operation', 'foreign-vault-operation']) {
+      const response = await app.inject({
+        url: `/api/v1/chain/operations/${operationId}/evidence?owner=${OWNER}`,
+        headers,
+      });
+      assert.equal(response.statusCode, 404, response.body);
+      assert.equal(response.json().error, 'CHAIN_OPERATION_NOT_FOUND');
+    }
+  });
+}

@@ -763,3 +763,57 @@ test('version-three incomplete targets remain authoritative after sync-lease mig
   assert.equal(store.syncTarget(CHAIN_ID, CONTRACT), 101n);
   store.close();
 });
+
+test('same-address X Layer and Robinhood events, projections and reorgs remain isolated after restart', async () => {
+  const path = await databasePath();
+  let store = new ChainStore(path);
+  const block = { number: 100n, hash: BLOCK_100, parentHash: BLOCK_99, timestamp: 1_000n };
+  const robinhoodEvent = event();
+  const xlayerEvent = event({ chainId: 1952, normalizedData: { owner: OWNER_A, amount: '2000000' } });
+  for (const value of [robinhoodEvent, xlayerEvent]) {
+    assert.equal(store.recordCanonicalBlock(value.chainId, CONTRACT, block, [value]).insertedEvents, 1);
+    assert.equal(store.recordCanonicalBlock(value.chainId, CONTRACT, block, [value]).insertedEvents, 0);
+    store.commitProjections(value.chainId, CONTRACT, block, [
+      {
+        chainId: value.chainId,
+        owner: OWNER_A,
+        contract: CONTRACT,
+        projectionKey: 'shared-vault',
+        blockNumber: block.number,
+        blockHash: block.hash,
+        state: { principal: value.normalizedData.amount },
+      },
+    ]);
+  }
+  store.close();
+  store = new ChainStore(path);
+  try {
+    assert.deepEqual(store.canonicalEvents(CHAIN_ID, CONTRACT), [robinhoodEvent]);
+    assert.deepEqual(store.canonicalEvents(1952, CONTRACT), [xlayerEvent]);
+    assert.deepEqual(store.projection(CHAIN_ID, OWNER_A, CONTRACT, 'shared-vault')?.state, {
+      principal: '1000000',
+    });
+    assert.deepEqual(store.projection(1952, OWNER_A, CONTRACT, 'shared-vault')?.state, {
+      principal: '2000000',
+    });
+    assert.deepEqual(store.rollbackFromBlock(1952, CONTRACT, 100n), {
+      blocks: 1,
+      events: 1,
+      operations: 0,
+      projections: 1,
+    });
+    assert.equal(store.checkpoint(1952, CONTRACT), null);
+    assert.deepEqual(store.canonicalEvents(1952, CONTRACT), []);
+    assert.equal(store.projection(1952, OWNER_A, CONTRACT, 'shared-vault'), null);
+    assert.deepEqual(store.checkpoint(CHAIN_ID, CONTRACT), { blockNumber: 100n, blockHash: BLOCK_100 });
+    assert.deepEqual(store.canonicalEvents(CHAIN_ID, CONTRACT), [robinhoodEvent]);
+    assert.deepEqual(store.projection(CHAIN_ID, OWNER_A, CONTRACT, 'shared-vault')?.state, {
+      principal: '1000000',
+    });
+    assert.equal(store.recordCanonicalBlock(1952, CONTRACT, block, [xlayerEvent]).insertedEvents, 1);
+    assert.equal(store.canonicalEvents(1952, CONTRACT).length, 1);
+    assert.equal(store.canonicalEvents(CHAIN_ID, CONTRACT).length, 1);
+  } finally {
+    store.close();
+  }
+});

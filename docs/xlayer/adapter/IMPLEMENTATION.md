@@ -40,18 +40,23 @@ contracts and CI remain outside scope.
 
 ## Tasks
 
-- [ ] Publish this actual receipt on the worker Draft PR.
-- [ ] Add failing behavioral tests for explicit X Layer selection and invalid pairs.
-- [ ] Implement strict manifest pairs and explicit runtime expectation.
-- [ ] Verify wrong RPC rejection before indexing, NOT_DEPLOYED inert behavior,
+- [x] Publish this actual receipt on the worker Draft PR.
+- [x] Add failing behavioral tests for explicit X Layer selection and invalid pairs.
+- [x] Implement strict manifest pairs and explicit runtime expectation.
+- [x] Verify wrong RPC rejection before indexing, NOT_DEPLOYED inert behavior,
       and cross-chain event, checkpoint and operation isolation.
-- [ ] Run chain regressions, types, lint, formatting and privacy/secret scans.
+- [x] Run chain regressions, types, lint, formatting and privacy/secret scans.
 - [ ] Document interface and limitations; publish source SHA and verification on
       the Draft PR for manager integration and independent review.
 
 Expected files: `packages/chain-adapter/src/manifest.ts`,
 `apps/server/src/m3-chain-runtime.ts`, corresponding existing chain test files,
 and `docs/xlayer/adapter/`.
+
+XLayerPM approved one additional file, `apps/server/src/chain-routes.ts`, for
+restricting operation evidence to the selected chain and Vault. A same-database
+regression reproduced foreign-chain evidence returning HTTP 200. The fix preserves
+the existing HTTP 404 / CHAIN_OPERATION_NOT_FOUND response and normal reads.
 
 ## Evidence at intake
 

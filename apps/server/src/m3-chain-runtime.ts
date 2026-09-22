@@ -7,8 +7,11 @@ import {
   transitionOperation,
   type ChainOperation,
 } from '../../../packages/chain-adapter/src/lifecycle.ts';
-import type { DeploymentManifest } from '../../../packages/chain-adapter/src/manifest.ts';
-import { validateDeploymentManifest } from '../../../packages/chain-adapter/src/manifest.ts';
+import type { DeploymentManifest, DeploymentNetwork } from '../../../packages/chain-adapter/src/manifest.ts';
+import {
+  validateDeploymentManifest,
+  validateDeploymentNetwork,
+} from '../../../packages/chain-adapter/src/manifest.ts';
 import { m3ChainSyncPolicy, type ChainSyncPolicy } from '../../../packages/chain-adapter/src/policy.ts';
 import { JsonRpcClient, type ReadonlyRpc } from '../../../packages/chain-adapter/src/rpc.ts';
 import {
@@ -49,6 +52,7 @@ export type M3ChainRuntimeDeployment =
       readonly dbPath: string;
       readonly rpcEndpoints: readonly string[];
       readonly manifestDocument: unknown;
+      readonly expectedNetwork?: DeploymentNetwork;
       readonly expectedManifestDigest: BlockHash;
       readonly expectedContractAddress: Address;
       readonly policy?: ChainSyncPolicy;
@@ -84,6 +88,7 @@ export class M3ChainRuntime {
     readonly maxBlocksPerSync?: number;
     readonly now?: () => string;
   }) {
+    validateDeploymentNetwork(options.manifest);
     assertM3VaultManifest(options.manifest);
     const policy = m3ChainSyncPolicy(options.policy);
     this.#now = options.now ?? (() => new Date().toISOString());
@@ -207,9 +212,13 @@ export function composeM3ChainRuntime(
   dependencies: M3ChainRuntimeDependencies = {},
 ): M3ChainRuntime | null {
   if (input.deploymentStatus === 'NOT_DEPLOYED') return null;
+  const network = validateDeploymentNetwork(
+    input.expectedNetwork === undefined
+      ? { environment: 'robinhood-chain-testnet', chainId: 46_630 }
+      : input.expectedNetwork,
+  );
   const manifest = validateDeploymentManifest(input.manifestDocument, {
-    environment: 'robinhood-chain-testnet',
-    chainId: 46_630,
+    ...network,
     manifestDigest: input.expectedManifestDigest,
     contractAddress: input.expectedContractAddress,
   });
