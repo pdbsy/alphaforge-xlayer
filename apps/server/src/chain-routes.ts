@@ -132,7 +132,12 @@ export function registerChainEvidenceRoutes(app: FastifyInstance, options: Chain
         throw new DomainError('CHAIN_PROJECTION_UNAVAILABLE');
       const operation = options.store.operation(request.params.operationId);
       const owner = asAddress(request.query.owner);
-      if (!operation || !sameAddress(operation.owner, owner))
+      if (
+        !operation ||
+        operation.chainId !== options.chainId ||
+        !sameAddress(operation.target, options.contract) ||
+        !sameAddress(operation.owner, owner)
+      )
         throw new DomainError('CHAIN_OPERATION_NOT_FOUND');
       const evidence = options.store.operationEvidence(operation.operationId, options.projectionKey);
       if (!evidence) throw new DomainError('CHAIN_OPERATION_NOT_FOUND');

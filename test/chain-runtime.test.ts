@@ -1,5 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { existsSync } from 'node:fs';
+import { JsonRpcClient } from '../packages/chain-adapter/src/rpc.ts';
+import type { M3ChainRuntimeDeployment } from '../apps/server/src/m3-chain-runtime.ts';
 import { mkdir, mkdtemp } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { M3ChainRuntime, composeM3ChainRuntime } from '../apps/server/src/m3-chain-runtime.ts';
@@ -152,4 +155,129 @@ test('deployment-aware composition stays disabled without evidence and validates
       }),
     /M3_VAULT_ABI_MISMATCH/,
   );
+});
+
+const xlayerNetwork = { environment: 'xlayer-testnet', chainId: 1952 } as const;
+const xlayerBody = { ...manifestBody, ...xlayerNetwork };
+const xlayerDigest = deploymentManifestDigest(xlayerBody);
+
+function xlayerDeployment(dbPath: string) {
+  return {
+    deploymentStatus: 'DEPLOYED',
+    dbPath,
+    rpcEndpoints: ['https://testrpc.xlayer.tech/terigon'],
+    manifestDocument: { ...xlayerBody, manifestDigest: xlayerDigest },
+    expectedNetwork: xlayerNetwork,
+    expectedManifestDigest: xlayerDigest,
+    expectedContractAddress: CONTRACT,
+  } as const;
+}
+
+test('X Layer runtime requires explicit trusted selection before constructing RPC or a store', async () => {
+  const dbPath = await path();
+  const input = xlayerDeployment(dbPath);
+  const runtime = composeM3ChainRuntime(input, { createRpc: () => new InertRpc() });
+  assert.ok(runtime);
+  assert.equal(runtime.chainEvidence.chainId, 1952);
+  runtime.close();
+  const rejectedPath = await path();
+  const implicit: M3ChainRuntimeDeployment = { ...xlayerDeployment(rejectedPath) };
+  delete (implicit as { expectedNetwork?: unknown }).expectedNetwork;
+  assert.throws(
+    () =>
+      composeM3ChainRuntime(implicit, {
+        createRpc: () => assert.fail('RPC created before trust validation'),
+      }),
+    /INVALID_DEPLOYMENT_MANIFEST/,
+  );
+  assert.equal(existsSync(rejectedPath), false);
+  for (const expectedNetwork of [
+    null,
+    { environment: 'xlayer-testnet', chainId: 196 },
+    { environment: 'xlayer-testnet', chainId: 195 },
+    { environment: 'xlayer-testnet', chainId: 46_630 },
+    { environment: 'robinhood-chain-testnet', chainId: 1952 },
+  ]) {
+    assert.throws(
+      () =>
+        composeM3ChainRuntime(
+          { ...input, dbPath: rejectedPath, expectedNetwork } as unknown as M3ChainRuntimeDeployment,
+          { createRpc: () => assert.fail('RPC created for unsupported pair') },
+        ),
+      /INVALID_DEPLOYMENT_MANIFEST/,
+    );
+    assert.equal(existsSync(rejectedPath), false);
+  }
+});
+
+test('X Layer rejects wrong RPC chains before reading blocks or persisting evidence', async () => {
+  for (const chainId of [196, 195, 46_630]) {
+    const methods: string[] = [];
+    const input = xlayerDeployment(await path());
+    const runtime = composeM3ChainRuntime(input, {
+      createRpc: (endpoints) =>
+        new JsonRpcClient(endpoints, {
+          transport: async (_endpoint, request) => {
+            methods.push(request.method);
+            return {
+              status: 200,
+              body: JSON.stringify({ jsonrpc: '2.0', id: request.id, result: `0x${chainId.toString(16)}` }),
+            };
+          },
+        }),
+    });
+    assert.ok(runtime);
+    try {
+      await assert.rejects(() => runtime.syncToHead(), /CHAIN_ID_MISMATCH/);
+      assert.deepEqual(methods, ['eth_chainId']);
+      assert.equal(runtime.store.checkpoint(1952, CONTRACT), null);
+      assert.deepEqual(runtime.store.canonicalEvents(1952, CONTRACT), []);
+      assert.equal(runtime.chainEvidence.syncStatus?.().lastAttempt, 'FAILED');
+    } finally {
+      runtime.close();
+    }
+  }
+});
+
+test('X Layer and Robinhood submissions isolate the same transaction hash and reject operation ID reuse', async () => {
+  const dbPath = await path();
+  const robinhood = new M3ChainRuntime({ dbPath, rpc: new InertRpc(), manifest });
+  const xlayer = composeM3ChainRuntime(xlayerDeployment(dbPath), { createRpc: () => new InertRpc() });
+  assert.ok(xlayer);
+  const identity = {
+    owner: OWNER,
+    target: CONTRACT,
+    txHash: TX,
+    calldata: encodeM3VaultCall('deposit(uint256)', [1_000_000n]),
+  };
+  try {
+    const robinhoodInput = { ...identity, chainId: 46_630, operationId: 'rh-deposit' };
+    const xlayerInput = { ...identity, chainId: 1952, operationId: 'xl-deposit' };
+    robinhood.recordSubmission(robinhoodInput);
+    const xl = xlayer.recordSubmission(xlayerInput);
+    assert.deepEqual(xlayer.recordSubmission(xlayerInput), xl);
+    assert.equal(xlayer.store.operationByTransaction(1952, TX)?.operationId, 'xl-deposit');
+    assert.equal(xlayer.store.operationByTransaction(46_630, TX)?.operationId, 'rh-deposit');
+    assert.throws(
+      () => xlayer.recordSubmission({ ...xlayerInput, operationId: 'rh-deposit' }),
+      /OPERATION_IDENTITY_CONFLICT/,
+    );
+    assert.throws(
+      () => xlayer.recordSubmission({ ...xlayerInput, operationId: 'xl-duplicate' }),
+      /OPERATION_IDENTITY_CONFLICT/,
+    );
+    assert.throws(() => xlayer.recordSubmission(robinhoodInput), /INVALID_M3_WALLET_SUBMISSION/);
+    assert.throws(() => robinhood.recordSubmission(xlayerInput), /INVALID_M3_WALLET_SUBMISSION/);
+  } finally {
+    xlayer.close();
+    robinhood.close();
+  }
+  const reopened = composeM3ChainRuntime(xlayerDeployment(dbPath), { createRpc: () => new InertRpc() });
+  assert.ok(reopened);
+  try {
+    assert.equal(reopened.store.operationByTransaction(1952, TX)?.operationId, 'xl-deposit');
+    assert.equal(reopened.store.operationByTransaction(46_630, TX)?.operationId, 'rh-deposit');
+  } finally {
+    reopened.close();
+  }
 });

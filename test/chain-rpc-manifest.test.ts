@@ -256,3 +256,54 @@ test('default fetch transport stops reading once the response byte budget is exc
   );
   assert.equal(cancelled, true);
 });
+
+test('X Layer manifest requires the independently trusted testnet pair, digest and address', () => {
+  const body = { ...manifestBody, environment: 'xlayer-testnet', chainId: 1952 };
+  const digest = asBlockHash(`0x${createHash('sha256').update(JSON.stringify(body)).digest('hex')}`);
+  const document = { ...body, manifestDigest: digest };
+  const expectation = {
+    environment: 'xlayer-testnet',
+    chainId: 1952,
+    manifestDigest: digest,
+    contractAddress: CONTRACT,
+  } as const;
+  const accepted = validateDeploymentManifest(document, expectation);
+  assert.equal(accepted.chainId, 1952);
+  assert.equal(accepted.environment, 'xlayer-testnet');
+  assert.equal(accepted.deploymentBlock, 100n);
+  assert.ok(Object.isFrozen(accepted));
+  assert.throws(() => validateDeploymentManifest(document, expected), /INVALID_DEPLOYMENT_MANIFEST/);
+  assert.throws(() => validateDeploymentManifest(manifestInput, expectation), /INVALID_DEPLOYMENT_MANIFEST/);
+  assert.throws(
+    () => validateDeploymentManifest(document, { ...expectation, manifestDigest: DIGEST }),
+    /INVALID_DEPLOYMENT_MANIFEST/,
+  );
+  assert.throws(
+    () => validateDeploymentManifest(document, { ...expectation, contractAddress: OWNER }),
+    /INVALID_DEPLOYMENT_MANIFEST/,
+  );
+});
+
+test('a matching digest and expectation cannot authorize an unsupported or crossed network pair', () => {
+  for (const pair of [
+    { environment: 'xlayer-testnet', chainId: 196 },
+    { environment: 'xlayer-testnet', chainId: 195 },
+    { environment: 'xlayer-testnet', chainId: 46_630 },
+    { environment: 'robinhood-chain-testnet', chainId: 1952 },
+    { environment: 'xlayer-mainnet', chainId: 196 },
+    { environment: 'unreviewed-testnet', chainId: 1952 },
+    { environment: 'xlayer-testnet', chainId: '1952' },
+  ]) {
+    const body = { ...manifestBody, ...pair };
+    const digest = asBlockHash(`0x${createHash('sha256').update(JSON.stringify(body)).digest('hex')}`);
+    assert.throws(
+      () =>
+        validateDeploymentManifest({ ...body, manifestDigest: digest }, {
+          ...pair,
+          manifestDigest: digest,
+        } as unknown as DeploymentManifestExpectation),
+      /INVALID_DEPLOYMENT_MANIFEST/,
+      JSON.stringify(pair),
+    );
+  }
+});

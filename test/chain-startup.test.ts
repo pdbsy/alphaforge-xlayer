@@ -85,8 +85,9 @@ class StartupRpc implements ReadonlyRpc {
   calls = 0;
   receiptCalls = 0;
   readonly receiptHashes: string[] = [];
+  networkChainId = CHAIN_ID;
   async chainId() {
-    return CHAIN_ID;
+    return this.networkChainId;
   }
   async block(number: bigint | 'latest') {
     return blocks.get(number === 'latest' ? this.latest : number) ?? null;
@@ -204,57 +205,74 @@ test('default M3 server startup is executable and inert while deployment is NOT_
   await server.close();
 });
 
-test('deployed startup composes runtime, app, bounded sync and canonical API progression with injected RPC', async () => {
-  const root = await directory();
-  const rpc = new StartupRpc();
-  const server = await startM3Server(
-    {
-      deployment: {
-        deploymentStatus: 'DEPLOYED',
-        dbPath: resolve(root, 'chain.sqlite'),
-        rpcEndpoints: ['https://rpc.testnet.chain.robinhood.com'],
-        manifestDocument: { ...manifestBody, manifestDigest },
-        expectedManifestDigest: manifestDigest,
-        expectedContractAddress: CONTRACT,
-        maxBlocksPerSync: 3,
-        now: () => '2026-09-20T00:00:00.000Z',
+for (const network of [
+  { environment: 'robinhood-chain-testnet', chainId: 46_630 },
+  { environment: 'xlayer-testnet', chainId: 1952 },
+] as const) {
+  test(`deployed ${network.environment} startup composes bounded sync and canonical API progression`, async () => {
+    const root = await directory();
+    const rpc = new StartupRpc();
+    rpc.networkChainId = network.chainId;
+    const networkBody = { ...manifestBody, ...network };
+    const networkDigest = deploymentManifestDigest(networkBody);
+    const server = await startM3Server(
+      {
+        deployment: {
+          deploymentStatus: 'DEPLOYED',
+          dbPath: resolve(root, 'chain.sqlite'),
+          rpcEndpoints: ['https://offline-fixture.example'],
+          expectedNetwork: network,
+          manifestDocument: { ...networkBody, manifestDigest: networkDigest },
+          expectedManifestDigest: networkDigest,
+          expectedContractAddress: CONTRACT,
+          maxBlocksPerSync: 3,
+          now: () => '2026-09-20T00:00:00.000Z',
+        },
+        app: {
+          dbPath: resolve(root, 'ledger.sqlite'),
+          env: { QP_MODE: 'local', QP_ADAPTER: 'mock' },
+          origin: 'http://127.0.0.1:4180',
+        },
+        syncIntervalMs: null,
       },
-      app: {
-        dbPath: resolve(root, 'ledger.sqlite'),
-        env: { QP_MODE: 'local', QP_ADAPTER: 'mock' },
-        origin: 'http://127.0.0.1:4180',
-      },
-      syncIntervalMs: null,
-    },
-    { createRpc: () => rpc },
-  );
-  assert.ok(server.runtime);
-  const body = {
-    operationId: 'startup-deposit',
-    chainId: CHAIN_ID,
-    owner: OWNER,
-    target: CONTRACT,
-    calldata: encodeM3VaultCall('deposit(uint256)', [1_000_000n]),
-    txHash: TX,
-  };
-  const submitted = await server.app.inject({
-    method: 'POST',
-    url: '/api/v1/chain/operations',
-    headers: { host: '127.0.0.1:4180', origin: 'http://127.0.0.1:4180', 'x-quantpass-demo': '1' },
-    payload: body,
+      { createRpc: () => rpc },
+    );
+    assert.ok(server.runtime);
+    const body = {
+      operationId: 'startup-deposit',
+      chainId: network.chainId,
+      owner: OWNER,
+      target: CONTRACT,
+      calldata: encodeM3VaultCall('deposit(uint256)', [1_000_000n]),
+      txHash: TX,
+    };
+    const submitted = await server.app.inject({
+      method: 'POST',
+      url: '/api/v1/chain/operations',
+      headers: { host: '127.0.0.1:4180', origin: 'http://127.0.0.1:4180', 'x-quantpass-demo': '1' },
+      payload: body,
+    });
+    assert.equal(submitted.statusCode, 202, submitted.body);
+    await server.syncNow();
+    const evidence = await server.app.inject({
+      url: `/api/v1/chain/operations/startup-deposit/evidence?owner=${OWNER}`,
+      headers: { host: '127.0.0.1:4180' },
+    });
+    assert.equal(evidence.statusCode, 200, evidence.body);
+    assert.equal(evidence.json().lifecycle, 'CONFIRMED');
+    assert.equal(evidence.json().productReady, true);
+    assert.ok(rpc.calls >= 72);
+    assert.equal(server.runtime.store.canonicalEvents(network.chainId, CONTRACT).length, 1);
+    assert.equal(server.runtime.store.checkpoint(network.chainId, CONTRACT)?.blockNumber, 3n);
+    assert.deepEqual(
+      server.runtime.store.canonicalEvents(network.chainId === 1952 ? CHAIN_ID : 1952, CONTRACT),
+      [],
+    );
+    await server.syncNow();
+    assert.equal(server.runtime.store.canonicalEvents(network.chainId, CONTRACT).length, 1);
+    await server.close();
   });
-  assert.equal(submitted.statusCode, 202, submitted.body);
-  await server.syncNow();
-  const evidence = await server.app.inject({
-    url: `/api/v1/chain/operations/startup-deposit/evidence?owner=${OWNER}`,
-    headers: { host: '127.0.0.1:4180' },
-  });
-  assert.equal(evidence.statusCode, 200, evidence.body);
-  assert.equal(evidence.json().lifecycle, 'CONFIRMED');
-  assert.equal(evidence.json().productReady, true);
-  assert.ok(rpc.calls >= 72);
-  await server.close();
-});
+}
 
 test('each runtime pass tracks at most 100 pending operation identities', async () => {
   const root = await directory();
