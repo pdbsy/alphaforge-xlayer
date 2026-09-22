@@ -24,4 +24,4 @@ Manager owns root AGENTS/README, `docs/xlayer/MIGRATION.md`, this assignment rec
 
 ## Receipt state
 
-All five assignments: PREPARED; delivery and acknowledgement pending actual public task publication and worker replies. Historical upstream registry confirmations do not count as new-repository acknowledgement.
+All five assignments: DELIVERED through the existing app tasks on 2026-09-22, with the public task definition in https://github.com/pdbsy/alphaforge-xlayer/pull/1. All five tasks were observed active after delivery. Public PR acknowledgements remain pending actual worker replies. Historical upstream registry confirmations do not count as new-repository acknowledgement.
