@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "updatedAt": "2026-09-20",
-  "repository": "pdbsy/quantpass-arbitrum-hackathon",
+  "repository": "pdbsy/alphaforge-xlayer",
   "defaultBranch": "master",
   "dependencyPolicy": {
     "registryOrigin": "https://registry.npmjs.org",
@@ -49,6 +49,6 @@
   "sbom": {
     "format": "SPDX-2.3",
     "createdAt": "2026-09-08T00:00:00Z",
-    "documentNamespaceBase": "https://github.com/pdbsy/quantpass-arbitrum-hackathon/sbom"
+    "documentNamespaceBase": "https://github.com/pdbsy/alphaforge-xlayer/sbom"
   }
 }

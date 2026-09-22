@@ -11,10 +11,8 @@ const snapshotPath = resolve(root, 'docs/management/agents/forum-snapshot.json')
 const MAX_RECORDS = 500;
 
 export function parseGithubRemote(remote) {
-  if (remote === 'git@github.com:pdbsy/quantpass-arbitrum-hackathon.git')
-    return 'pdbsy/quantpass-arbitrum-hackathon';
-  if (remote === 'https://github.com/pdbsy/quantpass-arbitrum-hackathon.git')
-    return 'pdbsy/quantpass-arbitrum-hackathon';
+  if (remote === 'git@github.com:pdbsy/alphaforge-xlayer.git') return 'pdbsy/alphaforge-xlayer';
+  if (remote === 'https://github.com/pdbsy/alphaforge-xlayer.git') return 'pdbsy/alphaforge-xlayer';
   throw new Error('origin is not the configured AlphaForge GitHub repository');
 }
 
@@ -51,6 +49,7 @@ async function readPrevious() {
 
 // Each page is bounded; exhaustion, record caps and request caps are distinct.
 export async function collectGithubForum(repository, readPage = apiJson) {
+  if (repository !== 'pdbsy/alphaforge-xlayer') throw new Error('Untrusted Forum repository');
   let partial = false,
     calls = 0;
   const collect = async (path, jq, limit) => {

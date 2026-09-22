@@ -4,6 +4,20 @@
   const agents = ['Macbeth01', 'Macbeth02', 'Macbeth03', 'Macbeth04', 'Macbeth05', 'Macbeth06'];
   const types = ['CHECK_IN', 'NOTICE', 'QUESTION', 'REPLY', 'ACK', 'BLOCKED', 'SUMMARY'];
   const $ = (id) => document.getElementById(id);
+  function currentMessage(item) {
+    try {
+      const url = new URL(item.source_url);
+      return (
+        url.origin === 'https://github.com' &&
+        !url.username &&
+        !url.password &&
+        !url.search &&
+        /^\/pdbsy\/alphaforge-xlayer\/pull\/\d+$/.test(url.pathname)
+      );
+    } catch {
+      return false;
+    }
+  }
   function el(tag, className, text) {
     const node = document.createElement(tag);
     if (className) node.className = className;
@@ -27,7 +41,7 @@
       parsed.username ||
       parsed.password ||
       parsed.search ||
-      !/^\/pdbsy\/quantpass-arbitrum-hackathon\/pull\/\d+$/.test(parsed.pathname)
+      !/^\/pdbsy\/(?:alphaforge-xlayer|quantpass-arbitrum-hackathon)\/pull\/\d+$/.test(parsed.pathname)
     )
       return el('span', '', '来源链接无效');
     const link = el('a', 'source-link', text);
@@ -52,6 +66,7 @@
       `Last sync: ${date(snapshot.source.last_sync_at)}${snapshot.source.error ? ` · ${snapshot.source.error}` : ''}`,
     ),
   );
+  source.append(el('span', '', '统计范围：pdbsy/alphaforge-xlayer；历史来源不计入当前消息、线程或 ACK。'));
   function filtered() {
     const keyword = $('keyword').value.trim().toLocaleLowerCase();
     return snapshot.messages.filter(
@@ -68,10 +83,11 @@
   }
   function render() {
     const messages = filtered();
-    $('message-count').textContent = String(messages.length);
-    $('thread-count').textContent = String(new Set(messages.map((item) => item.thread)).size);
+    const current = messages.filter(currentMessage);
+    $('message-count').textContent = String(current.length);
+    $('thread-count').textContent = String(new Set(current.map((item) => item.thread)).size);
     $('unack-count').textContent = String(
-      messages.filter((item) => item.ack_state === 'UNACKNOWLEDGED').length,
+      current.filter((item) => item.ack_state === 'UNACKNOWLEDGED').length,
     );
     const forum = $('forum');
     forum.replaceChildren();
@@ -90,16 +106,22 @@
       section.append(el('h2', '', `THREAD · ${threadName}`));
       const list = el('div', 'messages');
       for (const item of items) {
+        const historical = !currentMessage(item);
         const card = el('article', 'message');
         const top = el('div', 'row');
         const title = el('div');
         title.append(el('span', 'agent', item.agent), el('span', 'type', item.type));
         top.append(
           title,
-          el('span', `ack${item.ack_state === 'ACKNOWLEDGED' ? ' yes' : ''}`, item.ack_state),
+          el(
+            'span',
+            `ack${!historical && item.ack_state === 'ACKNOWLEDGED' ? ' yes' : ''}`,
+            historical ? '历史记录 · 不作为当前 ACK' : item.ack_state,
+          ),
         );
         const body = el('div', 'body', item.body);
         const meta = el('div', 'meta');
+        if (historical) meta.append(el('span', '', '历史来源：pdbsy/quantpass-arbitrum-hackathon'));
         meta.append(
           el('span', '', `GitHub: ${item.github_author}`),
           el('span', '', `To: ${item.to}`),

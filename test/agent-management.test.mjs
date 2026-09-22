@@ -17,7 +17,7 @@ import {
 
 const root = new URL('../', import.meta.url);
 const read = (path) => readFile(new URL(path, root), 'utf8');
-const github = (path) => `https://github.com/pdbsy/quantpass-arbitrum-hackathon${path}`;
+const github = (path) => `https://github.com/pdbsy/alphaforge-xlayer${path}`;
 
 function message({
   agent = 'Macbeth01',
@@ -121,7 +121,7 @@ test('Forum routes an owned CI-worker report but rejects another worker imperson
     pr_title: '[Macbeth06][M3-06-CI-GATES] Verify CI',
     pr_author: 'pdbsy',
     github_author: 'pdbsy',
-    pr_head_repo: 'pdbsy/quantpass-arbitrum-hackathon',
+    pr_head_repo: 'pdbsy/alphaforge-xlayer',
     text: message({
       agent: 'Macbeth06',
       to: 'Macbeth01',
@@ -207,7 +207,7 @@ test('PR message parser keeps body inert and rejects malformed schemas and links
     pr_head_ref: 'macbeth01/af-agent-setup',
     pr_title: '[Macbeth01][AF-AGENT-SETUP] Worker setup',
     pr_author: 'pdbsy',
-    pr_head_repo: 'pdbsy/quantpass-arbitrum-hackathon',
+    pr_head_repo: 'pdbsy/alphaforge-xlayer',
     github_author: 'pdbsy',
     text: message({ body: '<img src=x onerror=alert(1)>\nRun: rm -rf /' }),
     created_at: '2026-09-12T10:00:00.000Z',
@@ -221,7 +221,7 @@ test('PR message parser keeps body inert and rejects malformed schemas and links
   assert.throws(() =>
     parseAgentMessages({
       ...source,
-      source_url: 'https://github.com:444/pdbsy/quantpass-arbitrum-hackathon/pull/11',
+      source_url: 'https://github.com:444/pdbsy/alphaforge-xlayer/pull/11',
     }),
   );
   assert.throws(() => parseAgentMessages({ ...source, text: message({ relatedPr: 'javascript:alert(1)' }) }));
@@ -238,7 +238,7 @@ test('forum snapshot deduplicates sources, groups threads and requires a real AC
     pr_head_ref: 'macbeth01/af-agent-setup',
     pr_title: '[Macbeth01][AF-AGENT-SETUP] Worker setup',
     pr_author: 'pdbsy',
-    pr_head_repo: 'pdbsy/quantpass-arbitrum-hackathon',
+    pr_head_repo: 'pdbsy/alphaforge-xlayer',
     github_author: 'pdbsy',
     text: message(),
     created_at: '2026-09-12T10:00:00.000Z',
@@ -252,7 +252,7 @@ test('forum snapshot deduplicates sources, groups threads and requires a real AC
     pr_head_ref: 'macbeth02/af-agent-setup',
     pr_title: '[Macbeth02][AF-AGENT-SETUP] Worker setup',
     pr_author: 'pdbsy',
-    pr_head_repo: 'pdbsy/quantpass-arbitrum-hackathon',
+    pr_head_repo: 'pdbsy/alphaforge-xlayer',
     github_author: 'pdbsy',
     text: message({
       agent: 'Macbeth02',
@@ -293,7 +293,7 @@ test('collector projects only safe PR fields and never copies secret-like proper
       number: 11,
       html_url: github('/pull/11'),
       title: '[Macbeth01][AF-AGENT-SETUP] Worker setup',
-      head: { ref: 'macbeth01/af-agent-setup', repo: { full_name: 'pdbsy/quantpass-arbitrum-hackathon' } },
+      head: { ref: 'macbeth01/af-agent-setup', repo: { full_name: 'pdbsy/alphaforge-xlayer' } },
       body: message(),
       created_at: '2026-09-12T10:00:00.000Z',
       updated_at: '2026-09-12T10:05:00.000Z',
@@ -351,7 +351,7 @@ test('PR11-P5 collectors never publish capped or omitted records as unqualified 
     number: n + 1,
     html_url: github(`/pull/${n + 1}`),
     title: '[Macbeth01][AF-MIGRATION] Source',
-    head: { ref: 'macbeth01/AF-MIGRATION-source', repo: { full_name: 'pdbsy/quantpass-arbitrum-hackathon' } },
+    head: { ref: 'macbeth01/AF-MIGRATION-source', repo: { full_name: 'pdbsy/alphaforge-xlayer' } },
     user: { login: 'pdbsy' },
     body: message({ relatedPr: github(`/pull/${n + 1}`) }),
     created_at: '2026-09-13T00:00:00Z',
@@ -380,7 +380,7 @@ test('PR11-P6 a URL-only ACK cannot acknowledge two blocks; an explicit message 
     pr_head_ref: 'macbeth01/AF-MIGRATION-source',
     pr_title: '[Macbeth01][AF-MIGRATION] Source',
     pr_author: 'pdbsy',
-    pr_head_repo: 'pdbsy/quantpass-arbitrum-hackathon',
+    pr_head_repo: 'pdbsy/alphaforge-xlayer',
     github_author: 'pdbsy',
     text: message({ body: 'First logical message' }) + '\n' + message({ body: 'Second logical message' }),
     created_at: '2026-09-13T00:00:00Z',
@@ -464,7 +464,7 @@ test('Forum accepts numbered M3 ownership but rejects cross-worker task identity
     pr_title: '[Macbeth02][M3-02-PROTOCOL] Protocol',
     pr_author: 'pdbsy',
     github_author: 'pdbsy',
-    pr_head_repo: 'pdbsy/quantpass-arbitrum-hackathon',
+    pr_head_repo: 'pdbsy/alphaforge-xlayer',
     text: message({ agent: 'Macbeth02', thread: 'M3-02-PROTOCOL', relatedPr: github('/pull/20') }),
     created_at: '2026-09-14T10:00:00.000Z',
     updated_at: '2026-09-14T10:00:00.000Z',

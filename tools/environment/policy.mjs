@@ -101,9 +101,7 @@ export function validateInputs(i) {
       maxAgeSeconds: 900,
     }),
   );
-  requireInput(
-    i.supply.repository === 'pdbsy/quantpass-arbitrum-hackathon' && i.supply.defaultBranch === 'master',
-  );
+  requireInput(i.supply.repository === 'pdbsy/alphaforge-xlayer' && i.supply.defaultBranch === 'master');
   requireInput(i.supply.dependencyPolicy.registryOrigin === 'https://registry.npmjs.org');
   return i;
 }

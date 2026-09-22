@@ -1,11 +1,24 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
+import { execFileSync } from 'node:child_process';
 import { readFile, lstat } from 'node:fs/promises';
 import { resolve, relative, sep } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 const root = fileURLToPath(new URL('../', import.meta.url));
 const readJson = async (path) => JSON.parse(await readFile(resolve(root, path), 'utf8'));
+
+// These active Forum files evolved in AF-XLAYER-06-CI. Their recorded upstream
+// hashes still bind the immutable import; current behavior has separate tests.
+const evolvedForumPaths = new Set([
+  'tools/agent-forum.mjs',
+  'tools/agent-forum-app.js',
+  'tools/sync-agent-forum.mjs',
+  'test/agent-management.test.mjs',
+  'test/agent-security-regressions.test.mjs',
+  'test/agent-tooling.test.mjs',
+]);
+const importedMaster = '18f5352070910a867b9729b031aa2e3951785e01';
 
 test('migration inventory accounts for source versions and validates imported artifact hashes', async () => {
   const inventory = await readJson('docs/migration/inventory.json');
@@ -30,7 +43,13 @@ test('migration inventory accounts for source versions and validates imported ar
     assert.match(artifact.original_sha256, /^[a-f0-9]{64}$/);
     assert.equal(
       createHash('sha256')
-        .update(await readFile(file))
+        .update(
+          evolvedForumPaths.has(artifact.target_path)
+            ? execFileSync('git', ['cat-file', 'blob', `${importedMaster}:${artifact.target_path}`], {
+                cwd: root,
+              })
+            : await readFile(file),
+        )
         .digest('hex'),
       artifact.migrated_sha256,
       artifact.target_path,

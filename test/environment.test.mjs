@@ -57,6 +57,17 @@ const observation = () => ({
   commands: [],
 });
 
+test('X Layer environment inputs reject upstream and foreign repository identities', () => {
+  const candidate = inputs();
+  candidate.supply.repository = 'pdbsy/alphaforge-xlayer';
+  assert.equal(validateInputs(candidate), candidate);
+  for (const repository of ['pdbsy/quantpass-arbitrum-hackathon', 'other/alphaforge-xlayer', null]) {
+    const altered = structuredClone(candidate);
+    altered.supply.repository = repository;
+    assert.throws(() => validateInputs(altered), /environment inputs/);
+  }
+});
+
 test('exact input sources reject engine and root lock drift without mutation', () => {
   const original = inputs();
   assert.doesNotThrow(() => validateInputs(original));
