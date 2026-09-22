@@ -24,7 +24,7 @@
 - [x] Verify source master, approved toolchain, existing worker roles and current authorization.
 - [x] Create public repository and clone full source into an independent checkout.
 - [x] Preserve source branches and tags required by historical evidence validators.
-- [ ] Commit intake, create Draft PR and publish exact worker scope.
+- [x] Commit intake, create Draft PR and publish exact worker scope.
 
 ### Task 2: Offline X Layer foundation
 
@@ -32,18 +32,18 @@
 
 **Interfaces:** exports `XLAYER_TESTNET`, `readXLayerChainConfig(env)`, `readXLayerLocalConfig(env)` as specified in MIGRATION.md. No dependency changes.
 
-- [ ] Write tests first. A valid fixture must return chain 1952/OKB and frozen local config; override QP_CHAIN_ID with 195, 196 or 46630 and assert rejection; override QP_MODE/QP_ADAPTER with testnet/production/live and assert rejection; malformed/credential/query URLs must fail without reflecting their value.
-- [ ] Run `node --test test/xlayer-chain.test.ts`; capture the expected missing-feature failure.
-- [ ] Implement the literal constant and strict field reader; reuse `readConfig` instead of adding an enable flag.
-- [ ] Add the public example, CLI with try/catch and safe diagnostics, `xlayer:check` npm script, foundation test in `test`, and xlayer:check in `check` alongside existing gates.
-- [ ] Run foundation tests, CLI, typecheck/lint and related inherited tests; fix actual failures.
-- [ ] Commit and publish the foundation; record exact tested SHA and limitations in the Draft PR.
+- [x] Write tests first. A valid fixture must return chain 1952/OKB and frozen local config; override QP_CHAIN_ID with 195, 196 or 46630 and assert rejection; override QP_MODE/QP_ADAPTER with testnet/production/live and assert rejection; malformed/credential/query URLs must fail without reflecting their value.
+- [x] Run `node --test test/xlayer-chain.test.ts`; capture the expected missing-feature failure.
+- [x] Implement the literal constant and strict field reader; reuse `readConfig` instead of adding an enable flag.
+- [x] Add the public example, CLI with try/catch and safe diagnostics, `xlayer:check` npm script, foundation test in `test`, and xlayer:check in `check` alongside existing gates.
+- [x] Run foundation tests, CLI, typecheck/lint and related inherited tests; fix actual failures.
+- [x] Commit and publish the foundation; record exact tested SHA and limitations in the Draft PR.
 
 ### Task 3: Worker dispatch and integration gate
 
 **Files:** assignments/status and workers' own scoped PRs.
 
-- [ ] Publish five specific assignments and deliver the intake link to existing Macbeth02–06 tasks. Require independent clones and an actual receipt.
-- [ ] Collect acknowledgements without interrupting protected upstream work; distinguish delivered from accepted.
-- [ ] Record candidate PRs and request focused engineering review. Keep any unrun checks BLOCKED/NOT_RUN and preserve upstream evidence.
+- [x] Publish five specific assignments and deliver the intake link to existing Macbeth02–06 tasks. Require independent clones and an actual receipt.
+- [x] Collect acknowledgements without interrupting protected upstream work; distinguish delivered from accepted.
+- [x] Record candidate PRs and request focused engineering review. Keep any unrun checks BLOCKED/NOT_RUN and preserve upstream evidence.
 - [ ] End this bootstrap at reviewable foundation; subsequent deployment and default-runtime cutover retain their own acceptance gates.

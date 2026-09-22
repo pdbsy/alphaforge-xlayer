@@ -37,6 +37,7 @@ const unitTests = [
   'test/security-model.test.ts',
   'test/engineering.test.ts',
   'test/robinhood-chain.test.ts',
+  'test/xlayer-chain.test.ts',
   'test/governance.test.mjs',
   'test/supply-chain.test.mjs',
   'test/threat-model.test.mjs',

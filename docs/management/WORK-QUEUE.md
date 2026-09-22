@@ -1,3 +1,19 @@
+# AlphaForge X Layer work queue — 2026-09-22
+
+| Task | Owner | Current state / source |
+| --- | --- | --- |
+| AF-XLAYER-MIGRATION foundation | XLayerPM | PR #1; local offline foundation implemented, 599 tests passed; new C/R/S refresh pending |
+| AF-XLAYER-02-CONTRACTS | Macbeth02 | PR #2; compatibility/template implementation in progress |
+| AF-XLAYER-03-ADAPTER | Macbeth03 | PR #4; strict network/manifest adaptation in progress |
+| AF-XLAYER-04-UI | Macbeth04 | PR #3; network presentation and session guards in progress |
+| AF-XLAYER-05-QA | Macbeth05 | PR #5; negative/isolation testing in progress; combined acceptance pending |
+| AF-XLAYER-06-CI | Macbeth06 | Active repository/Forum/supply binding migration; exact-head hosted results pending |
+| Runtime default cutover | XLayerPM | Depends on reviewed backend/UI/CI integration; NOT_DEPLOYED |
+
+All PR numbers in this new section belong to https://github.com/pdbsy/alphaforge-xlayer. The historical queue below remains upstream context only. No merge, deployment, signing, broadcasting or mainnet operation is authorized by this queue.
+
+---
+
 > Subsequent M3 assignment — Macbeth04 is now explicitly authorized for `M3-04-PRODUCT-UI` on `macbeth04/M3-product-ui`, from fixed validated baseline `7ecba357d5a19f387e86f578822af04a6261fed2`. See [the task record](agents/M3-04-PRODUCT-UI.md). Earlier audit-only statements below retain their historical scope; this does not grant chain writes or alter other worker assignments.
 
 > Current update — 2026-09-14: remote master is `45e80f921df2d3f9172ddbbc8e6ab37c327107e7` (PR #11 merged, 45% finish). Macbeth02–05 have returned baseline-reading receipts. M3 identity/task alignment is in review preparation; 02 implementation awaits aligned master, and 03–05 retain audit-only scope. See [M3 assignments](agents/M3-ASSIGNMENTS.md) for exact status and blockers. Earlier PR #11 unmerged/master NOT_RUN statements below are historical source snapshots, not current Git status. This update does not claim M3 Testnet completion or independent approval.

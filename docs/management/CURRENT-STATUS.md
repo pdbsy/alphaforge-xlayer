@@ -1,3 +1,17 @@
+# AlphaForge X Layer — current manager checkpoint
+
+Date: 2026-09-22. Manager: XLayerPM. Canonical repository: pdbsy/alphaforge-xlayer. Task: AF-XLAYER-MIGRATION. Status: IN_PROGRESS / LOCAL_MOCK / NOT_DEPLOYED.
+
+The public repository imports master 18f5352070910a867b9729b031aa2e3951785e01 with full source history, original authors and evidence refs. Migration intake and offline network foundation: https://github.com/pdbsy/alphaforge-xlayer/pull/1. Source repository work is preserved.
+
+Foundation candidate 3190b6e: 599/599 application tests passed, typecheck/lint/format/configuration and inherited policy checks passed through Forum consistency. The old management snapshot correctly rejected the new branch (RECORDED_GIT_BRANCH_MISMATCH); fresh source C -> manifest R -> snapshot S collection is the next step. These results do not assert hosted CI or contract acceptance. Foundation engineering review found no P1/P2 issue at 33f47d9; the separate registry provenance update was also reviewed.
+
+Worker assignments and actual receipt links are in [X Layer assignments](../xlayer/ASSIGNMENTS.md). 02 contracts, 03 adapter, 04 UI, 05 QA and 06 CI are active. Their Draft PRs are review candidates, not accepted deliverables. Default runtime cutover, real X Layer RPC/VM checks, deployment, signing, broadcasting, external governance and final integrated acceptance remain outside this bootstrap completion.
+
+The inherited material below belongs to the upstream project and retains its original dates and scope. It does not grant merge authority or X Layer approval.
+
+---
+
 > Subsequent M3 assignment — Macbeth04 is now explicitly authorized for `M3-04-PRODUCT-UI` on `macbeth04/M3-product-ui`, from fixed validated baseline `7ecba357d5a19f387e86f578822af04a6261fed2`. See [the task record](agents/M3-04-PRODUCT-UI.md). Earlier audit-only statements below retain their historical scope; this does not grant chain writes or alter other worker assignments.
 
 > Current update — 2026-09-14: remote master is `45e80f921df2d3f9172ddbbc8e6ab37c327107e7` (PR #11 merged, 45% finish). Macbeth02–05 have returned baseline-reading receipts. M3 identity/task alignment is in review preparation; 02 implementation awaits aligned master, and 03–05 retain audit-only scope. See [M3 assignments](agents/M3-ASSIGNMENTS.md) for exact status and blockers. Earlier PR #11 unmerged/master NOT_RUN statements below are historical source snapshots, not current Git status. This update does not claim M3 Testnet completion or independent approval.
