@@ -25,3 +25,9 @@ Manager owns root AGENTS/README, `docs/xlayer/MIGRATION.md`, this assignment rec
 ## Receipt state
 
 All five assignments: DELIVERED through the existing app tasks on 2026-09-22, with the public task definition in https://github.com/pdbsy/alphaforge-xlayer/pull/1. All five tasks were observed active after delivery. Public PR acknowledgements remain pending actual worker replies. Historical upstream registry confirmations do not count as new-repository acknowledgement.
+
+## Scoped ownership update, 2026-09-22
+
+Macbeth06 additionally owns exactly `planning/supply-chain-policy.json.repository`, `planning/supply-chain-policy.json.sbom.documentNamespaceBase`, and regeneration of the active SBOM through `supply:build`. Values become `pdbsy/alphaforge-xlayer` and `https://github.com/pdbsy/alphaforge-xlayer/sbom`; all other admission policy stays unchanged. This makes its repository validator change independently testable. Manager retains root package metadata and the worker registry.
+
+The inherited registry has been archived as UPSTREAM-AGENT-REGISTRY.json. New-repository self-confirmation and Forum communication start UNVERIFIED. Macbeth01 is not assigned a new worker task in this repository; XLayerPM carries manager duties separately. App-level startup receipts have been received from Macbeth04 and Macbeth06; they do not constitute public Forum ACK or security approval.

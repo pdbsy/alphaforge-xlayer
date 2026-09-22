@@ -8,69 +8,70 @@
     {
       "agent_id": "Macbeth01",
       "branch_prefix": "macbeth01/",
-      "workspace_status": "WORKSPACE_PREPARED",
-      "session_status": "SELF_CONFIRMED",
-      "self_confirmation": "VERIFIED",
+      "workspace_status": "NOT_STARTED",
+      "session_status": "NOT_STARTED",
+      "self_confirmation": "UNVERIFIED",
       "communication_status": "UNVERIFIED",
-      "current_task": "M3-01-PARTIAL-ONCHAIN-INTEGRATION",
-      "runtime_status": "ACTIVE"
+      "current_task": "NONE",
+      "runtime_status": "IDLE"
     },
     {
       "agent_id": "Macbeth02",
       "branch_prefix": "macbeth02/",
-      "workspace_status": "WORKSPACE_PREPARED",
-      "session_status": "SELF_CONFIRMED",
-      "self_confirmation": "VERIFIED",
+      "workspace_status": "CONFIG_PREPARED",
+      "session_status": "SESSION_CREATED",
+      "self_confirmation": "UNVERIFIED",
       "communication_status": "UNVERIFIED",
-      "current_task": "M3-02-PROTOCOL",
-      "runtime_status": "BLOCKED"
+      "current_task": "AF-XLAYER-02-CONTRACTS",
+      "runtime_status": "ACTIVE"
     },
     {
       "agent_id": "Macbeth03",
       "branch_prefix": "macbeth03/",
-      "workspace_status": "WORKSPACE_PREPARED",
-      "session_status": "SELF_CONFIRMED",
-      "self_confirmation": "VERIFIED",
+      "workspace_status": "CONFIG_PREPARED",
+      "session_status": "SESSION_CREATED",
+      "self_confirmation": "UNVERIFIED",
       "communication_status": "UNVERIFIED",
-      "current_task": "M3-03-ADAPTER",
-      "runtime_status": "BLOCKED"
+      "current_task": "AF-XLAYER-03-ADAPTER",
+      "runtime_status": "ACTIVE"
     },
     {
       "agent_id": "Macbeth04",
       "branch_prefix": "macbeth04/",
       "workspace_status": "WORKSPACE_PREPARED",
-      "session_status": "SELF_CONFIRMED",
-      "self_confirmation": "VERIFIED",
+      "session_status": "SESSION_CREATED",
+      "self_confirmation": "UNVERIFIED",
       "communication_status": "UNVERIFIED",
-      "current_task": "M3-04-PRODUCT-UI",
-      "runtime_status": "ACTIVE",
-      "canonical_baseline": "7ecba357d5a19f387e86f578822af04a6261fed2",
-      "implementation_branch": "macbeth04/M3-product-ui"
+      "current_task": "AF-XLAYER-04-UI",
+      "runtime_status": "ACTIVE"
     },
     {
       "agent_id": "Macbeth05",
       "branch_prefix": "macbeth05/",
-      "workspace_status": "WORKSPACE_PREPARED",
-      "session_status": "SELF_CONFIRMED",
-      "self_confirmation": "VERIFIED",
+      "workspace_status": "CONFIG_PREPARED",
+      "session_status": "SESSION_CREATED",
+      "self_confirmation": "UNVERIFIED",
       "communication_status": "UNVERIFIED",
-      "current_task": "AF-M3-05-INTEGRATION-ACCEPTANCE",
-      "runtime_status": "BLOCKED",
-      "registration_base": "7ecba357d5a19f387e86f578822af04a6261fed2",
-      "acceptance_candidate": null,
-      "implementation_branch": "macbeth05/AF-M3-05-INTEGRATION-ACCEPTANCE"
+      "current_task": "AF-XLAYER-05-QA",
+      "runtime_status": "ACTIVE"
     },
     {
       "agent_id": "Macbeth06",
       "branch_prefix": "macbeth06/",
       "workspace_status": "WORKSPACE_PREPARED",
-      "session_status": "SELF_CONFIRMED",
-      "self_confirmation": "VERIFIED",
+      "session_status": "SESSION_CREATED",
+      "self_confirmation": "UNVERIFIED",
       "communication_status": "UNVERIFIED",
-      "current_task": "M3-06-CI-GATES",
-      "runtime_status": "ACTIVE",
-      "registration_base": "ca43c9684fbf34c34d5dd81382df158e2a9ebc0b"
+      "current_task": "AF-XLAYER-06-CI",
+      "runtime_status": "ACTIVE"
     }
   ],
-  "canonical_repository": "pdbsy/quantpass-arbitrum-hackathon"
+  "canonical_repository": "pdbsy/alphaforge-xlayer",
+  "xlayer_manager": {
+    "name": "XLayerPM",
+    "role": "manager-integrator",
+    "task": "AF-XLAYER-MIGRATION",
+    "assignment_pr": "https://github.com/pdbsy/alphaforge-xlayer/pull/1",
+    "scope": "X Layer repository only; does not impersonate Macbeth01"
+  }
 }
