@@ -1,5 +1,12 @@
 # Macbeth02 X Layer contract intake
 
+- Project: AlphaForge-XLayer
+- Track: X Layer
+- Repository: `pdbsy/alphaforge-xlayer`
+- Manager: XLayerPM (AF_Xlayer task)
+- Worker: Macbeth02
+- Task-ID: AF-XLAYER-02-CONTRACTS
+
 - Agent: Macbeth02
 - Task: AF-XLAYER-02-CONTRACTS
 - Repository: `pdbsy/alphaforge-xlayer`
@@ -40,3 +47,12 @@ broadcast and independent security approval remain NOT_RUN. No addresses or rece
 Target is testnet `1952 / OKB`, as confirmed in the
 [official network table](https://web3.okx.com/onchainos/dev-docs/xlayer/developer/build-on-xlayer/network-information).
 Metadata is not a network probe. Mainnet 196 and historical testnet 195 are outside scope.
+
+## Parallel-track ownership
+
+This assignment belongs only to AlphaForge-XLayer / X Layer / XLayerPM. The existing Robinhood
+assignment, Macbeth01 manager, source checkpoint, branch and PR retain their original ownership
+and state. X Layer intake does not pause, replace or relabel that task. The two tracks use separate
+checkouts, dependencies, data and evidence; neither track inherits the other's validation.
+There is no current engineering scheduling conflict: the original local contract delivery is at
+its committed checkpoint, while this X Layer deliverable is ready for manager integration.
