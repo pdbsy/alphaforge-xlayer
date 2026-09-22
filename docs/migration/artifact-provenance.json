@@ -1552,7 +1552,7 @@
       "target_path": "docs/management/agents/registry.json",
       "method": "registry migrated; historical confirmations reset for canonical repository; user-authorized Macbeth06 CI/gate role registration (2026-09-20), historical source identity unchanged",
       "original_sha256": "ecb05bfdcccf1abb036c4e4fdd16155e959ae706395020db4a1dac49e43f50b6",
-      "migrated_sha256": "855fe12cb2026a2fa4a4aa7eb0ddde82c20b321a36e84debdfa726315d093c12",
+      "migrated_sha256": "5625981f747587b58a57e0b8056f38a054678326d7fd27db930e71be02c2398c",
       "subsequent_adaptations": [
         {
           "task": "AF-M3-IDENTITY",
@@ -1601,6 +1601,13 @@
           "base_commit": "3915c48dc25c4763f8b47b4b93834ae20113a9dd",
           "previous_sha256": "b1babae3a2497eaf7303d2ecc8745a4b844c5a2b6f80c4cfa64e38c5633dc7a9",
           "reason": "Align current worker bootstrap and assignment metadata with explicitly required Macbeth branch prefixes; preserve historical aliases and evidence."
+        },
+        {
+          "task": "AF-XLAYER-MIGRATION",
+          "base_commit": "18f5352070910a867b9729b031aa2e3951785e01",
+          "previous_sha256": "855fe12cb2026a2fa4a4aa7eb0ddde82c20b321a36e84debdfa726315d093c12",
+          "previous_snapshot": "docs/xlayer/UPSTREAM-AGENT-REGISTRY.json",
+          "reason": "User-authorized separate X Layer project registry. Existing source authors and prior registry bytes are retained; new task receipts and confirmations start unverified."
         }
       ]
     },
