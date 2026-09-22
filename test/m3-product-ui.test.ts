@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { asAddress, asTransactionHash } from '../packages/chain-adapter/src/types.ts';
+import { readM3BuildNetwork } from '../apps/web/src/m3-network.ts';
 import { ROBINHOOD_CHAIN_TESTNET } from '../packages/robinhood-chain/src/network.ts';
 import {
   TRANSACTION_STATUSES,
@@ -627,4 +628,85 @@ test('actual product page extension reads fresh onchain state on every render', 
   assert.match(pages.trade('trend'), /INDEXER DEGRADED/);
   assert.match(pages.account('funds'), new RegExp(walletAddress));
   assert.match(pages.account('funds'), /INJECTED MOCK/);
+});
+
+test('X Layer shell routes transaction evidence to its approved explorer and labels threshold assumptions', () => {
+  const html = renderM3StrategyShell({
+    strategyId: 'trend',
+    contentProvenance: 'FIXTURE',
+    requiredNetwork: { environment: 'xlayer-testnet', chainId: 1952 },
+    network: { status: 'WRONG', chainId: 196 },
+    transaction: { status: 'SUBMITTED', txHash: `0x${'ab'.repeat(32)}` },
+    onchain: {
+      deployment: 'UNAVAILABLE',
+      health: 'UNAVAILABLE',
+      readiness: 'SOFT_READY',
+      owner: 'UNKNOWN',
+      writeMode: 'DISABLED',
+      exitPath: 'UNAVAILABLE',
+      supportedActions: [],
+    },
+  });
+  assert.match(html, /Switch to X Layer Testnet/);
+  assert.match(html, /Gas token<\/strong> · OKB/);
+  assert.match(html, /href="https:\/\/www.okx.com\/web3\/explorer\/xlayer-test\/tx\/0x[0-9a-f]{64}"/);
+  assert.match(html, /assumption/i);
+  assert.doesNotMatch(html, /Robinhood|46630/);
+});
+
+test('page extension carries trusted network context to account and strategy shells', () => {
+  const pages = extendM3ProductPages(
+    { account: () => '', trade: () => '' },
+    {
+      accountId: () => 'alice',
+      contentProvenance: () => 'FIXTURE',
+      chain: () => ({
+        requiredNetwork: { environment: 'xlayer-testnet', chainId: 1952 },
+        wallet: { status: 'DISCONNECTED' },
+        network: { status: 'UNAVAILABLE' },
+        transaction: { status: 'IDLE' },
+        onchain: {
+          deployment: 'UNAVAILABLE',
+          health: 'UNAVAILABLE',
+          readiness: 'UNKNOWN',
+          owner: 'UNKNOWN',
+          writeMode: 'DISABLED',
+          exitPath: 'UNAVAILABLE',
+          supportedActions: [],
+        },
+      }),
+    },
+  );
+  for (const html of [pages.account('funds'), pages.trade('trend')]) {
+    assert.match(html, /X Layer Testnet/);
+    assert.match(html, /OKB/);
+    assert.match(html, /NOT DEPLOYED/);
+  }
+});
+
+test('reviewed build network requires an exact pair and cannot import arbitrary metadata', () => {
+  assert.deepEqual(readM3BuildNetwork({}), { environment: 'robinhood-chain-testnet', chainId: 46630 });
+  const xlayer = readM3BuildNetwork({
+    VITE_AF_CHAIN: 'xlayer-testnet',
+    VITE_AF_CHAIN_ID: '1952',
+    VITE_AF_EXPLORER_URL: 'javascript:alert(1)',
+  });
+  assert.deepEqual(xlayer, { environment: 'xlayer-testnet', chainId: 1952 });
+  assert.equal(Object.isFrozen(xlayer), true);
+  for (const env of [
+    { VITE_AF_CHAIN: 'xlayer-testnet' },
+    { VITE_AF_CHAIN_ID: '1952' },
+    { VITE_AF_CHAIN: 'xlayer-testnet', VITE_AF_CHAIN_ID: '01952' },
+    { VITE_AF_CHAIN: 'xlayer-testnet', VITE_AF_CHAIN_ID: '0x7a0' },
+    { VITE_AF_CHAIN: 'xlayer-testnet', VITE_AF_CHAIN_ID: '196' },
+    { VITE_AF_CHAIN: 'xlayer-testnet', VITE_AF_CHAIN_ID: '195' },
+    { VITE_AF_CHAIN: 'robinhood-chain-testnet', VITE_AF_CHAIN_ID: '1952' },
+  ])
+    assert.throws(() => readM3BuildNetwork(env), /M3_UNSUPPORTED_NETWORK_PAIR/);
+  const html = renderM3AccountShell({
+    requiredNetwork: xlayer,
+    transaction: { status: 'SUBMITTED', txHash: `0x${'12'.repeat(32)}` },
+  });
+  assert.match(html, /href="https:\/\/www.okx.com\/web3\/explorer\/xlayer-test\/tx/);
+  assert.doesNotMatch(html, /javascript:/);
 });

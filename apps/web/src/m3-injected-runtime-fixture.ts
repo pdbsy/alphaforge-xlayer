@@ -1,3 +1,4 @@
+import { ROBINHOOD_CHAIN_TESTNET } from '../../../packages/robinhood-chain/src/network.ts';
 import {
   asAddress,
   asBlockHash,
@@ -191,6 +192,7 @@ export function createM3InjectedRuntimeFixture(): M3InjectedRuntimeFixture {
   const provider = new DevProvider();
   const reader = new DevVaultReader();
   const runtime = createM3BrowserRuntime({
+    network: { environment: ROBINHOOD_CHAIN_TESTNET.key, chainId: ROBINHOOD_CHAIN_TESTNET.chainId },
     provider,
     deployment,
     vaultReader: reader,

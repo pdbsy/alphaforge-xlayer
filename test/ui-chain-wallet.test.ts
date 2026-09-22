@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   Eip1193Wallet,
+  Eip1193WalletConnection,
   PreparedActionFactory,
   WalletFailure,
   type Eip1193Provider,
@@ -208,7 +209,7 @@ test('wallet is inert until explicit connect and connect verifies chain identity
   });
   assert.deepEqual(provider.methods, []);
   assert.deepEqual(await wallet.connect(), { account: OWNER, chainId: CHAIN_ID });
-  assert.deepEqual(provider.methods, ['eth_requestAccounts', 'eth_chainId']);
+  assert.deepEqual(provider.methods, ['eth_requestAccounts', 'eth_chainId', 'eth_accounts', 'eth_chainId']);
 });
 
 test('wallet verifies account and chain again immediately before submission', async () => {
@@ -224,10 +225,16 @@ test('wallet verifies account and chain again immediately before submission', as
   assert.deepEqual(provider.methods, [
     'eth_accounts',
     'eth_chainId',
+    'eth_accounts',
+    'eth_chainId',
     'eth_call',
     'eth_accounts',
     'eth_chainId',
+    'eth_accounts',
+    'eth_chainId',
     'eth_sendTransaction',
+    'eth_accounts',
+    'eth_chainId',
     'eth_accounts',
     'eth_chainId',
   ]);
@@ -240,11 +247,11 @@ test('wallet verifies account and chain again immediately before submission', as
     txHash: TX_HASH,
     submittedAt: '2026-09-14T12:00:00.000Z',
   });
-  assert.deepEqual(provider.requests[2], {
+  assert.deepEqual(provider.requests[4], {
     method: 'eth_call',
     params: [{ from: OWNER, to: CONTRACT, data: '0x123400', value: '0x0' }, 'latest'],
   });
-  assert.deepEqual(provider.requests[5], {
+  assert.deepEqual(provider.requests[9], {
     method: 'eth_sendTransaction',
     params: [{ from: OWNER, to: CONTRACT, data: '0x123400', value: '0x0' }],
   });
@@ -383,3 +390,73 @@ test('prepared action factory rejects values outside the EVM uint256 range', () 
   });
   assert.throws(() => invalidFactory.prepare(null, OWNER), /INVALID_TRANSACTION_VALUE/);
 });
+
+for (const operation of ['connect', 'observe'] as const) {
+  for (const event of ['accountsChanged', 'chainChanged', 'disconnect'] as const) {
+    for (const pauseAt of ['accounts', 'chain'] as const) {
+      test(`${operation} rejects ${event} while ${pauseAt} is pending, even after switching back`, async () => {
+        const provider = new ProviderFixture();
+        const started = Promise.withResolvers<void>();
+        const response = Promise.withResolvers<unknown>();
+        const original = provider.request.bind(provider);
+        let paused = false;
+        provider.request = async (request) => {
+          const value = await original(request);
+          const method = operation === 'connect' ? 'eth_requestAccounts' : 'eth_accounts';
+          if (!paused && request.method === (pauseAt === 'accounts' ? method : 'eth_chainId')) {
+            paused = true;
+            started.resolve();
+            return response.promise;
+          }
+          return value;
+        };
+        const connection = new Eip1193WalletConnection(provider, CHAIN_ID);
+        const pending = connection[operation]();
+        await started.promise;
+        provider.emit(event, event === 'accountsChanged' ? [OTHER_OWNER] : '0xc4');
+        provider.emit(event, event === 'accountsChanged' ? [OWNER] : provider.chainId);
+        response.resolve(pauseAt === 'accounts' ? [OWNER] : provider.chainId);
+        await assert.rejects(pending, { code: 'WALLET_SESSION_CHANGED' });
+        assert.equal(
+          [...provider.listeners.values()].every((listeners) => listeners.size === 0),
+          true,
+        );
+        assert.equal(provider.methods.includes('eth_sendTransaction'), false);
+      });
+    }
+  }
+}
+
+for (const field of ['accounts', 'chain'] as const) {
+  test(`wallet observation rechecks ${field} when a provider omits events`, async () => {
+    const provider = new ProviderFixture();
+    const original = provider.request.bind(provider);
+    let chainReads = 0;
+    provider.request = async (request) => {
+      const result = await original(request);
+      if (request.method === 'eth_chainId' && ++chainReads === 1) {
+        if (field === 'accounts') provider.accounts = [OTHER_OWNER];
+        else provider.chainId = '0xc4';
+      }
+      return result;
+    };
+    await assert.rejects(new Eip1193WalletConnection(provider, CHAIN_ID).observe(), {
+      code: 'WALLET_SESSION_CHANGED',
+    });
+  });
+}
+
+for (const event of ['accountsChanged', 'chainChanged', 'disconnect'] as const) {
+  test(`wallet observation closes partial listeners if ${event} registration fails`, async () => {
+    const provider = new ProviderFixture();
+    provider.listenerFailureEvent = event;
+    await assert.rejects(new Eip1193WalletConnection(provider, CHAIN_ID).observe(), {
+      code: 'WALLET_REQUEST_FAILED',
+    });
+    assert.equal(
+      [...provider.listeners.values()].every((listeners) => listeners.size === 0),
+      true,
+    );
+    assert.deepEqual(provider.methods, []);
+  });
+}

@@ -20,6 +20,7 @@ const uintResult = (value: bigint) => `0x${value.toString(16).padStart(64, '0')}
 class ProviderFixture implements Eip1193Provider {
   readonly requests: Eip1193Request[] = [];
   chainId = 1;
+  readonly listeners = new Map<string, Set<(value: unknown) => void>>();
 
   async request(input: Eip1193Request): Promise<unknown> {
     this.requests.push(input);
@@ -29,8 +30,14 @@ class ProviderFixture implements Eip1193Provider {
     throw new Error('UNEXPECTED_PROVIDER_METHOD');
   }
 
-  on(): void {}
-  removeListener(): void {}
+  on(event: string, listener: (value: unknown) => void): void {
+    const listeners = this.listeners.get(event) ?? new Set();
+    listeners.add(listener);
+    this.listeners.set(event, listeners);
+  }
+  removeListener(event: string, listener: (value: unknown) => void): void {
+    this.listeners.get(event)?.delete(listener);
+  }
 }
 
 class ConfiguredProviderFixture extends ProviderFixture {
@@ -280,7 +287,7 @@ test('configured runtime preserves owner exits through provider reads when the i
   assert.equal(review.request.kind, 'withdraw');
 });
 
-test('configured runtime disables writes when the connected provider changes to a wrong network', async () => {
+test('configured runtime requires a new connection after observing a wrong network', async () => {
   const provider = new ConfiguredProviderFixture();
   const runtime = createM3BrowserRuntime({
     provider,
@@ -299,6 +306,8 @@ test('configured runtime disables writes when the connected provider changes to 
   provider.chainId = 46_630;
   await runtime.refresh();
   assert.deepEqual(runtime.snapshot.network, { status: 'CORRECT', chainId: 46_630 });
+  assert.equal(runtime.snapshot.onchain.writeMode, 'DISABLED');
+  await runtime.connect();
   assert.equal(runtime.snapshot.onchain.writeMode, 'LIVE_AUTHORIZED');
 });
 
@@ -448,3 +457,221 @@ for (const source of ['canonical', 'live-exit'] as const) {
     );
   });
 }
+
+class SessionProviderFixture extends ConfiguredProviderFixture {
+  emit(event: string): void {
+    for (const listener of this.listeners.get(event) ?? []) listener(undefined);
+  }
+}
+
+for (const operation of ['connect', 'refresh'] as const) {
+  for (const event of ['accountsChanged', 'chainChanged', 'disconnect'] as const) {
+    test(`runtime ${operation} cannot publish old ownership after ${event} during a Vault read`, async () => {
+      const provider = new SessionProviderFixture();
+      const started = Promise.withResolvers<void>();
+      const response = Promise.withResolvers<M3VaultSnapshot>();
+      let hold = false;
+      const runtime = createM3BrowserRuntime({
+        provider,
+        deployment,
+        transportProvenance: 'DEV_MOCK',
+        vaultReader: {
+          async readSnapshot() {
+            if (hold) {
+              started.resolve();
+              return response.promise;
+            }
+            return vaultSnapshot;
+          },
+        },
+      });
+      if (operation === 'refresh') await runtime.connect();
+      hold = true;
+      const pending = runtime[operation]();
+      await started.promise;
+      provider.emit(event);
+      response.resolve(vaultSnapshot);
+      await assert.rejects(pending, /WALLET_SESSION_CHANGED/);
+      assert.equal(runtime.snapshot.wallet.status, 'DISCONNECTED');
+      assert.equal(runtime.snapshot.onchain.owner, 'UNKNOWN');
+      assert.equal(runtime.snapshot.onchain.writeMode, 'DISABLED');
+      assert.equal(onchainActionEnabled(runtime.snapshot.onchain, 'withdraw'), false);
+      assert.equal(
+        [...provider.listeners.values()].every((listeners) => listeners.size === 0),
+        true,
+      );
+    });
+  }
+}
+
+test('a late connection failure cannot overwrite a newer successful connection', async () => {
+  const provider = new SessionProviderFixture();
+  const started = Promise.withResolvers<void>();
+  const response = Promise.withResolvers<unknown>();
+  const original = provider.request.bind(provider);
+  let first = true;
+  provider.request = async (request) => {
+    if (request.method === 'eth_requestAccounts' && first) {
+      first = false;
+      started.resolve();
+      return response.promise;
+    }
+    return original(request);
+  };
+  const runtime = createM3BrowserRuntime({ provider });
+  const old = runtime.connect();
+  await started.promise;
+  await runtime.connect();
+  response.reject({ code: 4001 });
+  await assert.rejects(old);
+  assert.equal(runtime.snapshot.wallet.status, 'CONNECTED');
+  assert.equal(runtime.snapshot.network.status, 'CORRECT');
+});
+
+test('refresh observation failure closes previously enabled owner exits', async () => {
+  const provider = new SessionProviderFixture();
+  const runtime = createM3BrowserRuntime({
+    provider,
+    deployment,
+    transportProvenance: 'DEV_MOCK',
+    vaultReader: {
+      async readSnapshot() {
+        return vaultSnapshot;
+      },
+    },
+  });
+  await runtime.connect();
+  assert.equal(onchainActionEnabled(runtime.snapshot.onchain, 'withdraw'), true);
+  provider.request = async () => {
+    throw new Error('provider unavailable');
+  };
+  await assert.rejects(runtime.refresh(), /WALLET_REQUEST_FAILED/);
+  assert.equal(runtime.snapshot.onchain.writeMode, 'DISABLED');
+  assert.equal(runtime.snapshot.onchain.owner, 'UNKNOWN');
+});
+
+const xlayerSelection = { environment: 'xlayer-testnet', chainId: 1952 };
+
+test('explicit X Layer runtime connects read-only without manufacturing a deployment', async () => {
+  const provider = new ProviderFixture();
+  provider.chainId = 1952;
+  const runtime = createM3BrowserRuntime({ provider, network: xlayerSelection });
+  assert.equal(provider.requests.length, 0);
+  await runtime.connect();
+  await runtime.refresh();
+  assert.equal(runtime.snapshot.wallet.status, 'CONNECTED');
+  assert.equal(runtime.snapshot.network.status, 'CORRECT');
+  const html = renderM3StrategyShell({
+    strategyId: 'trend',
+    contentProvenance: 'FIXTURE',
+    ...runtime.snapshot,
+  });
+  assert.match(html, /X Layer Testnet/);
+  assert.match(html, /Chain ID 1952/);
+  assert.match(html, /OKB/);
+  assert.match(html, /NOT DEPLOYED/);
+  assert.doesNotMatch(html, /Robinhood|46630/);
+  for (const kind of ['deposit', 'withdraw', 'close'] as const) {
+    assert.equal(onchainActionEnabled(runtime.snapshot.onchain, kind), false);
+  }
+  await assert.rejects(
+    runtime.reviewAction({ kind: 'withdraw', usdcBaseUnits: '1' }),
+    /M3_DEPLOYMENT_NOT_CONFIGURED/,
+  );
+  await assert.rejects(
+    runtime.reviewDepositApprovals!({ kind: 'deposit', usdcBaseUnits: '1' }),
+    /WALLET_CONNECTION_REQUIRED/,
+  );
+  assert.equal(
+    provider.requests.every(({ method }) =>
+      ['eth_accounts', 'eth_requestAccounts', 'eth_chainId'].includes(method),
+    ),
+    true,
+  );
+});
+
+for (const chainId of [195, 196, 46630]) {
+  test(`X Layer runtime rejects wallet chain ${chainId} instead of adopting it`, async () => {
+    const provider = new ProviderFixture();
+    provider.chainId = chainId;
+    const runtime = createM3BrowserRuntime({ provider, network: xlayerSelection });
+    await assert.rejects(runtime.connect(), /WALLET_WRONG_CHAIN/);
+    assert.equal(runtime.snapshot.network.status, 'WRONG');
+    assert.equal(runtime.snapshot.network.chainId, chainId);
+    assert.equal(runtime.snapshot.onchain.writeMode, 'DISABLED');
+  });
+}
+
+test('X Layer runtime rejects a Robinhood deployment before provider I/O', () => {
+  const provider = new ProviderFixture();
+  assert.throws(
+    () => createM3BrowserRuntime({ provider, network: xlayerSelection, deployment }),
+    /M3_DEPLOYMENT_NETWORK_MISMATCH/,
+  );
+  assert.deepEqual(provider.requests, []);
+});
+
+for (const selection of [
+  { environment: 'xlayer-testnet', chainId: 196 },
+  { environment: 'xlayer-testnet', chainId: 195 },
+  { environment: 'xlayer-testnet', chainId: 46630 },
+  { environment: 'robinhood-chain-testnet', chainId: 1952 },
+  { environment: 'unreviewed-testnet', chainId: 1952 },
+]) {
+  test(`runtime rejects an unapproved configured pair ${selection.environment}/${selection.chainId}`, () => {
+    const provider = new ProviderFixture();
+    assert.throws(
+      () => createM3BrowserRuntime({ provider, network: selection }),
+      /M3_UNSUPPORTED_NETWORK_PAIR/,
+    );
+    assert.deepEqual(provider.requests, []);
+  });
+}
+
+for (const operation of ['connect', 'refresh'] as const) {
+  test(`runtime ${operation} rechecks the wallet after a Vault read even if chain events are missing`, async () => {
+    const provider = new SessionProviderFixture();
+    let change = false;
+    const runtime = createM3BrowserRuntime({
+      provider,
+      deployment,
+      transportProvenance: 'DEV_MOCK',
+      vaultReader: {
+        async readSnapshot() {
+          if (change) provider.chainId = 196;
+          return vaultSnapshot;
+        },
+      },
+    });
+    if (operation === 'refresh') await runtime.connect();
+    change = true;
+    await assert.rejects(runtime[operation](), /WALLET_SESSION_CHANGED/);
+    assert.equal(runtime.snapshot.onchain.owner, 'UNKNOWN');
+    assert.equal(runtime.snapshot.onchain.writeMode, 'DISABLED');
+  });
+}
+
+test('reconnecting cannot reuse a product review from an invalidated session', async () => {
+  const provider = new SessionProviderFixture();
+  const runtime = createM3BrowserRuntime({
+    provider,
+    deployment,
+    transportProvenance: 'DEV_MOCK',
+    vaultReader: {
+      async readSnapshot() {
+        return vaultSnapshot;
+      },
+    },
+  });
+  await runtime.connect();
+  const review = await runtime.reviewAction({ kind: 'withdraw', usdcBaseUnits: '1' });
+  provider.chainId = 196;
+  await runtime.refresh();
+  provider.chainId = 46630;
+  await runtime.connect();
+  await assert.rejects(runtime.confirmAction(review), /INVALID_PRODUCT_REVIEW/);
+  assert.equal(
+    provider.requests.some(({ method }) => method === 'eth_sendTransaction'),
+    false,
+  );
+});
