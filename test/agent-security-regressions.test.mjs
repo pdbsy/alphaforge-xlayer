@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { buildForumSnapshot, recordsFromPullRequests } from '../tools/agent-forum.mjs';
 
-const github = (path) => `https://github.com/pdbsy/quantpass-arbitrum-hackathon${path}`;
+const github = (path) => `https://github.com/pdbsy/alphaforge-xlayer${path}`;
 const block = ({ agent, to, type, replyTo = 'NONE', relatedPr, body = 'message' }) => `[AGENT-MESSAGE]
 Schema-Version: 1
 Agent: ${agent}
@@ -25,7 +25,7 @@ function source({
   url = github(`/pull/${pr}#issuecomment-${pr}`),
   githubAuthor = 'pdbsy',
   prAuthor = 'pdbsy',
-  headRepo = 'pdbsy/quantpass-arbitrum-hackathon',
+  headRepo = 'pdbsy/alphaforge-xlayer',
 } = {}) {
   return {
     source_type: 'PR_COMMENT',
@@ -42,6 +42,27 @@ function source({
     updated_at: `2026-09-12T10:0${pr}:00.000Z`,
   };
 }
+
+test('upstream records and cross-repository ACKs cannot confirm X Layer work', () => {
+  const notice = source();
+  const ack = source({ pr: 2, owner: 'Macbeth02', type: 'ACK', to: 'Macbeth01', replyTo: notice.source_url });
+  const historical = JSON.parse(
+    JSON.stringify(ack).replaceAll('pdbsy/alphaforge-xlayer', 'pdbsy/quantpass-arbitrum-hackathon'),
+  );
+  const mixed = { ...ack, pr_head_repo: 'pdbsy/quantpass-arbitrum-hackathon' };
+  const crossLink = {
+    ...ack,
+    text: ack.text.replace(
+      notice.source_url,
+      notice.source_url.replace('alphaforge-xlayer', 'quantpass-arbitrum-hackathon'),
+    ),
+  };
+  const snapshot = buildForumSnapshot([notice, historical, mixed, crossLink]);
+  assert.equal(snapshot.source.state, 'PARTIAL');
+  assert.equal(snapshot.source.rejected_records, 3);
+  assert.equal(snapshot.messages.length, 1);
+  assert.equal(snapshot.messages[0].ack_state, 'UNACKNOWLEDGED');
+});
 
 test('forged worker messages and ACKs from the wrong owning PR are rejected', () => {
   const notice = source();
@@ -109,7 +130,7 @@ test('collector carries PR ownership metadata and enforces the 500-record output
       number: 1,
       html_url: github('/pull/1'),
       title: '[Macbeth01][AF-AGENT-SETUP] Worker setup',
-      head: { ref: 'macbeth01/af-agent-setup', repo: { full_name: 'pdbsy/quantpass-arbitrum-hackathon' } },
+      head: { ref: 'macbeth01/af-agent-setup', repo: { full_name: 'pdbsy/alphaforge-xlayer' } },
       body: '',
       created_at: '2026-09-12T10:00:00.000Z',
       updated_at: '2026-09-12T10:00:00.000Z',
@@ -122,5 +143,5 @@ test('collector carries PR ownership metadata and enforces the 500-record output
   assert.equal(records[0].pr_head_ref, 'macbeth01/af-agent-setup');
   assert.equal(records[0].pr_title, '[Macbeth01][AF-AGENT-SETUP] Worker setup');
   assert.equal(records[0].pr_author, 'pdbsy');
-  assert.equal(records[0].pr_head_repo, 'pdbsy/quantpass-arbitrum-hackathon');
+  assert.equal(records[0].pr_head_repo, 'pdbsy/alphaforge-xlayer');
 });

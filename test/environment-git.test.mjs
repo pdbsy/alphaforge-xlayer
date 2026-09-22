@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { fixtureExec } from './helpers/git-fixture.mjs';
 import { gitIdentity } from '../tools/environment/observe.mjs';
 
-const repository = 'pdbsy/quantpass-arbitrum-hackathon';
+const repository = 'pdbsy/alphaforge-xlayer';
 test('real Git fixtures isolate configuration, normalize CRLF and bind detached PR parents', () => {
   const root = mkdtempSync(join(tmpdir(), 'environment 中文 space '));
   const git = (...args) => fixtureExec('git', args, { cwd: root, encoding: 'utf8' }).trim();
@@ -42,6 +42,19 @@ test('real Git fixtures isolate configuration, normalize CRLF and bind detached 
     assert.equal(identity.base, base);
     assert.equal(identity.head, merge);
     assert.equal(identity.historyValid, true);
+    for (const wrongRepository of ['pdbsy/quantpass-arbitrum-hackathon', 'other/alphaforge-xlayer', null]) {
+      assert.equal(
+        gitIdentity(run, {
+          event: 'pull_request',
+          sha: merge,
+          ref: 'refs/pull/9/merge',
+          repository: wrongRepository,
+          head,
+          base,
+        }).historyValid,
+        false,
+      );
+    }
     assert.equal(
       gitIdentity(run, {
         event: 'pull_request',

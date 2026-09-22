@@ -99,8 +99,7 @@ export function gitIdentity(git, event) {
     if (git(['rev-parse', '--is-shallow-repository']) !== 'false') return identity;
     if (![identity.head, identity.tree, identity.base].every((s) => sha.test(s))) return identity;
     if (event.event) {
-      if (event.repository !== 'pdbsy/quantpass-arbitrum-hackathon' || event.sha !== identity.head)
-        return identity;
+      if (event.repository !== 'pdbsy/alphaforge-xlayer' || event.sha !== identity.head) return identity;
       if (event.event === 'pull_request' || event.event === 'merge_group') {
         if (!sha.test(event.head) || !sha.test(event.base)) return identity;
         const parents = git(['show', '--no-patch', '--format=%P', 'HEAD']).split(' ');

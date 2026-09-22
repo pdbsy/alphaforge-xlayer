@@ -17,6 +17,30 @@ const lockfile = JSON.parse(await readFile(new URL('../package-lock.json', impor
 
 const engineeringWorkflow = await readFile(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8');
 
+test('X Layer supply identity and SBOM namespace reject upstream and foreign substitutions', () => {
+  const candidate = structuredClone(policy);
+  candidate.repository = 'pdbsy/alphaforge-xlayer';
+  candidate.sbom.documentNamespaceBase = 'https://github.com/pdbsy/alphaforge-xlayer/sbom';
+  assert.equal(validateSupplyChainPolicy(candidate), candidate);
+  const sbom = JSON.parse(renderNpmSbom(lockfile, packageJson, candidate));
+  assert.match(
+    sbom.documentNamespace,
+    /^https:\/\/github\.com\/pdbsy\/alphaforge-xlayer\/sbom\/[a-f0-9]{64}$/,
+  );
+  assert.equal(sbom.packages[0].downloadLocation, 'git+https://github.com/pdbsy/alphaforge-xlayer.git');
+  for (const repository of ['pdbsy/quantpass-arbitrum-hackathon', 'other/alphaforge-xlayer']) {
+    assert.throws(() => validateSupplyChainPolicy({ ...candidate, repository }), /policy.repository/);
+    assert.throws(
+      () =>
+        validateSupplyChainPolicy({
+          ...candidate,
+          sbom: { ...candidate.sbom, documentNamespaceBase: `https://github.com/${repository}/sbom` },
+        }),
+      /SBOM namespace/,
+    );
+  }
+});
+
 test('supply-chain policy and npm lock are closed and produce deterministic SPDX', () => {
   assert.equal(validateSupplyChainPolicy(policy), policy);
   const locked = validatePackageLock(lockfile, packageJson, policy);

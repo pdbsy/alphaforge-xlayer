@@ -1,8 +1,68 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { runInNewContext } from 'node:vm';
 
 import { renderForumPage } from '../tools/build-agent-forum.mjs';
 import { createFailureSnapshot, parseGithubRemote } from '../tools/sync-agent-forum.mjs';
+
+test('Forum shows historical source links but counts only current repository messages and ACKs', () => {
+  const elements = new Map();
+  const node = (tag = 'div') => ({
+    tag,
+    children: [],
+    textContent: '',
+    value: '',
+    append(...children) {
+      this.children.push(...children);
+    },
+    replaceChildren(...children) {
+      this.children = children;
+    },
+    addEventListener() {},
+  });
+  const get = (id) => {
+    if (!elements.has(id)) elements.set(id, node());
+    return elements.get(id);
+  };
+  const record = (repository, thread) => ({
+    agent: 'Macbeth06',
+    to: 'Macbeth01',
+    type: 'NOTICE',
+    thread,
+    source_url: `https://github.com/${repository}/pull/1`,
+    related_pr: `https://github.com/${repository}/pull/1`,
+    ack_state: 'UNACKNOWLEDGED',
+    body: 'Public worker message',
+  });
+  get('forum-snapshot').textContent = JSON.stringify({
+    source: { state: 'OK', last_sync_at: '2026-09-22T00:00:00Z' },
+    threads: [],
+    messages: [
+      record('pdbsy/quantpass-arbitrum-hackathon', 'AF-OLD'),
+      record('pdbsy/alphaforge-xlayer', 'AF-XLAYER-06-CI'),
+    ],
+  });
+  runInNewContext(readFileSync(new URL('../tools/agent-forum-app.js', import.meta.url), 'utf8'), {
+    URL,
+    Date,
+    document: { getElementById: get, createElement: node, createTextNode: (text) => text },
+  });
+  assert.equal(get('message-count').textContent, '1');
+  assert.equal(get('thread-count').textContent, '1');
+  assert.equal(get('unack-count').textContent, '1');
+  const all = [];
+  const walk = (item) => {
+    if (typeof item === 'object') {
+      all.push(item);
+      item.children.forEach(walk);
+    }
+  };
+  walk(get('forum'));
+  assert.ok(all.some((item) => item.href === 'https://github.com/pdbsy/quantpass-arbitrum-hackathon/pull/1'));
+  assert.ok(all.some((item) => item.href === 'https://github.com/pdbsy/alphaforge-xlayer/pull/1'));
+  assert.ok(all.some((item) => item.textContent.includes('历史来源：pdbsy/quantpass-arbitrum-hackathon')));
+});
 
 test('forum renderer injects each asset once and makes snapshot JSON script-safe', () => {
   const html = renderForumPage(
@@ -23,17 +83,31 @@ test('forum renderer injects each asset once and makes snapshot JSON script-safe
 });
 
 test('GitHub collector accepts only the configured repository remote', () => {
+  assert.equal(parseGithubRemote('git@github.com:pdbsy/alphaforge-xlayer.git'), 'pdbsy/alphaforge-xlayer');
   assert.equal(
-    parseGithubRemote('git@github.com:pdbsy/quantpass-arbitrum-hackathon.git'),
-    'pdbsy/quantpass-arbitrum-hackathon',
-  );
-  assert.equal(
-    parseGithubRemote('https://github.com/pdbsy/quantpass-arbitrum-hackathon.git'),
-    'pdbsy/quantpass-arbitrum-hackathon',
+    parseGithubRemote('https://github.com/pdbsy/alphaforge-xlayer.git'),
+    'pdbsy/alphaforge-xlayer',
   );
   assert.throws(() => parseGithubRemote('git@github.com:pdbsy/quantpass.git'));
   assert.throws(() => parseGithubRemote('git@github.com:other/repo.git'));
-  assert.throws(() => parseGithubRemote('https://evil.example/pdbsy/quantpass-arbitrum-hackathon.git'));
+  assert.throws(() => parseGithubRemote('git@github.com:pdbsy/quantpass-arbitrum-hackathon.git'));
+  assert.throws(() => parseGithubRemote('https://github.com/pdbsy/quantpass-arbitrum-hackathon.git'));
+  assert.throws(() => parseGithubRemote('https://evil.example/pdbsy/alphaforge-xlayer.git'));
+});
+
+test('Forum collection refuses upstream or foreign endpoints before making a request', async () => {
+  const { collectGithubForum } = await import('../tools/sync-agent-forum.mjs');
+  for (const repository of ['pdbsy/quantpass-arbitrum-hackathon', 'other/alphaforge-xlayer']) {
+    let calls = 0;
+    await assert.rejects(
+      collectGithubForum(repository, async () => {
+        calls++;
+        return [];
+      }),
+      /repository/,
+    );
+    assert.equal(calls, 0);
+  }
 });
 
 test('failed sync preserves last trusted messages and records only a bounded generic error', () => {
@@ -56,7 +130,7 @@ test('PR11-P5 GitHub collector paginates comments beyond 100 and exposes hard bo
   const { collectGithubForum } = await import('../tools/sync-agent-forum.mjs');
   for (const count of [150, 600]) {
     const calls = [];
-    const result = await collectGithubForum('pdbsy/quantpass-arbitrum-hackathon', async (endpoint) => {
+    const result = await collectGithubForum('pdbsy/alphaforge-xlayer', async (endpoint) => {
       calls.push(endpoint);
       const url = new URL(endpoint, 'https://api.github.com/');
       const page = Number(url.searchParams.get('page'));
@@ -76,7 +150,7 @@ test('PR11-P5 GitHub collector paginates comments beyond 100 and exposes hard bo
 
 test('PR11-P5 bounded PR pagination and request budget report PARTIAL rather than silent OK', async () => {
   const { collectGithubForum } = await import('../tools/sync-agent-forum.mjs');
-  const result = await collectGithubForum('pdbsy/quantpass-arbitrum-hackathon', async (endpoint) => {
+  const result = await collectGithubForum('pdbsy/alphaforge-xlayer', async (endpoint) => {
     const url = new URL(endpoint, 'https://api.github.com/');
     if (!url.pathname.endsWith('/pulls')) return [];
     const page = Number(url.searchParams.get('page'));
