@@ -737,8 +737,9 @@ class M3BrowserRuntime implements M3ProductRuntime {
 }
 
 export function createM3BrowserRuntime(options: M3BrowserRuntimeOptions): M3ProductRuntime {
+  const buildEnv = (import.meta as { readonly env?: Parameters<typeof readM3BuildNetwork>[0] }).env;
   return new M3BrowserRuntime({
     ...options,
-    network: options.network ?? readM3BuildNetwork(import.meta.env ?? {}),
+    network: options.network ?? readM3BuildNetwork(buildEnv ?? {}),
   });
 }
