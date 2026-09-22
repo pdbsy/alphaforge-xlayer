@@ -1,0 +1,70 @@
+{
+  "project": "AlphaForge-XLayer",
+  "track": "X Layer",
+  "repository": "pdbsy/alphaforge-xlayer",
+  "manager": "XLayerPM",
+  "worker": "Macbeth02",
+  "task": "AF-XLAYER-02-CONTRACTS-VERIFY",
+  "source": "0e31259c583fed08375c09018f778a4de8bc7c7d",
+  "sourceTree": "22357dd43da276fbc5f69ee30c9a61ff364f6a50",
+  "contractsTree": "63857df59e7f222d0cdcbf4b84369e7adb1a6b0c",
+  "workerSource": "000063f5b6bc257d63bc3426ee5ec20423aa475c",
+  "workerContractsTree": "63857df59e7f222d0cdcbf4b84369e7adb1a6b0c",
+  "shallow": false,
+  "cleanBefore": true,
+  "platform": "Darwin/arm64",
+  "python": "3.12.9",
+  "slither": "0.11.3",
+  "hashes": {
+    "contracts/toolchain.lock.json": "8d197848d3e0330f8911543564b038273b833e83c683708eaaab68803432d338",
+    "contracts/requirements-slither.lock": "955418d72e668fcb5cc25766044ef541d9265c2a6ad5cc04b5d59aef5b72522f",
+    "contracts/foundry.toml": "2efc19c44431dce6c055eadcca39ad09b2fb5047abd172174989106b7b830573",
+    "contracts/openzeppelin-pragma-pins.json": "c9660d909a8c9fd170a8cb0bb0da939615e47c623ac33a5a855a60b64a70d5b1"
+  },
+  "effectiveCompilerConfig": {
+    "solc": "../.checks/af-chain01/toolchain/bin/solc",
+    "offline": true,
+    "auto_detect_solc": false,
+    "evm_version": "paris",
+    "optimizer": false,
+    "via_ir": false,
+    "ffi": false,
+    "fs_permissions": []
+  },
+  "startedAtUtc": "2026-09-22T14:35:17.803320+00:00",
+  "gateExit": 0,
+  "finishedAtUtc": "2026-09-22T14:35:23.906644+00:00",
+  "cleanAfter": true,
+  "gateRawSha256": "af1a008df6308221ca2decea26c91268a50f715c1c1879de6c017af0ab3731b8",
+  "slitherRawSha256": "6075497f3ba5e1b4cbd5302241e78e7ad61e5b81e371a86ed2bdeff356557046",
+  "slitherSuccess": true,
+  "slitherDetectors": 0,
+  "templateSha256": "5d86baa38427669fbaa0eb44b08d505e121d26c5a5fd801f27575ebcf57e7225",
+  "templateBoundary": {
+    "deploymentStatus": "NOT_DEPLOYED",
+    "chainId": 1952,
+    "networkKey": "xlayer-testnet",
+    "nativeCurrency": "OKB",
+    "boundary": {
+      "mode": "local",
+      "adapter": "mock",
+      "realFundsEnabled": false,
+      "signingEnabled": false,
+      "broadcastEnabled": false,
+      "rpcIdentity": "NOT_RUN",
+      "liveVmCompatibility": "NOT_RUN",
+      "indexingPolicy": "INHERITED_UNVERIFIED_DEFAULTS",
+      "intentPreview": "DIGEST_ONLY_NOT_AUTHORIZATION"
+    }
+  },
+  "unconfiguredContracts": 8,
+  "indexing": {
+    "deploymentBlock": null,
+    "deploymentTransactionHash": null,
+    "eventTopics": null,
+    "softReadyDepth": 3,
+    "reorgSearchLimit": 128,
+    "finalityStatus": "UNKNOWN"
+  },
+  "receiptScope": "COMBINED_SOURCE_CONTRACT_COMPONENT_ONLY_NOT_FINAL_ALL_TASKS_C"
+}

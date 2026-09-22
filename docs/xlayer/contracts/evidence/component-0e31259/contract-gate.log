@@ -1,0 +1,684 @@
+raw_path=.checks/xlayer02-verify/contract-gate.log
+raw_sha256=af1a008df6308221ca2decea26c91268a50f715c1c1879de6c017af0ab3731b8
+public_copy=verification-root redacted; trailing whitespace normalized; original retained
+
+[XLayer][AF-XLAYER-02-CONTRACTS-VERIFY]
+{
+  "project": "AlphaForge-XLayer",
+  "track": "X Layer",
+  "repository": "pdbsy/alphaforge-xlayer",
+  "manager": "XLayerPM",
+  "worker": "Macbeth02",
+  "task": "AF-XLAYER-02-CONTRACTS-VERIFY",
+  "source": "0e31259c583fed08375c09018f778a4de8bc7c7d",
+  "sourceTree": "22357dd43da276fbc5f69ee30c9a61ff364f6a50",
+  "contractsTree": "63857df59e7f222d0cdcbf4b84369e7adb1a6b0c",
+  "workerSource": "000063f5b6bc257d63bc3426ee5ec20423aa475c",
+  "workerContractsTree": "63857df59e7f222d0cdcbf4b84369e7adb1a6b0c",
+  "shallow": false,
+  "cleanBefore": true,
+  "platform": "Darwin/arm64",
+  "python": "3.12.9",
+  "slither": "0.11.3",
+  "hashes": {
+    "contracts/toolchain.lock.json": "8d197848d3e0330f8911543564b038273b833e83c683708eaaab68803432d338",
+    "contracts/requirements-slither.lock": "955418d72e668fcb5cc25766044ef541d9265c2a6ad5cc04b5d59aef5b72522f",
+    "contracts/foundry.toml": "2efc19c44431dce6c055eadcca39ad09b2fb5047abd172174989106b7b830573",
+    "contracts/openzeppelin-pragma-pins.json": "c9660d909a8c9fd170a8cb0bb0da939615e47c623ac33a5a855a60b64a70d5b1"
+  },
+  "effectiveCompilerConfig": {
+    "solc": "../.checks/af-chain01/toolchain/bin/solc",
+    "offline": true,
+    "auto_detect_solc": false,
+    "evm_version": "paris",
+    "optimizer": false,
+    "via_ir": false,
+    "ffi": false,
+    "fs_permissions": []
+  },
+  "startedAtUtc": "2026-09-22T14:35:17.803320+00:00"
+}
+command=bash contracts/script/check-xlayer-contracts.sh
+boundary=LOCAL_MOCK_OFFLINE_NOT_DEPLOYED
+forge Version: 1.5.1-v1.5.1
+Commit SHA: b0a9dd9ceda36f63e2326ce530c10e6916f4b8a2
+Build Timestamp: 2025-12-19T14:10:53.027269000Z (1766153453)
+Build Profile: maxperf
+solc, the solidity compiler commandline interface
+Version: 0.8.31+commit.fd3a2265.Darwin.appleclang
+Slither 0.11.3
+Pinned dependency: 23 pragma-only changes; original/derived ABI and bytecode identical
+test_changed_compilation_is_rejected (test_pinned_dependency.PinnedDependencyTests.test_changed_compilation_is_rejected) ... ok
+test_derivation_preserves_every_non_pragma_byte (test_pinned_dependency.PinnedDependencyTests.test_derivation_preserves_every_non_pragma_byte) ... ok
+test_empty_compilation_cannot_claim_equivalence (test_pinned_dependency.PinnedDependencyTests.test_empty_compilation_cannot_claim_equivalence) ... ok
+test_extra_files_and_symlinks_are_rejected (test_pinned_dependency.PinnedDependencyTests.test_extra_files_and_symlinks_are_rejected) ... ok
+test_identical_nonempty_compilation_is_accepted (test_pinned_dependency.PinnedDependencyTests.test_identical_nonempty_compilation_is_accepted) ... ok
+test_manifest_cannot_escape_destination (test_pinned_dependency.PinnedDependencyTests.test_manifest_cannot_escape_destination) ... ok
+test_materialization_preserves_original_and_license_and_is_repeatable (test_pinned_dependency.PinnedDependencyTests.test_materialization_preserves_original_and_license_and_is_repeatable) ... ok
+test_only_reviewed_compatible_pragma_can_be_narrowed (test_pinned_dependency.PinnedDependencyTests.test_only_reviewed_compatible_pragma_can_be_narrowed) ... ok
+test_project_sources_include_every_regular_solidity_file (test_pinned_dependency.PinnedDependencyTests.test_project_sources_include_every_regular_solidity_file) ... ok
+test_reviewed_erc20_interface_pragmas_can_be_narrowed (test_pinned_dependency.PinnedDependencyTests.test_reviewed_erc20_interface_pragmas_can_be_narrowed) ... ok
+test_source_drift_is_rejected_before_derivation (test_pinned_dependency.PinnedDependencyTests.test_source_drift_is_rejected_before_derivation) ... ok
+test_unexpected_derived_hash_is_rejected (test_pinned_dependency.PinnedDependencyTests.test_unexpected_derived_hash_is_rejected) ... ok
+test_constructor_parameter_rename_is_rejected (test_vault_artifact.VaultArtifactTests.test_constructor_parameter_rename_is_rejected) ... ok
+test_constructor_parameter_reorder_is_rejected (test_vault_artifact.VaultArtifactTests.test_constructor_parameter_reorder_is_rejected) ... ok
+test_error_removal_is_rejected (test_vault_artifact.VaultArtifactTests.test_error_removal_is_rejected) ... ok
+test_event_indexed_drift_is_rejected (test_vault_artifact.VaultArtifactTests.test_event_indexed_drift_is_rejected) ... ok
+test_event_rename_is_rejected (test_vault_artifact.VaultArtifactTests.test_event_rename_is_rejected) ... ok
+test_frozen_abi_is_accepted (test_vault_artifact.VaultArtifactTests.test_frozen_abi_is_accepted) ... ok
+test_function_parameter_drift_is_rejected (test_vault_artifact.VaultArtifactTests.test_function_parameter_drift_is_rejected) ... ok
+test_published_abi_must_equal_compiler_artifact (test_vault_artifact.VaultArtifactTests.test_published_abi_must_equal_compiler_artifact) ... ok
+test_accepts_unconfigured_testnet_template (test_xlayer_template.XLayerTemplateTests.test_accepts_unconfigured_testnet_template) ... ok
+test_cli_refuses_options_and_does_not_echo_values (test_xlayer_template.XLayerTemplateTests.test_cli_refuses_options_and_does_not_echo_values) ... ok
+test_preserves_precision_tool_pins_and_authority (test_xlayer_template.XLayerTemplateTests.test_preserves_precision_tool_pins_and_authority) ... ok
+test_refuses_unexpected_missing_or_wrong_type_fields (test_xlayer_template.XLayerTemplateTests.test_refuses_unexpected_missing_or_wrong_type_fields) ... ok
+test_refuses_writes_and_fabricated_finality (test_xlayer_template.XLayerTemplateTests.test_refuses_writes_and_fabricated_finality) ... ok
+test_rejects_deployment_or_artifact_claims (test_xlayer_template.XLayerTemplateTests.test_rejects_deployment_or_artifact_claims) ... ok
+test_rejects_endpoint_injection_without_echoing_it (test_xlayer_template.XLayerTemplateTests.test_rejects_endpoint_injection_without_echoing_it) ... ok
+test_rejects_wrong_or_coerced_networks (test_xlayer_template.XLayerTemplateTests.test_rejects_wrong_or_coerced_networks) ... ok
+
+----------------------------------------------------------------------
+Ran 28 tests in 0.045s
+
+OK
+Compiling 54 files with Solc 0.8.31
+Solc 0.8.31 finished in 620.15ms
+Compiler run successful!
+note[screaming-snake-case-immutable]: immutables should use SCREAMING_SNAKE_CASE
+  --> src/PassLocker.sol:24:30
+   |
+24 |     address public immutable vault;
+   |                              ^^^^^ help: consider using: `VAULT`
+   |
+   = help: https://book.getfoundry.sh/reference/forge/forge-lint#screaming-snake-case-immutable
+
+note[screaming-snake-case-immutable]: immutables should use SCREAMING_SNAKE_CASE
+  --> src/AlphaForgeTestVenue.sol:42:30
+   |
+42 |     address public immutable afUsdc;
+   |                              ^^^^^^ help: consider using: `AF_USDC`
+   |
+   = help: https://book.getfoundry.sh/reference/forge/forge-lint#screaming-snake-case-immutable
+
+note[screaming-snake-case-immutable]: immutables should use SCREAMING_SNAKE_CASE
+  --> src/AlphaForgeTestVenue.sol:43:30
+   |
+43 |     address public immutable afEth;
+   |                              ^^^^^ help: consider using: `AF_ETH`
+   |
+   = help: https://book.getfoundry.sh/reference/forge/forge-lint#screaming-snake-case-immutable
+
+note[screaming-snake-case-immutable]: immutables should use SCREAMING_SNAKE_CASE
+  --> src/AlphaForgeTestVenue.sol:44:30
+   |
+44 |     address public immutable afBtc;
+   |                              ^^^^^ help: consider using: `AF_BTC`
+   |
+   = help: https://book.getfoundry.sh/reference/forge/forge-lint#screaming-snake-case-immutable
+
+note[screaming-snake-case-immutable]: immutables should use SCREAMING_SNAKE_CASE
+  --> test/AlphaForgeVault.custody.t.sol:22:30
+   |
+22 |     address public immutable owner;
+   |                              ^^^^^ help: consider using: `OWNER`
+   |
+   = help: https://book.getfoundry.sh/reference/forge/forge-lint#screaming-snake-case-immutable
+
+note[screaming-snake-case-immutable]: immutables should use SCREAMING_SNAKE_CASE
+  --> src/PassLocker.sol:25:30
+   |
+25 |     address public immutable owner;
+   |                              ^^^^^ help: consider using: `OWNER`
+   |
+   = help: https://book.getfoundry.sh/reference/forge/forge-lint#screaming-snake-case-immutable
+
+note[screaming-snake-case-immutable]: immutables should use SCREAMING_SNAKE_CASE
+  --> src/PassLocker.sol:26:29
+   |
+26 |     IERC20 public immutable pass;
+   |                             ^^^^ help: consider using: `PASS`
+   |
+   = help: https://book.getfoundry.sh/reference/forge/forge-lint#screaming-snake-case-immutable
+
+note[screaming-snake-case-immutable]: immutables should use SCREAMING_SNAKE_CASE
+  --> src/StrategyPass.sol:11:30
+   |
+11 |     bytes32 public immutable strategyId;
+   |                              ^^^^^^^^^^ help: consider using: `STRATEGY_ID`
+   |
+   = help: https://book.getfoundry.sh/reference/forge/forge-lint#screaming-snake-case-immutable
+
+note[screaming-snake-case-immutable]: immutables should use SCREAMING_SNAKE_CASE
+ --> test/mocks/ConfigurableAsset.sol:7:29
+  |
+7 |     uint8 private immutable configuredDecimals;
+  |                             ^^^^^^^^^^^^^^^^^^ help: consider using: `CONFIGURED_DECIMALS`
+  |
+  = help: https://book.getfoundry.sh/reference/forge/forge-lint#screaming-snake-case-immutable
+
+note[screaming-snake-case-immutable]: immutables should use SCREAMING_SNAKE_CASE
+  --> src/AlphaForgeSwapAdapter.sol:35:33
+   |
+35 |     ITestVenue public immutable venue;
+   |                                 ^^^^^ help: consider using: `VENUE`
+   |
+   = help: https://book.getfoundry.sh/reference/forge/forge-lint#screaming-snake-case-immutable
+
+note[screaming-snake-case-immutable]: immutables should use SCREAMING_SNAKE_CASE
+  --> src/AlphaForgeSwapAdapter.sol:36:30
+   |
+36 |     address public immutable afUsdc;
+   |                              ^^^^^^ help: consider using: `AF_USDC`
+   |
+   = help: https://book.getfoundry.sh/reference/forge/forge-lint#screaming-snake-case-immutable
+
+note[screaming-snake-case-immutable]: immutables should use SCREAMING_SNAKE_CASE
+  --> src/AlphaForgeSwapAdapter.sol:37:30
+   |
+37 |     address public immutable afEth;
+   |                              ^^^^^ help: consider using: `AF_ETH`
+   |
+   = help: https://book.getfoundry.sh/reference/forge/forge-lint#screaming-snake-case-immutable
+
+note[screaming-snake-case-immutable]: immutables should use SCREAMING_SNAKE_CASE
+  --> src/AlphaForgeSwapAdapter.sol:38:30
+   |
+38 |     address public immutable afBtc;
+   |                              ^^^^^ help: consider using: `AF_BTC`
+   |
+   = help: https://book.getfoundry.sh/reference/forge/forge-lint#screaming-snake-case-immutable
+
+note[screaming-snake-case-immutable]: immutables should use SCREAMING_SNAKE_CASE
+  --> test/mocks/ConfigurableAsset.sol:70:30
+   |
+70 |     bytes32 public immutable strategyId;
+   |                              ^^^^^^^^^^ help: consider using: `STRATEGY_ID`
+   |
+   = help: https://book.getfoundry.sh/reference/forge/forge-lint#screaming-snake-case-immutable
+
+note[screaming-snake-case-immutable]: immutables should use SCREAMING_SNAKE_CASE
+  --> test/harness/AlphaForgeVaultHarness.sol:13:30
+   |
+13 |     address public immutable harnessController;
+   |                              ^^^^^^^^^^^^^^^^^ help: consider using: `HARNESS_CONTROLLER`
+   |
+   = help: https://book.getfoundry.sh/reference/forge/forge-lint#screaming-snake-case-immutable
+
+note[screaming-snake-case-immutable]: immutables should use SCREAMING_SNAKE_CASE
+  --> src/AlphaForgeVault.sol:21:39
+   |
+21 |     address public immutable override owner;
+   |                                       ^^^^^ help: consider using: `OWNER`
+   |
+   = help: https://book.getfoundry.sh/reference/forge/forge-lint#screaming-snake-case-immutable
+
+note[screaming-snake-case-immutable]: immutables should use SCREAMING_SNAKE_CASE
+ --> test/mocks/ReentrantAsset.sol:7:29
+  |
+7 |     uint8 private immutable configuredDecimals;
+  |                             ^^^^^^^^^^^^^^^^^^ help: consider using: `CONFIGURED_DECIMALS`
+  |
+  = help: https://book.getfoundry.sh/reference/forge/forge-lint#screaming-snake-case-immutable
+
+note[screaming-snake-case-immutable]: immutables should use SCREAMING_SNAKE_CASE
+  --> src/AlphaForgeVault.sol:22:39
+   |
+22 |     address public immutable override strategyCreator;
+   |                                       ^^^^^^^^^^^^^^^ help: consider using: `STRATEGY_CREATOR`
+   |
+   = help: https://book.getfoundry.sh/reference/forge/forge-lint#screaming-snake-case-immutable
+
+note[screaming-snake-case-immutable]: immutables should use SCREAMING_SNAKE_CASE
+  --> src/AlphaForgeVault.sol:23:39
+   |
+23 |     bytes32 public immutable override strategyId;
+   |                                       ^^^^^^^^^^ help: consider using: `STRATEGY_ID`
+   |
+   = help: https://book.getfoundry.sh/reference/forge/forge-lint#screaming-snake-case-immutable
+
+note[screaming-snake-case-immutable]: immutables should use SCREAMING_SNAKE_CASE
+  --> src/AlphaForgeVault.sol:24:39
+   |
+24 |     bytes32 public immutable override strategyRef;
+   |                                       ^^^^^^^^^^^ help: consider using: `STRATEGY_REF`
+   |
+   = help: https://book.getfoundry.sh/reference/forge/forge-lint#screaming-snake-case-immutable
+
+note[screaming-snake-case-immutable]: immutables should use SCREAMING_SNAKE_CASE
+  --> src/AlphaForgeVault.sol:25:39
+   |
+25 |     address public immutable override pass;
+   |                                       ^^^^ help: consider using: `PASS`
+   |
+   = help: https://book.getfoundry.sh/reference/forge/forge-lint#screaming-snake-case-immutable
+
+note[screaming-snake-case-immutable]: immutables should use SCREAMING_SNAKE_CASE
+  --> src/AlphaForgeVault.sol:26:39
+   |
+26 |     address public immutable override afUsdc;
+   |                                       ^^^^^^ help: consider using: `AF_USDC`
+   |
+   = help: https://book.getfoundry.sh/reference/forge/forge-lint#screaming-snake-case-immutable
+
+note[screaming-snake-case-immutable]: immutables should use SCREAMING_SNAKE_CASE
+  --> src/AlphaForgeVault.sol:27:39
+   |
+27 |     address public immutable override afEth;
+   |                                       ^^^^^ help: consider using: `AF_ETH`
+   |
+   = help: https://book.getfoundry.sh/reference/forge/forge-lint#screaming-snake-case-immutable
+
+note[screaming-snake-case-immutable]: immutables should use SCREAMING_SNAKE_CASE
+  --> src/AlphaForgeVault.sol:28:39
+   |
+28 |     address public immutable override afBtc;
+   |                                       ^^^^^ help: consider using: `AF_BTC`
+   |
+   = help: https://book.getfoundry.sh/reference/forge/forge-lint#screaming-snake-case-immutable
+
+note[screaming-snake-case-immutable]: immutables should use SCREAMING_SNAKE_CASE
+  --> src/AlphaForgeVault.sol:29:39
+   |
+29 |     address public immutable override passLocker;
+   |                                       ^^^^^^^^^^ help: consider using: `PASS_LOCKER`
+   |
+   = help: https://book.getfoundry.sh/reference/forge/forge-lint#screaming-snake-case-immutable
+
+note[screaming-snake-case-immutable]: immutables should use SCREAMING_SNAKE_CASE
+  --> test/mocks/MaliciousVenue.sol:20:29
+   |
+20 |     IERC20 public immutable tokenIn;
+   |                             ^^^^^^^ help: consider using: `TOKEN_IN`
+   |
+   = help: https://book.getfoundry.sh/reference/forge/forge-lint#screaming-snake-case-immutable
+
+note[screaming-snake-case-immutable]: immutables should use SCREAMING_SNAKE_CASE
+  --> test/mocks/MaliciousVenue.sol:21:29
+   |
+21 |     IERC20 public immutable tokenOut;
+   |                             ^^^^^^^^ help: consider using: `TOKEN_OUT`
+   |
+   = help: https://book.getfoundry.sh/reference/forge/forge-lint#screaming-snake-case-immutable
+
+note[unwrapped-modifier-logic]: wrap modifier logic to reduce code size
+  --> src/AlphaForgeVault.sol:37:5
+   |
+37 | /     modifier onlyOwner() {
+38 | |         if (msg.sender != owner) revert Unauthorized(msg.sender);
+39 | |         _;
+40 | |     }
+   | |_____^
+   |
+help: wrap modifier logic to reduce code size
+   |
+37 ~     modifier onlyOwner() {
+38 +         _onlyOwner();
+39 +         _;
+40 +     }
+41 +
+42 +     function _onlyOwner() internal {
+43 +         if (msg.sender != owner) revert Unauthorized(msg.sender);
+44 +     }
+   |
+   = help: https://book.getfoundry.sh/reference/forge/forge-lint#unwrapped-modifier-logic
+
+note[unwrapped-modifier-logic]: wrap modifier logic to reduce code size
+  --> src/AlphaForgeVault.sol:42:5
+   |
+42 | /     modifier whenActive() {
+43 | |         if (closed) revert VaultClosed();
+44 | |         _;
+45 | |     }
+   | |_____^
+   |
+help: wrap modifier logic to reduce code size
+   |
+42 ~     modifier whenActive() {
+43 +         _whenActive();
+44 +         _;
+45 +     }
+46 +
+47 +     function _whenActive() internal {
+48 +         if (closed) revert VaultClosed();
+49 +     }
+   |
+   = help: https://book.getfoundry.sh/reference/forge/forge-lint#unwrapped-modifier-logic
+
+14 Forge project contracts match verified dependency comparison
+Compiling 54 files with Solc 0.8.31
+Solc 0.8.31 finished in 620.42ms
+Compiler run successful!
+
+Ran 3 tests for test/AlphaForgeVault.interface.t.sol:AlphaForgeVaultInterfaceTest
+[PASS] test_AllCustomErrorSelectorsMatchFrozenAbi() (gas: 936)
+[PASS] test_AllEventTopicsMatchFrozenAbi() (gas: 325)
+[PASS] test_AllFunctionSelectorsMatchFrozenAbi() (gas: 1266)
+Suite result: ok. 3 passed; 0 failed; 0 skipped; finished in 1.00ms (193.92µs CPU time)
+
+Ran 2 tests for test/XLayerCompatibility.t.sol:XLayerCustodyTest
+[PASS] test_1952DoesNotGiveDeployerOrCreatorCustody() (gas: 177701)
+[PASS] test_1952PreservesExactCustodyLifecycle() (gas: 238222)
+Suite result: ok. 2 passed; 0 failed; 0 skipped; finished in 1.38ms (274.46µs CPU time)
+
+Ran 4 tests for test/XLayerCompatibility.t.sol:XLayerDomainTest
+[PASS] test_1952DoesNotReuseHistoricalTestnetOrMainnetDigest() (gas: 855057)
+[PASS] test_MatchesIndependentXLayerDigestVector() (gas: 835965)
+[PASS] test_SameVerifierSeparatesRobinhoodAndXLayerAndRestoresDomain() (gas: 868602)
+[PASS] test_XLayerBindsVerifyingContract() (gas: 1645231)
+Suite result: ok. 4 passed; 0 failed; 0 skipped; finished in 545.00µs (479.12µs CPU time)
+
+Ran 15 tests for test/AlphaForgeVault.custody.t.sol:AlphaForgeVaultCustodyTest
+[PASS] test_ConstructorRejectsMismatchedStrategyPass() (gas: 952468)
+[PASS] test_ConstructorRejectsWrongPassOrUsdcDecimals() (gas: 138707)
+[PASS] test_ConstructorRejectsZeroIdentityAndDuplicateAssets() (gas: 370742)
+[PASS] test_ConstructorUsesExplicitOwnerAndSeparateCreator() (gas: 36507)
+[PASS] test_CreatorAndOwnerMayBeTheSameAddress() (gas: 3103964)
+[PASS] test_DirectUsdcTransferRemainsUntrackedDust() (gas: 56931)
+[PASS] test_ExactCapacityConversionsRejectInexactPassRaw() (gas: 13224)
+[PASS] test_FactoryOwnerDoesNotAcquireVaultCustody() (gas: 7355999)
+[PASS] test_NonOwnerCannotDepositEvenWithAllowance() (gas: 139635)
+[PASS] test_OneUsdcBaseUnitLocksExactlyOneTrillionPassRaw() (gas: 177345)
+[PASS] test_OrdinaryPassTransferKeepsFullEighteenDecimalPrecision() (gas: 41087)
+[PASS] test_OwnerCannotTransferRenounceOrReinitialize() (gas: 16543)
+[PASS] test_OwnerDepositMovesUsdcAndLocksExactPass() (gas: 186078)
+[PASS] test_UsdcToPassConversionRejectsOverflow() (gas: 7300)
+[PASS] test_ZeroDepositRejectsAndNativeDustDoesNotCreateEquity() (gas: 31862)
+Suite result: ok. 15 passed; 0 failed; 0 skipped; finished in 2.82ms (1.61ms CPU time)
+
+Ran 15 tests for test/AlphaForgeVault.accounting.t.sol:AlphaForgeVaultAccountingTest
+[PASS] test_LockedPassDoesNotBlockWithdrawalOrClose() (gas: 116123)
+[PASS] test_LossCloseReturnsRemainingUsdcAndAllLockedPassWithoutTopUp() (gas: 112900)
+[PASS] test_LossDoesNotAutomaticallyUnlockPass() (gas: 45958)
+[PASS] test_MixedWithdrawalConsumesProfitBeforePrincipal() (gas: 108971)
+[PASS] test_NativeDustDoesNotChangeEquityOrBlockClose() (gas: 95400)
+[PASS] test_NonOwnerCannotWithdrawOrClose() (gas: 18424)
+[PASS] test_OpenPositionAllowsProfitOnlyWithdrawal() (gas: 153365)
+[PASS] test_OpenPositionBlocksPrincipalWithdrawalAndClose() (gas: 150621)
+[PASS] test_PrincipalWithdrawalUnlocksOneToOneCapacity() (gas: 94630)
+[PASS] test_ProfitWithdrawalDoesNotUnlockPass() (gas: 84887)
+[PASS] test_SettledPositionRestoresWithdrawalAndClose() (gas: 198908)
+[PASS] test_TrackedPositionsAcceptOnlyConfiguredInvestmentAssets() (gas: 48843)
+[PASS] test_UntrackedTokenDustDoesNotChangeAccountingOrBlockClose() (gas: 166436)
+[PASS] test_UntrackedUsdcDustDoesNotBecomeProfitOrCloseSettlement() (gas: 104816)
+[PASS] test_WithdrawalAfterLossUnlocksOnlyWithdrawnPrincipal() (gas: 104240)
+Suite result: ok. 15 passed; 0 failed; 0 skipped; finished in 4.02ms (2.33ms CPU time)
+
+Ran 14 tests for test/AlphaForgeVault.rescue.t.sol:AlphaForgeVaultRescueTest
+[PASS] test_ActiveVaultCannotRescueTokenOrNative() (gas: 67671)
+[PASS] test_DepositRejectsTransferAmountMismatchAtomically() (gas: 4364530)
+[PASS] test_FailedTokenRescueDoesNotUndoEarlierClose() (gas: 167355)
+[PASS] test_LockedPassIsReservedAndCannotBeClassifiedAsActiveExcess() (gas: 128151)
+[PASS] test_NativeRescueRejectsOwnerReentrancy() (gas: 3181617)
+[PASS] test_OnlyOwnerCanRescueAndRecipientIsFixedOwner() (gas: 162069)
+[PASS] test_PassReturnAmountMismatchRevertsEntireClose() (gas: 4498989)
+[PASS] test_PassReturnFailureRevertsEntireClose() (gas: 4488747)
+[PASS] test_RescueUsesEachTokenRawUnitsAndOnlyActualMinusReserved() (gas: 181066)
+[PASS] test_RevertingUnknownBalanceReadDoesNotBlockClose() (gas: 150665)
+[PASS] test_TokenRescueRejectsReentrancy() (gas: 1543624)
+[PASS] test_UsdcSettlementFailureRevertsEntireClose() (gas: 4453730)
+[PASS] test_WithdrawAndCloseRejectReentrancy() (gas: 4676479)
+[PASS] test_ZeroExcessRescueRevertsWithoutAccountingMutation() (gas: 102771)
+Suite result: ok. 14 passed; 0 failed; 0 skipped; finished in 5.60ms (4.24ms CPU time)
+
+Ran 11 tests for test/PassLocker.t.sol:PassLockerTest
+[PASS] testFuzz_LockAndUnlockPreserveEscrowAccounting(uint256,uint256) (runs: 256, μ: 90670, ~: 91235)
+[PASS] test_ControllerCanReleaseAllRemainingPass() (gas: 71820)
+[PASS] test_ControllerCannotLockPassFromDifferentOwner() (gas: 74345)
+[PASS] test_ControllerLocksExactPassIntoEscrow() (gas: 78150)
+[PASS] test_ControllerUnlocksExactPassToOwner() (gas: 89861)
+[PASS] test_DirectTransferDoesNotCreateLockAccounting() (gas: 55498)
+[PASS] test_DoubleReleaseAndExcessUnlockRevertWithoutMutation() (gas: 78313)
+[PASS] test_InsufficientFreePassRevertsWithoutAccounting() (gas: 31996)
+[PASS] test_MaliciousPassCannotReenterUnlock() (gas: 2156861)
+[PASS] test_NonControllerCannotLockOrUnlock() (gas: 79584)
+[PASS] test_ZeroLockAndUnlockAreRejected() (gas: 18798)
+Suite result: ok. 11 passed; 0 failed; 0 skipped; finished in 24.43ms (24.40ms CPU time)
+
+Ran 7 tests for test/AlphaForgeTestAsset.t.sol:AlphaForgeTestAssetTest
+[PASS] testFuzz_TransferPreservesFixedSupply(uint256) (runs: 256, μ: 46422, ~: 46422)
+[PASS] test_AfEthAndAfBtcUseExplicitEighteenDecimals() (gas: 1704219)
+[PASS] test_AfUsdcHasSixDecimalsAndFixedConstructorSupply() (gas: 22176)
+[PASS] test_PublicDecimalsSetterIsUnavailable() (gas: 7170)
+[PASS] test_PublicMintIsUnavailable() (gas: 13175)
+[PASS] test_UsesRealErc20BalanceMovement() (gas: 45908)
+[PASS] test_ZeroRecipientDeploymentReverts() (gas: 80341)
+Suite result: ok. 7 passed; 0 failed; 0 skipped; finished in 49.07ms (48.35ms CPU time)
+
+Ran 10 tests for test/AlphaForgeSwapAdapter.t.sol:AlphaForgeSwapAdapterTest
+[PASS] testFuzz_AdapterNeverSpendsMoreThanAmountIn(uint256) (runs: 256, μ: 2409698, ~: 2409698)
+[PASS] test_AbnormalVenueDeltasRevertAtomically() (gas: 4932628)
+[PASS] test_ArbitraryExecutionSelectorDoesNotExist() (gas: 8554)
+[PASS] test_BlockDeadlineIsInclusiveAndExpiredActionsRevert() (gas: 90506)
+[PASS] test_MaliciousVenueCannotReenterAdapter() (gas: 2661206)
+[PASS] test_NativeValueIsRejected() (gas: 22150)
+[PASS] test_TypedSwapSettlesToCallingVaultAndClearsCustody() (gas: 216340)
+[PASS] test_VenueAllowanceIsExactDuringSwapAndZeroAfter() (gas: 2411528)
+[PASS] test_VenueRevertLeavesFundsAndAllowanceUntouched() (gas: 2410581)
+[PASS] test_WrongPairAndZeroAmountAreRejectedBeforeFundsMove() (gas: 35814)
+Suite result: ok. 10 passed; 0 failed; 0 skipped; finished in 89.21ms (89.39ms CPU time)
+
+Ran 19 tests for test/VaultIntentPreview.t.sol:VaultIntentPreviewTest
+[PASS] testFuzz_BindsAmount((string,string,string,string,string,string,uint8,uint256,uint256,uint256,uint256,uint256,bytes32)) (runs: 256, μ: 38697, ~: 38782)
+[PASS] testFuzz_BindsAssetId((string,string,string,string,string,string,uint8,uint256,uint256,uint256,uint256,uint256,bytes32)) (runs: 256, μ: 39193, ~: 39243)
+[PASS] testFuzz_BindsAuthorizationEpoch((string,string,string,string,string,string,uint8,uint256,uint256,uint256,uint256,uint256,bytes32)) (runs: 256, μ: 38741, ~: 38826)
+[PASS] testFuzz_BindsCommandId((string,string,string,string,string,string,uint8,uint256,uint256,uint256,uint256,uint256,bytes32)) (runs: 256, μ: 39197, ~: 39243)
+[PASS] testFuzz_BindsCommandType((string,string,string,string,string,string,uint8,uint256,uint256,uint256,uint256,uint256,bytes32)) (runs: 256, μ: 39221, ~: 39265)
+[PASS] testFuzz_BindsDeadline((string,string,string,string,string,string,uint8,uint256,uint256,uint256,uint256,uint256,bytes32)) (runs: 256, μ: 38719, ~: 38804)
+[PASS] testFuzz_BindsDecimals((string,string,string,string,string,string,uint8,uint256,uint256,uint256,uint256,uint256,bytes32)) (runs: 256, μ: 38781, ~: 38866)
+[PASS] testFuzz_BindsExpectedRevision((string,string,string,string,string,string,uint8,uint256,uint256,uint256,uint256,uint256,bytes32)) (runs: 256, μ: 38741, ~: 38826)
+[PASS] testFuzz_BindsNonce((string,string,string,string,string,string,uint8,uint256,uint256,uint256,uint256,uint256,bytes32)) (runs: 256, μ: 38696, ~: 38781)
+[PASS] testFuzz_BindsOwnerId((string,string,string,string,string,string,uint8,uint256,uint256,uint256,uint256,uint256,bytes32)) (runs: 256, μ: 39238, ~: 39287)
+[PASS] testFuzz_BindsPolicyHash((string,string,string,string,string,string,uint8,uint256,uint256,uint256,uint256,uint256,bytes32)) (runs: 256, μ: 38776, ~: 38861)
+[PASS] testFuzz_BindsStrategyId((string,string,string,string,string,string,uint8,uint256,uint256,uint256,uint256,uint256,bytes32)) (runs: 256, μ: 39286, ~: 39331)
+[PASS] testFuzz_BindsVaultId((string,string,string,string,string,string,uint8,uint256,uint256,uint256,uint256,uint256,bytes32)) (runs: 256, μ: 39220, ~: 39266)
+[PASS] test_BindsCurrentChainAfterChainChange() (gas: 35329)
+[PASS] test_BindsVerifyingContract() (gas: 838532)
+[PASS] test_IntegerEndpointsRemainDeterministic() (gas: 45025)
+[PASS] test_MalformedAbiIsRejected() (gas: 7779)
+[PASS] test_MatchesIndependentEip712Vector() (gas: 33746)
+[PASS] test_RejectsOrdinaryEtherTransfer() (gas: 15595)
+Suite result: ok. 19 passed; 0 failed; 0 skipped; finished in 114.18ms (556.96ms CPU time)
+
+Ran 9 tests for test/AlphaForgeTestVenue.t.sol:AlphaForgeTestVenueTest
+[PASS] testFuzz_QuoteStaysInsideFiniteReserve(uint256) (runs: 256, μ: 17012, ~: 17012)
+[PASS] test_LargerSwapHasPriceImpact() (gas: 20367)
+[PASS] test_NativeValueIsRejected() (gas: 21580)
+[PASS] test_QuoteUsesFiniteConstantProductLiquidity() (gas: 16994)
+[PASS] test_ReverseDirectionAndTokenOrderUseSamePool() (gas: 80486)
+[PASS] test_SlippageAndDeadlineRevertWithoutMovingFunds() (gas: 110028)
+[PASS] test_SwapMovesRealErc20BalancesAndReserves() (gas: 123630)
+[PASS] test_UnsupportedPairIsRejected() (gas: 22266)
+[PASS] test_ZeroAmountsAndRecipientAreRejected() (gas: 29627)
+Suite result: ok. 9 passed; 0 failed; 0 skipped; finished in 116.18ms (30.49ms CPU time)
+
+Ran 8 tests for test/StrategyPass.t.sol:StrategyPassTest
+[PASS] testFuzz_TransferPreservesEveryBaseUnit(uint256) (runs: 256, μ: 46655, ~: 46655)
+[PASS] test_ConstructorMintsCreatorDefinedSupplyToRecipient() (gas: 26960)
+[PASS] test_FractionalPassTransfersFreely() (gas: 46024)
+[PASS] test_OrdinaryEtherTransferIsRejected() (gas: 15573)
+[PASS] test_PublicMintIsUnavailableAndCannotChangeSupply() (gas: 13164)
+[PASS] test_StandardAllowanceCanMoveFractionalPass() (gas: 269077)
+[PASS] test_ZeroRecipientDeploymentReverts() (gas: 82719)
+[PASS] test_ZeroStrategyIdDeploymentReverts() (gas: 82412)
+Suite result: ok. 8 passed; 0 failed; 0 skipped; finished in 125.34ms (125.36ms CPU time)
+
+Ran 1 test for test/StrategyPass.invariant.t.sol:StrategyPassInvariantTest
+[PASS] invariant_FixedSupplyAndTrackedBalancesNeverDiverge() (runs: 64, calls: 2048, reverts: 0)
+
+╭---------------------+--------------------+-------+---------+----------╮
+| Contract            | Selector           | Calls | Reverts | Discards |
++=======================================================================+
+| StrategyPassHandler | distribute         | 1033  | 0       | 0        |
+|---------------------+--------------------+-------+---------+----------|
+| StrategyPassHandler | moveBetweenHolders | 1015  | 0       | 0        |
+╰---------------------+--------------------+-------+---------+----------╯
+
+Suite result: ok. 1 passed; 0 failed; 0 skipped; finished in 219.02ms (218.80ms CPU time)
+
+Ran 1 test for test/AlphaForgeTestVenue.invariant.t.sol:AlphaForgeTestVenueInvariantTest
+[PASS] invariant_PairProductsNeverDecreaseAndReservesRemainFunded() (runs: 64, calls: 2048, reverts: 0)
+
+╭------------------+----------------+-------+---------+----------╮
+| Contract         | Selector       | Calls | Reverts | Discards |
++================================================================+
+| TestVenueHandler | swapBtcForUsdc | 541   | 0       | 0        |
+|------------------+----------------+-------+---------+----------|
+| TestVenueHandler | swapEthForUsdc | 538   | 0       | 0        |
+|------------------+----------------+-------+---------+----------|
+| TestVenueHandler | swapUsdcForBtc | 480   | 0       | 0        |
+|------------------+----------------+-------+---------+----------|
+| TestVenueHandler | swapUsdcForEth | 489   | 0       | 0        |
+╰------------------+----------------+-------+---------+----------╯
+
+Suite result: ok. 1 passed; 0 failed; 0 skipped; finished in 280.40ms (278.65ms CPU time)
+
+Ran 7 tests for test/AlphaForgeVault.accounting.invariant.t.sol:AlphaForgeVaultAccountingInvariantTest
+[PASS] invariant_CloseClearsAllProtocolObligations() (runs: 64, calls: 2048, reverts: 0)
+
+╭------------------------+-------------------+-------+---------+----------╮
+| Contract               | Selector          | Calls | Reverts | Discards |
++=========================================================================+
+| AlphaForgeVaultHandler | close             | 229   | 0       | 0        |
+|------------------------+-------------------+-------+---------+----------|
+| AlphaForgeVaultHandler | deposit           | 200   | 0       | 0        |
+|------------------------+-------------------+-------+---------+----------|
+| AlphaForgeVaultHandler | initialize        | 200   | 0       | 0        |
+|------------------------+-------------------+-------+---------+----------|
+| AlphaForgeVaultHandler | openPosition      | 203   | 0       | 0        |
+|------------------------+-------------------+-------+---------+----------|
+| AlphaForgeVaultHandler | recordLoss        | 192   | 0       | 0        |
+|------------------------+-------------------+-------+---------+----------|
+| AlphaForgeVaultHandler | recordProfit      | 203   | 0       | 0        |
+|------------------------+-------------------+-------+---------+----------|
+| AlphaForgeVaultHandler | rescueDust        | 212   | 0       | 0        |
+|------------------------+-------------------+-------+---------+----------|
+| AlphaForgeVaultHandler | sendUntrackedDust | 213   | 0       | 0        |
+|------------------------+-------------------+-------+---------+----------|
+| AlphaForgeVaultHandler | settlePosition    | 205   | 0       | 0        |
+|------------------------+-------------------+-------+---------+----------|
+| AlphaForgeVaultHandler | withdraw          | 191   | 0       | 0        |
+╰------------------------+-------------------+-------+---------+----------╯
+
+[PASS] invariant_LockedPassExactlyMatchesActivePrincipal() (runs: 64, calls: 2048, reverts: 0)
+
+╭------------------------+-------------------+-------+---------+----------╮
+| Contract               | Selector          | Calls | Reverts | Discards |
++=========================================================================+
+| AlphaForgeVaultHandler | close             | 229   | 0       | 0        |
+|------------------------+-------------------+-------+---------+----------|
+| AlphaForgeVaultHandler | deposit           | 200   | 0       | 0        |
+|------------------------+-------------------+-------+---------+----------|
+| AlphaForgeVaultHandler | initialize        | 200   | 0       | 0        |
+|------------------------+-------------------+-------+---------+----------|
+| AlphaForgeVaultHandler | openPosition      | 203   | 0       | 0        |
+|------------------------+-------------------+-------+---------+----------|
+| AlphaForgeVaultHandler | recordLoss        | 192   | 0       | 0        |
+|------------------------+-------------------+-------+---------+----------|
+| AlphaForgeVaultHandler | recordProfit      | 203   | 0       | 0        |
+|------------------------+-------------------+-------+---------+----------|
+| AlphaForgeVaultHandler | rescueDust        | 212   | 0       | 0        |
+|------------------------+-------------------+-------+---------+----------|
+| AlphaForgeVaultHandler | sendUntrackedDust | 213   | 0       | 0        |
+|------------------------+-------------------+-------+---------+----------|
+| AlphaForgeVaultHandler | settlePosition    | 205   | 0       | 0        |
+|------------------------+-------------------+-------+---------+----------|
+| AlphaForgeVaultHandler | withdraw          | 191   | 0       | 0        |
+╰------------------------+-------------------+-------+---------+----------╯
+
+[PASS] invariant_NonOwnerMutationsAlwaysFailWithoutStateChanges() (runs: 64, calls: 2048, reverts: 0)
+
+╭------------------------+-------------------+-------+---------+----------╮
+| Contract               | Selector          | Calls | Reverts | Discards |
++=========================================================================+
+| AlphaForgeVaultHandler | close             | 229   | 0       | 0        |
+|------------------------+-------------------+-------+---------+----------|
+| AlphaForgeVaultHandler | deposit           | 200   | 0       | 0        |
+|------------------------+-------------------+-------+---------+----------|
+| AlphaForgeVaultHandler | initialize        | 200   | 0       | 0        |
+|------------------------+-------------------+-------+---------+----------|
+| AlphaForgeVaultHandler | openPosition      | 203   | 0       | 0        |
+|------------------------+-------------------+-------+---------+----------|
+| AlphaForgeVaultHandler | recordLoss        | 192   | 0       | 0        |
+|------------------------+-------------------+-------+---------+----------|
+| AlphaForgeVaultHandler | recordProfit      | 203   | 0       | 0        |
+|------------------------+-------------------+-------+---------+----------|
+| AlphaForgeVaultHandler | rescueDust        | 212   | 0       | 0        |
+|------------------------+-------------------+-------+---------+----------|
+| AlphaForgeVaultHandler | sendUntrackedDust | 213   | 0       | 0        |
+|------------------------+-------------------+-------+---------+----------|
+| AlphaForgeVaultHandler | settlePosition    | 205   | 0       | 0        |
+|------------------------+-------------------+-------+---------+----------|
+| AlphaForgeVaultHandler | withdraw          | 191   | 0       | 0        |
+╰------------------------+-------------------+-------+---------+----------╯
+
+[PASS] invariant_RescueCannotReduceReservedBalances() (runs: 64, calls: 2048, reverts: 0)
+
+╭------------------------+-------------------+-------+---------+----------╮
+| Contract               | Selector          | Calls | Reverts | Discards |
++=========================================================================+
+| AlphaForgeVaultHandler | close             | 229   | 0       | 0        |
+|------------------------+-------------------+-------+---------+----------|
+| AlphaForgeVaultHandler | deposit           | 200   | 0       | 0        |
+|------------------------+-------------------+-------+---------+----------|
+| AlphaForgeVaultHandler | initialize        | 200   | 0       | 0        |
+|------------------------+-------------------+-------+---------+----------|
+| AlphaForgeVaultHandler | openPosition      | 203   | 0       | 0        |
+|------------------------+-------------------+-------+---------+----------|
+| AlphaForgeVaultHandler | recordLoss        | 192   | 0       | 0        |
+|------------------------+-------------------+-------+---------+----------|
+| AlphaForgeVaultHandler | recordProfit      | 203   | 0       | 0        |
+|------------------------+-------------------+-------+---------+----------|
+| AlphaForgeVaultHandler | rescueDust        | 212   | 0       | 0        |
+|------------------------+-------------------+-------+---------+----------|
+| AlphaForgeVaultHandler | sendUntrackedDust | 213   | 0       | 0        |
+|------------------------+-------------------+-------+---------+----------|
+| AlphaForgeVaultHandler | settlePosition    | 205   | 0       | 0        |
+|------------------------+-------------------+-------+---------+----------|
+| AlphaForgeVaultHandler | withdraw          | 191   | 0       | 0        |
+╰------------------------+-------------------+-------+---------+----------╯
+
+[PASS] invariant_UntrackedTransfersNeverIncreaseWithdrawableAccounting() (runs: 64, calls: 2048, reverts: 0)
+
+╭------------------------+-------------------+-------+---------+----------╮
+| Contract               | Selector          | Calls | Reverts | Discards |
++=========================================================================+
+| AlphaForgeVaultHandler | close             | 229   | 0       | 0        |
+|------------------------+-------------------+-------+---------+----------|
+| AlphaForgeVaultHandler | deposit           | 200   | 0       | 0        |
+|------------------------+-------------------+-------+---------+----------|
+| AlphaForgeVaultHandler | initialize        | 200   | 0       | 0        |
+|------------------------+-------------------+-------+---------+----------|
+| AlphaForgeVaultHandler | openPosition      | 203   | 0       | 0        |
+|------------------------+-------------------+-------+---------+----------|
+| AlphaForgeVaultHandler | recordLoss        | 192   | 0       | 0        |
+|------------------------+-------------------+-------+---------+----------|
+| AlphaForgeVaultHandler | recordProfit      | 203   | 0       | 0        |
+|------------------------+-------------------+-------+---------+----------|
+| AlphaForgeVaultHandler | rescueDust        | 212   | 0       | 0        |
+|------------------------+-------------------+-------+---------+----------|
+| AlphaForgeVaultHandler | sendUntrackedDust | 213   | 0       | 0        |
+|------------------------+-------------------+-------+---------+----------|
+| AlphaForgeVaultHandler | settlePosition    | 205   | 0       | 0        |
+|------------------------+-------------------+-------+---------+----------|
+| AlphaForgeVaultHandler | withdraw          | 191   | 0       | 0        |
+╰------------------------+-------------------+-------+---------+----------╯
+
+[PASS] testFuzz_ConversionsRemainExact(uint96) (runs: 256, μ: 9105, ~: 9105)
+[PASS] testFuzz_UnsolicitedUsdcDoesNotChangeAccounting(uint64) (runs: 256, μ: 41483, ~: 41483)
+Suite result: ok. 7 passed; 0 failed; 0 skipped; finished in 310.82ms (1.04s CPU time)
+
+Ran 1 test for test/VaultIntentPreview.invariant.t.sol:VaultIntentPreviewInvariantTest
+[PASS] invariant_PreviewHistoryCannotChangeBaselineOrAcceptFunds() (runs: 64, calls: 2048, reverts: 0)
+
+╭----------------+----------+-------+---------+----------╮
+| Contract       | Selector | Calls | Reverts | Discards |
++========================================================+
+| PreviewHandler | sample   | 2048  | 0       | 0        |
+╰----------------+----------+-------+---------+----------╯
+
+Suite result: ok. 1 passed; 0 failed; 0 skipped; finished in 548.35ms (547.18ms CPU time)
+
+Ran 16 test suites in 549.44ms (1.89s CPU time): 127 tests passed, 0 failed, 0 skipped (127 total tests)
+AlphaForgeVault ABI matches frozen M3 interface
+X Layer 1952 template: local/mock, NOT_DEPLOYED; no runtime authorization
+exit=0
