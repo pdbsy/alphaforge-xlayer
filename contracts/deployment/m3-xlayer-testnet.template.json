@@ -1,0 +1,302 @@
+{
+  "schemaVersion": 1,
+  "deploymentStatus": "NOT_DEPLOYED",
+  "chainId": 1952,
+  "network": "X Layer Testnet",
+  "source": {
+    "repository": "pdbsy/alphaforge-xlayer",
+    "branch": null,
+    "commit": null
+  },
+  "toolchain": {
+    "foundry": "1.5.1",
+    "solc": "0.8.31",
+    "openzeppelinContracts": "5.4.0",
+    "evmVersion": "paris",
+    "optimizerEnabled": false,
+    "viaIR": false,
+    "bytecodeHash": "none",
+    "cborMetadata": false
+  },
+  "contracts": {
+    "strategyPass": {
+      "contractName": "StrategyPass",
+      "interfaceStatus": "IMPLEMENTED_LOCAL_ONLY",
+      "address": null,
+      "constructorInputs": [
+        {
+          "name": "name_",
+          "type": "string",
+          "value": null
+        },
+        {
+          "name": "symbol_",
+          "type": "string",
+          "value": null
+        },
+        {
+          "name": "strategyId_",
+          "type": "bytes32",
+          "value": null
+        },
+        {
+          "name": "fixedSupply_",
+          "type": "uint256",
+          "value": null
+        },
+        {
+          "name": "recipient_",
+          "type": "address",
+          "value": null
+        }
+      ],
+      "creationCodeHash": null,
+      "runtimeCodeHash": null,
+      "abiHash": null
+    },
+    "afUsdc": {
+      "contractName": "AlphaForgeTestUSDC",
+      "interfaceStatus": "IMPLEMENTED_LOCAL_ONLY",
+      "address": null,
+      "constructorInputs": [
+        {
+          "name": "fixedSupply_",
+          "type": "uint256",
+          "value": null
+        },
+        {
+          "name": "recipient_",
+          "type": "address",
+          "value": null
+        }
+      ],
+      "creationCodeHash": null,
+      "runtimeCodeHash": null,
+      "abiHash": null
+    },
+    "afEth": {
+      "contractName": "AlphaForgeTestETH",
+      "interfaceStatus": "IMPLEMENTED_LOCAL_ONLY",
+      "address": null,
+      "constructorInputs": [
+        {
+          "name": "fixedSupply_",
+          "type": "uint256",
+          "value": null
+        },
+        {
+          "name": "recipient_",
+          "type": "address",
+          "value": null
+        }
+      ],
+      "creationCodeHash": null,
+      "runtimeCodeHash": null,
+      "abiHash": null
+    },
+    "afBtc": {
+      "contractName": "AlphaForgeTestBTC",
+      "interfaceStatus": "IMPLEMENTED_LOCAL_ONLY",
+      "address": null,
+      "constructorInputs": [
+        {
+          "name": "fixedSupply_",
+          "type": "uint256",
+          "value": null
+        },
+        {
+          "name": "recipient_",
+          "type": "address",
+          "value": null
+        }
+      ],
+      "creationCodeHash": null,
+      "runtimeCodeHash": null,
+      "abiHash": null
+    },
+    "testVenue": {
+      "contractName": "AlphaForgeTestVenue",
+      "interfaceStatus": "IMPLEMENTED_LOCAL_ONLY",
+      "address": null,
+      "constructorInputs": [
+        {
+          "name": "afUsdc_",
+          "type": "address",
+          "value": null
+        },
+        {
+          "name": "afEth_",
+          "type": "address",
+          "value": null
+        },
+        {
+          "name": "afBtc_",
+          "type": "address",
+          "value": null
+        }
+      ],
+      "creationCodeHash": null,
+      "runtimeCodeHash": null,
+      "abiHash": null
+    },
+    "swapAdapter": {
+      "contractName": "AlphaForgeSwapAdapter",
+      "interfaceStatus": "IMPLEMENTED_LOCAL_ONLY",
+      "address": null,
+      "constructorInputs": [
+        {
+          "name": "venue_",
+          "type": "address",
+          "value": null
+        },
+        {
+          "name": "afUsdc_",
+          "type": "address",
+          "value": null
+        },
+        {
+          "name": "afEth_",
+          "type": "address",
+          "value": null
+        },
+        {
+          "name": "afBtc_",
+          "type": "address",
+          "value": null
+        }
+      ],
+      "creationCodeHash": null,
+      "runtimeCodeHash": null,
+      "abiHash": null
+    },
+    "vault": {
+      "contractName": "AlphaForgeVault",
+      "interfaceStatus": "IMPLEMENTED_LOCAL_ONLY",
+      "address": null,
+      "constructorInputs": [
+        {
+          "name": "owner_",
+          "type": "address",
+          "value": null
+        },
+        {
+          "name": "strategyCreator_",
+          "type": "address",
+          "value": null
+        },
+        {
+          "name": "strategyId_",
+          "type": "bytes32",
+          "value": null
+        },
+        {
+          "name": "strategyRef_",
+          "type": "bytes32",
+          "value": null
+        },
+        {
+          "name": "pass_",
+          "type": "address",
+          "value": null
+        },
+        {
+          "name": "afUsdc_",
+          "type": "address",
+          "value": null
+        },
+        {
+          "name": "afEth_",
+          "type": "address",
+          "value": null
+        },
+        {
+          "name": "afBtc_",
+          "type": "address",
+          "value": null
+        }
+      ],
+      "creationCodeHash": null,
+      "runtimeCodeHash": null,
+      "abiHash": null
+    },
+    "passLocker": {
+      "contractName": "PassLocker",
+      "interfaceStatus": "IMPLEMENTED_LOCAL_ONLY",
+      "address": null,
+      "constructorInputs": [
+        {
+          "name": "vault_",
+          "type": "address",
+          "value": null
+        },
+        {
+          "name": "owner_",
+          "type": "address",
+          "value": null
+        },
+        {
+          "name": "pass_",
+          "type": "address",
+          "value": null
+        }
+      ],
+      "creationCodeHash": null,
+      "runtimeCodeHash": null,
+      "abiHash": null
+    }
+  },
+  "vaultConfig": {
+    "owner": null,
+    "strategyCreator": null,
+    "strategyId": null,
+    "strategyRef": null
+  },
+  "tokenMetadata": {
+    "strategyPass": {
+      "symbol": null,
+      "decimals": 18
+    },
+    "afUsdc": {
+      "symbol": "AF-USDC",
+      "decimals": 6
+    },
+    "afEth": {
+      "symbol": "AF-ETH",
+      "decimals": 18
+    },
+    "afBtc": {
+      "symbol": "AF-BTC",
+      "decimals": 18
+    }
+  },
+  "indexing": {
+    "deploymentBlock": null,
+    "deploymentTransactionHash": null,
+    "eventTopics": null,
+    "softReadyDepth": 3,
+    "reorgSearchLimit": 128,
+    "finalityStatus": "UNKNOWN"
+  },
+  "evidence": {
+    "sourceRef": null,
+    "manifestRef": null,
+    "snapshotRef": null
+  },
+  "authorization": "DIRECT_IMMUTABLE_OWNER",
+  "networkKey": "xlayer-testnet",
+  "nativeCurrency": "OKB",
+  "rpcUrl": "https://testrpc.xlayer.tech/terigon",
+  "alternateRpcUrl": "https://xlayertestrpc.okx.com/terigon",
+  "explorerUrl": "https://www.okx.com/web3/explorer/xlayer-test",
+  "boundary": {
+    "mode": "local",
+    "adapter": "mock",
+    "realFundsEnabled": false,
+    "signingEnabled": false,
+    "broadcastEnabled": false,
+    "rpcIdentity": "NOT_RUN",
+    "liveVmCompatibility": "NOT_RUN",
+    "indexingPolicy": "INHERITED_UNVERIFIED_DEFAULTS",
+    "intentPreview": "DIGEST_ONLY_NOT_AUTHORIZATION"
+  }
+}
