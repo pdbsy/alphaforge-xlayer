@@ -2,8 +2,8 @@
   "spdxVersion": "SPDX-2.3",
   "dataLicense": "CC0-1.0",
   "SPDXID": "SPDXRef-DOCUMENT",
-  "name": "alphaforge-robinhood-chain-hackathon-0.1.0-npm-lock",
-  "documentNamespace": "https://github.com/pdbsy/alphaforge-xlayer/sbom/f9fa2148116966a1f7201efa4680ef59d1ecb3c33b91a1ff4b19b2b7d1d49699",
+  "name": "alphaforge-xlayer-hackathon-0.1.0-npm-lock",
+  "documentNamespace": "https://github.com/pdbsy/alphaforge-xlayer/sbom/e14d55795d593c6f96a2ee91cf47fea8db29dc06a3f1176b673f64799ff7dcc4",
   "creationInfo": {
     "created": "2026-09-08T00:00:00Z",
     "creators": [
@@ -13,7 +13,7 @@
   "packages": [
     {
       "SPDXID": "SPDXRef-RootPackage",
-      "name": "alphaforge-robinhood-chain-hackathon",
+      "name": "alphaforge-xlayer-hackathon",
       "versionInfo": "0.1.0",
       "downloadLocation": "git+https://github.com/pdbsy/alphaforge-xlayer.git",
       "filesAnalyzed": false,
