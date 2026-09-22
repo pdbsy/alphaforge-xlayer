@@ -22,7 +22,7 @@ const repository = 'pdbsy/alphaforge-xlayer';
 const task = 'AF-XLAYER-MIGRATION';
 const managerMessage = `[XLayer][${task}] Record integration\n\nManager-ID: XLayerPM\nTask-ID: ${task}`;
 
-function fixture(t, { legacy = false } = {}) {
+function fixture(t, { legacy = false, variant = 'standard' } = {}) {
   const root = mkdtempSync(join(tmpdir(), 'alphaforge-xlayer-identity-'));
   t.after(() => rmSync(root, { recursive: true, force: true }));
   const git = (...args) =>
@@ -50,15 +50,40 @@ function fixture(t, { legacy = false } = {}) {
     author(agent);
     writeFileSync(join(root, `${agent}.txt`), 'public fixture content\n');
     writeFileSync(join(root, `${agent}.bin`), Buffer.from([0, 1, 2, 3, 255]));
+    if (agent === 'Macbeth06' && variant === 'bytes')
+      writeFileSync(join(root, 'Macbeth06.txt'), Buffer.from([128, 10]));
+    if (agent === 'Macbeth06' && variant === 'relocation')
+      writeFileSync(
+        join(root, 'relocation.js'),
+        'function alpha() {\n  return 0;\n}\n\nfunction beta() {\n  return 0;\n}\n',
+      );
     if (agent === 'Macbeth06' && !legacy) {
       writeFileSync(
         join(root, 'README.md'),
         readFileSync(join(root, 'README.md'), 'utf8') + '\nFixture source suffix.\n',
       );
     }
-    const head = commit(`[${agent}][${workerTask}] Source\n\nAgent-ID: ${agent}\nTask-ID: ${workerTask}`);
+    let head = commit(`[${agent}][${workerTask}] Source\n\nAgent-ID: ${agent}\nTask-ID: ${workerTask}`);
+    if (agent === 'Macbeth06' && variant === 'message-bytes') {
+      const bytes = fixtureExec('git', ['cat-file', 'commit', head], { cwd: root });
+      head = fixtureExec('git', ['hash-object', '-t', 'commit', '-w', '--stdin'], {
+        cwd: root,
+        encoding: 'utf8',
+        input: Buffer.concat([bytes, Buffer.from([128, 10])]),
+      }).trim();
+      git('update-ref', 'HEAD', head);
+    }
+    const commits = [{ source: head }];
+    if (agent === 'Macbeth06' && variant === 'relocation') {
+      writeFileSync(
+        join(root, 'relocation.js'),
+        'function alpha() {\n  audit();\n  return 0;\n}\n\nfunction beta() {\n  return 0;\n}\n',
+      );
+      head = commit(`[${agent}][${workerTask}] Audit alpha\n\nAgent-ID: ${agent}\nTask-ID: ${workerTask}`);
+      commits.push({ source: head });
+    }
     git('update-ref', `refs/remotes/origin/${workerBranch}`, head);
-    sources.push({ agent, task: workerTask, branch: workerBranch, head, commits: [{ source: head }] });
+    sources.push({ agent, task: workerTask, branch: workerBranch, head, commits });
   }
   const legacySha = '5896ff45510b214d45a3469f9536a8434e2493d3';
   if (legacy) git('fetch', '-q', sourceRoot, legacySha);
@@ -72,9 +97,25 @@ function fixture(t, { legacy = false } = {}) {
   );
   commit(managerMessage);
   for (const source of sources) {
-    git('cherry-pick', source.head);
-    source.commits[0].imported = git('rev-parse', 'HEAD');
-    assert.notEqual(source.commits[0].source, source.commits[0].imported);
+    for (const mapping of source.commits) {
+      git('cherry-pick', mapping.source);
+      mapping.imported = git('rev-parse', 'HEAD');
+      if (source.agent === 'Macbeth06' && variant === 'message-bytes') {
+        const original = fixtureExec('git', ['cat-file', 'commit', mapping.source], { cwd: root });
+        const imported = fixtureExec('git', ['cat-file', 'commit', mapping.imported], { cwd: root });
+        const preserved = Buffer.concat([
+          imported.subarray(0, imported.indexOf('\n\n') + 2),
+          original.subarray(original.indexOf('\n\n') + 2),
+        ]);
+        mapping.imported = fixtureExec('git', ['hash-object', '-t', 'commit', '-w', '--stdin'], {
+          cwd: root,
+          encoding: 'utf8',
+          input: preserved,
+        }).trim();
+        git('update-ref', 'HEAD', mapping.imported);
+      }
+      assert.notEqual(mapping.source, mapping.imported);
+    }
   }
   for (const name of ['check-agent-identity.mjs', 'xlayer-integration-identity.mjs']) {
     const from = join(sourceRoot, 'tools', name);
@@ -125,6 +166,42 @@ function fixture(t, { legacy = false } = {}) {
 }
 const pass = (r) => assert.equal(r.status, 0, r.stdout + r.stderr);
 const fail = (r) => assert.notEqual(r.status, 0, r.stdout + r.stderr);
+
+for (const variant of ['relocation', 'bytes', 'message-bytes']) {
+  test(`X Layer rejects lossy ${variant} provenance while accepting the original import`, (t) => {
+    const s = fixture(t, { variant });
+    pass(s.run());
+    const mapping = s.sources[1].commits.at(-1);
+    s.git('reset', '--hard', mapping.imported);
+    if (variant === 'message-bytes') {
+      const bytes = fixtureExec('git', ['cat-file', 'commit', mapping.imported], { cwd: s.root });
+      const changed = Buffer.from(bytes);
+      assert.equal(changed.at(-2), 128);
+      changed[changed.length - 2] = 129;
+      mapping.imported = fixtureExec('git', ['hash-object', '-t', 'commit', '-w', '--stdin'], {
+        cwd: s.root,
+        encoding: 'utf8',
+        input: changed,
+      }).trim();
+      s.git('update-ref', 'HEAD', mapping.imported);
+    } else {
+      const path = variant === 'bytes' ? 'Macbeth06.txt' : 'relocation.js';
+      writeFileSync(
+        join(s.root, path),
+        variant === 'bytes'
+          ? Buffer.from([129, 10])
+          : 'function alpha() {\n  return 0;\n}\n\nfunction beta() {\n  audit();\n  return 0;\n}\n',
+      );
+      s.git('add', path);
+      s.git('commit', '--amend', '--no-edit');
+      mapping.imported = s.git('rev-parse', 'HEAD');
+    }
+    for (const name of ['check-agent-identity.mjs', 'xlayer-integration-identity.mjs'])
+      copyFileSync(join(sourceRoot, 'tools', name), join(s.root, 'tools', name));
+    s.record();
+    fail(s.run());
+  });
+}
 
 test('X Layer accepts fully attributed cherry-picks without requiring original SHA ancestry', (t) => {
   const s = fixture(t);

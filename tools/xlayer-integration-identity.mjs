@@ -40,11 +40,13 @@ export function verifyXLayerIntegration(root, { branch, head, pull = null }) {
   const rawGit = (...args) =>
     execFileSync('git', args, {
       cwd: root,
-      encoding: 'utf8',
       maxBuffer: 16 * 1024 * 1024,
       env: { ...process.env, GIT_NO_REPLACE_OBJECTS: '1' },
     });
-  const git = (...args) => rawGit(...args).trim();
+  const git = (...args) =>
+    rawGit(...args)
+      .toString('utf8')
+      .trim();
   const exact = (ref) => git('rev-parse', '--verify', `${ref}^{commit}`);
   const ancestor = (parent, child) => {
     try {
@@ -57,32 +59,41 @@ export function verifyXLayerIntegration(root, { branch, head, pull = null }) {
   const record = (sha) => {
     const parents = git('rev-list', '--parents', '-n', '1', sha).split(' ');
     requireValue(parents.length === 2, 'every integration/source commit must have one parent');
-    const [name, email, message] = rawGit('show', '-s', '--format=%an%x00%ae%x00%B', sha).split('\0');
+    const bytes = rawGit('cat-file', 'commit', sha);
+    const separator = bytes.indexOf('\n\n');
+    requireValue(separator >= 0, 'invalid raw commit');
+    const headers = bytes.subarray(0, separator).toString('utf8').split('\n');
+    const authors = headers.filter((line) => line.startsWith('author '));
+    requireValue(authors.length === 1, 'exactly one author required');
+    const author = authors[0].match(/^author (.+) <([^<>]+)> -?\d+ [+-]\d{4}$/);
+    requireValue(author, 'invalid author record');
+    const [, name, email] = author;
+    const messageBytes = bytes.subarray(separator + 2);
+    const message = messageBytes.toString('utf8');
     const [subject, ...body] = message.split('\n');
-    return { name, email, message, subject, body: body.join('\n') };
+    const authorStart = bytes.indexOf(Buffer.from('\nauthor ')) + 1;
+    requireValue(authorStart > 0, 'missing raw author');
+    const authorBytes = bytes.subarray(authorStart, bytes.indexOf(10, authorStart));
+    return { name, email, messageBytes, authorBytes, subject, body: body.join('\n') };
   };
-  const patch = (sha) =>
-    rawGit(
-      '-c',
-      'diff.algorithm=myers',
-      'diff',
-      '--binary',
-      '--full-index',
-      '--no-ext-diff',
-      '--no-textconv',
-      '--no-renames',
-      '--no-color',
-      '--no-indent-heuristic',
-      '--src-prefix=a/',
-      '--dst-prefix=b/',
-      '--unified=0',
-      `${sha}^`,
-      sha,
-    )
-      .split('\n')
-      .filter((line) => !/^index [a-f0-9]+\.\.[a-f0-9]+(?: \d+)?$/.test(line))
-      .map((line) => line.replace(/^@@ -\d+(,\d+)? \+\d+(,\d+)? @@.*$/, '@@ -$1 +$2 @@'))
-      .join('\n');
+  const verifyImportedTree = (original, imported) => {
+    // Replay the source change using its original parent as the explicit merge
+    // base. Comparing whole trees preserves hunk placement and every blob byte,
+    // while allowing unrelated earlier imports and upstream line offsets.
+    // merge-tree writes Git objects only, never the working tree or its index.
+    const tree = git(
+      'merge-tree',
+      '--write-tree',
+      '--no-messages',
+      `--merge-base=${original}^`,
+      `${imported}^`,
+      original,
+    );
+    requireValue(
+      shaPattern.test(tree) && tree === git('rev-parse', `${imported}^{tree}`),
+      'imported tree differs from replayed source change',
+    );
+  };
   requireValue(
     branch === integrationBranch && shaPattern.test(head),
     'exact registered branch/head required',
@@ -189,10 +200,10 @@ export function verifyXLayerIntegration(root, { branch, head, pull = null }) {
         'source author/task attribution differs',
       );
       requireValue(
-        copy.name === original.name && copy.email === original.email && copy.message === original.message,
+        copy.authorBytes.equals(original.authorBytes) && copy.messageBytes.equals(original.messageBytes),
         'imported author or message differs',
       );
-      requireValue(patch(mapping.source) === patch(mapping.imported), 'imported patch differs');
+      verifyImportedTree(mapping.source, mapping.imported);
     }
   }
   let manager = 0;
