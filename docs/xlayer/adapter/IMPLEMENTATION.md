@@ -1,7 +1,11 @@
 # X Layer adapter implementation plan
 
-Agent-ID: Macbeth03  
+Agent-ID: Macbeth03
 Task-ID: AF-XLAYER-03-ADAPTER
+Project: AlphaForge-XLayer
+Track: X Layer
+Repository: pdbsy/alphaforge-xlayer
+Manager: XLayerPM (AF_Xlayer)
 
 ## Goal
 
@@ -46,7 +50,7 @@ contracts and CI remain outside scope.
 - [x] Verify wrong RPC rejection before indexing, NOT_DEPLOYED inert behavior,
       and cross-chain event, checkpoint and operation isolation.
 - [x] Run chain regressions, types, lint, formatting and privacy/secret scans.
-- [ ] Document interface and limitations; publish source SHA and verification on
+- [x] Document interface and limitations; publish source SHA and verification on
       the Draft PR for manager integration and independent review.
 
 Expected files: `packages/chain-adapter/src/manifest.ts`,

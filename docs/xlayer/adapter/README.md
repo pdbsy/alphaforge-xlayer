@@ -1,7 +1,11 @@
 # AlphaForge X Layer adapter
 
-Agent-ID: Macbeth03  
+Agent-ID: Macbeth03
 Task-ID: AF-XLAYER-03-ADAPTER
+Project: AlphaForge-XLayer
+Track: X Layer
+Repository: pdbsy/alphaforge-xlayer
+Manager: XLayerPM (AF_Xlayer)
 
 This is a local/mock review candidate. The executable default stays NOT_DEPLOYED.
 No deployment addresses or live-chain evidence are supplied.
