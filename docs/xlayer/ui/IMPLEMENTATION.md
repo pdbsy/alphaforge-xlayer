@@ -1,5 +1,7 @@
 # AF-XLAYER-04-UI implementation
 
+Project: AlphaForge-XLayer. Track: X Layer. Repository: pdbsy/alphaforge-xlayer. Manager: XLayerPM (AF_Xlayer task).
+
 Agent: Macbeth04. Manager: XLayerPM. Assignment: public PR #1 and its frozen migration specification, read at 5896ff45510b214d45a3469f9536a8434e2493d3.
 
 ## Intake and boundaries

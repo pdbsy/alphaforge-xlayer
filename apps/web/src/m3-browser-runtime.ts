@@ -11,6 +11,12 @@ import {
 import { decodeM3VaultCalldata } from '../../../packages/chain-adapter/src/vault-abi.ts';
 import { ROBINHOOD_CHAIN_TESTNET } from '../../../packages/robinhood-chain/src/network.ts';
 import {
+  readM3BuildNetwork,
+  resolveM3Network,
+  type M3NetworkSelection,
+  type M3Testnet,
+} from './m3-network.ts';
+import {
   Eip1193Wallet,
   Eip1193WalletConnection,
   WalletFailure,
@@ -60,6 +66,7 @@ export interface M3VaultReader {
 }
 
 export interface M3BrowserRuntimeOptions {
+  readonly network?: M3NetworkSelection;
   readonly provider?: Eip1193Provider;
   readonly deployment?: M3BrowserDeploymentConfig;
   readonly vaultReader?: M3VaultReader;
@@ -138,14 +145,15 @@ function productAction(request: M3ProductActionRequest, operationId: string) {
 }
 
 class M3BrowserRuntime implements M3ProductRuntime {
+  readonly #network: M3Testnet;
   readonly #provider: Eip1193Provider | null;
   readonly #deployment: M3BrowserDeploymentConfig | null;
   readonly #reader: M3VaultReader | null;
   readonly #connection: Eip1193WalletConnection | null;
   readonly #flow: M3ChainActionFlow<RuntimeSnapshot, M3ProductActionRequest, never> | null;
   readonly #listeners = new Set<() => void>();
-  readonly #actionReviews = new WeakMap<M3ProductActionReview, M3ActionReview>();
-  readonly #approvalReviews = new WeakMap<M3DepositApprovalReview, M3DepositAuthorization>();
+  #actionReviews = new WeakMap<M3ProductActionReview, M3ActionReview>();
+  #approvalReviews = new WeakMap<M3DepositApprovalReview, M3DepositAuthorization>();
   readonly #now: () => string;
   readonly #writeMode: 'INJECTED_MOCK' | 'LIVE_AUTHORIZED';
   #pendingOperation: PendingOperation | null = null;
@@ -153,15 +161,18 @@ class M3BrowserRuntime implements M3ProductRuntime {
   #snapshot: M3ProductChainPresentation;
 
   constructor(options: M3BrowserRuntimeOptions) {
+    this.#network = resolveM3Network(options.network);
+    if (options.deployment && options.deployment.chainId !== this.#network.chainId)
+      throw new Error('M3_DEPLOYMENT_NETWORK_MISMATCH');
     this.#provider = options.provider ?? null;
     this.#deployment = validDeployment(options.deployment);
     this.#reader = this.#deployment ? (options.vaultReader ?? new M3VaultApiClient()) : null;
     this.#connection = this.#provider
-      ? new Eip1193WalletConnection(this.#provider, ROBINHOOD_CHAIN_TESTNET.chainId)
+      ? new Eip1193WalletConnection(this.#provider, this.#network.chainId)
       : null;
     this.#now = options.now ?? (() => new Date().toISOString());
     this.#writeMode = options.transportProvenance === 'DEV_MOCK' ? 'INJECTED_MOCK' : 'LIVE_AUTHORIZED';
-    this.#snapshot = initialSnapshot(this.#deployment);
+    this.#snapshot = { ...initialSnapshot(this.#deployment), requiredNetwork: this.#networkSelection() };
 
     if (this.#provider && this.#deployment && this.#reader) {
       const factory = createM3VaultActionFactory({
@@ -258,8 +269,12 @@ class M3BrowserRuntime implements M3ProductRuntime {
     return this.#snapshot;
   }
 
+  #networkSelection(): M3NetworkSelection {
+    return Object.freeze({ environment: this.#network.key, chainId: this.#network.chainId });
+  }
+
   #publish(snapshot: M3ProductChainPresentation): void {
-    this.#snapshot = Object.freeze(snapshot);
+    this.#snapshot = Object.freeze({ ...snapshot, requiredNetwork: this.#networkSelection() });
     for (const listener of this.#listeners) listener();
   }
 
@@ -355,147 +370,243 @@ class M3BrowserRuntime implements M3ProductRuntime {
     }
   }
 
-  async connect(): Promise<void> {
-    if (!this.#connection) {
-      const error = new Error('WALLET_PROVIDER_UNAVAILABLE');
+  #clearSession(): void {
+    this.#session = null;
+    this.#actionReviews = new WeakMap();
+    this.#approvalReviews = new WeakMap();
+  }
+
+  #sessionReadRevision = 0;
+
+  async #withSessionRead(read: (assertCurrent: () => void) => Promise<void>): Promise<void> {
+    const revision = ++this.#sessionReadRevision;
+    let changed = false;
+    const assertCurrent = () => {
+      if (changed || revision !== this.#sessionReadRevision)
+        throw new WalletFailure('WALLET_SESSION_CHANGED');
+    };
+    const invalidate = () => {
+      changed = true;
+      if (revision !== this.#sessionReadRevision) return;
+      this.#clearSession();
       this.#publish({
         ...this.#snapshot,
-        wallet: { status: 'DISCONNECTED', errorCode: error.message },
+        wallet: { status: 'DISCONNECTED', errorCode: 'WALLET_SESSION_CHANGED' },
         network: { status: 'UNAVAILABLE' },
+        onchain: { ...this.#snapshot.onchain, owner: 'UNKNOWN', writeMode: 'DISABLED' },
       });
-      throw error;
-    }
-    this.#session = null;
-    this.#publish({ ...this.#snapshot, wallet: { status: 'CONNECTING' } });
+    };
+    const registered: ('accountsChanged' | 'chainChanged' | 'disconnect')[] = [];
     try {
-      if (this.#flow) {
-        const connected = await this.#flow.connect();
-        this.#session = connected.session;
-        this.#publish(await this.#connectedPresentation(connected.session, connected.snapshot));
-      } else {
-        const session = await this.#connection.connect();
-        this.#session = session;
+      for (const event of ['accountsChanged', 'chainChanged', 'disconnect'] as const) {
+        try {
+          this.#provider?.on(event, invalidate);
+          registered.push(event);
+        } catch {
+          throw new WalletFailure('WALLET_REQUEST_FAILED');
+        }
+      }
+      await read(assertCurrent);
+      assertCurrent();
+    } catch (error) {
+      if (revision === this.#sessionReadRevision) {
+        this.#clearSession();
+        const code = error instanceof WalletFailure ? error.code : 'WALLET_REQUEST_FAILED';
         this.#publish({
           ...this.#snapshot,
-          wallet: { status: 'CONNECTED', address: session.account },
-          network: { status: 'CORRECT', chainId: session.chainId },
+          wallet: {
+            status: code === 'WALLET_REJECTED' ? 'CONNECTION_REJECTED' : 'DISCONNECTED',
+            errorCode: code,
+          },
+          network: code === 'WALLET_WRONG_CHAIN' ? this.#snapshot.network : { status: 'UNAVAILABLE' },
+          onchain: { ...this.#snapshot.onchain, owner: 'UNKNOWN', writeMode: 'DISABLED' },
         });
       }
-    } catch (error) {
-      const code = error instanceof WalletFailure ? error.code : 'WALLET_REQUEST_FAILED';
-      let observed = null;
-      try {
-        observed = await this.#connection.observe();
-      } catch {
-        // The original sanitized wallet error remains authoritative.
-      }
-      this.#publish({
-        ...this.#snapshot,
-        wallet: {
-          status: code === 'WALLET_REJECTED' ? 'CONNECTION_REJECTED' : 'DISCONNECTED',
-          ...(observed ? { address: observed.account } : {}),
-          errorCode: code,
-        },
-        network: observed
-          ? {
-              status: observed.chainId === ROBINHOOD_CHAIN_TESTNET.chainId ? 'CORRECT' : 'WRONG',
-              chainId: observed.chainId,
-            }
-          : { status: code === 'WALLET_WRONG_CHAIN' ? 'WRONG' : 'UNAVAILABLE' },
-      });
       throw error;
+    } finally {
+      for (const event of registered) {
+        try {
+          this.#provider?.removeListener(event, invalidate);
+        } catch {
+          // Preserve the original sanitized session result if provider cleanup fails.
+        }
+      }
     }
   }
 
-  async refresh(): Promise<void> {
-    if (!this.#connection) return;
-    const observed = await this.#connection.observe();
-    if (!observed) {
-      this.#session = null;
+  async #verifyCurrentSession(session: WalletSession, assertCurrent: () => void): Promise<void> {
+    assertCurrent();
+    const observed = await this.#connection!.observe();
+    assertCurrent();
+    if (!observed || !sameAddress(observed.account, session.account) || observed.chainId !== session.chainId)
+      throw new WalletFailure('WALLET_SESSION_CHANGED');
+  }
+
+  async connect(): Promise<void> {
+    return this.#withSessionRead(async (assertCurrent) => {
+      if (!this.#connection) {
+        const error = new Error('WALLET_PROVIDER_UNAVAILABLE');
+        assertCurrent();
+        this.#publish({
+          ...this.#snapshot,
+          wallet: { status: 'DISCONNECTED', errorCode: error.message },
+          network: { status: 'UNAVAILABLE' },
+        });
+        throw error;
+      }
+      this.#clearSession();
+      assertCurrent();
       this.#publish({
         ...this.#snapshot,
-        wallet: { status: 'DISCONNECTED', errorCode: 'WALLET_DISCONNECTED' },
-        network: { status: 'UNAVAILABLE' },
-      });
-      return;
-    }
-    if (this.#session && !sameAddress(observed.account, this.#session.account)) {
-      this.#session = null;
-      this.#publish({
-        ...this.#snapshot,
-        wallet: { status: 'ACCOUNT_CHANGED', address: observed.account },
-        network: {
-          status: observed.chainId === ROBINHOOD_CHAIN_TESTNET.chainId ? 'CORRECT' : 'WRONG',
-          chainId: observed.chainId,
-        },
+        wallet: { status: 'CONNECTING' },
         onchain: { ...this.#snapshot.onchain, owner: 'UNKNOWN', writeMode: 'DISABLED' },
       });
-      return;
-    }
-    if (observed.chainId !== ROBINHOOD_CHAIN_TESTNET.chainId) {
-      this.#publish({
-        ...this.#snapshot,
-        wallet: { status: 'CONNECTED', address: observed.account },
-        network: { status: 'WRONG', chainId: observed.chainId },
-        onchain: { ...this.#snapshot.onchain, owner: 'UNKNOWN', writeMode: 'DISABLED' },
-      });
-      return;
-    }
-    if (this.#deployment && this.#reader && this.#session) {
-      let snapshot = await this.#readFlowSnapshot(this.#session.account);
-      let presentation = await this.#connectedPresentation(this.#session, snapshot);
-      const pending = this.#pendingOperation;
-      if (
-        pending &&
-        sameAddress(pending.owner, this.#session.account) &&
-        this.#reader.readOperationEvidence
-      ) {
+      try {
+        if (this.#flow) {
+          const connected = await this.#flow.connect();
+          assertCurrent();
+          const presentation = await this.#connectedPresentation(connected.session, connected.snapshot);
+          await this.#verifyCurrentSession(connected.session, assertCurrent);
+          assertCurrent();
+          this.#session = connected.session;
+          this.#publish(presentation);
+        } else {
+          const session = await this.#connection.connect();
+          assertCurrent();
+          this.#session = session;
+          assertCurrent();
+          this.#publish({
+            ...this.#snapshot,
+            wallet: { status: 'CONNECTED', address: session.account },
+            network: { status: 'CORRECT', chainId: session.chainId },
+          });
+        }
+      } catch (error) {
+        assertCurrent();
+        const code = error instanceof WalletFailure ? error.code : 'WALLET_REQUEST_FAILED';
+        let observed = null;
         try {
-          const evidence = await this.#reader.readOperationEvidence(pending.operationId, pending.owner);
-          if (evidence.indexerStatus === 'DEGRADED' && snapshot.source !== 'LIVE_EXIT') {
-            snapshot = await this.#readLiveExitSnapshot();
-            presentation = await this.#connectedPresentation(this.#session, snapshot);
-          }
-          presentation = {
-            ...presentation,
-            transaction: transactionPresentationFromEvidence(evidence, pending.txHash),
-            onchain: {
-              ...presentation.onchain,
-              health: evidence.indexerStatus === 'DEGRADED' ? 'DEGRADED' : presentation.onchain.health,
-              readiness:
-                evidence.chainStatus === 'SOFT_READY'
-                  ? 'SOFT_READY'
-                  : evidence.chainStatus === 'REORGED'
-                    ? 'REORGED'
-                    : 'FINALITY_UNKNOWN',
-            },
-          };
+          observed = await this.#connection.observe();
         } catch {
+          // The original sanitized wallet error remains authoritative.
+        }
+        assertCurrent();
+        this.#publish({
+          ...this.#snapshot,
+          wallet: {
+            status: code === 'WALLET_REJECTED' ? 'CONNECTION_REJECTED' : 'DISCONNECTED',
+            ...(observed ? { address: observed.account } : {}),
+            errorCode: code,
+          },
+          network: observed
+            ? {
+                status: observed.chainId === this.#network.chainId ? 'CORRECT' : 'WRONG',
+                chainId: observed.chainId,
+              }
+            : { status: code === 'WALLET_WRONG_CHAIN' ? 'WRONG' : 'UNAVAILABLE' },
+        });
+        throw error;
+      }
+    });
+  }
+
+  async refresh(): Promise<void> {
+    return this.#withSessionRead(async (assertCurrent) => {
+      if (!this.#connection) return;
+      const session = this.#session;
+      const observed = await this.#connection.observe();
+      assertCurrent();
+      if (!observed) {
+        this.#clearSession();
+        assertCurrent();
+        this.#publish({
+          ...this.#snapshot,
+          wallet: { status: 'DISCONNECTED', errorCode: 'WALLET_DISCONNECTED' },
+          network: { status: 'UNAVAILABLE' },
+          onchain: { ...this.#snapshot.onchain, owner: 'UNKNOWN', writeMode: 'DISABLED' },
+        });
+        return;
+      }
+      if (session && !sameAddress(observed.account, session.account)) {
+        this.#clearSession();
+        assertCurrent();
+        this.#publish({
+          ...this.#snapshot,
+          wallet: { status: 'ACCOUNT_CHANGED', address: observed.account },
+          network: {
+            status: observed.chainId === this.#network.chainId ? 'CORRECT' : 'WRONG',
+            chainId: observed.chainId,
+          },
+          onchain: { ...this.#snapshot.onchain, owner: 'UNKNOWN', writeMode: 'DISABLED' },
+        });
+        return;
+      }
+      if (observed.chainId !== this.#network.chainId) {
+        this.#clearSession();
+        assertCurrent();
+        this.#publish({
+          ...this.#snapshot,
+          wallet: { status: 'CONNECTED', address: observed.account },
+          network: { status: 'WRONG', chainId: observed.chainId },
+          onchain: { ...this.#snapshot.onchain, owner: 'UNKNOWN', writeMode: 'DISABLED' },
+        });
+        return;
+      }
+      if (this.#deployment && this.#reader && session) {
+        let snapshot = await this.#readFlowSnapshot(session.account);
+        let presentation = await this.#connectedPresentation(session, snapshot);
+        const pending = this.#pendingOperation;
+        if (pending && sameAddress(pending.owner, session.account) && this.#reader.readOperationEvidence) {
           try {
-            snapshot = await this.#readLiveExitSnapshot();
-            presentation = {
-              ...(await this.#connectedPresentation(this.#session, snapshot)),
-              transaction: this.#snapshot.transaction,
-            };
-          } catch {
+            const evidence = await this.#reader.readOperationEvidence(pending.operationId, pending.owner);
+            if (evidence.indexerStatus === 'DEGRADED' && snapshot.source !== 'LIVE_EXIT') {
+              snapshot = await this.#readLiveExitSnapshot();
+              presentation = await this.#connectedPresentation(session, snapshot);
+            }
             presentation = {
               ...presentation,
-              onchain: { ...presentation.onchain, health: 'DEGRADED' },
+              transaction: transactionPresentationFromEvidence(evidence, pending.txHash),
+              onchain: {
+                ...presentation.onchain,
+                health: evidence.indexerStatus === 'DEGRADED' ? 'DEGRADED' : presentation.onchain.health,
+                readiness:
+                  evidence.chainStatus === 'SOFT_READY'
+                    ? 'SOFT_READY'
+                    : evidence.chainStatus === 'REORGED'
+                      ? 'REORGED'
+                      : 'FINALITY_UNKNOWN',
+              },
             };
+          } catch {
+            try {
+              snapshot = await this.#readLiveExitSnapshot();
+              presentation = {
+                ...(await this.#connectedPresentation(session, snapshot)),
+                transaction: this.#snapshot.transaction,
+              };
+            } catch {
+              presentation = {
+                ...presentation,
+                onchain: { ...presentation.onchain, health: 'DEGRADED' },
+              };
+            }
           }
         }
+        await this.#verifyCurrentSession(session, assertCurrent);
+        assertCurrent();
+        this.#publish(presentation);
+      } else {
+        assertCurrent();
+        this.#publish({
+          ...this.#snapshot,
+          wallet: { status: 'CONNECTED', address: observed.account },
+          network: {
+            status: observed.chainId === this.#network.chainId ? 'CORRECT' : 'WRONG',
+            chainId: observed.chainId,
+          },
+        });
       }
-      this.#publish(presentation);
-    } else {
-      this.#publish({
-        ...this.#snapshot,
-        wallet: { status: 'CONNECTED', address: observed.account },
-        network: {
-          status: observed.chainId === ROBINHOOD_CHAIN_TESTNET.chainId ? 'CORRECT' : 'WRONG',
-          chainId: observed.chainId,
-        },
-      });
-    }
+    });
   }
 
   async reviewDepositApprovals(
@@ -626,5 +737,8 @@ class M3BrowserRuntime implements M3ProductRuntime {
 }
 
 export function createM3BrowserRuntime(options: M3BrowserRuntimeOptions): M3ProductRuntime {
-  return new M3BrowserRuntime(options);
+  return new M3BrowserRuntime({
+    ...options,
+    network: options.network ?? readM3BuildNetwork(import.meta.env ?? {}),
+  });
 }

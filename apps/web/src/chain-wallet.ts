@@ -227,9 +227,43 @@ export class Eip1193WalletConnection implements BrowserWalletConnectionPort {
   }
 
   async #session(method: 'eth_accounts' | 'eth_requestAccounts'): Promise<WalletSession | null> {
-    const accounts = await this.#accounts(method);
-    if (!accounts[0]) return null;
-    return Object.freeze({ account: accounts[0], chainId: await this.#currentChainId() });
+    let changed = false;
+    const invalidate = () => {
+      changed = true;
+    };
+    const registered: ('accountsChanged' | 'chainChanged' | 'disconnect')[] = [];
+    const assertCurrent = () => {
+      if (changed) throw new WalletFailure('WALLET_SESSION_CHANGED');
+    };
+    try {
+      for (const event of ['accountsChanged', 'chainChanged', 'disconnect'] as const) {
+        try {
+          this.#provider.on(event, invalidate);
+          registered.push(event);
+        } catch {
+          throw new WalletFailure('WALLET_REQUEST_FAILED');
+        }
+      }
+      const accounts = await this.#accounts(method);
+      assertCurrent();
+      if (!accounts[0]) return null;
+      const chainId = await this.#currentChainId();
+      assertCurrent();
+      const currentAccounts = await this.#accounts('eth_accounts');
+      const currentChainId = await this.#currentChainId();
+      assertCurrent();
+      if (!currentAccounts[0] || !sameAddress(accounts[0], currentAccounts[0]) || chainId !== currentChainId)
+        throw new WalletFailure('WALLET_SESSION_CHANGED');
+      return Object.freeze({ account: accounts[0], chainId });
+    } finally {
+      for (const event of registered) {
+        try {
+          this.#provider.removeListener(event, invalidate);
+        } catch {
+          // Provider cleanup errors must not hide the original sanitized result.
+        }
+      }
+    }
   }
 
   async connect(): Promise<WalletSession> {

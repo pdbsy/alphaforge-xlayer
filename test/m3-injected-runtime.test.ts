@@ -99,6 +99,8 @@ test('injected runtime controls exercise provider network and non-owner state th
 
   fixture.setCorrectNetwork();
   await fixture.runtime.refresh();
+  assert.equal(fixture.runtime.snapshot.onchain.writeMode, 'DISABLED');
+  await fixture.runtime.connect();
   await fixture.setNonOwner();
   assert.equal(fixture.runtime.snapshot.wallet.status, 'ACCOUNT_CHANGED');
   await fixture.runtime.connect();

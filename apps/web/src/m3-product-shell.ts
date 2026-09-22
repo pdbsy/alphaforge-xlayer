@@ -1,4 +1,4 @@
-import { ROBINHOOD_CHAIN_TESTNET } from '../../../packages/robinhood-chain/src/network.ts';
+import { resolveM3Network, type M3NetworkSelection, type M3Testnet } from './m3-network.ts';
 import type { WalletSubmission } from './chain-wallet.ts';
 import type { ProductOperationEvidence } from './strategy-adapter.ts';
 
@@ -86,6 +86,7 @@ export interface OnchainProductPresentation {
 }
 
 export interface M3ProductChainPresentation {
+  readonly requiredNetwork?: M3NetworkSelection;
   readonly wallet: WalletPresentation;
   readonly network: NetworkPresentation;
   readonly transaction: TransactionPresentation;
@@ -93,6 +94,7 @@ export interface M3ProductChainPresentation {
 }
 
 export interface StrategyShellInput {
+  readonly requiredNetwork?: M3NetworkSelection;
   readonly strategyId: string;
   readonly contentProvenance: ProductProvenance;
   readonly wallet?: WalletPresentation;
@@ -102,6 +104,7 @@ export interface StrategyShellInput {
 }
 
 export interface AccountShellInput {
+  readonly requiredNetwork?: M3NetworkSelection;
   readonly accountId?: string | null;
   readonly wallet?: WalletPresentation;
   readonly network?: NetworkPresentation;
@@ -138,12 +141,12 @@ const walletMessages: Record<WalletStatus, string> = {
 
 const networkMessages: Record<NetworkStatus, string> = {
   UNAVAILABLE: 'Network state is unavailable until the chain adapter is connected.',
-  CORRECT: 'Connected to the required Robinhood Chain Testnet.',
-  WRONG: 'Wrong network. Switch to Robinhood Chain Testnet before continuing.',
+  CORRECT: 'Connected to the required Testnet.',
+  WRONG: 'Wrong network. Switch to the required Testnet before continuing.',
   SWITCHING: 'Waiting for the wallet to switch networks.',
   SWITCH_REJECTED: 'Network switch rejected in the wallet.',
   UNSUPPORTED: 'This wallet or network cannot use the required Testnet.',
-  RPC_UNAVAILABLE: 'Robinhood Chain Testnet RPC is unavailable.',
+  RPC_UNAVAILABLE: 'Testnet RPC is unavailable.',
 };
 
 const transactionMessages: Record<TransactionStatus, string> = {
@@ -165,7 +168,10 @@ export function renderWalletStatus(status: WalletStatus): string {
   return walletMessages[status];
 }
 
-export function renderNetworkStatus(status: NetworkStatus): string {
+export function renderNetworkStatus(status: NetworkStatus, network: M3Testnet = resolveM3Network()): string {
+  if (status === 'CORRECT') return `Connected to the required ${network.name}.`;
+  if (status === 'WRONG') return `Wrong network. Switch to ${network.name} before continuing.`;
+  if (status === 'RPC_UNAVAILABLE') return `${network.name} RPC is unavailable.`;
   return networkMessages[status];
 }
 
@@ -248,26 +254,26 @@ function walletCard(wallet: WalletPresentation): string {
   }${errorDetails(wallet)}</article>`;
 }
 
-function networkCard(network: NetworkPresentation): string {
+function networkCard(network: NetworkPresentation, required: M3Testnet): string {
   const observedChain = network.chainId === undefined ? 'Unavailable' : escapeHtml(network.chainId);
   return `<article class="sketch-box"><span class="section-label">NETWORK / TESTNET</span><h3>${escapeHtml(
     network.status,
-  )}</h3><p>${escapeHtml(renderNetworkStatus(network.status))}</p><p><strong>Required</strong> · ${escapeHtml(
-    ROBINHOOD_CHAIN_TESTNET.name,
-  )} · Chain ID ${escapeHtml(ROBINHOOD_CHAIN_TESTNET.chainId)}</p><p>Wallet chain ID · ${observedChain}</p>${errorDetails(
+  )}</h3><p>${escapeHtml(renderNetworkStatus(network.status, required))}</p><p><strong>Required</strong> · ${escapeHtml(
+    required.name,
+  )} · Chain ID ${escapeHtml(required.chainId)}</p><p><strong>Gas token</strong> · ${escapeHtml(required.nativeCurrency)}</p><p>Wallet chain ID · ${observedChain}</p>${errorDetails(
     network,
   )}</article>`;
 }
 
-function transactionCard(transaction: TransactionPresentation): string {
+function transactionCard(transaction: TransactionPresentation, required: M3Testnet): string {
   const validHash = /^0x[0-9a-fA-F]{64}$/.test(transaction.txHash ?? '');
   const transactionEvidence = !transaction.txHash
     ? '<p>Transaction hash · Unavailable</p>'
     : validHash
       ? `<p><strong>Transaction hash</strong> · <a class="text-link" href="${escapeHtml(
-          `${ROBINHOOD_CHAIN_TESTNET.explorerUrl}/tx/${transaction.txHash}`,
+          `${required.explorerUrl}/tx/${transaction.txHash}`,
         )}" target="_blank" rel="noopener noreferrer">${escapeHtml(transaction.txHash)} ↗</a> · Chain ID ${escapeHtml(
-          ROBINHOOD_CHAIN_TESTNET.chainId,
+          required.chainId,
         )}</p>`
       : `<p><strong>Transaction hash</strong> · ${escapeHtml(transaction.txHash)}</p>`;
   return `<article class="sketch-box"><span class="section-label">TRANSACTION / TESTNET</span><h3>${escapeHtml(
@@ -360,7 +366,7 @@ function unsupportedOnchainActions(onchain: OnchainProductPresentation): string 
     .join('')}<button class="outline-btn" disabled>${approval}</button></div>`;
 }
 
-function onchainCard(onchain: OnchainProductPresentation): string {
+function onchainCard(onchain: OnchainProductPresentation, required: M3Testnet): string {
   const deploymentMessage =
     onchain.deployment === 'CONFIGURED'
       ? 'Verified deployment metadata is configured.'
@@ -407,7 +413,9 @@ function onchainCard(onchain: OnchainProductPresentation): string {
   return `<article class="sketch-box"><span class="section-label">PASS + VAULT / TESTNET</span><h3>${escapeHtml(
     onchain.readiness.replaceAll('_', ' '),
   )}</h3><p><strong>Deployment</strong> · ${escapeHtml(deploymentMessage)}</p><p>${escapeHtml(
-    readinessMessages[onchain.readiness],
+    required.key === 'xlayer-testnet' && onchain.readiness === 'SOFT_READY'
+      ? 'SOFT READY uses an inherited three-confirmation assumption; X Layer finality is unverified.'
+      : readinessMessages[onchain.readiness],
   )}</p><p>${escapeHtml(
     healthMessage,
   )}</p><p>${escapeHtml(writeMessage)}</p>${depositAuthorization}${onchainActions(
@@ -425,12 +433,15 @@ function chainCards(
   transaction: TransactionPresentation,
   assetBoundary: string,
   onchain?: OnchainProductPresentation,
+  selection?: M3NetworkSelection,
 ): string {
-  return `<div class="strategy-grid">${walletCard(wallet)}${networkCard(network)}${transactionCard(
+  const required = resolveM3Network(selection);
+  return `<div class="strategy-grid">${walletCard(wallet)}${networkCard(network, required)}${transactionCard(
     transaction,
+    required,
   )}</div>${
     onchain
-      ? `${onchainCard(onchain)}<div class="inline-actions" aria-label="Testnet wallet controls"><button class="outline-btn" data-chain-connect>Connect wallet</button><button class="text-link" data-chain-refresh>Refresh chain state</button></div>`
+      ? `${onchainCard(onchain, required)}<div class="inline-actions" aria-label="Testnet wallet controls"><button class="outline-btn" data-chain-connect>Connect wallet</button><button class="text-link" data-chain-refresh>Refresh chain state</button></div>`
       : `<article class="sketch-box"><span class="section-label">PASS + VAULT / TESTNET / NOT IMPLEMENTED</span><p>${escapeHtml(
           assetBoundary,
         )}</p>${disabledActions()}</article>`
@@ -468,6 +479,7 @@ export function renderM3StrategyShell(input: StrategyShellInput): string {
     transaction,
     assetBoundary,
     input.onchain,
+    input.requiredNetwork,
   )}</section>`;
 }
 
@@ -483,6 +495,7 @@ export function renderM3AccountShell(input: AccountShellInput): string {
     transaction,
     'Chain ownership, balances, deployment evidence and supported writes are unavailable on this baseline.',
     input.onchain,
+    input.requiredNetwork,
   )}</section>`;
 }
 
@@ -496,6 +509,7 @@ export function extendM3ProductPages(pages: M3ProductPages, options: M3PageExten
           accountId: options.accountId(),
           ...(chain
             ? {
+                ...(chain.requiredNetwork ? { requiredNetwork: chain.requiredNetwork } : {}),
                 wallet: chain.wallet,
                 network: chain.network,
                 transaction: chain.transaction,
@@ -514,6 +528,7 @@ export function extendM3ProductPages(pages: M3ProductPages, options: M3PageExten
           contentProvenance: options.contentProvenance(strategyId),
           ...(chain
             ? {
+                ...(chain.requiredNetwork ? { requiredNetwork: chain.requiredNetwork } : {}),
                 wallet: chain.wallet,
                 network: chain.network,
                 transaction: chain.transaction,
