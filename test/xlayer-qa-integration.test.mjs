@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createHash } from 'node:crypto';
+import { EventEmitter } from 'node:events';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -350,20 +351,22 @@ test('cross-chain event, projection and operation-ID reuse cannot overwrite exis
 
 function walletFixture() {
   const methods = [],
-    listeners = new Map(),
+    listeners = new EventEmitter(),
     simulation = Promise.withResolvers(),
     entered = Promise.withResolvers();
   const provider = {
     chainId: `0x${XLAYER.toString(16)}`,
     accounts: [OWNER],
     on(name, listener) {
-      listeners.set(name, listener);
+      listeners.on(name, listener);
+      return this;
     },
-    removeListener(name) {
-      listeners.delete(name);
+    removeListener(name, listener) {
+      listeners.removeListener(name, listener);
+      return this;
     },
     emit(name, value) {
-      listeners.get(name)?.(value);
+      listeners.emit(name, value);
     },
     async request({ method }) {
       methods.push(method);
@@ -402,8 +405,9 @@ for (const chainId of [195, 196, ROBINHOOD])
     const f = walletFixture();
     f.provider.chainId = `0x${chainId.toString(16)}`;
     await assert.rejects(f.submit, (error) => error.code === 'WALLET_WRONG_CHAIN');
-    assert.deepEqual(f.methods, ['eth_accounts', 'eth_chainId']);
-    assert.equal(f.listeners.size, 0);
+    // Session revalidation may repeat reads; wrong-chain actions must never simulate/sign/send.
+    assert.deepEqual(new Set(f.methods), new Set(['eth_accounts', 'eth_chainId']));
+    assert.deepEqual(f.listeners.eventNames(), []);
   });
 
 for (const scenario of ['chain', 'chain-roundtrip', 'account-roundtrip'])
@@ -429,6 +433,7 @@ for (const scenario of ['chain', 'chain-roundtrip', 'account-roundtrip'])
     }
     f.simulation.resolve('0x');
     await rejected;
-    assert.equal(f.methods.includes('eth_sendTransaction'), false);
-    assert.equal(f.listeners.size, 0);
+    assert.deepEqual(new Set(f.methods), new Set(['eth_accounts', 'eth_chainId', 'eth_call']));
+    assert.equal(f.methods.filter((method) => method === 'eth_call').length, 1);
+    assert.deepEqual(f.listeners.eventNames(), []);
   });
