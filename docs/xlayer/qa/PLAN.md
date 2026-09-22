@@ -40,8 +40,9 @@ Create `test/xlayer-qa-integration.test.mjs`; consume `validateDeploymentManifes
 
 ## Task 3 — Evidence and review
 
-- [ ] Create `ACCEPTANCE-MATRIX.md` mapping foundation, manifest, RPC, store, wallet, contracts, CI, finality and final C/R/S checks to exact evidence or BLOCKED/NOT_RUN.
-- [ ] Run relevant existing regressions, scoped lint/format, typecheck, secrets/privacy, and identity checks as available. Record inherited failures separately.
-- [ ] Commit source C with correct Agent-ID/Task-ID; rerun the new suite at C and record raw-log SHA-256. Report evidence in `RESULTS.md` as a later documentation commit without relabelling C.
-- [ ] Review the new tests for false positives, no network effects and scope compliance. No production fix is permitted in this QA branch.
-- [ ] Update own Draft PR and publish actual ACK/results; provide exact head, dependencies and blockers to the manager. Ask manager to register the new test in the shared test/check lists once associated production fixes are integrated.
+- [x] Create `ACCEPTANCE-MATRIX.md` mapping foundation, manifest, RPC, store, wallet, contracts, CI, finality and final C/R/S checks to exact evidence or BLOCKED/NOT_RUN.
+- [x] Run relevant existing regressions, scoped lint/format, typecheck, secrets/privacy, and identity checks as available. Record inherited failures separately.
+- [x] Commit source C with correct Agent-ID/Task-ID; rerun the new suite at C and record raw-log SHA-256. Report evidence in `RESULTS.md` as a later documentation commit without relabelling C.
+- [x] Review the new tests for false positives, no network effects and scope compliance. No production fix is permitted in this QA branch.
+- [x] Independently retest manager-specified 03 source `6a2350f` with exact foundation file from `728c3df` and tests from C; record 26/26 QA and 72/72 focused PASS with composite source identity.
+- [x] Publish intake ACK; report exact candidate results and blockers to the manager and request shared registration of both new files. Final documentation is prepared for the same Draft PR; final integrated acceptance stays BLOCKED.
