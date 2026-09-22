@@ -10,7 +10,7 @@ AlphaForge X Layer edition is being ported from the AlphaForge Hackathon M3 code
 - Target: X Layer Testnet, chain ID **1952**, gas token **OKB**
 - Runtime baseline: Node **24.21.0**, npm **11.19.1**
 
-The imported M3 code includes Vault/Pass contracts, adapter and recovery primitives, wallet runtime and product UI. Its inherited default configuration still targets Robinhood until the corresponding X Layer migration tasks pass. Historical tests, dashboards and PASS reports describe their recorded upstream commits; they do not certify this repository or X Layer.
+The imported M3 code includes Vault/Pass contracts, adapter and recovery primitives, wallet runtime and product UI. It now supports explicit X Layer network selection; inherited commands retain their Robinhood defaults for compatibility. `npm run xlayer:build` produces the X Layer 1952/OKB frontend with transaction controls disabled until an independently verified deployment is configured. Historical tests, dashboards and PASS reports describe their recorded upstream commits; they do not certify this repository or X Layer.
 
 Read the [migration specification](docs/xlayer/MIGRATION.md), [worker assignments](docs/xlayer/ASSIGNMENTS.md), and [implementation plan](docs/superpowers/plans/2026-09-22-xlayer-foundation.md). The [original README](docs/xlayer/UPSTREAM-README.md) is retained as source context.
 
@@ -31,3 +31,14 @@ This in-repository check is defense in depth, not its own trust root: one hostil
 Use the exact toolchain and isolated dependencies described in [development instructions](docs/DEVELOPMENT-TOOLCHAIN.md). Run environment admission before `npm ci --ignore-scripts`. `npm run check` retains the full inherited checks; unresolved repository or chain assumptions must fail visibly until migrated.
 
 No credentials, deployment addresses or live asset addresses are supplied. Missing deployment inputs remain NOT_DEPLOYED. Existing protocol identifiers and accounting semantics stay stable unless separately assigned.
+
+## X Layer offline build
+
+```sh
+npm run xlayer:check
+npm run xlayer:build
+```
+
+The build command selects the reviewed X Layer pair explicitly, including when the caller has Robinhood Vite variables set. It builds static assets only; it never connects to an RPC or wallet. `npm run check` builds both network variants and leaves the X Layer variant in `apps/web/dist/`.
+
+Project routing uses `[XLayer][AF-XLAYER-...]`, Project `AlphaForge-XLayer`, Repository `pdbsy/alphaforge-xlayer`, and Manager `XLayerPM`. Parallel Robinhood tasks keep their own checkouts, PRs, evidence and blockers. See the [integration record](docs/xlayer/INTEGRATION.md).

@@ -37,3 +37,9 @@ The inherited registry has been archived as UPSTREAM-AGENT-REGISTRY.json. New-re
 Verified from the workers' own PRs on 2026-09-22: Macbeth02 https://github.com/pdbsy/alphaforge-xlayer/pull/2 (c4c796e), Macbeth03 https://github.com/pdbsy/alphaforge-xlayer/pull/4 (9457969), Macbeth04 https://github.com/pdbsy/alphaforge-xlayer/pull/3 (0c170d5), Macbeth05 https://github.com/pdbsy/alphaforge-xlayer/pull/5 (0718323). These are startup acknowledgements, not accepted feature delivery or independent approval. Macbeth06 reported implementation progress; its own public PR receipt is pending at this checkpoint.
 
 Migration provenance policy: keep current-file hash checks. For an authorized evolved artifact, append a subsequent_adaptations record with exact prior hash/base/reason and update the current migrated hash to actual bytes. Never erase original source identity or prior adaptation history. Macbeth06 may update only the entries for its assigned Forum tools/tests; manager owns the registry record. Do not weaken the check to validate only an old Git blob while ignoring the current artifact.
+
+## Parallel project ownership
+
+Every dispatch and receipt starts `[XLayer][AF-XLAYER-...]` and names Project `AlphaForge-XLayer`, Track `X Layer`, Repository `pdbsy/alphaforge-xlayer`, and Manager `XLayerPM`. This user instruction applies to all five workers. Robinhood work is a parallel project: never overwrite its assignment, reuse its writable checkout/data, or count its acceptance as X Layer evidence.
+
+All five public PRs now exist; current delivered source heads and outstanding acceptance are tracked in [INTEGRATION.md](INTEGRATION.md). Manager source integration does not merge or approve worker PRs.

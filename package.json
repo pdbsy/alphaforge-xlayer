@@ -30,11 +30,11 @@
     "management:build": "node tools/build-management-dashboard.mjs",
     "management:check": "node tools/build-management-dashboard.mjs --check",
     "management:serve": "node tools/serve-management-dashboard.mjs",
-    "build": "npm run planning:check && npm run build:web",
+    "build": "npm run planning:check && npm run build:web && npm run xlayer:build",
     "build:web": "npm run import:ui && vite build apps/web --config apps/web/vite.config.ts",
     "demo": "npm run build:web && node --env-file=.env.example apps/server/src/main.ts",
     "demo:backup": "node --env-file=.env.example tools/backup-demo.ts",
-    "check": "npm run typecheck && npm run lint && npm run format:check && npm test && npm run secrets:check && npm run privacy:check && npm run robinhood:check && npm run xlayer:check && npm run governance:check && npm run supply:check && npm run threats:check && npm run planning:check && npm run forum:check && npm run management:check && npm run build:web",
+    "check": "npm run typecheck && npm run lint && npm run format:check && npm test && npm run secrets:check && npm run privacy:check && npm run robinhood:check && npm run xlayer:check && npm run governance:check && npm run supply:check && npm run threats:check && npm run planning:check && npm run forum:check && npm run management:check && npm run build:web && npm run xlayer:build",
     "audit:dependencies": "npm audit --audit-level=high",
     "env:check": "node tools/check-environment.mjs",
     "env:check:ci": "node tools/check-environment.mjs --ci",
@@ -45,7 +45,8 @@
     "forum:sync": "node tools/sync-agent-forum.mjs",
     "verify:agent-identity": "node tools/check-agent-identity.mjs",
     "m3:server": "npm run build:web && node --env-file=.env.example apps/server/src/m3-main.ts",
-    "xlayer:check": "node --env-file=config/xlayer/.env.example tools/check-xlayer-chain.ts"
+    "xlayer:check": "node --env-file=config/xlayer/.env.example tools/check-xlayer-chain.ts",
+    "xlayer:build": "npm run import:ui && node tools/build-xlayer-web.ts"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
