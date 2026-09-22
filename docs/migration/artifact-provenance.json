@@ -1260,13 +1260,20 @@
       "target_path": "tools/agent-forum.mjs",
       "method": "selective import; canonical repository allowlist and dashboard link adapted; PR11 closeout defensive adaptation; PR11 review remediation: atomic product snapshot, identity lifecycle or bounded logical-message Forum as applicable; user-authorized Macbeth06 CI/gate role registration (2026-09-20), historical source identity unchanged",
       "original_sha256": "562111e0bc5badc25b53562f8113e5288860ed17d79b32cd94dd978457674359",
-      "migrated_sha256": "0b4ec2e7418a361d13fde41ff33e7cd27bc1fba743a5e31ab518bcc22cdb2539",
+      "migrated_sha256": "ab58a06ea8ced27cffae066d2f0806a44359579bfa7af6a5350425a2bcd0fc62",
       "subsequent_adaptations": [
         {
           "task": "AF-M3-IDENTITY",
           "base_commit": "45e80f921df2d3f9172ddbbc8e6ab37c327107e7",
           "previous_sha256": "78ca6aa58d895ade79c658c3dd28f00f590e26f1335072496c54fa294c5eaa2f",
           "reason": "M3 worker identity and assignment compatibility; original migration source is preserved."
+        },
+        {
+          "task": "AF-XLAYER-06-CI",
+          "base_commit": "18f5352070910a867b9729b031aa2e3951785e01",
+          "previous_sha256": "0b4ec2e7418a361d13fde41ff33e7cd27bc1fba743a5e31ab518bcc22cdb2539",
+          "source_commit": "b9a0bd7f9a8d0f1e8a0c088be6c2b43922da7656",
+          "reason": "Migrate active CI/Forum repository binding to pdbsy/alphaforge-xlayer; preserve historical links without admitting upstream ACKs. Original source identity and prior adaptations remain unchanged."
         }
       ]
     },
@@ -1278,7 +1285,16 @@
       "target_path": "tools/agent-forum-app.js",
       "method": "selective import; canonical repository allowlist and dashboard link adapted; PR11 closeout defensive adaptation; PR11 review remediation: atomic product snapshot, identity lifecycle or bounded logical-message Forum as applicable; user-authorized Macbeth06 CI/gate role registration (2026-09-20), historical source identity unchanged",
       "original_sha256": "798d168b50b340ce4a3e73f4d2a4e68e1c33469edf02d5e52325f649e09b6bc6",
-      "migrated_sha256": "2788e38b53c585297ffa53aecee58115f72ac58d796dcb5bb60976ef35b5d68b"
+      "migrated_sha256": "a2f7ddd7959a59d8ef7d90f71ebd36aab99ae2784ae625a0f61b32b7224a325c",
+      "subsequent_adaptations": [
+        {
+          "task": "AF-XLAYER-06-CI",
+          "base_commit": "18f5352070910a867b9729b031aa2e3951785e01",
+          "previous_sha256": "2788e38b53c585297ffa53aecee58115f72ac58d796dcb5bb60976ef35b5d68b",
+          "source_commit": "b9a0bd7f9a8d0f1e8a0c088be6c2b43922da7656",
+          "reason": "Migrate active CI/Forum repository binding to pdbsy/alphaforge-xlayer; preserve historical links without admitting upstream ACKs. Original source identity and prior adaptations remain unchanged."
+        }
+      ]
     },
     {
       "source_repository": "pdbsy/quantpass",
@@ -1386,7 +1402,16 @@
       "target_path": "tools/sync-agent-forum.mjs",
       "method": "selective import; canonical repository allowlist and dashboard link adapted; PR11 review remediation: atomic product snapshot, identity lifecycle or bounded logical-message Forum as applicable",
       "original_sha256": "d4743301b018a830585c1fc00c988122844cc455aa21b35b426165cab56e5acd",
-      "migrated_sha256": "618dc6c4655f143579e1ebef7352b1891013bf401d3d7e0d4c10db0f3514e53a"
+      "migrated_sha256": "85daa892d83c779395b7c8de22a9de00b9e8ffdec37be175ee87ecbc5c351247",
+      "subsequent_adaptations": [
+        {
+          "task": "AF-XLAYER-06-CI",
+          "base_commit": "18f5352070910a867b9729b031aa2e3951785e01",
+          "previous_sha256": "618dc6c4655f143579e1ebef7352b1891013bf401d3d7e0d4c10db0f3514e53a",
+          "source_commit": "b9a0bd7f9a8d0f1e8a0c088be6c2b43922da7656",
+          "reason": "Migrate active CI/Forum repository binding to pdbsy/alphaforge-xlayer; preserve historical links without admitting upstream ACKs. Original source identity and prior adaptations remain unchanged."
+        }
+      ]
     },
     {
       "source_repository": "pdbsy/quantpass",
@@ -1639,7 +1664,7 @@
       "target_path": "test/agent-management.test.mjs",
       "method": "selective source integration; shared-file resolution recorded in CONFLICTS.md; reviewed PR11 closeout adaptation (see PR11-CLOSEOUT.md); PR11 review remediation: atomic product snapshot, identity lifecycle or bounded logical-message Forum as applicable; user-authorized Macbeth06 CI/gate role registration (2026-09-20), historical source identity unchanged",
       "original_sha256": "f5c916f2f10f3fbc2e31e89bce0cf041bf091cae876b20490eac7f87140ebc42",
-      "migrated_sha256": "6471d437c7b743c619cb56d5058068468a2767c092ad34b033dec1e4d47b522b",
+      "migrated_sha256": "b8a0d4cb226b84417e79d138b57af079b7937206a1727fc9a0e5b59a44be3b6a",
       "subsequent_adaptations": [
         {
           "task": "AF-M3-IDENTITY",
@@ -1670,6 +1695,13 @@
           "base_commit": "3915c48dc25c4763f8b47b4b93834ae20113a9dd",
           "previous_sha256": "205012371ae9632225b8c9ff7faba08852376128a608a08869f6fc9ee19f12a0",
           "reason": "Align current worker bootstrap and assignment metadata with explicitly required Macbeth branch prefixes; preserve historical aliases and evidence."
+        },
+        {
+          "task": "AF-XLAYER-06-CI",
+          "base_commit": "18f5352070910a867b9729b031aa2e3951785e01",
+          "previous_sha256": "6471d437c7b743c619cb56d5058068468a2767c092ad34b033dec1e4d47b522b",
+          "source_commit": "b9a0bd7f9a8d0f1e8a0c088be6c2b43922da7656",
+          "reason": "Migrate active CI/Forum repository binding to pdbsy/alphaforge-xlayer; preserve historical links without admitting upstream ACKs. Original source identity and prior adaptations remain unchanged."
         }
       ]
     },
@@ -1681,7 +1713,16 @@
       "target_path": "test/agent-security-regressions.test.mjs",
       "method": "selective source integration; shared-file resolution recorded in CONFLICTS.md",
       "original_sha256": "e22d5f6afae8f7aa6ffa588cc431d04c40536601570187e557781aa5c1247412",
-      "migrated_sha256": "0c6af517dffa0a7d5988701af96e44ffbea6a9668b1c8420b277da1035dbdff6"
+      "migrated_sha256": "8d96699ccb1574291bdf7301af25fcc3078daf7cae8f5f78cb04ea5e4f17b5a7",
+      "subsequent_adaptations": [
+        {
+          "task": "AF-XLAYER-06-CI",
+          "base_commit": "18f5352070910a867b9729b031aa2e3951785e01",
+          "previous_sha256": "0c6af517dffa0a7d5988701af96e44ffbea6a9668b1c8420b277da1035dbdff6",
+          "source_commit": "b9a0bd7f9a8d0f1e8a0c088be6c2b43922da7656",
+          "reason": "Migrate active CI/Forum repository binding to pdbsy/alphaforge-xlayer; preserve historical links without admitting upstream ACKs. Original source identity and prior adaptations remain unchanged."
+        }
+      ]
     },
     {
       "source_repository": "pdbsy/quantpass",
@@ -1691,7 +1732,16 @@
       "target_path": "test/agent-tooling.test.mjs",
       "method": "selective source integration; shared-file resolution recorded in CONFLICTS.md; PR11 review remediation: atomic product snapshot, identity lifecycle or bounded logical-message Forum as applicable",
       "original_sha256": "8ea91af803dc35a566ab7f1e63c16536a473fdecf77729efe07cc4352f57a707",
-      "migrated_sha256": "ecbc2925c1d9d661b82edb01c87b05381dbcd95c348d6ad3c59390b7ca684f36"
+      "migrated_sha256": "c9e8f34454f02757d78559341554e9067fb531b4255da4cc76fe2e1d629dbc0e",
+      "subsequent_adaptations": [
+        {
+          "task": "AF-XLAYER-06-CI",
+          "base_commit": "18f5352070910a867b9729b031aa2e3951785e01",
+          "previous_sha256": "ecbc2925c1d9d661b82edb01c87b05381dbcd95c348d6ad3c59390b7ca684f36",
+          "source_commit": "b9a0bd7f9a8d0f1e8a0c088be6c2b43922da7656",
+          "reason": "Migrate active CI/Forum repository binding to pdbsy/alphaforge-xlayer; preserve historical links without admitting upstream ACKs. Original source identity and prior adaptations remain unchanged."
+        }
+      ]
     },
     {
       "source_repository": "pdbsy/quantpass",
