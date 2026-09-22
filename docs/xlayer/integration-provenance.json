@@ -1,0 +1,136 @@
+{
+  "schema_version": 1,
+  "repository": "pdbsy/alphaforge-xlayer",
+  "branch": "codex/xlayer-bootstrap",
+  "task": "AF-XLAYER-MIGRATION",
+  "base": "18f5352070910a867b9729b031aa2e3951785e01",
+  "legacyManagerCommits": [
+    "5896ff45510b214d45a3469f9536a8434e2493d3",
+    "955f0fccd38be76ab6b7f7e9715a91eecbf3aa14",
+    "16bb735206ea3741b761fdefc82b08da402b4d70",
+    "728c3df217f586fb7f7d86f595406dc46372ac1a",
+    "33f47d935e64759b94de68ee13c0aabb22534844",
+    "3190b6e2c37874689443cb3defd789f90209a03c",
+    "9c10e8ab2e04c2728a330ade742032305c4e450a",
+    "f26d117e4b0c0197af7b4a6555366275574d1265",
+    "d982e3207438953c0a61af8c9cacb3497fe62202"
+  ],
+  "sources": [
+    {
+      "agent": "Macbeth02",
+      "task": "AF-XLAYER-02-CONTRACTS",
+      "branch": "macbeth02/xlayer-contracts",
+      "head": "000063f5b6bc257d63bc3426ee5ec20423aa475c",
+      "commits": [
+        {
+          "source": "c4c796ef823c271604a2fbc03895ff64c84e516f",
+          "imported": "922c0cbd81ecfae7b90df9bada40e7dab7b13c39"
+        },
+        {
+          "source": "0c713e089a0ed4dc2dcd9adde9059e369523c532",
+          "imported": "b7d280d0f97137826cbbca7fffc5ea33ca41fb2d"
+        },
+        {
+          "source": "4fd231fdc7bc0d43cb178d80fde03594e64802b6",
+          "imported": "f2a4bcc83cd57b2b5b5272888e5b771377186eb5"
+        },
+        {
+          "source": "000063f5b6bc257d63bc3426ee5ec20423aa475c",
+          "imported": "b6454d321952eeed86fa12007ac43d266b1fdcdd"
+        }
+      ]
+    },
+    {
+      "agent": "Macbeth03",
+      "task": "AF-XLAYER-03-ADAPTER",
+      "branch": "macbeth03/xlayer-adapter",
+      "head": "966b5c69e5b03ab8b45c9edfaad94b826ca3c243",
+      "commits": [
+        {
+          "source": "9457969fb6aaed7993ab4af6cae13942ea49a948",
+          "imported": "a96a26e02ed79a5497cdf8c1d0b421eca903384a"
+        },
+        {
+          "source": "6a2350f50852731c8a6433bcce0aa4e53c4f772c",
+          "imported": "11c3967b1f0376cfea97f8aff3ab5254eb646886"
+        },
+        {
+          "source": "966b5c69e5b03ab8b45c9edfaad94b826ca3c243",
+          "imported": "4c7b2c3bfcbdb45018b35fd7e0885c7889ffb6b9"
+        }
+      ]
+    },
+    {
+      "agent": "Macbeth04",
+      "task": "AF-XLAYER-04-UI",
+      "branch": "macbeth04/xlayer-ui",
+      "head": "37e6045de7ca87f9e06cc45237d6c495d3442f7f",
+      "commits": [
+        {
+          "source": "0c170d5f3a273028eb5ef79e26830b069778c833",
+          "imported": "f3709a0290e62840cbf067714c8d85f1abe8d546"
+        },
+        {
+          "source": "82c93c11f9e87c7a3866fb39d808ef535bce35f9",
+          "imported": "a0e35b56ed7b60fe6bb5b589aef0cb8173b2f11e"
+        },
+        {
+          "source": "5e4f4a77d2d8f0bb598952605aaed6cf1f7d5f77",
+          "imported": "4a2504c67d1066084fadeae06b90f1fd846cc575"
+        },
+        {
+          "source": "37e6045de7ca87f9e06cc45237d6c495d3442f7f",
+          "imported": "03e1496f461edfe85a3570ff584479cc5d470510"
+        }
+      ]
+    },
+    {
+      "agent": "Macbeth05",
+      "task": "AF-XLAYER-05-QA",
+      "branch": "macbeth05/xlayer-qa",
+      "head": "9b36168368f4743edd1a6e575bed389a84969a15",
+      "commits": [
+        {
+          "source": "07183230c921206e4a030263326b6742952995bb",
+          "imported": "1bf5f395c8923e568dd06a542f2bb3be2b62d1a6"
+        },
+        {
+          "source": "a08cbdef30e376f801601fa982bb540bfd03accc",
+          "imported": "3b2cc0f81cd1c21a7f6a25723d04f454547d3ed6"
+        },
+        {
+          "source": "38eff43df48db9e920d59336ca1284f624096b6b",
+          "imported": "0b12e9afda568cc80f54d12d4c2c4039d747e389"
+        },
+        {
+          "source": "9b36168368f4743edd1a6e575bed389a84969a15",
+          "imported": "24af1ffcd134d81d8b8dd337df4d21bc9e9d9489"
+        }
+      ]
+    },
+    {
+      "agent": "Macbeth06",
+      "task": "AF-XLAYER-06-CI",
+      "branch": "macbeth06/xlayer-ci-bindings",
+      "head": "0244de746dd532336a8314ac72ce34d84a75f0bc",
+      "commits": [
+        {
+          "source": "a270b36d7cde2fd87e283580d20b107249d072bf",
+          "imported": "d86cea95a6e3c478bd5d373f404d4980f2580cb2"
+        },
+        {
+          "source": "b9a0bd7f9a8d0f1e8a0c088be6c2b43922da7656",
+          "imported": "ba8f15193fa484ab09dd6cc010719b7f574b252a"
+        },
+        {
+          "source": "7089beabddcd138e39950e7711bac8d70a92ed23",
+          "imported": "78a1bb8772a1f26f5a546dfd6a6a0efbe3abd2dc"
+        },
+        {
+          "source": "0244de746dd532336a8314ac72ce34d84a75f0bc",
+          "imported": "963650eedaf070c1624938ac89dd96b1c3c3062c"
+        }
+      ]
+    }
+  ]
+}
