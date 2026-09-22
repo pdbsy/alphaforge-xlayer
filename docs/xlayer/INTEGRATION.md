@@ -16,7 +16,7 @@ This is the offline X Layer adaptation candidate. No merge, deployment, signing,
 | AF-XLAYER-02-CONTRACTS | https://github.com/pdbsy/alphaforge-xlayer/pull/2 | `000063f5b6bc257d63bc3426ee5ec20423aa475c` | Explicit 1952/OKB template; strict offline validation; local domain and custody tests |
 | AF-XLAYER-03-ADAPTER | https://github.com/pdbsy/alphaforge-xlayer/pull/4 | `966b5c69e5b03ab8b45c9edfaad94b826ca3c243` | Runtime allowlist; trusted expected network; cross-chain/contract evidence isolation |
 | AF-XLAYER-04-UI | https://github.com/pdbsy/alphaforge-xlayer/pull/3 | `37e6045de7ca87f9e06cc45237d6c495d3442f7f` | Explicit network display, explorer and gas; stale wallet/review invalidation |
-| AF-XLAYER-05-QA | https://github.com/pdbsy/alphaforge-xlayer/pull/5 | Pending final receipt | Independent adversarial tests and candidate acceptance |
+| AF-XLAYER-05-QA | https://github.com/pdbsy/alphaforge-xlayer/pull/5 | `9b36168368f4743edd1a6e575bed389a84969a15` | Independent adversarial tests; combined candidate acceptance pending |
 | AF-XLAYER-06-CI | https://github.com/pdbsy/alphaforge-xlayer/pull/6 | `0244de746dd532336a8314ac72ce34d84a75f0bc` | Exact new repository binding; preserve upstream evidence and all gates; manager integration follow-up pending |
 
 All worker imports preserve original authors and messages. Original source branches remain published. Manager additions are separately attributed. Project ownership is mandatory in every dispatch and receipt; parallel Robinhood tasks, repositories, data and acceptance are independent.
@@ -27,6 +27,7 @@ All worker imports preserve original authors and messages. Original source branc
 - First combined implementation `4a2504c`: 654 tests passed, no failures/skips; typecheck, lint, formatting, bounded scans, both network checks, governance, supply, planning and Forum checks passed. Management replay rejected the old snapshot with RECORDED_GIT_DESCENDANT_PATH_MISMATCH, correctly requiring fresh evidence.
 - The new explicit `xlayer:build` command builds static assets with the reviewed X Layer pair, irrespective of ambient Vite chain selection. Both builds remain in `check` and the management build collector.
 - Current manager identity gate rejects a mixed-author worker range on the unregistered manager branch. AF-XLAYER-06-CI is implementing a narrowly registered integration path with pinned original/imported Git evidence; no check is skipped.
+- Adding the independent QA tests to the combined implementation first produced 21 PASS / 5 FAIL. Three failures assert the older wallet read count; two involve the QA provider mock supporting only one callback per event while the new runtime adds temporary listeners. Macbeth05 is checking the mock and real listener semantics before correcting and rerunning; failures remain recorded.
 - Final combined source C, manifest R, snapshot S and independent QA remain pending. Source-bound worker logs do not certify the combined candidate.
 
 ## Review and remaining boundaries
