@@ -4,7 +4,7 @@ Project: AlphaForge-XLayer. Track: X Layer. Repository: pdbsy/alphaforge-xlayer.
 
 **Goal:** validate the exact manager aggregation without relaxing existing worker or historical integration rules, and invoke the X Layer contract entrypoint in CI.
 
-**Architecture:** a separate `tools/xlayer-integration-identity.mjs` reads the committed manager manifest at the tested head. `tools/check-agent-identity.mjs` dispatches only the exact registered X Layer branch; merge queue introduction remains blocked. The checker validates full fixed-base history, pinned source heads belonging to their canonical branch history, exact allowed worker/task/branch/author pairs, and one-to-one imported commit mappings. Commit messages and authors must match; text patches compare exact content while ignoring Git object-index metadata and hunk line offsets caused by earlier cherry-picks. Binary patches remain exact. The manager owns the manifest and root test registration.
+**Architecture:** a separate `tools/xlayer-integration-identity.mjs` reads the committed manager manifest at the tested head. `tools/check-agent-identity.mjs` dispatches only the exact registered X Layer branch; merge queue introduction remains blocked. The checker validates full fixed-base history, pinned source heads belonging to their canonical branch history, exact allowed worker/task/branch/author pairs, and one-to-one imported commit mappings. Commit author records and messages must match as raw bytes. Git three-way replay uses each original parent as its fixed merge base and must produce the exact imported tree, preserving change location and all blob bytes while allowing normal upstream line offsets. The manager owns the manifest and root test registration.
 
 **Tech stack:** existing Node 24.21.0, npm 11.19.1, Git, Node test runner; no dependencies.
 
@@ -23,10 +23,10 @@ Project: AlphaForge-XLayer. Track: X Layer. Repository: pdbsy/alphaforge-xlayer.
 - [x] Change the expected command in `test/ci-gates.test.mjs` to `contracts/script/check-xlayer-contracts.sh` and observe RED.
 - [x] Update only the contract stage command in `tools/ci/verify-contracts.mjs`; keep host pins, workflow jobs, permissions, stop-on-failure and ABI semantics.
 - [x] Verify the committed Macbeth02 script first executes `check-m3-vault.sh`, then the X Layer validator. Do not copy manager or worker implementation into this branch.
-- [ ] Publish the final worker receipt on the existing PR; report manager integration dependencies separately from actual hosted execution.
+- [x] Publish the reviewed implementation on the existing worker PR; report manager integration dependencies separately from actual hosted execution.
 
 No source-manifest fabrication, generated PASS edit, scanner exception, rule relaxation, deployment or history rewrite is authorized. Self-checks are not independent approval.
 
 ## Validation checkpoint
 
-Implementation source: `46efeeaa6a4b1394432b9e00f38de020a5826377`. The new suite and existing identity/security/CI regression suites passed 86 tests. The root suite passed 596 tests. The only authorized artifact-provenance row adaptation is recorded separately after implementation. See `INTEGRATION-CHECKER-RECEIPT.md` for execution boundaries.
+Reviewed implementation source: `a4a490a82b662be5a4684bbc2da3021dd002013d`. The new suite and existing identity/security/CI regression suites passed 89 tests. The root suite passed 596 tests. Independent Macbeth03 review closed two pre-review patch-comparison defects after rerunning the original counterexamples and controls. The only authorized artifact-provenance row adaptation is recorded separately after implementation. See `INTEGRATION-CHECKER-RECEIPT.md` for execution boundaries.
