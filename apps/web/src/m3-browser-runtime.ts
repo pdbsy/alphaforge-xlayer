@@ -158,6 +158,7 @@ class M3BrowserRuntime implements M3ProductRuntime {
   readonly #writeMode: 'INJECTED_MOCK' | 'LIVE_AUTHORIZED';
   #pendingOperation: PendingOperation | null = null;
   #session: WalletSession | null = null;
+  #sessionEpoch = 0;
   #snapshot: M3ProductChainPresentation;
 
   constructor(options: M3BrowserRuntimeOptions) {
@@ -226,7 +227,8 @@ class M3BrowserRuntime implements M3ProductRuntime {
           }
         },
         submitAction: async (prepared, port) => {
-          const submission = await port.submit(prepared);
+          const epoch = this.#sessionEpoch;
+          const submission = this.#submissionForEpoch(await port.submit(prepared), epoch);
           if (submission.state !== 'SUBMITTED') return submission;
           try {
             if (!this.#reader?.registerSubmission) throw new Error('M3_SUBMISSION_REGISTRATION_UNAVAILABLE');
@@ -238,6 +240,7 @@ class M3BrowserRuntime implements M3ProductRuntime {
               calldata: prepared.data,
               txHash: submission.txHash,
             });
+            if (epoch !== this.#sessionEpoch) return this.#submissionForEpoch(submission, epoch);
             this.#pendingOperation = Object.freeze({
               operationId: prepared.operationId,
               owner: prepared.owner,
@@ -245,6 +248,7 @@ class M3BrowserRuntime implements M3ProductRuntime {
             });
             return submission;
           } catch {
+            if (epoch !== this.#sessionEpoch) return this.#submissionForEpoch(submission, epoch);
             return Object.freeze({
               operationId: prepared.operationId,
               requestedChainId: prepared.chainId,
@@ -371,9 +375,86 @@ class M3BrowserRuntime implements M3ProductRuntime {
   }
 
   #clearSession(): void {
+    this.#sessionEpoch += 1;
     this.#session = null;
     this.#actionReviews = new WeakMap();
     this.#approvalReviews = new WeakMap();
+  }
+
+  #submissionForEpoch(submission: WalletSubmission, epoch: number): WalletSubmission {
+    if (epoch === this.#sessionEpoch || submission.state !== 'SUBMITTED') return submission;
+    return Object.freeze({
+      state: 'SUBMISSION_AMBIGUOUS',
+      operationId: submission.operationId,
+      requestedChainId: submission.chainId,
+      requestedOwner: submission.owner,
+      target: submission.target,
+      txHash: submission.txHash,
+      observedAt: submission.submittedAt,
+      reason: 'SESSION_CHANGED',
+      retryable: false,
+    });
+  }
+
+  async #withActiveSession<T>(
+    run: (context: {
+      readonly session: WalletSession;
+      readonly epoch: number;
+      readonly assertCurrent: () => void;
+    }) => Promise<T>,
+  ): Promise<T> {
+    const session = this.#session;
+    if (!session) throw new Error('WALLET_CONNECTION_REQUIRED');
+    const epoch = this.#sessionEpoch;
+    const assertCurrent = () => {
+      if (epoch !== this.#sessionEpoch || session !== this.#session)
+        throw new WalletFailure('WALLET_SESSION_CHANGED');
+    };
+    const invalidate = () => {
+      if (epoch !== this.#sessionEpoch) return;
+      this.#clearSession();
+      this.#publish({
+        ...this.#snapshot,
+        wallet: { status: 'DISCONNECTED', errorCode: 'WALLET_SESSION_CHANGED' },
+        network: { status: 'UNAVAILABLE' },
+        onchain: { ...this.#snapshot.onchain, owner: 'UNKNOWN', writeMode: 'DISABLED' },
+      });
+    };
+    const registered: ('accountsChanged' | 'chainChanged' | 'disconnect')[] = [];
+    try {
+      for (const event of ['accountsChanged', 'chainChanged', 'disconnect'] as const) {
+        try {
+          this.#provider!.on(event, invalidate);
+          registered.push(event);
+        } catch {
+          throw new WalletFailure('WALLET_REQUEST_FAILED');
+        }
+      }
+      assertCurrent();
+      return await run({ session, epoch, assertCurrent });
+    } catch (error) {
+      // Late failures must not invalidate a newer connection or hide session drift.
+      assertCurrent();
+      if (
+        error instanceof WalletFailure &&
+        [
+          'WALLET_SESSION_CHANGED',
+          'WALLET_WRONG_CHAIN',
+          'WALLET_ACCOUNT_CHANGED',
+          'WALLET_DISCONNECTED',
+        ].includes(error.code)
+      )
+        invalidate();
+      throw error;
+    } finally {
+      for (const event of registered) {
+        try {
+          this.#provider!.removeListener(event, invalidate);
+        } catch {
+          // Keep the original result when provider cleanup fails.
+        }
+      }
+    }
   }
 
   #sessionReadRevision = 0;
@@ -612,39 +693,45 @@ class M3BrowserRuntime implements M3ProductRuntime {
   async reviewDepositApprovals(
     request: Extract<M3ProductActionRequest, { readonly kind: 'deposit' }>,
   ): Promise<M3DepositApprovalReview> {
-    const session = this.#session;
-    if (!session || !this.#deployment) throw new Error('WALLET_CONNECTION_REQUIRED');
-    const snapshot = await this.#readCanonicalSnapshot(session.account);
-    const authorization = await this.#authorization(session, request.usdcBaseUnits);
-    this.#publish(
-      this.#presentation(session, Object.freeze({ source: 'CANONICAL', value: snapshot }), authorization),
-    );
-    const requirements: M3DepositApprovalReview['requirements'] = [
-      Object.freeze({
-        kind: 'af-usdc' as const,
-        token: authorization.usdcApproval.token,
-        spender: authorization.usdcApproval.spender,
-        requiredRaw: authorization.usdcApproval.requiredRaw,
-        allowance: authorization.usdcApproval.allowance,
-        sufficient: authorization.usdcApproval.sufficient,
-      }),
-      Object.freeze({
-        kind: 'pass' as const,
-        token: authorization.passApproval.token,
-        spender: authorization.passApproval.spender,
-        requiredRaw: authorization.passApproval.requiredRaw,
-        allowance: authorization.passApproval.allowance,
-        sufficient: authorization.passApproval.sufficient,
-      }),
-    ];
-    const review: M3DepositApprovalReview = Object.freeze({
-      owner: session.account,
-      vaultAddress: this.#deployment.vaultAddress,
-      request,
-      requirements: Object.freeze(requirements),
+    const deployment = this.#deployment;
+    if (!this.#session || !deployment) throw new Error('WALLET_CONNECTION_REQUIRED');
+    return this.#withActiveSession(async ({ session, assertCurrent }) => {
+      const snapshot = await this.#readCanonicalSnapshot(session.account);
+      assertCurrent();
+      const authorization = await this.#authorization(session, request.usdcBaseUnits);
+      assertCurrent();
+      await this.#verifyCurrentSession(session, assertCurrent);
+      this.#publish(
+        this.#presentation(session, Object.freeze({ source: 'CANONICAL', value: snapshot }), authorization),
+      );
+      const requirements: M3DepositApprovalReview['requirements'] = [
+        Object.freeze({
+          kind: 'af-usdc' as const,
+          token: authorization.usdcApproval.token,
+          spender: authorization.usdcApproval.spender,
+          requiredRaw: authorization.usdcApproval.requiredRaw,
+          allowance: authorization.usdcApproval.allowance,
+          sufficient: authorization.usdcApproval.sufficient,
+        }),
+        Object.freeze({
+          kind: 'pass' as const,
+          token: authorization.passApproval.token,
+          spender: authorization.passApproval.spender,
+          requiredRaw: authorization.passApproval.requiredRaw,
+          allowance: authorization.passApproval.allowance,
+          sufficient: authorization.passApproval.sufficient,
+        }),
+      ];
+      const review: M3DepositApprovalReview = Object.freeze({
+        owner: session.account,
+        vaultAddress: deployment.vaultAddress,
+        request,
+        requirements: Object.freeze(requirements),
+      });
+      assertCurrent();
+      this.#approvalReviews.set(review, authorization);
+      return review;
     });
-    this.#approvalReviews.set(review, authorization);
-    return review;
   }
 
   async confirmDepositApproval(
@@ -654,80 +741,95 @@ class M3BrowserRuntime implements M3ProductRuntime {
     const authorization = this.#approvalReviews.get(review);
     if (!authorization || !this.#provider || !this.#deployment)
       throw new Error('INVALID_DEPOSIT_APPROVAL_REVIEW');
-    this.#approvalReviews.delete(review);
-    const requirement = kind === 'af-usdc' ? authorization.usdcApproval : authorization.passApproval;
-    if (requirement.sufficient) throw new Error('DEPOSIT_APPROVAL_ALREADY_SUFFICIENT');
-    const wallet = new Eip1193Wallet(this.#provider, {
-      chainId: this.#deployment.chainId,
-      target: requirement.token,
-      actionAuthority: requirement.factory.authority,
-      now: this.#now,
+    return this.#withActiveSession(async ({ epoch, assertCurrent }) => {
+      this.#approvalReviews.delete(review);
+      const requirement = kind === 'af-usdc' ? authorization.usdcApproval : authorization.passApproval;
+      if (requirement.sufficient) throw new Error('DEPOSIT_APPROVAL_ALREADY_SUFFICIENT');
+      const wallet = new Eip1193Wallet(this.#provider!, {
+        chainId: this.#deployment!.chainId,
+        target: requirement.token,
+        actionAuthority: requirement.factory.authority,
+        now: this.#now,
+      });
+      const prepared = requirement.factory.prepare(
+        { operationId: operationId(`approve-${kind}`) },
+        review.owner,
+      );
+      assertCurrent();
+      this.#publish({ ...this.#snapshot, transaction: { status: 'WALLET_PENDING' } });
+      const submission = await wallet.submit(prepared, assertCurrent);
+      if (epoch !== this.#sessionEpoch) return this.#submissionForEpoch(submission, epoch);
+      assertCurrent();
+      this.#publish({
+        ...this.#snapshot,
+        transaction:
+          submission.state === 'SUBMITTED'
+            ? { status: 'SUBMITTED', txHash: submission.txHash }
+            : {
+                status: 'SUBMISSION_AMBIGUOUS',
+                ...(submission.txHash ? { txHash: submission.txHash } : {}),
+                errorCode: submission.reason,
+              },
+      });
+      return submission;
     });
-    const prepared = requirement.factory.prepare(
-      { operationId: operationId(`approve-${kind}`) },
-      review.owner,
-    );
-    this.#publish({ ...this.#snapshot, transaction: { status: 'WALLET_PENDING' } });
-    const submission = await wallet.submit(prepared);
-    this.#publish({
-      ...this.#snapshot,
-      transaction:
-        submission.state === 'SUBMITTED'
-          ? { status: 'SUBMITTED', txHash: submission.txHash }
-          : {
-              status: 'SUBMISSION_AMBIGUOUS',
-              ...(submission.txHash ? { txHash: submission.txHash } : {}),
-              errorCode: submission.reason,
-            },
-    });
-    return submission;
   }
 
   async reviewAction(request: M3ProductActionRequest): Promise<M3ProductActionReview> {
     if (!this.#flow || !this.#session) throw new Error('M3_DEPLOYMENT_NOT_CONFIGURED');
-    if (request.kind === 'deposit') {
-      const snapshot = await this.#readCanonicalSnapshot(this.#session.account);
-      const authorization = await this.#authorization(this.#session, request.usdcBaseUnits);
-      this.#publish(
-        this.#presentation(
-          this.#session,
-          Object.freeze({ source: 'CANONICAL', value: snapshot }),
-          authorization,
-        ),
-      );
-      if (!authorization.usdcApproval.sufficient || !authorization.passApproval.sufficient)
-        throw new Error('DEPOSIT_APPROVAL_REQUIRED');
-    }
-    this.#publish({ ...this.#snapshot, transaction: { status: 'WALLET_APPROVAL_REQUIRED' } });
-    const internal = await this.#flow.review(request);
-    const review = Object.freeze({
-      operationId: internal.operationId,
-      owner: internal.owner,
-      request,
+    return this.#withActiveSession(async ({ session, assertCurrent }) => {
+      if (request.kind === 'deposit') {
+        const snapshot = await this.#readCanonicalSnapshot(session.account);
+        assertCurrent();
+        const authorization = await this.#authorization(session, request.usdcBaseUnits);
+        assertCurrent();
+        await this.#verifyCurrentSession(session, assertCurrent);
+        this.#publish(
+          this.#presentation(session, Object.freeze({ source: 'CANONICAL', value: snapshot }), authorization),
+        );
+        if (!authorization.usdcApproval.sufficient || !authorization.passApproval.sufficient)
+          throw new Error('DEPOSIT_APPROVAL_REQUIRED');
+      }
+      assertCurrent();
+      this.#publish({ ...this.#snapshot, transaction: { status: 'WALLET_APPROVAL_REQUIRED' } });
+      const internal = await this.#flow!.review(request, assertCurrent);
+      assertCurrent();
+      await this.#verifyCurrentSession(session, assertCurrent);
+      const review = Object.freeze({
+        operationId: internal.operationId,
+        owner: internal.owner,
+        request,
+      });
+      assertCurrent();
+      this.#actionReviews.set(review, internal);
+      return review;
     });
-    this.#actionReviews.set(review, internal);
-    return review;
   }
 
   async confirmAction(review: M3ProductActionReview): Promise<WalletSubmission> {
     if (!this.#flow) throw new Error('M3_DEPLOYMENT_NOT_CONFIGURED');
     const internal = this.#actionReviews.get(review);
     if (!internal) throw new Error('INVALID_PRODUCT_REVIEW');
-    this.#actionReviews.delete(review);
-    this.#publish({ ...this.#snapshot, transaction: { status: 'WALLET_PENDING' } });
-    const submission = await this.#flow.confirm(internal);
-    this.#publish({
-      ...this.#snapshot,
-      transaction:
-        submission.state === 'SUBMITTED'
-          ? { status: 'SUBMITTED', txHash: submission.txHash }
-          : {
-              status: 'SUBMISSION_AMBIGUOUS',
-              ...(submission.txHash ? { txHash: submission.txHash } : {}),
-              errorCode: submission.reason,
-            },
+    return this.#withActiveSession(async ({ epoch, assertCurrent }) => {
+      this.#actionReviews.delete(review);
+      assertCurrent();
+      this.#publish({ ...this.#snapshot, transaction: { status: 'WALLET_PENDING' } });
+      const submission = await this.#flow!.confirm(internal, assertCurrent);
+      if (epoch !== this.#sessionEpoch) return this.#submissionForEpoch(submission, epoch);
+      assertCurrent();
+      this.#publish({
+        ...this.#snapshot,
+        transaction:
+          submission.state === 'SUBMITTED'
+            ? { status: 'SUBMITTED', txHash: submission.txHash }
+            : {
+                status: 'SUBMISSION_AMBIGUOUS',
+                ...(submission.txHash ? { txHash: submission.txHash } : {}),
+                errorCode: submission.reason,
+              },
+      });
+      return submission;
     });
-    return submission;
   }
 
   subscribe(listener: () => void): () => void {
