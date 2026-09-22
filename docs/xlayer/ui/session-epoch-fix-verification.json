@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "project": "AlphaForge-XLayer",
+  "track": "X Layer",
+  "repository": "pdbsy/alphaforge-xlayer",
+  "manager": "XLayerPM",
+  "agent": "Macbeth04",
+  "taskId": "AF-XLAYER-04-UI",
+  "correction": "AF-XLAYER-04-UI-FIX",
+  "source": {
+    "commit": "fe8a7ac967cb057112483666174d3efa537ebb2f",
+    "tree": "84675cf4d573c8ee8a1d12ac7e4e39b277e843ff",
+    "previous": "37e6045de7ca87f9e06cc45237d6c495d3442f7f"
+  },
+  "qualifiedOverlay": {
+    "commit": "728c3df217f586fb7f7d86f595406dc46372ac1a",
+    "path": "packages/xlayer-chain/src/network.ts",
+    "blob": "27266cf5b188cf22eec22c410573d253275194d4",
+    "sha256": "af3ec6f9edce2a1cd0764a6eadb85d6af2d940ba98aa6b05115ed532b1fcd683",
+    "includedInWorkerBranch": false
+  },
+  "result": "QUALIFIED_LOCAL_ENGINEERING_PASS",
+  "tests": {
+    "passed": 649,
+    "failed": 0,
+    "skipped": 0,
+    "targetedPassed": 85,
+    "newRegressionRedFailures": 17
+  },
+  "publicFinding": "https://github.com/pdbsy/alphaforge-xlayer/pull/4#issuecomment-5778401685",
+  "publicRepro": {
+    "oldPass": 1,
+    "oldFail": 3,
+    "correctedPass": 4,
+    "expectationsChangedToRejection": true
+  },
+  "hostedCiAtFixSource": "NOT_CLAIMED",
+  "independentFollowup": "PENDING",
+  "combinedCandidateAcceptance": "PENDING",
+  "integratedSnapshotS": "NOT_RUN",
+  "deployment": "NOT_DEPLOYED",
+  "logs": [
+    {
+      "name": "af-xlayer04-03-original-red.log",
+      "sha256": "6e1989da8a54727e52ec13f242c59a419139f6806e951c0c4af03b5b6beb1ee3",
+      "scope": "local-output-not-hosted-artifact"
+    },
+    {
+      "name": "af-xlayer04-03-regression-green.log",
+      "sha256": "cb3a1841d48ba98220f41b66a56cfb430e1cdd398d008fe7740a4e50178d8852",
+      "scope": "local-output-not-hosted-artifact"
+    },
+    {
+      "name": "af-xlayer04-epoch-all-red.log",
+      "sha256": "8021e543ebe04f08b5e9c3c273dc495370b0cbaa5515fcd15c765225f52da494",
+      "scope": "local-output-not-hosted-artifact"
+    },
+    {
+      "name": "af-xlayer04-epoch-source-targeted.log",
+      "sha256": "f104c623b5ff5d07a726e5cb517659acd1f6d222e7bc6f9bf7cae237853eba28",
+      "scope": "local-output-not-hosted-artifact"
+    },
+    {
+      "name": "af-xlayer04-epoch-source-full.log",
+      "sha256": "3fde00452aaf9a6be16691e346332984a10b6f3113425cb375d4eea4527796c2",
+      "scope": "local-output-not-hosted-artifact"
+    }
+  ]
+}
