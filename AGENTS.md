@@ -1,3 +1,13 @@
+# Current X Layer project authority (2026-09-22)
+
+This checkout is the new public `pdbsy/alphaforge-xlayer` repository. The current user assigned XLayerPM the same manager/integrator duties as Macbeth01 and explicitly authorized task assignment to Macbeth02–06. Read `docs/xlayer/MIGRATION.md` and `docs/xlayer/ASSIGNMENTS.md` before work. They supersede conflicting historical repository/task defaults below for this migration only. XLayerPM is a separate task identity and must not fabricate another worker's ACK or reuse that worker's private workspace.
+
+Use independent clones and task branches. Publish work as Draft PRs in this repository, preserve original history/source refs and all security checks. Keep local/mock; no signing, broadcasting, deployment, mainnet or real funds. No merge/protection bypass is authorized. Existing source repository work and historical evidence remain untouched.
+
+---
+
+## Inherited source instructions (historical context; current authority above takes precedence)
+
 # Development environment and task authority
 
 Read docs/DEVELOPMENT-TOOLCHAIN.md and docs/DEVELOPMENT-TOOLCHAIN-STATUS.md before modifying code. Verify the actual repository, branch, HEAD, tool versions and current user assignment. Check package.json before assuming a proposed command exists.
