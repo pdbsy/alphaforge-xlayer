@@ -77,7 +77,7 @@ for (const [scenario, chainId, target, owner, expectedStatus] of [
           owner: OWNER,
           state: 'AWAITING_SIGNATURE',
         }),
-        { state: 'SUBMITTED', txHash: TX, submittedAt: '2026-09-22T00:00:00.000Z' },
+        { state: 'SUBMITTED', txHash: `0x${'66'.repeat(32)}`, submittedAt: '2026-09-22T00:00:00.000Z' },
       ),
     );
     runtime.store.saveOperation(
