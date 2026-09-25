@@ -704,7 +704,10 @@ AF.strategy=id=>AF.strategies.find(s=>s.id===id);
  const money=AF.marketData.fmt,copy=x=>structuredClone(x),known=id=>!!AF.strategy(id);
  const safe=n=>Number.isSafeInteger(n)&&n>=0&&n<=Number.MAX_SAFE_INTEGER;
  const uid=()=>globalThis.crypto?.randomUUID?.()||'demo-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2);
- const fresh=()=>({version:1,revision:0,cash:1000000,initialCapital:1000000,realized:0,fees:0,positions:Object.fromEntries(AF.strategies.map(s=>[s.id,{qty:0,cost:0}])),allocations:Object.fromEntries(AF.strategies.map(s=>[s.id,0])),fundingHistory:[],orders:[],executed:[]});
+ const USDC_SCALE=1000000;
+ const emptyAllocations=()=>Object.fromEntries(AF.strategies.map(s=>[s.id,0]));
+ const freshFunding=()=>({asset:'USDC',cash:10000*USDC_SCALE,initialCapital:10000*USDC_SCALE,allocations:emptyAllocations(),history:[]});
+ const fresh=()=>({funding:freshFunding(),version:1,revision:0,cash:1000000,initialCapital:1000000,realized:0,fees:0,positions:Object.fromEntries(AF.strategies.map(s=>[s.id,{qty:0,cost:0}])),allocations:Object.fromEntries(AF.strategies.map(s=>[s.id,0])),fundingHistory:[],orders:[],executed:[]});
  function validate(s){
   if(!s||s.version!==1||!safe(s.revision)||!safe(s.cash)||s.cash>MAX||!safe(s.initialCapital)||!Number.isSafeInteger(s.realized)||!safe(s.fees)||!s.positions||!Array.isArray(s.orders)||!Array.isArray(s.executed)||s.orders.length>300||s.executed.length>300)throw Error('Demo trading records are corrupted.');
   let cost=0;
@@ -713,15 +716,17 @@ AF.strategy=id=>AF.strategies.find(s=>s.id===id);
   if(s.allocations!==undefined){if(!s.allocations||Array.isArray(s.allocations)||Object.keys(s.allocations).some(id=>!known(id)))throw Error('Invalid strategy funding record.');for(const x of AF.strategies){const n=s.allocations[x.id];if(!safe(n)||n>AF.store.quota||(n>0&&s.positions[x.id].qty<1))throw Error('Invalid strategy funding record.');allocated+=n;}}
   if(s.fundingHistory!==undefined){if(!Array.isArray(s.fundingHistory)||s.fundingHistory.length>300)throw Error('Invalid funding history.');for(const f of s.fundingHistory)if(!f||!known(f.strategy)||!['deposit','withdraw'].includes(f.kind)||!safe(f.amount)||f.amount===0||typeof f.id!=='string'||!s.executed.includes(f.id)||typeof f.at!=='string'||!Number.isFinite(Date.parse(f.at)))throw Error('Invalid funding history.');}
   if(s.cash+cost+allocated!==s.initialCapital+s.realized)throw Error('The trading ledger does not balance.');
+  if(s.funding!==undefined){const f=s.funding;if(!f||f.asset!=='USDC'||!safe(f.cash)||!safe(f.initialCapital)||!f.allocations||Array.isArray(f.allocations)||Object.keys(f.allocations).some(id=>!known(id))||!Array.isArray(f.history)||f.history.length>300)throw Error('Invalid USDC funding record.');let total=0;for(const x of AF.strategies){const n=f.allocations[x.id];if(!safe(n)||n>s.positions[x.id].qty*USDC_SCALE)throw Error('USDC funding exceeds owned Pass capacity.');total+=n;}if(f.cash+total!==f.initialCapital)throw Error('The USDC ledger does not balance.');for(const h of f.history)if(!h||!known(h.strategy)||!['deposit','withdraw'].includes(h.kind)||!safe(h.amount)||h.amount===0||typeof h.id!=='string'||!s.executed.includes(h.id)||typeof h.at!=='string'||!Number.isFinite(Date.parse(h.at)))throw Error('Invalid USDC funding history.');}
   if(Object.keys(s.positions).some(id=>!known(id))||new Set(s.executed).size!==s.executed.length)throw Error('Trading records do not match.');
   for(const id of s.executed)if(typeof id!=='string'||id.length>150)throw Error('Invalid trade ID.');
   for(const o of s.orders){if(!o||!known(o.strategy)||!['buy','sell'].includes(o.side)||typeof o.id!=='string'||!s.executed.includes(o.id)||typeof o.at!=='string'||!Number.isFinite(Date.parse(o.at))||!safe(o.qty)||o.qty<1||o.qty>MAX_QTY||!Number.isSafeInteger(o.pnl)||o.scope!=='LOCAL_SIMULATION'||o.status!=='recorded')throw Error('Invalid fill record.');for(const k of ['price','gross','impact','impactBps','fee','total','bound'])if(!safe(o[k]))throw Error('Invalid fill amount.');}
   return s;
  }
+ function upgradeFunding(input){const s=validate(input);if(s.funding!==undefined)return s;const next=copy(s),refunded=Object.values(s.allocations||{}).reduce((sum,n)=>sum+n,0);if(refunded){next.legacyEthFunding={refunded,allocations:copy(s.allocations),history:copy(s.fundingHistory||[])};next.cash+=refunded;next.allocations=emptyAllocations();}next.funding=freshFunding();return validate(next);}
  let state=fresh(),available=true,recovery='';
- try{const raw=localStorage.getItem(KEY);if(raw)state=validate(JSON.parse(raw));}catch(e){if(e.name==='SecurityError')available=false;else recovery='Pass trading records could not be read. A fresh demo was restored; the unreadable data was not used for any trade.';}
+ try{const raw=localStorage.getItem(KEY);if(raw)state=upgradeFunding(JSON.parse(raw));}catch(e){if(e.name==='SecurityError')available=false;else recovery='Pass trading records could not be read. A fresh demo was restored; the unreadable data was not used for any trade.';}
  function persist(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch{available=false;}}
- function sync(){try{const raw=localStorage.getItem(KEY);if(raw){const saved=validate(JSON.parse(raw));if(saved.revision>state.revision)state=saved;}}catch{}}
+ function sync(){try{const raw=localStorage.getItem(KEY);if(raw){const saved=upgradeFunding(JSON.parse(raw));if(saved.revision>state.revision)state=saved;}}catch{}}
  function parseQty(value){const t=String(value).trim();if(!/^[1-9]\d{0,6}$/.test(t)||Number(t)>MAX_QTY)throw Error('Enter a whole number of Passes from 1 to 1,000,000.');return Number(t);}
  function quote({strategy,side,qty,slippage=50}){
   if(!known(strategy)||!['buy','sell'].includes(side))throw Error('Invalid trading target.');
@@ -736,7 +741,7 @@ AF.strategy=id=>AF.strategies.find(s=>s.id===id);
   if(total<=0)throw Error('The amount is too small to cover the simulated fee.');
   return {strategy,side,qty,slippage,price,gross,impact,impactBps,fee,total,bound:side==='buy'?Math.ceil(total*(1+slippage/10000)):Math.floor(total*(1-slippage/10000))};
  }
- function check(q,s=state){if(q.side==='sell'&&(s.allocations?.[q.strategy]||0)>0&&s.positions[q.strategy].qty-q.qty<1)throw Error('Withdraw strategy funds before selling the last access Pass.');if(q.side==='buy'&&q.bound>s.cash)throw Error('Insufficient Pass trading balance, including the slippage reserve.');if(q.side==='sell'&&q.qty>s.positions[q.strategy].qty)throw Error('Not enough tradable Passes. Trial Passes cannot be sold on the market.');if(q.side==='buy'&&s.positions[q.strategy].qty+q.qty>MAX_QTY)throw Error('This exceeds the demo position limit.');}
+ function check(q,s=state){if(q.side==='sell'&&(s.funding?.allocations[q.strategy]||0)>0&&(s.funding?.allocations[q.strategy]||0)>(s.positions[q.strategy].qty-q.qty)*USDC_SCALE)throw Error('These Pass are frozen in a strategy. Withdraw the corresponding USDC first.');if(q.side==='buy'&&q.bound>s.cash)throw Error('Insufficient Pass trading balance, including the slippage reserve.');if(q.side==='sell'&&q.qty>s.positions[q.strategy].qty)throw Error('Not enough tradable Passes. Trial Passes cannot be sold on the market.');if(q.side==='buy'&&s.positions[q.strategy].qty+q.qty>MAX_QTY)throw Error('This exceeds the demo position limit.');}
  function review(args,now=Date.now()){sync();const q=quote(args);check(q);return {...q,id:uid(),expectedRevision:state.revision,createdAt:now,expiresAt:now+30000};}
  function execute(q,now=Date.now()){
   sync();if(!q||typeof q.id!=='string')throw Error('Review the order first.');
@@ -751,16 +756,16 @@ AF.strategy=id=>AF.strategies.find(s=>s.id===id);
   else{const cost=q.qty===pos.qty?pos.cost:Math.floor(pos.cost*q.qty/pos.qty);pos.qty-=q.qty;pos.cost-=cost;s.cash+=q.total;pnl=q.total-cost;s.realized+=pnl;}
   s.fees+=q.fee;s.executed.push(q.id);s.orders.unshift({...current,id:q.id,at:new Date(now).toISOString(),pnl,scope:'LOCAL_SIMULATION',status:'recorded'});s.revision++;validate(s);state=s;persist();return copy(s.orders[0]);
  }
- // Strategy funding shares wallet cash atomically, while preserving Pass quantities.
- // Keep the existing trial strategy limit; this is not the on-chain AF-USDC rule.
+ // Mock USDC and ETH are separate assets. One Pass locks one USDC of principal.
+ // USDC micro-units also express locked Pass fractions, matching the Vault scale.
  const fundingReviews=new WeakSet();
- function syncFunding(){try{const raw=localStorage.getItem(KEY);if(raw){const saved=validate(JSON.parse(raw));if(saved.revision>state.revision)state=saved;else if(saved.revision<state.revision||JSON.stringify(saved)!==JSON.stringify(state))throw Error('Changed records');}else if(state.revision>0)throw Error('Missing records');}catch{throw Error('Wallet records are unreadable or changed. Reload before allocating funds.');}}
- function fundingSnapshot(strategy){if(!known(strategy))throw Error('Strategy not found.');return {cash:state.cash,allocated:state.allocations?.[strategy]||0,capacity:AF.store.quota,passQty:state.positions[strategy].qty};}
+ function syncFunding(){try{const raw=localStorage.getItem(KEY);if(raw){const saved=upgradeFunding(JSON.parse(raw));if(saved.revision>state.revision)state=saved;else if(saved.revision<state.revision||JSON.stringify(saved)!==JSON.stringify(state))throw Error('Changed records');}else if(state.revision>0)throw Error('Missing records');}catch{throw Error('Wallet records are unreadable or changed. Reload before allocating funds.');}}
+ function fundingSnapshot(strategy){if(!known(strategy))throw Error('Strategy not found.');const f=state.funding,allocated=f.allocations[strategy],passQty=state.positions[strategy].qty,available=passQty*USDC_SCALE-allocated;return {cash:f.cash,allocated,passQty,frozen:allocated,available,maxDeposit:Math.min(f.cash,available)};}
  function checkFunding(q){
-  if(!q||!known(q.strategy)||!['deposit','withdraw'].includes(q.kind)||!safe(q.amount)||q.amount===0||q.amount>MAX)throw Error('Enter a valid positive ETH amount.');
+  if(!q||!known(q.strategy)||!['deposit','withdraw'].includes(q.kind)||!safe(q.amount)||q.amount===0)throw Error('Enter a valid positive USDC amount.');
   const f=fundingSnapshot(q.strategy);
-  if(q.kind==='deposit'){if(f.passQty<1)throw Error('Hold this strategy Pass before allocating funds.');if(q.amount>f.cash)throw Error('Insufficient available wallet ETH.');if(f.allocated+q.amount>f.capacity)throw Error('This exceeds the demo strategy allocation limit.');}
-  else if(q.amount>f.allocated)throw Error('Withdrawal exceeds the ETH allocated to this strategy.');
+  if(q.kind==='deposit'){if(q.amount>f.cash)throw Error('Insufficient available wallet USDC.');if(q.amount>f.available)throw Error('Insufficient available Pass capacity. 1 Pass enables 1 USDC.');}
+  else if(q.amount>f.allocated)throw Error('Withdrawal exceeds the USDC allocated to this strategy.');
  }
  function reviewFunding(args,now=Date.now()){syncFunding();checkFunding(args);const q=Object.freeze({strategy:args.strategy,kind:args.kind,amount:args.amount,id:uid(),expectedRevision:state.revision,createdAt:now,expiresAt:now+30000});fundingReviews.add(q);return q;}
  function executeFunding(q,now=Date.now()){
@@ -768,8 +773,8 @@ AF.strategy=id=>AF.strategies.find(s=>s.id===id);
   if(q.expectedRevision!==state.revision)throw Error('Wallet records have changed. Review again.');
   if(!Number.isFinite(q.createdAt)||q.createdAt>now||now>=q.expiresAt)throw Error('The funding review has expired.');
   checkFunding(q);if(state.executed.length>=300)throw Error('The local record limit has been reached.');
-  const s=copy(state);s.allocations??=Object.fromEntries(AF.strategies.map(x=>[x.id,0]));s.fundingHistory??=[];
-  const delta=q.kind==='deposit'?q.amount:-q.amount;s.cash-=delta;s.allocations[q.strategy]+=delta;s.executed.push(q.id);s.fundingHistory.unshift({id:q.id,strategy:q.strategy,kind:q.kind,amount:q.amount,at:new Date(now).toISOString()});s.revision++;validate(s);state=s;persist();return fundingSnapshot(q.strategy);
+  const s=copy(state),delta=q.kind==='deposit'?q.amount:-q.amount;s.funding.cash-=delta;s.funding.allocations[q.strategy]+=delta;s.executed.push(q.id);s.funding.history.unshift({id:q.id,strategy:q.strategy,kind:q.kind,amount:q.amount,at:new Date(now).toISOString()});s.revision++;validate(s);
+  try{localStorage.setItem(KEY,JSON.stringify(s));}catch{throw Error('USDC allocation could not be saved. No funds or Pass were changed.');}state=s;return fundingSnapshot(q.strategy);
  }
  function maxBuy(id,slippage=50){let lo=0,hi=Math.min(MAX_QTY,Math.floor(state.cash/AF.marketData.metrics(id).price));while(lo<hi){const m=Math.ceil((lo+hi)/2);try{const q=quote({strategy:id,side:'buy',qty:m,slippage});check(q);lo=m;}catch{hi=m-1;}}return lo;}
  function totals(){const value=AF.strategies.reduce((n,s)=>n+state.positions[s.id].qty*AF.marketData.metrics(s.id).price,0);const allocated=Object.values(state.allocations||{}).reduce((sum,n)=>sum+n,0);return {value,allocated,equity:state.cash+value+allocated,pnl:state.cash+value+allocated-state.initialCapital};}

@@ -1,7 +1,7 @@
 import { ROBINHOOD_CHAIN_TESTNET } from '../../../packages/robinhood-chain/src/network.ts';
 import { formatUnits } from '../../../packages/domain/src/money.ts';
 import type { Address } from '../../../packages/chain-adapter/src/types.ts';
-import type { MockWalletSnapshot } from './mock-wallet.ts';
+import { MOCK_ETH_USDC_RATE, type MockWalletSnapshot } from './mock-wallet.ts';
 import type { WalletSubmission } from './chain-wallet.ts';
 import type { ProductOperationEvidence } from './strategy-adapter.ts';
 
@@ -608,13 +608,13 @@ function renderMockWalletAccount(mock: MockWalletSnapshot): string {
   const holdings = mock.holdings
     ?.map(
       (holding) =>
-        `<details class="wallet-holding" name="wallet-holdings" data-wallet-position="${escapeHtml(holding.id)}"><summary class="wallet-pass-row sketch-box"><span class="wallet-pass-icon" aria-hidden="true">α</span><div><h3>${escapeHtml(holding.name)}</h3><span class="small muted">Mock Pass · Use Pass</span></div><div class="wallet-pass-quantity"><strong>${escapeHtml(holding.quantity)}</strong> <span>Pass</span><small>Allocated ${escapeHtml(holding.allocatedEth ?? '0.00')} ETH</small></div></summary><div data-wallet-funding-slot></div></details>`,
+        `<details class="wallet-holding" name="wallet-holdings" data-wallet-position="${escapeHtml(holding.id)}"><summary class="wallet-pass-row sketch-box"><span class="wallet-pass-icon" aria-hidden="true">α</span><div><h3>${escapeHtml(holding.name)}</h3><span class="small muted">Mock Pass · Use Pass</span></div><div class="wallet-pass-quantity"><strong>${escapeHtml(holding.quantity)}</strong> <span>Pass</span><small>Frozen (in use) ${escapeHtml(holding.frozenPass ?? '—')} · Available ${escapeHtml(holding.availablePass ?? '—')}</small><small>Allocated ${escapeHtml(holding.allocatedUsdc ?? '—')} USDC</small></div></summary><div data-wallet-funding-slot></div></details>`,
     )
     .join('');
   return `<section class="wrap wallet-account" data-wallet-account aria-label="Wallet account">
     <header class="wallet-account-header"><div><span class="section-label">ALPHAFORGE DEMO</span><h1>My Account</h1></div><button class="primary-btn wallet-connect" data-chain-connect title="${escapeHtml(mock.address)}"><span class="wallet-status-dot connected" aria-hidden="true"></span>${escapeHtml(mock.address.slice(0, 6))}…${escapeHtml(mock.address.slice(-4))}</button></header>
     <div class="wallet-network"><span>Mock wallet · Simulated balances</span><span class="wallet-connected">Connected</span></div>
-    <article class="sketch-box wallet-eth"><span class="section-label">ETH balance</span><div class="wallet-amount"><strong>${escapeHtml(mock.ethBalance ?? '—')}</strong><span>ETH</span></div><p class="small muted">${mock.ethBalance === undefined ? 'Balance unavailable' : 'Available to allocate'}</p></article>
+    <div class="wallet-assets"><article class="sketch-box wallet-eth"><span class="section-label">ETH balance</span><div class="wallet-amount"><strong>${escapeHtml(mock.ethBalance ?? '—')}</strong><span>ETH</span></div><p class="small muted">≈ ${escapeHtml(mock.ethValueUsdc ?? '—')} USDC<br>1 ETH = ${MOCK_ETH_USDC_RATE} USDC · Mock rate</p></article><article class="sketch-box wallet-eth wallet-usdc"><span class="section-label">USDC balance</span><div class="wallet-amount"><strong>${escapeHtml(mock.usdcBalance ?? '—')}</strong><span>USDC</span></div><p class="small muted">Available to allocate</p></article></div>
     <section class="wallet-passes" aria-label="Pass holdings"><header><h2>Pass holdings</h2><span class="small muted">Strategy access</span></header>${holdings || `<div class="wallet-empty sketch-box"><span class="wallet-pass-icon" aria-hidden="true">α</span><h3>${mock.holdings ? 'No Passes yet' : 'Pass balance unavailable'}</h3><p>${mock.holdings ? 'Explore the market to try a demo trade.' : 'Demo trading records could not be read.'}</p></div>`}</section>
   </section>`;
 }

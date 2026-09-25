@@ -1,7 +1,7 @@
 import { installCandleInspection, type CandleChartHost } from './kline-hover.ts';
 import './kline-hover.css';
 import './wallet-account.css';
-import { createMockWalletSession } from './mock-wallet.ts';
+import { createMockWalletSession, formatMockUsdc } from './mock-wallet.ts';
 import { ProductAdapter, type ProductVault, type StrategySummary } from './product-adapter.ts';
 import type { CommandFields, CommandReview, CommandType } from './product-client.ts';
 import { createM3BrowserRuntime, type M3BrowserDeploymentConfig } from './m3-browser-runtime.ts';
@@ -34,7 +34,14 @@ interface Prototype extends CandleChartHost {
   strategies: { id: string; name: string }[];
   exchange: {
     read: () => unknown;
-    fundingSnapshot: (id: string) => { cash: number; allocated: number; capacity: number; passQty: number };
+    fundingSnapshot: (id: string) => {
+      cash: number;
+      allocated: number;
+      passQty: number;
+      frozen: number;
+      available: number;
+      maxDeposit: number;
+    };
     reviewFunding: (request: {
       strategy: string;
       kind: 'deposit' | 'withdraw';
@@ -543,7 +550,7 @@ document.addEventListener('click', (event) => {
         AF.app.closeDialog();
         render();
         AF.app.openDialog(
-          `<span class="section-label">MOCK STRATEGY ALLOCATION</span><h2>${reviewed.kind === 'deposit' ? 'Funds allocated.' : 'Funds returned to your wallet.'}</h2><p>${esc(formatUnits(String(reviewed.amount), 2))} ETH · Pass holdings unchanged.</p><p class="small muted">Local simulation. No strategy execution or on-chain transaction.</p><button class="primary-btn" data-close>Done</button>`,
+          `<span class="section-label">MOCK STRATEGY ALLOCATION</span><h2>${reviewed.kind === 'deposit' ? 'Funds allocated.' : 'Funds returned to your wallet.'}</h2><p>${esc(formatMockUsdc(reviewed.amount))} USDC · ${reviewed.kind === 'deposit' ? 'Pass frozen for use' : 'Pass released'}.</p><p class="small muted">Local simulation. No strategy execution or on-chain transaction.</p><button class="primary-btn" data-close>Done</button>`,
         );
       } catch (failure) {
         showConfirmDialogError(
@@ -663,10 +670,11 @@ document.addEventListener('click', (event) => {
   }
 });
 let fundingReview: MockFundingReview | null = null;
-const fundingMoney = (value: number) => esc(formatUnits(String(value), 2));
+const fundingMoney = (value: number) => esc(formatMockUsdc(value));
 function fundingPanel(id: string, kind: 'deposit' | 'withdraw' = 'deposit'): string {
   const state = AF.exchange.fundingSnapshot(id);
-  return `<section class="wallet-funding sketch-box"><span class="section-label">USE PASS · MOCK STRATEGY</span><h2>Strategy funds</h2><div class="order-side"><button type="button" data-mock-funding-side="deposit" aria-pressed="${kind === 'deposit'}">Deposit</button><button type="button" data-mock-funding-side="withdraw" aria-pressed="${kind === 'withdraw'}">Withdraw</button></div><dl class="order-quote"><div><dt>Wallet available</dt><dd>${fundingMoney(state.cash)} ETH</dd></div><div><dt>Allocated to strategy</dt><dd>${fundingMoney(state.allocated)} ETH</dd></div><div><dt>Demo strategy limit</dt><dd>${fundingMoney(state.capacity)} ETH</dd></div></dl><form data-mock-funding-form data-strategy="${esc(id)}" data-kind="${kind}"><label for="mock-funding-amount">${kind === 'deposit' ? 'Deposit amount' : 'Withdraw amount'} · ETH</label><div class="pass-amount-wrap"><input id="mock-funding-amount" name="amount" type="text" inputmode="decimal" autocomplete="off" value="${kind === 'deposit' ? '100' : formatUnits(String(Math.min(10000, state.allocated)), 2)}" required><span>ETH</span></div><p class="form-error" data-funding-error role="alert"></p><button class="primary-btn full" type="submit">Review ${kind === 'deposit' ? 'deposit' : 'withdrawal'} ↗</button></form><p class="small muted">Your ${state.passQty} Pass remain in your wallet. Funds are simulated; no live strategy is started.</p></section>`;
+  const maximum = kind === 'deposit' ? state.maxDeposit : state.allocated;
+  return `<section class="wallet-funding sketch-box"><span class="section-label">USE PASS · MOCK STRATEGY</span><h2>Strategy funds</h2><div class="order-side"><button type="button" data-mock-funding-side="deposit" aria-pressed="${kind === 'deposit'}">Deposit</button><button type="button" data-mock-funding-side="withdraw" aria-pressed="${kind === 'withdraw'}">Withdraw</button></div><dl class="order-quote"><div><dt>Wallet available</dt><dd>${fundingMoney(state.cash)} USDC</dd></div><div><dt>Allocated to strategy</dt><dd>${fundingMoney(state.allocated)} USDC</dd></div><div><dt>Available Pass</dt><dd>${fundingMoney(state.available)} Pass</dd></div></dl><form data-mock-funding-form data-strategy="${esc(id)}" data-kind="${kind}"><label for="mock-funding-amount">${kind === 'deposit' ? 'Deposit amount' : 'Withdraw amount'} · USDC</label><div class="pass-amount-wrap"><input id="mock-funding-amount" name="amount" type="text" inputmode="decimal" autocomplete="off" value="${formatMockUsdc(maximum)}" required><span>USDC</span></div><p class="form-error" data-funding-error role="alert"></p><button class="primary-btn full" type="submit" ${maximum === 0 ? 'disabled' : ''}>Review ${kind === 'deposit' ? 'deposit' : 'withdrawal'} ↗</button></form><p class="small muted">1 Pass = 1 USDC capacity. Deposits freeze Pass; withdrawals release them. Mock balances.</p></section>`;
 }
 document.querySelector('dialog')?.addEventListener('close', () => {
   fundingReview = null;
@@ -682,13 +690,13 @@ document.addEventListener('submit', (event) => {
     const kind = form.dataset.kind;
     if (kind !== 'deposit' && kind !== 'withdraw') throw Error('Invalid allocation action.');
     const rawAmount = new FormData(form).get('amount');
-    if (typeof rawAmount !== 'string') throw Error('Enter an ETH amount.');
-    const amount = Number(parseUnits(rawAmount, 2));
+    if (typeof rawAmount !== 'string') throw Error('Enter a USDC amount.');
+    const amount = Number(parseUnits(rawAmount, 6));
     const reviewed = AF.exchange.reviewFunding({ strategy, kind, amount });
     const name = AF.strategies.find((item) => item.id === strategy)?.name ?? strategy;
     fundingReview = reviewed;
     AF.app.openDialog(
-      `<span class="section-label">USE PASS · REVIEW FUNDING</span><h2>Review ${kind === 'deposit' ? 'deposit' : 'withdrawal'}.</h2><p>${esc(name)}</p><div class="receipt"><div class="receipt-amount">${fundingMoney(amount)} <small>ETH</small></div><p>${kind === 'deposit' ? 'Wallet → Strategy allocation' : 'Strategy allocation → Wallet'}</p><p class="small muted">Pass holdings stay unchanged. Local simulation only.</p></div><p data-product-dialog-error class="form-error" role="alert"></p><div class="dialog-actions"><button class="primary-btn" data-mock-funding-confirm>Confirm ${kind === 'deposit' ? 'deposit' : 'withdrawal'}</button><button class="text-link" data-close>Cancel</button></div>`,
+      `<span class="section-label">USE PASS · REVIEW FUNDING</span><h2>Review ${kind === 'deposit' ? 'deposit' : 'withdrawal'}.</h2><p>${esc(name)}</p><div class="receipt"><div class="receipt-amount">${fundingMoney(amount)} <small>USDC</small></div><p>${kind === 'deposit' ? 'Wallet → Strategy allocation' : 'Strategy allocation → Wallet'}</p><p class="small muted">${fundingMoney(amount)} Pass will be ${kind === 'deposit' ? 'frozen (in use)' : 'released'}. Total Pass ownership stays unchanged. Mock transaction.</p></div><p data-product-dialog-error class="form-error" role="alert"></p><div class="dialog-actions"><button class="primary-btn" data-mock-funding-confirm>Confirm ${kind === 'deposit' ? 'deposit' : 'withdrawal'}</button><button class="text-link" data-close>Cancel</button></div>`,
     );
   } catch (failure) {
     const output = form.querySelector('[data-funding-error]');

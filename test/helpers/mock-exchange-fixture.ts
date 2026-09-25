@@ -6,6 +6,8 @@ interface MockExchangeState {
   cash: number;
   positions: Record<string, { qty: number; cost: number }>;
   allocations?: Record<string, number>;
+  funding: { asset: 'USDC'; cash: number; initialCapital: number; allocations: Record<string, number> };
+  legacyEthFunding?: { refunded: number; allocations: Record<string, number> };
 }
 interface MockExchange {
   read(): MockExchangeState;
@@ -14,6 +16,14 @@ interface MockExchange {
   totals(): { equity: number };
   reviewFunding(input: { strategy: string; kind: string; amount: number }, now?: number): unknown;
   executeFunding(review: unknown, now?: number): unknown;
+  fundingSnapshot(strategy: string): {
+    cash: number;
+    allocated: number;
+    passQty: number;
+    frozen: number;
+    available: number;
+    maxDeposit: number;
+  };
 }
 
 /** Execute the actual exchange IIFE with isolated storage and fixed market inputs. */

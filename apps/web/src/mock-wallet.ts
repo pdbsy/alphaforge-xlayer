@@ -3,20 +3,30 @@ import { formatUnits } from '../../../packages/domain/src/money.ts';
 export interface MockWalletSnapshot {
   readonly address: string;
   readonly ethBalance?: string;
+  readonly ethValueUsdc?: string;
+  readonly usdcBalance?: string;
   readonly holdings?: readonly {
     readonly id: string;
     readonly name: string;
     readonly quantity: number;
-    readonly allocatedEth?: string;
+    readonly allocatedUsdc?: string;
+    readonly frozenPass?: string;
+    readonly availablePass?: string;
   }[];
 }
 const storageKey = 'alphaforge.mock-wallet.v1';
 // A display identifier only. There is no private key, provider or chain authority.
 const address = '0x000000000000000000000000000000000000de00';
+// Fixed by the user for this local demonstration, not a live market quote.
+export const MOCK_ETH_USDC_RATE = 2688;
 const record = (value: unknown): value is Record<string, unknown> =>
   !!value && typeof value === 'object' && !Array.isArray(value);
 const amount = (value: unknown): value is number =>
   typeof value === 'number' && Number.isSafeInteger(value) && value >= 0;
+export const formatMockUsdc = (value: number): string =>
+  formatUnits(String(value), 6)
+    .replace(/(\.\d*?)0+$/, '$1')
+    .replace(/\.$/, '');
 
 /** An explicit local presentation of the existing simulated exchange ledger. */
 export function createMockWalletSession(
@@ -52,22 +62,48 @@ export function createMockWalletSession(
       try {
         const ledger = readExchange();
         if (!record(ledger) || !amount(ledger.cash) || !record(ledger.positions)) return { address };
-        const holdings: { id: string; name: string; quantity: number; allocatedEth?: string }[] = [];
+        const funding = record(ledger.funding) ? ledger.funding : undefined;
+        if (
+          ledger.funding !== undefined &&
+          (!funding || funding.asset !== 'USDC' || !amount(funding.cash) || !record(funding.allocations))
+        )
+          return { address };
+        const holdings: {
+          id: string;
+          name: string;
+          quantity: number;
+          allocatedUsdc?: string;
+          frozenPass?: string;
+          availablePass?: string;
+        }[] = [];
         for (const strategy of strategies) {
           const position = ledger.positions[strategy.id];
           if (!Object.hasOwn(ledger.positions, strategy.id) || !record(position) || !amount(position.qty))
             return { address };
-          const allocated = record(ledger.allocations) ? ledger.allocations[strategy.id] : undefined;
-          if (ledger.allocations !== undefined && !amount(allocated)) return { address };
+          const allocated =
+            funding && record(funding.allocations) ? funding.allocations[strategy.id] : undefined;
+          if (funding && (!amount(allocated) || allocated > position.qty * 1000000)) return { address };
           if (position.qty > 0)
             holdings.push({
               id: strategy.id,
               name: strategy.name,
               quantity: position.qty,
-              ...(allocated === undefined ? {} : { allocatedEth: formatUnits(String(allocated), 2) }),
+              ...(!amount(allocated)
+                ? {}
+                : {
+                    allocatedUsdc: formatMockUsdc(allocated),
+                    frozenPass: formatMockUsdc(allocated),
+                    availablePass: formatMockUsdc(position.qty * 1000000 - allocated),
+                  }),
             });
         }
-        return { address, ethBalance: formatUnits(String(ledger.cash), 2), holdings };
+        return {
+          address,
+          ethBalance: formatUnits(String(ledger.cash), 2),
+          ethValueUsdc: formatUnits(String(BigInt(ledger.cash) * BigInt(MOCK_ETH_USDC_RATE)), 2),
+          ...(funding && amount(funding.cash) ? { usdcBalance: formatMockUsdc(funding.cash) } : {}),
+          holdings,
+        };
       } catch {
         return { address };
       }

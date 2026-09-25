@@ -936,7 +936,17 @@ test('account connects a visibly mock wallet backed by the demo trading ledger',
       mockWallet: () => ({
         address: '0x000000000000000000000000000000000000de00',
         ethBalance: '9965.68',
-        holdings: [{ id: 'trend', name: 'Ridgeline · Trend Following', quantity: 10 }],
+        usdcBalance: '9997.5',
+        holdings: [
+          {
+            id: 'trend',
+            name: 'Ridgeline · Trend Following',
+            quantity: 10,
+            frozenPass: '2.5',
+            availablePass: '7.5',
+            allocatedUsdc: '2.5',
+          },
+        ],
       }),
     },
   );
@@ -951,6 +961,10 @@ test('account connects a visibly mock wallet backed by the demo trading ledger',
   assert.match(html, /<summary[^>]*wallet-pass-row/);
   assert.match(html, /data-wallet-funding-slot/);
   assert.match(html, /Use Pass/);
+  assert.match(html, /Frozen \(in use\) 2\.5 · Available 7\.5/);
+  assert.match(html, /Allocated 2\.5 USDC/);
+  assert.match(html, /9997\.5/);
+  assert.match(html, /1 ETH = 2688 USDC/);
   assert.doesNotMatch(html, /Buy or sell Pass/);
   assert.equal((html.match(/<button\b/g) ?? []).length, 1);
   assert.doesNotMatch(pages.trade('trend'), /9965\.68|Mock wallet/);
@@ -978,6 +992,7 @@ test('mock session persists only its connection and always reads fresh simulated
   assert.equal(session.snapshot(), undefined);
   session.connect();
   assert.equal(session.snapshot()?.ethBalance, '9965.68');
+  assert.equal(session.snapshot()?.ethValueUsdc, '26787747.84');
   assert.deepEqual(session.snapshot()?.holdings, [{ id: 'trend', name: 'Trend', quantity: 10 }]);
   assert.equal(create().snapshot()?.ethBalance, '9965.68', 'reload keeps the explicit choice');
   assert.deepEqual([...stored.values()], ['connected'], 'no wallet key or private key is persisted');
@@ -987,13 +1002,16 @@ test('mock session persists only its connection and always reads fresh simulated
   ledger = {
     cash: 123,
     positions: { trend: { qty: 2 }, factor: { qty: 3 } },
-    allocations: { trend: 10000, factor: 0 },
+    funding: { asset: 'USDC', cash: 1000000, allocations: { trend: 1500000, factor: 0 } },
   };
-  assert.equal(session.snapshot()?.holdings?.[0]?.allocatedEth, '100.00');
+  assert.equal(session.snapshot()?.usdcBalance, '1');
+  assert.equal(session.snapshot()?.holdings?.[0]?.allocatedUsdc, '1.5');
+  assert.equal(session.snapshot()?.holdings?.[0]?.frozenPass, '1.5');
+  assert.equal(session.snapshot()?.holdings?.[0]?.availablePass, '0.5');
   ledger = {
     cash: 123,
     positions: { trend: { qty: 2 }, factor: { qty: 3 } },
-    allocations: { trend: -1, factor: 0 },
+    funding: { asset: 'USDC', cash: 1000000, allocations: { trend: -1, factor: 0 } },
   };
   assert.equal(session.snapshot()?.holdings, undefined, 'damaged allocations cannot appear as zero');
   ledger = { cash: -1, positions: { trend: { qty: 100 }, factor: { qty: 0 } } };
@@ -1027,79 +1045,129 @@ test('mock session works without persistent storage and keeps unknown balances u
   assert.equal(session.snapshot(), undefined);
 });
 
-test('Pass strategy funding conserves cash and allocation without changing Pass holdings', async () => {
+test('USDC strategy funding freezes Pass one-to-one and preserves the ETH balance', async () => {
   const { mockExchangeFixture } = await import('./helpers/mock-exchange-fixture.ts');
   const { exchange, storage } = mockExchangeFixture();
-  exchange.execute!(exchange.review!({ strategy: 'trend', side: 'buy', qty: 10 }));
-  const before = exchange.read!();
-  assert.equal(typeof exchange.reviewFunding, 'function', 'strategy funding must have its own review');
-  const deposit = exchange.reviewFunding!({ strategy: 'trend', kind: 'deposit', amount: 25000 });
-  assert.deepEqual(exchange.read!(), before, 'review does not move money');
-  exchange.executeFunding!(deposit);
-  const invested = exchange.read!();
-  assert.equal(invested.cash, before.cash - 25000);
-  assert.equal(invested.allocations?.trend, 25000);
-  assert.deepEqual(invested.positions, before.positions);
-  assert.equal(exchange.totals!().equity, before.cash + 10 * 342);
-  assert.throws(() => exchange.executeFunding!(deposit));
-  assert.throws(() => exchange.reviewFunding!({ strategy: 'trend', kind: 'withdraw', amount: 25001 }));
-  assert.deepEqual(exchange.read!(), invested, 'rejected operations preserve balances');
+  exchange.execute(exchange.review({ strategy: 'trend', side: 'buy', qty: 10 }));
+  const before = exchange.read();
+  assert.equal(exchange.fundingSnapshot('trend').maxDeposit, 10000000);
+  const deposit = exchange.reviewFunding({ strategy: 'trend', kind: 'deposit', amount: 2500000 });
+  assert.deepEqual(exchange.read(), before, 'review does not move money or lock Pass');
+  exchange.executeFunding(deposit);
+  const invested = exchange.read();
+  assert.equal(invested.cash, before.cash, 'ETH cannot be spent as USDC');
+  assert.equal(invested.funding.cash, before.funding.cash - 2500000);
+  assert.equal(invested.funding.allocations.trend, 2500000);
+  assert.deepEqual(invested.positions, before.positions, 'total Pass ownership stays unchanged');
+  assert.deepEqual(
+    { ...exchange.fundingSnapshot('trend') },
+    {
+      cash: invested.funding.cash,
+      allocated: 2500000,
+      passQty: 10,
+      frozen: 2500000,
+      available: 7500000,
+      maxDeposit: 7500000,
+    },
+  );
+  assert.equal(exchange.totals().equity, before.cash + 10 * 342);
+  assert.throws(() => exchange.executeFunding(deposit));
+  assert.throws(() => exchange.reviewFunding({ strategy: 'trend', kind: 'withdraw', amount: 2500001 }));
+  assert.deepEqual(exchange.read(), invested, 'rejected operations preserve balances');
   const restored = mockExchangeFixture(storage.get('alphaforge.passmarket.v3')).exchange;
-  assert.equal(restored.read!().allocations?.trend, 25000, 'allocation survives reload');
-  restored.executeFunding!(restored.reviewFunding!({ strategy: 'trend', kind: 'withdraw', amount: 25000 }));
-  assert.equal(restored.read!().cash, before.cash);
-  assert.equal(restored.read!().allocations?.trend, 0);
-  assert.deepEqual(restored.read!().positions, before.positions);
+  assert.equal(restored.read().funding.allocations.trend, 2500000, 'allocation survives reload');
+  restored.executeFunding(restored.reviewFunding({ strategy: 'trend', kind: 'withdraw', amount: 2500000 }));
+  assert.equal(restored.read().cash, before.cash);
+  assert.equal(restored.read().funding.cash, before.funding.cash);
+  assert.equal(restored.fundingSnapshot('trend').frozen, 0);
+  assert.equal(restored.fundingSnapshot('trend').available, 10000000);
+  assert.deepEqual(restored.read().positions, before.positions);
 });
 
-test('strategy funding rejects missing access, invalid amounts, stale reviews and overspending', async () => {
+test('strategy funding rejects missing access, invalid amounts, stale reviews and locked Pass sales', async () => {
   const { mockExchangeFixture } = await import('./helpers/mock-exchange-fixture.ts');
   const { exchange } = mockExchangeFixture();
-  assert.equal(typeof exchange.reviewFunding, 'function');
-  const request = { strategy: 'trend', kind: 'deposit', amount: 10000 };
-  assert.throws(() => exchange.reviewFunding!(request), /Pass/);
-  exchange.execute!(exchange.review!({ strategy: 'trend', side: 'buy', qty: 1 }));
-  for (const amount of [0, -1, 0.1, NaN, Infinity, 100001])
-    assert.throws(() => exchange.reviewFunding!({ ...request, amount }));
-  assert.throws(() => exchange.reviewFunding!({ ...request, strategy: 'unknown' }));
-  const first = exchange.reviewFunding!(request);
-  const stale = exchange.reviewFunding!(request);
-  exchange.executeFunding!(first);
-  const after = exchange.read!();
-  assert.throws(() => exchange.executeFunding!(stale), /changed/);
-  assert.throws(() => exchange.review!({ strategy: 'trend', side: 'sell', qty: 1 }), /Withdraw/);
-  assert.deepEqual(exchange.read!(), after);
-  const expired = exchange.reviewFunding!({ strategy: 'trend', kind: 'withdraw', amount: 1000 }, 1000);
-  assert.throws(() => exchange.executeFunding!(expired, 31000), /expired/);
-  assert.deepEqual(exchange.read!(), after);
+  const request = { strategy: 'trend', kind: 'deposit', amount: 1000000 };
+  assert.throws(() => exchange.reviewFunding(request), /Pass/);
+  exchange.execute(exchange.review({ strategy: 'trend', side: 'buy', qty: 1 }));
+  for (const amount of [0, -1, 0.1, NaN, Infinity, 1000001])
+    assert.throws(() => exchange.reviewFunding({ ...request, amount }));
+  assert.throws(() => exchange.reviewFunding({ ...request, strategy: 'factor' }), /Pass/);
+  assert.throws(() => exchange.reviewFunding({ ...request, strategy: 'unknown' }));
+  const first = exchange.reviewFunding(request);
+  const stale = exchange.reviewFunding(request);
+  exchange.executeFunding(first);
+  const after = exchange.read();
+  assert.equal(exchange.fundingSnapshot('trend').maxDeposit, 0);
+  assert.throws(() => exchange.executeFunding(stale), /changed/);
+  assert.throws(() => exchange.review({ strategy: 'trend', side: 'sell', qty: 1 }), /frozen/);
+  assert.deepEqual(exchange.read(), after);
+  const expired = exchange.reviewFunding({ strategy: 'trend', kind: 'withdraw', amount: 1 }, 1000);
+  assert.throws(() => exchange.executeFunding(expired, 31000), /expired/);
+  assert.deepEqual(exchange.read(), after);
+  exchange.executeFunding(exchange.reviewFunding({ strategy: 'trend', kind: 'withdraw', amount: 1 }));
+  assert.equal(
+    exchange.fundingSnapshot('trend').available,
+    1,
+    'one micro-USDC releases the exact Pass fraction',
+  );
+  assert.equal(exchange.fundingSnapshot('trend').frozen, 999999);
+  assert.throws(() => exchange.review({ strategy: 'trend', side: 'sell', qty: 1 }), /frozen/);
 });
 
-test('strategy funding accepts legacy ledgers and rejects insufficient funds or forged reviews', async () => {
+test('funding maximum is bounded by USDC balance and forged reviews cannot execute', async () => {
   const { mockExchangeFixture } = await import('./helpers/mock-exchange-fixture.ts');
-  const saved = JSON.stringify({
-    version: 1,
-    revision: 0,
-    cash: 5000,
-    initialCapital: 5000,
-    realized: 0,
-    fees: 0,
-    positions: { trend: { qty: 1, cost: 0 }, factor: { qty: 0, cost: 0 } },
-    orders: [],
-    executed: [],
-  });
-  const { exchange } = mockExchangeFixture(saved);
+  const seed = mockExchangeFixture().exchange.read();
+  seed.positions.trend = { qty: 1, cost: 0 };
+  seed.funding.cash = 500000;
+  seed.funding.initialCapital = 500000;
+  const { exchange } = mockExchangeFixture(JSON.stringify(seed));
   const before = exchange.read();
+  assert.equal(exchange.fundingSnapshot('trend').maxDeposit, 500000);
   assert.throws(
-    () => exchange.reviewFunding({ strategy: 'trend', kind: 'deposit', amount: 6000 }),
+    () => exchange.reviewFunding({ strategy: 'trend', kind: 'deposit', amount: 600000 }),
     /Insufficient/,
   );
-  const review = exchange.reviewFunding({ strategy: 'trend', kind: 'deposit', amount: 5000 });
+  const review = exchange.reviewFunding({ strategy: 'trend', kind: 'deposit', amount: 500000 });
   assert.throws(() => exchange.executeFunding(structuredClone(review)), /Review/);
   assert.deepEqual(exchange.read(), before);
   exchange.executeFunding(review);
-  assert.equal(exchange.read().cash, 0);
-  assert.equal(exchange.read().allocations?.trend, 5000);
-  assert.deepEqual(exchange.read().positions, before.positions);
+  assert.equal(exchange.read().funding.cash, 0);
+  assert.equal(exchange.read().cash, before.cash);
+  assert.equal(exchange.fundingSnapshot('trend').available, 500000);
+  assert.equal(exchange.fundingSnapshot('trend').maxDeposit, 0);
+});
+
+test('legacy ETH allocation is refunded and retained without relabelling it as USDC', async () => {
+  const { mockExchangeFixture } = await import('./helpers/mock-exchange-fixture.ts');
+  const old = {
+    version: 1,
+    revision: 1,
+    cash: 90000,
+    initialCapital: 100000,
+    realized: 0,
+    fees: 0,
+    positions: { trend: { qty: 10, cost: 0 }, factor: { qty: 0, cost: 0 } },
+    allocations: { trend: 10000, factor: 0 },
+    fundingHistory: [],
+    orders: [],
+    executed: [],
+  };
+  const { exchange, storage } = mockExchangeFixture(JSON.stringify(old));
+  assert.equal(exchange.read().cash, 100000);
+  assert.equal(exchange.read().legacyEthFunding?.refunded, 10000);
+  assert.equal(exchange.read().legacyEthFunding?.allocations.trend, 10000);
+  assert.equal(exchange.read().funding.allocations.trend, 0);
+  assert.equal(exchange.fundingSnapshot('trend').maxDeposit, 10000000);
+  exchange.executeFunding(exchange.reviewFunding({ strategy: 'trend', kind: 'deposit', amount: 10000000 }));
+  const restored = mockExchangeFixture(storage.get('alphaforge.passmarket.v3')).exchange;
+  assert.equal(restored.read().cash, 100000, 'migration refunds exactly once');
+  assert.equal(restored.fundingSnapshot('trend').frozen, 10000000);
+  assert.equal(restored.fundingSnapshot('trend').available, 0);
+  restored.executeFunding(restored.reviewFunding({ strategy: 'trend', kind: 'withdraw', amount: 2000000 }));
+  restored.execute(restored.review({ strategy: 'trend', side: 'sell', qty: 2 }));
+  assert.equal(restored.read().positions.trend?.qty, 8);
+  assert.equal(restored.fundingSnapshot('trend').frozen, 8000000);
 });
 
 test('strategy funding does not overwrite storage damaged after review', async () => {
