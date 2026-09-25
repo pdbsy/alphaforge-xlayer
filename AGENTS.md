@@ -1,3 +1,7 @@
+# Current XLayer assignment — 2026-09-25
+
+The user explicitly assigned XLayerPM to replace the previous adaptation using only base b2ed61311df8d1c97a48f623d1b4872798f5e888, with workers Macbeth02–06 and Temp-A/B. This is the AlphaForge-XLayer repository (pdbsy/alphaforge-xlayer), separate from the parallel Robinhood line. The active implementation plan is docs/superpowers/plans/2026-09-25-xlayer-r2.md. Its current assignment supersedes historical worker restrictions below within this scope. Preserve upstream history and source evidence; do not copy old XLayer changes. Validate and review each small batch before integration. Public website and testnet deployment preparation are assigned; actual deployment, signing, broadcasting and mainnet are not enabled by this instruction.
+
 # Development environment and task authority
 
 Read docs/DEVELOPMENT-TOOLCHAIN.md and docs/DEVELOPMENT-TOOLCHAIN-STATUS.md before modifying code. Verify the actual repository, branch, HEAD, tool versions and current user assignment. Check package.json before assuming a proposed command exists.
