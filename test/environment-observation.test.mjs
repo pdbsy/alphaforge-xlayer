@@ -628,7 +628,8 @@ test('toolchain input aliases and runtime overrides cannot qualify local mock ev
 });
 
 test('public default environment inspection rejects interpreter overrides before any probes', () => {
-  const forbidden = 'https://example.invalid/unapproved-environment-runtime';
+  const secret = 'PUBLIC_TEST_ONLY_OVERRIDE_DO_NOT_ECHO';
+  const forbidden = `https://example.invalid/${secret}`;
   const script = `
     import {inspectEnvironment} from ${JSON.stringify(new URL('../tools/environment/observe.mjs', import.meta.url).href)};
     process.stdout.write(JSON.stringify(inspectEnvironment()));
@@ -649,5 +650,16 @@ test('public default environment inspection rejects interpreter overrides before
   assert.notEqual(report.exitCode, 0);
   assert.equal(status(report, 'overrides'), 'FAIL');
   assert.deepEqual(report.commands, [], 'unapproved input must prevent all subprocess probes');
-  assert.equal(child.stdout.includes(forbidden), false, 'raw override value must not be disclosed');
+  assert.equal(report.schemaVersion, 1);
+  assert.equal(report.scope, 'offline-local-mock-admission');
+  assert.equal(report.context, null);
+  assert.equal(report.head, null);
+  assert.equal(report.tree, null);
+  for (const check of report.checks) {
+    assert.deepEqual(Object.keys(check).sort(), ['id', 'status']);
+    assert.match(check.id, /^[a-z-]+$/);
+    assert.ok(['PASS', 'FAIL', 'BLOCKED', 'WARN', 'NOT_RUN'].includes(check.status));
+  }
+  // This is a literal non-disclosure check, not a URL trust or host check.
+  assert.equal(child.stdout.includes(secret), false, 'raw override secret must not be disclosed');
 });

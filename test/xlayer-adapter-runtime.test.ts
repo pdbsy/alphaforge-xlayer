@@ -79,11 +79,12 @@ function deployment(dbPath: string, network = xlayer) {
 }
 
 test('XLayer runtime requires trusted caller network and keeps its evidence chain identity', (t) => {
+  let runtime: ReturnType<typeof composeM3ChainRuntime> | undefined = undefined;
+  t.after(() => runtime?.close());
   const rpc = new OfflineRpc();
   const input = { ...deployment(setup(t)), expectedNetwork: xlayer };
-  const runtime = composeM3ChainRuntime(input, { createRpc: () => rpc });
+  runtime = composeM3ChainRuntime(input, { createRpc: () => rpc });
   assert.ok(runtime);
-  t.after(() => runtime.close());
   assert.equal(runtime.manifest.chainId, 1952);
   assert.equal(runtime.manifest.environment, 'xlayer-testnet');
   assert.equal(runtime.chainEvidence.syncStatus().deployment.chainId, 1952);
@@ -150,13 +151,14 @@ test('XLayer caller cannot adopt a Robinhood document or mismatched trusted dige
 });
 
 test('XLayer runtime rejects RPC chain mismatch before bytecode reads and storage projections', async (t) => {
+  let runtime: ReturnType<typeof composeM3ChainRuntime> | undefined = undefined;
+  t.after(() => runtime?.close());
   const rpc = new OfflineRpc();
-  const runtime = composeM3ChainRuntime(
+  runtime = composeM3ChainRuntime(
     { ...deployment(setup(t)), expectedNetwork: xlayer } as M3ChainRuntimeDeployment,
     { createRpc: () => rpc },
   );
   assert.ok(runtime);
-  t.after(() => runtime.close());
   await assert.rejects(runtime.syncToHead(), /M3_DEPLOYMENT_CHAIN_MISMATCH/);
   assert.equal(rpc.codeReads, 0);
   assert.equal(runtime.store.checkpoint(1952, vault), null);

@@ -47,6 +47,8 @@ function fixture(t: test.TestContext) {
 }
 
 test('offline conversion roundtrips the reviewed manifest into the actual public startup', async (t) => {
+  let server: Awaited<ReturnType<typeof startXLayerPublicServer>> | undefined = undefined;
+  t.after(() => server?.close());
   const { directory, manifestPath, outputPath } = fixture(t);
   createXLayerPublicDeployment({ manifestPath, outputPath });
   const record = JSON.parse(readFileSync(outputPath, 'utf8')) as XLayerPublicDeployment;
@@ -83,7 +85,7 @@ test('offline conversion roundtrips the reviewed manifest into the actual public
       throw new Error('UNEXPECTED_RPC');
     },
   };
-  const server = await startXLayerPublicServer(
+  server = await startXLayerPublicServer(
     {
       origin: 'https://alphaforge.example',
       deployments: [record],
@@ -98,7 +100,6 @@ test('offline conversion roundtrips the reviewed manifest into the actual public
     },
     { createRpc: () => rpc },
   );
-  t.after(() => server.close());
   assert.equal(server.runtimes[0]!.manifest.chainId, 1952);
   assert.equal(server.runtimes[0]!.manifest.manifestDigest, manifest.manifestDigest);
   assert.equal(chainReads, 1, 'startup still checks the actual chain after offline conversion');

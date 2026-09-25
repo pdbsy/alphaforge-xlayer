@@ -9,6 +9,7 @@ import { instrumentSnapshot, prototypePath } from '../tools/coverage/inventory.m
 import { browserCoverageSources, replayBrowserCoverage } from '../tools/coverage/browser-evidence.mjs';
 import { createBrowserCoverageLifecycle } from '../tools/coverage/browser-lifecycle.mjs';
 import { mergeObserved } from '../tools/coverage/evidence.mjs';
+import { analyzeHtmlSource } from '../tools/html-source-ranges.mjs';
 
 const root = resolve(import.meta.dirname, '..');
 const source = readFileSync(resolve(root, prototypePath), 'utf8');
@@ -338,11 +339,13 @@ if (process.argv[1] && resolve(process.argv[1]) === import.meta.filename)
       },
       tools,
     );
-    assert.equal([...source.matchAll(/<script>[\s\S]*?<\/script>/g)].length, 1);
-    const html = source.replace(
-      /<script>[\s\S]*?<\/script>/,
-      () => '<script>' + generated[prototypePath].code + '</script>',
-    );
+    const { scripts } = analyzeHtmlSource(source);
+    assert.equal(scripts.length, 1);
+    const script = scripts[0];
+    assert.equal(script.kind, 'inline');
+    assert.deepEqual(Object.keys(script.attributes), []);
+    const html =
+      source.slice(0, script.contentStart) + generated[prototypePath].code + source.slice(script.contentEnd);
     const output = resolve(root, '.checks/prototype69-native', randomUUID());
     mkdirSync(output, { recursive: true });
     const write = (file, value) =>

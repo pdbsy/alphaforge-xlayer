@@ -747,7 +747,10 @@ test('pending transaction evidence never promotes signature or confirmation to p
   }
 });
 
-test('message-only provider failures are escaped and explicitly lack an error code', () => {
+test('message-only provider failures are escaped and explicitly lack an error code', async () => {
+  const { analyzeHtmlSource } = (await import(
+    new URL('../tools/html-source-ranges.mjs', import.meta.url).href
+  )) as { analyzeHtmlSource(source: string): { scripts: readonly unknown[] } };
   const html = renderM3AccountShell({
     wallet: { status: 'CONNECTION_REJECTED', errorMessage: '<script>fixture</script>' },
     transaction: { status: 'FAILED', errorMessage: 'transport & reconciliation unavailable' },
@@ -755,7 +758,7 @@ test('message-only provider failures are escaped and explicitly lack an error co
   assert.equal((html.match(/UNSPECIFIED_ERROR/g) ?? []).length, 2);
   assert.match(html, /&lt;script&gt;fixture&lt;\/script&gt;/);
   assert.match(html, /transport &amp; reconciliation unavailable/);
-  assert.doesNotMatch(html, /<script>/);
+  assert.equal(analyzeHtmlSource(html).scripts.length, 0);
 });
 
 test('closed-state and owner exit capability restrict every action even if advertised by the backend', () => {

@@ -5,6 +5,7 @@ import { resolve, relative, sep } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { verifiedPrototypeArtifacts } from './helpers/prototype-artifact.mjs';
+import { analyzeHtmlSource } from '../tools/html-source-ranges.mjs';
 const root = fileURLToPath(new URL('../', import.meta.url));
 const readJson = async (path) => JSON.parse(await readFile(resolve(root, path), 'utf8'));
 
@@ -64,9 +65,15 @@ test('migration inventory accounts for source versions and validates imported ar
 
 test('generated Forum uses external assets under the existing dashboard CSP', async () => {
   const page = await readFile(resolve(root, 'docs/management/dashboard/agent-forum.html'), 'utf8');
-  assert.match(page, /<script src="\.\/agent-forum-app\.js"><\/script>/);
+  const parsed = analyzeHtmlSource(page);
+  assert.equal(parsed.scripts.filter((script) => script.kind === 'inline').length, 0);
+  assert.deepEqual(
+    parsed.scripts.filter((script) => script.kind === 'external').map((script) => ({ ...script.attributes })),
+    [{ src: './agent-forum-app.js' }],
+  );
   assert.match(page, /href="\.\/agent-forum\.css"/);
-  assert.doesNotMatch(page, /unsafe-inline|<style>|<script>/);
+  assert.doesNotMatch(page, /unsafe-inline/);
+  assert.equal(parsed.styles.length, 0);
 });
 
 test('all eleven uncommitted Dashboard sources have explicit final dispositions', async () => {

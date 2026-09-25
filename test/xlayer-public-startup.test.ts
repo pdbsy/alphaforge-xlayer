@@ -52,7 +52,7 @@ function publicDeployment(byte = '11'): XLayerPublicDeployment {
 class OfflineRpc implements ReadonlyRpc {
   failed = false;
   reads = 0;
-  gate: Promise<void> | undefined;
+  gate: Promise<void> | undefined = undefined;
   async chainId() {
     if (this.failed) throw new Error('PRIVATE_RPC_ENDPOINT');
     return 1952;
@@ -125,9 +125,11 @@ function fixture(t: test.TestContext, count = 1) {
 }
 
 test('disabled public startup serves the website without constructing RPC or SQLite', async (t) => {
+  let server: Awaited<ReturnType<typeof startXLayerPublicServer>> | undefined = undefined;
+  t.after(() => server?.close());
   const { directory } = fixture(t, 0);
   writeFileSync(join(directory, 'index.html'), '<h1>AlphaForge</h1>');
-  const server = await startXLayerPublicServer(
+  server = await startXLayerPublicServer(
     { origin, deployments: [], runtimeDeployments: [], rpcAccess: 'disabled', webRoot: directory },
     {
       createRpc: () => {
@@ -135,7 +137,6 @@ test('disabled public startup serves the website without constructing RPC or SQL
       },
     },
   );
-  t.after(() => server.close());
   assert.equal((await server.app.inject({ url: '/', headers })).statusCode, 200);
   assert.equal((await server.app.inject({ url: '/api/health', headers })).statusCode, 503);
   assert.equal(
@@ -269,9 +270,11 @@ test('fresh filesystem-normalized Unicode aliases cannot open two runtimes on on
 });
 
 test('all database identities are reserved and separate before the first RPC factory runs', async (t) => {
+  let server: Awaited<ReturnType<typeof startXLayerPublicServer>> | undefined = undefined;
+  t.after(() => server?.close());
   const { options } = fixture(t, 2);
   let factories = 0;
-  const server = await startXLayerPublicServer(options, {
+  server = await startXLayerPublicServer(options, {
     createRpc: () => {
       factories++;
       const stats = options.runtimeDeployments.map((item) => statSync(item.dbPath));
@@ -280,7 +283,6 @@ test('all database identities are reserved and separate before the first RPC fac
       return new OfflineRpc();
     },
   });
-  t.after(() => server.close());
   assert.equal(factories, 2);
 });
 
@@ -294,11 +296,12 @@ test('SQLite symlink sidecars are rejected before runtime construction', async (
 });
 
 test('failed initial reads preserve website availability and readiness recovers after a successful sync', async (t) => {
+  let server: Awaited<ReturnType<typeof startXLayerPublicServer>> | undefined = undefined;
+  t.after(() => server?.close());
   const { options } = fixture(t);
   const rpc = new OfflineRpc();
   rpc.failed = true;
-  const server = await startXLayerPublicServer(options, { createRpc: () => rpc });
-  t.after(() => server.close());
+  server = await startXLayerPublicServer(options, { createRpc: () => rpc });
   const config = await server.app.inject({ url: '/api/xlayer/config', headers });
   assert.equal(config.statusCode, 200);
   assert.doesNotMatch(config.body, /rpc.example|sqlite|PRIVATE_RPC/);
@@ -313,10 +316,11 @@ test('failed initial reads preserve website availability and readiness recovers 
 });
 
 test('app.close drains active sync before closing SQLite and rejects new sync requests', async (t) => {
+  let server: Awaited<ReturnType<typeof startXLayerPublicServer>> | undefined = undefined;
+  t.after(() => server?.close());
   const { options } = fixture(t);
   const rpc = new OfflineRpc();
-  const server = await startXLayerPublicServer(options, { createRpc: () => rpc });
-  t.after(() => server.close());
+  server = await startXLayerPublicServer(options, { createRpc: () => rpc });
   let release!: () => void;
   rpc.gate = new Promise<void>((resolve) => {
     release = resolve;

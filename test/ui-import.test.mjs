@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { verifiedPrototypeArtifacts } from './helpers/prototype-artifact.mjs';
 import { importUserUI, normalizeStyles } from '../tools/import-user-ui.mjs';
+import { analyzeHtmlSource } from '../tools/html-source-ranges.mjs';
 test('actual importer preserves the reviewed public source and the historical repaired artifact', async (t) => {
   const artifacts = await verifiedPrototypeArtifacts(resolve(import.meta.dirname, '..'));
   assert.equal(artifacts.currentSha256, 'e73751920d4bcf5da76ed12474702e34eb9553cc4b9b3498ad81b8e62451423e');
@@ -13,26 +14,42 @@ test('actual importer preserves the reviewed public source and the historical re
   assert.equal(Buffer.byteLength(artifacts.current), 287492);
   assert.equal(Buffer.byteLength(artifacts.repaired), 286508);
   for (const source of [artifacts.current, artifacts.repaired]) {
+    const parsed = analyzeHtmlSource(source);
+    assert.equal(parsed.styles.length, 1);
+    assert.equal(parsed.scripts.length, 1);
+    const style = parsed.styles[0];
+    const script = parsed.scripts[0];
+    assert.equal(script.kind, 'inline');
+    assert.deepEqual(Object.keys(style.attributes), []);
+    assert.deepEqual(Object.keys(script.attributes), []);
+    assert.ok(style.end <= script.start, 'reviewed style precedes the reviewed script');
     const out = await mkdtemp(join(tmpdir(), 'af-import-'));
     t.after(() => rm(out, { recursive: true, force: true }));
     await importUserUI(source, out);
     const html = await readFile(join(out, 'index.html'), 'utf8');
     const css = await readFile(join(out, 'public/user-ui.css'), 'utf8');
     const js = await readFile(join(out, 'public/user-ui.js'), 'utf8');
-    assert.equal(css, source.match(/<style>([\s\S]*?)<\/style>/)[1]);
-    assert.equal(js, normalizeStyles(source.match(/<script>([\s\S]*?)<\/script>/)[1]));
+    assert.equal(css, source.slice(style.contentStart, style.contentEnd));
+    assert.equal(js, normalizeStyles(source.slice(script.contentStart, script.contentEnd)));
     assert.equal(
       html,
       normalizeStyles(
-        source
-          .replace(/<style>[\s\S]*?<\/style>/, '<link rel="stylesheet" href="/user-ui.css">')
-          .replace(
-            /<script>[\s\S]*?<\/script>/,
-            '<script src="/user-ui.js"></script>\n<script type="module" src="/src/product-ui.ts"></script>',
-          ),
+        source.slice(0, style.start) +
+          '<link rel="stylesheet" href="/user-ui.css">' +
+          source.slice(style.end, script.start) +
+          '<script src="/user-ui.js"></script>\n<script type="module" src="/src/product-ui.ts"></script>' +
+          source.slice(script.end),
       ),
     );
-    assert.doesNotMatch(html, /<style>|<script>/);
+    const imported = analyzeHtmlSource(html);
+    assert.equal(imported.styles.length, 0);
+    assert.deepEqual(
+      imported.scripts.map((item) => [item.kind, item.attributes.src]),
+      [
+        ['external', '/user-ui.js'],
+        ['external', '/src/product-ui.ts'],
+      ],
+    );
     assert.doesNotMatch(js, /\sstyle=/);
     assert.ok(js.includes('data-price-style'));
     assert.ok(js.includes('font-style'));

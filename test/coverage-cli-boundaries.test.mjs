@@ -48,21 +48,46 @@ for (const scenario of [
           index: { file: 'fixture-index.json' },
           workflowResult: { state, checks: ['fixture-worker-result'] },
         };
-    const worker = throwing
-      ? `throw new Error('EXPECTED_WORKER_REJECTION');`
-      : `return ${JSON.stringify(result)};`;
-    const mocks = {
-      [pathToFileURL(resolve(root, 'tools/coverage/prepare.mjs')).href]:
-        `export async function verifyPrepared(){return {manifest:${JSON.stringify(manifest)},generated:{},tools:{}};}`,
-      [pathToFileURL(resolve(root, 'tools/coverage/browser.mjs')).href]:
-        `export async function collectBrowserCoverage(){${worker}}`,
-      [pathToFileURL(resolve(root, 'tools/coverage/browser-legacy.mjs')).href]:
-        `export async function collectLegacyBrowserCoverage(){${worker}}`,
-    };
+    // Keep fixture data out of executable source, including paths and worker results.
+    writeFileSync(
+      join(directory, 'fixture.json'),
+      JSON.stringify({
+        manifest,
+        result,
+        throwing,
+        environment: { AF_COVERAGE_PREPARED: directory, AF_COVERAGE_RAW: raw },
+        modules: ['prepare.mjs', 'browser.mjs', 'browser-legacy.mjs'].map(
+          (file) => pathToFileURL(resolve(root, 'tools/coverage', file)).href,
+        ),
+      }),
+    );
+    writeFileSync(
+      join(directory, 'fixture-worker.mjs'),
+      `import {readFileSync} from 'node:fs';
+const fixture = JSON.parse(readFileSync(new URL('./fixture.json', import.meta.url), 'utf8'));
+export async function verifyPrepared() {
+  return {manifest: fixture.manifest, generated: {}, tools: {}};
+}
+export async function collectBrowserCoverage() {
+  if (fixture.throwing) throw new Error('EXPECTED_WORKER_REJECTION');
+  return fixture.result;
+}
+export const collectLegacyBrowserCoverage = collectBrowserCoverage;
+`,
+    );
     const hook = join(directory, 'workers.mjs');
     writeFileSync(
       hook,
-      `import {registerHooks} from 'node:module';Object.assign(process.env,${JSON.stringify({ AF_COVERAGE_PREPARED: directory, AF_COVERAGE_RAW: raw })});const mocks=${JSON.stringify(mocks)};registerHooks({load(url,context,next){return Object.hasOwn(mocks,url)?{format:'module',source:mocks[url],shortCircuit:true}:next(url,context);}});`,
+      `import {registerHooks} from 'node:module';
+import {readFileSync} from 'node:fs';
+const fixture = JSON.parse(readFileSync(new URL('./fixture.json', import.meta.url), 'utf8'));
+const workerUrl = new URL('./fixture-worker.mjs', import.meta.url).href;
+Object.assign(process.env, fixture.environment);
+registerHooks({resolve(specifier, context, next) {
+  const resolved = next(specifier, context);
+  return fixture.modules.includes(resolved.url) ? {url: workerUrl, shortCircuit: true} : resolved;
+}});
+`,
     );
     const args = [
       '--import',

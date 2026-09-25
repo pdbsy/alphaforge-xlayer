@@ -22,17 +22,7 @@ function run(entry, directory, tool, limited = false) {
   // otherwise raises its soft limit during startup). No browser or
   // subprocess is launched after descriptor exhaustion.
   return limited
-    ? spawnSync(
-        '/bin/sh',
-        [
-          '-c',
-          'limit=$(ulimit -S -n); case "$limit" in unlimited) limit=128;; *) if [ "$limit" -gt 128 ]; then limit=128; fi;; esac; ulimit -n "$limit" || exit 77; ulimit -S -n > fd-soft-limit; ulimit -H -n > fd-hard-limit; exec "$1" "$2"',
-          'alphaforge-private-fd-child',
-          process.execPath,
-          entry,
-        ],
-        options,
-      )
+    ? spawnSync('/bin/sh', [join(root, 'test/helpers/limited-node.sh'), process.execPath, entry], options)
     : spawnSync(process.execPath, [entry], options);
 }
 
