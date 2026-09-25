@@ -21,8 +21,8 @@ export const XLAYER_ASSIGNMENTS = Object.freeze(
     {
       branch: 'macbeth03/xlayer-r2-public-startup',
       agent: 'Macbeth03',
-      task: 'AF-XLAYER-R2-03-ADAPTER',
-      label: 'Macbeth03',
+      task: 'AF-XLAYER-R2-03',
+      label: 'XLayer',
       base: '1285830766bf1b410e1f4450b883e03863e2438a',
     },
     { branch: 'macbeth04/xlayer-r2-ui', agent: 'Macbeth04', task: 'AF-XLAYER-R2-04-UI', label: 'Macbeth04' },

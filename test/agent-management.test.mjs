@@ -631,7 +631,7 @@ test('XLayer assignments require the exact branch, agent and task without granti
   const assignments = [
     ['codex/xlayer-r2', 'XLayerPM', 'AF-XLAYER-R2', 'XLayer', 'Manager-ID'],
     ['macbeth03/xlayer-r2-adapter', 'Macbeth03', 'AF-XLAYER-R2-03-ADAPTER', 'Macbeth03', 'Agent-ID'],
-    ['macbeth03/xlayer-r2-public-startup', 'Macbeth03', 'AF-XLAYER-R2-03-ADAPTER', 'Macbeth03', 'Agent-ID'],
+    ['macbeth03/xlayer-r2-public-startup', 'Macbeth03', 'AF-XLAYER-R2-03', 'XLayer', 'Agent-ID'],
     ['macbeth04/xlayer-r2-ui', 'Macbeth04', 'AF-XLAYER-R2-04-UI', 'Macbeth04', 'Agent-ID'],
     ['codex/xlayer-r2-contracts', 'Temp-A', 'AF-XLAYER-R2-CONTRACTS', 'Temp-A', 'Agent-ID'],
     ['codex/xlayer-r2-ci', 'TempB', 'AF-XLAYER-R2-TEMPB', 'TempB', 'Agent-ID'],
@@ -662,4 +662,27 @@ test('XLayer assignments require the exact branch, agent and task without granti
       body: 'Agent-ID: Macbeth03\nTask-ID: AF-XLAYER-R2-04-UI',
     }),
   );
+});
+
+test('public startup identity cannot borrow adapter task or another worker identity', () => {
+  const valid = {
+    branch: 'macbeth03/xlayer-r2-public-startup',
+    subject: '[XLayer][AF-XLAYER-R2-03] Public startup',
+    body: 'Agent-ID: Macbeth03\nTask-ID: AF-XLAYER-R2-03',
+    prTitle: '[XLayer][AF-XLAYER-R2-03] Public startup',
+  };
+  assert.deepEqual(validateCommitIdentity(valid), { agentId: 'Macbeth03', taskId: 'AF-XLAYER-R2-03' });
+  for (const patch of [
+    { branch: 'macbeth03/xlayer-r2-adapter' },
+    { branch: 'codex/xlayer-r2' },
+    { body: 'Agent-ID: Macbeth04\nTask-ID: AF-XLAYER-R2-03' },
+    { body: 'Manager-ID: XLayerPM\nTask-ID: AF-XLAYER-R2-03' },
+    { subject: '[Macbeth03][AF-XLAYER-R2-03] Wrong label' },
+    {
+      subject: '[Macbeth03][AF-XLAYER-R2-03-ADAPTER] Wrong task',
+      body: 'Agent-ID: Macbeth03\nTask-ID: AF-XLAYER-R2-03-ADAPTER',
+      prTitle: null,
+    },
+  ])
+    assert.throws(() => validateCommitIdentity({ ...valid, ...patch }));
 });
