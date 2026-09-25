@@ -51,12 +51,10 @@ test('explicit XLayer local config retains mock-only catalog and health without 
   });
   assert.equal(catalog.statusCode, 200);
   assert.deepEqual(
-    catalog
-      .json()
-      .map((item: { strategyId: string; scope: string }) => ({
-        strategyId: item.strategyId,
-        scope: item.scope,
-      })),
+    catalog.json().map((item: { strategyId: string; scope: string }) => ({
+      strategyId: item.strategyId,
+      scope: item.scope,
+    })),
     [
       { strategyId: 'core-flow-demo', scope: 'TEST_ONLY' },
       { strategyId: 'satellite-flow-demo', scope: 'TEST_ONLY' },
