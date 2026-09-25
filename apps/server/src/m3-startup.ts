@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { resolve } from 'node:path';
 import { buildM3App } from './m3-app.ts';
+import { createM3RuntimeLifecycle } from './m3-runtime-lifecycle.ts';
 import {
   composeM3ChainRuntime,
   type M3ChainRuntime,
@@ -61,27 +62,6 @@ function deploymentSet(options: M3ServerStartupOptions): readonly M3ChainRuntime
   return Object.freeze([...deployments]);
 }
 
-function aggregateSync(results: readonly M3RuntimeSyncResult[]): M3RuntimeSyncResult {
-  return Object.freeze(
-    results.reduce(
-      (total, result) => ({
-        scannedBlocks: total.scannedBlocks + result.scannedBlocks,
-        insertedEvents: total.insertedEvents + result.insertedEvents,
-        reorgedBlocks: total.reorgedBlocks + result.reorgedBlocks,
-        trackedOperations: total.trackedOperations + result.trackedOperations,
-        trackingFailures: total.trackingFailures + result.trackingFailures,
-      }),
-      {
-        scannedBlocks: 0,
-        insertedEvents: 0,
-        reorgedBlocks: 0,
-        trackedOperations: 0,
-        trackingFailures: 0,
-      },
-    ),
-  );
-}
-
 export async function startM3Server(
   options: M3ServerStartupOptions,
   dependencies: M3ChainRuntimeDependencies = {},
@@ -118,22 +98,8 @@ export async function startM3Server(
   }
   const runtime = runtimes.length === 1 ? runtimes[0]! : null;
   let app: FastifyInstance | null = null;
-  let closed = false;
-  let timer: NodeJS.Timeout | null = null;
-  let syncTail: Promise<M3RuntimeSyncResult | null> = Promise.resolve(null);
-  const syncNow = (): Promise<M3RuntimeSyncResult | null> => {
-    if (closed) return Promise.reject(new Error('M3_SERVER_CLOSED'));
-    const next = syncTail.then(async () => {
-      if (runtimes.length === 0) return null;
-      const settled = await Promise.allSettled(runtimes.map((item) => item.syncToHead()));
-      if (settled.some((result) => result.status === 'rejected')) throw new Error('M3_RUNTIME_SYNC_FAILED');
-      return aggregateSync(
-        settled.map((result) => (result as PromiseFulfilledResult<M3RuntimeSyncResult>).value),
-      );
-    });
-    syncTail = next.catch(() => null);
-    return next;
-  };
+  const lifecycle = createM3RuntimeLifecycle(runtimes, interval);
+  const { syncNow } = lifecycle;
 
   try {
     app = (
@@ -142,45 +108,20 @@ export async function startM3Server(
         ...(runtimes.length ? { chainRuntimes: runtimes } : {}),
       })
     ).app;
-    app.addHook('onClose', async () => {
-      closed = true;
-      if (timer) clearTimeout(timer);
-    });
+    app.addHook('preClose', lifecycle.stop);
     // Configuration and storage construction above remain fatal. A failed chain read or
     // durable reorg fault must still leave the UI accessible and its stale API reads closed.
     await syncNow().catch(() => undefined);
     if (options.listen) await app.listen(options.listen);
   } catch (error) {
+    await lifecycle.stop();
     if (app) await app.close();
     else for (const item of runtimes) item.close();
     throw error;
   }
 
-  if (runtimes.length && interval) {
-    const schedule = () => {
-      timer = setTimeout(() => {
-        void syncNow()
-          .catch(() => undefined)
-          .finally(() => {
-            if (!closed) schedule();
-          });
-      }, interval);
-      timer.unref();
-    };
-    schedule();
-  }
-
+  lifecycle.start();
   let closePromise: Promise<void> | null = null;
-  const close = () => {
-    if (closePromise) return closePromise;
-    closed = true;
-    if (timer) clearTimeout(timer);
-    closePromise = syncTail
-      .catch(() => null)
-      .then(async () => {
-        await app!.close();
-      });
-    return closePromise;
-  };
+  const close = () => (closePromise ??= lifecycle.stop().then(() => app!.close()));
   return Object.freeze({ app, runtime, runtimes: Object.freeze([...runtimes]), syncNow, close });
 }
