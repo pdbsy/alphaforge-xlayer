@@ -282,3 +282,14 @@ test('Python gate qualification refuses version, architecture and floating setup
     }
   }
 });
+
+test('all native verification jobs require immutable upstream evidence before their tests', async () => {
+  const workflow = parse(await readFile(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8'));
+  for (const job of ['verify', 'verify-windows', 'verify-macos']) {
+    const missing = structuredClone(workflow);
+    missing.jobs[job].steps = missing.jobs[job].steps.filter(
+      (step) => step.run !== 'node tools/fetch-xlayer-source.mjs',
+    );
+    assert.throws(() => validateCIGateWorkflows(stringify(missing)), /source evidence/);
+  }
+});
