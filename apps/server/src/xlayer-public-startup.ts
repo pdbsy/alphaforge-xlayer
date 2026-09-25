@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import { lstatSync, realpathSync } from 'node:fs';
+import { closeSync, constants, fstatSync, lstatSync, openSync, realpathSync } from 'node:fs';
 import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { validateDeploymentManifest } from '../../../packages/chain-adapter/src/manifest.ts';
 import { buildXLayerPublicApp, validatePublicOrigin } from './xlayer-public-app.ts';
@@ -84,11 +84,13 @@ export function validateXLayerPublicRpcEndpoints(input: readonly string[]): read
 function validateStorage(inputs: readonly DeployedRuntimeInput[], webRoot?: string): void {
   try {
     const paths = new Set<string>();
+    const databases: string[] = [];
     const identities = new Set<string>();
     const publicRoot = webRoot ? realpathSync(webRoot) : undefined;
     for (const input of inputs) {
       if (typeof input.dbPath !== 'string' || !isAbsolute(input.dbPath)) throw new Error();
       const path = join(realpathSync(dirname(input.dbPath)), basename(input.dbPath));
+      databases.push(path);
       if (publicRoot) {
         const rel = relative(publicRoot, path);
         if (rel === '' || (!rel.startsWith('..' + '/') && !rel.startsWith('..' + '\\') && !isAbsolute(rel)))
@@ -96,7 +98,7 @@ function validateStorage(inputs: readonly DeployedRuntimeInput[], webRoot?: stri
       }
       for (const suffix of ['', '-wal', '-shm', '-journal']) {
         // Reserve sidecar names too, including aliases on case-insensitive hosts.
-        const canonicalName = (path + suffix).toLowerCase();
+        const canonicalName = (path + suffix).normalize('NFC').toLowerCase();
         if (paths.has(canonicalName)) throw new Error();
         paths.add(canonicalName);
         const stat = lstatSync(path + suffix, { throwIfNoEntry: false });
@@ -104,6 +106,30 @@ function validateStorage(inputs: readonly DeployedRuntimeInput[], webRoot?: stri
         const id = `${stat.dev}:${stat.ino}`;
         if (!stat.isFile() || stat.nlink !== 1 || identities.has(id)) throw new Error();
         identities.add(id);
+      }
+    }
+    // Reserve absent databases atomically before constructing any runtime. Comparing
+    // actual identities also covers filesystem aliases beyond string normalization.
+    const reservedIdentities = new Set<string>();
+    for (const path of databases) {
+      let fd: number;
+      try {
+        fd = openSync(
+          path,
+          constants.O_RDWR | constants.O_CREAT | constants.O_EXCL | constants.O_NOFOLLOW,
+          0o600,
+        );
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
+        fd = openSync(path, constants.O_RDWR | constants.O_NOFOLLOW);
+      }
+      try {
+        const stat = fstatSync(fd);
+        const identity = `${stat.dev}:${stat.ino}`;
+        if (!stat.isFile() || stat.nlink !== 1 || reservedIdentities.has(identity)) throw new Error();
+        reservedIdentities.add(identity);
+      } finally {
+        closeSync(fd);
       }
     }
   } catch {

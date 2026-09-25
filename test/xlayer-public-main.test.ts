@@ -2,10 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync, mkdirSync, writeFileSync, existsSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { readXLayerPublicConfig, startXLayerPublicMain } from '../apps/server/src/xlayer-public-main.ts';
+import { buildXLayerPublicApp } from '../apps/server/src/xlayer-public-app.ts';
 import { deploymentManifestDigest } from '../packages/chain-adapter/src/manifest.ts';
 import { M3_VAULT_ABI_HASH, M3_VAULT_ABI_VERSION } from '../packages/chain-adapter/src/vault-abi.ts';
 import { M3_STRATEGY_PASS_ABI_HASH } from '../packages/chain-adapter/src/pass-abi.ts';
@@ -60,10 +61,11 @@ function fixture(t: test.TestContext) {
 }
 
 test('no operator file defaults to loopback rehearsal with no deployments or RPC', () => {
-  const config = readXLayerPublicConfig(undefined, '/private/tmp/AlphaForge');
+  const root = join(tmpdir(), 'AlphaForge');
+  const config = readXLayerPublicConfig(undefined, root);
   assert.deepEqual(config.listen, { host: '127.0.0.1', port: 4180 });
   assert.equal(config.origin, 'http://127.0.0.1:4180');
-  assert.equal(config.webRoot, '/private/tmp/AlphaForge/dist/xlayer/web');
+  assert.equal(config.webRoot, resolve(root, 'dist/xlayer/web'));
   assert.equal(config.rpcAccess, 'disabled');
   assert.deepEqual(config.deployments, []);
   assert.deepEqual(config.runtimeDeployments, []);
@@ -75,6 +77,30 @@ test('operator paths resolve from the config file without creating storage', (t)
   assert.equal(config.webRoot, webRoot);
   assert.equal(config.dataDir, join(root, 'private-data'));
   assert.equal(existsSync(config.dataDir), false);
+});
+
+test('operator configuration cannot be exposed by the static root or a root alias', async (t) => {
+  const { root, webRoot, config } = fixture(t);
+  const file = join(webRoot, 'operator.json');
+  const alias = join(root, 'web-alias');
+  symlinkSync(webRoot, alias, 'junction');
+  for (const publicRoot of ['.', alias]) {
+    writeFileSync(file, JSON.stringify({ ...config, webRoot: publicRoot, dataDir: '../private-data' }));
+    await assert.rejects(async () => {
+      const parsed = readXLayerPublicConfig(file);
+      const app = await buildXLayerPublicApp(parsed);
+      try {
+        const response = await app.inject({ url: '/operator.json', headers: { host: 'alphaforge.example' } });
+        throw new Error(`OPERATOR_CONFIG_STATIC_STATUS_${response.statusCode}`);
+      } finally {
+        await app.close();
+      }
+    }, /INVALID_XLAYER_PUBLIC_CONFIG/);
+  }
+  const outsideFile = join(root, 'operator-outside.json');
+  writeFileSync(outsideFile, JSON.stringify({ ...config, dataDir: './web-alias/new-index' }));
+  assert.throws(() => readXLayerPublicConfig(outsideFile), /INVALID_XLAYER_PUBLIC_CONFIG/);
+  assert.equal(existsSync(join(webRoot, 'new-index')), false);
 });
 
 test('one deployments array derives pinned runtime manifests and deterministic isolated paths', (t) => {
@@ -166,36 +192,43 @@ test('main starts an honest public website and closes its ephemeral listener', a
   assert.equal(server.app.server.listening, false);
 });
 
-test('actual CLI handles SIGTERM and prints only a fixed startup result', { timeout: 10000 }, async (t) => {
-  const { file } = fixture(t);
-  const child = spawn(process.execPath, ['apps/server/src/xlayer-public-main.ts'], {
-    env: { ...process.env, AF_XLAYER_CONFIG: file },
-    stdio: ['ignore', 'pipe', 'pipe'],
-  });
-  t.after(() => {
-    if (child.exitCode === null) child.kill('SIGKILL');
-  });
-  let output = '',
-    errors = '';
-  child.stderr.on('data', (data) => {
-    errors += String(data);
-  });
-  const started = new Promise<void>((resolve, reject) => {
-    child.stdout.on('data', (data) => {
-      output += String(data);
-      if (output.includes('server started.')) resolve();
+test(
+  'actual CLI handles SIGTERM and prints only a fixed startup result',
+  {
+    timeout: 10000,
+    skip: process.platform === 'win32' ? 'Windows does not deliver a catchable POSIX SIGTERM' : false,
+  },
+  async (t) => {
+    const { file } = fixture(t);
+    const child = spawn(process.execPath, ['apps/server/src/xlayer-public-main.ts'], {
+      env: { ...process.env, AF_XLAYER_CONFIG: file },
+      stdio: ['ignore', 'pipe', 'pipe'],
     });
-    child.once('exit', () => reject(new Error(errors)));
-  });
-  const exited = once(child, 'exit');
-  await started;
-  child.kill('SIGTERM');
-  const [code, signal] = await exited;
-  assert.equal(code, 0);
-  assert.equal(signal, null);
-  assert.equal(output, 'AlphaForge XLayer server started.\n');
-  assert.equal(errors, '');
-});
+    t.after(() => {
+      if (child.exitCode === null) child.kill('SIGKILL');
+    });
+    let output = '',
+      errors = '';
+    child.stderr.on('data', (data) => {
+      errors += String(data);
+    });
+    const started = new Promise<void>((resolve, reject) => {
+      child.stdout.on('data', (data) => {
+        output += String(data);
+        if (output.includes('server started.')) resolve();
+      });
+      child.once('exit', () => reject(new Error(errors)));
+    });
+    const exited = once(child, 'exit');
+    await started;
+    child.kill('SIGTERM');
+    const [code, signal] = await exited;
+    assert.equal(code, 0);
+    assert.equal(signal, null);
+    assert.equal(output, 'AlphaForge XLayer server started.\n');
+    assert.equal(errors, '');
+  },
+);
 
 test('actual CLI reports invalid config without raw path, input or stack trace', async (t) => {
   const { file } = fixture(t);

@@ -1,5 +1,15 @@
-import { closeSync, constants, fstatSync, lstatSync, mkdirSync, openSync, readSync } from 'node:fs';
-import { dirname, isAbsolute, relative, resolve, sep } from 'node:path';
+import {
+  closeSync,
+  constants,
+  existsSync,
+  fstatSync,
+  lstatSync,
+  mkdirSync,
+  openSync,
+  readSync,
+  realpathSync,
+} from 'node:fs';
+import { basename, dirname, isAbsolute, relative, resolve, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { validatePublicOrigin } from './xlayer-public-app.ts';
 import { validateXLayerPublicDeployment, type XLayerPublicDeployment } from './xlayer-public-config.ts';
@@ -29,6 +39,23 @@ function object(input: unknown, fields: readonly string[]): Record<string, unkno
 function localPath(input: unknown, base: string): string {
   if (typeof input !== 'string' || !input.trim() || input.includes('\0')) throw new Error();
   return resolve(base, input);
+}
+
+function containedBy(root: string, path: string): boolean {
+  const rel = relative(root, path);
+  return rel === '' || (rel !== '..' && !rel.startsWith(`..${sep}`) && !isAbsolute(rel));
+}
+
+function prospectiveRealPath(path: string): string {
+  const suffix: string[] = [];
+  let parent = path;
+  while (!existsSync(parent)) {
+    suffix.unshift(basename(parent));
+    const next = dirname(parent);
+    if (next === parent) throw new Error();
+    parent = next;
+  }
+  return resolve(realpathSync(parent), ...suffix);
 }
 
 function readDocument(path: string): unknown {
@@ -84,8 +111,12 @@ export function readXLayerPublicConfig(configPath?: string, root = projectRoot):
     const base = dirname(resolve(configPath));
     const webRoot = localPath(input.webRoot, base),
       dataDir = localPath(input.dataDir, base);
-    const insideWeb = relative(webRoot, dataDir);
-    if (insideWeb === '' || (!insideWeb.startsWith(`..${sep}`) && !isAbsolute(insideWeb))) throw new Error();
+    const publicRoot = realpathSync(webRoot);
+    if (
+      containedBy(publicRoot, realpathSync(configPath)) ||
+      containedBy(publicRoot, prospectiveRealPath(dataDir))
+    )
+      throw new Error();
     const listen = object(input.listen, ['host', 'port']);
     if (
       !['127.0.0.1', 'localhost', '0.0.0.0'].includes(listen.host as string) ||

@@ -16,6 +16,9 @@ An explicit `AF_XLAYER_CONFIG` points to a UTF-8 JSON file. All nine top-level k
 below are required. Unknown keys at either level are rejected. The file must be
 a regular file, not a link, and at most 256 KiB. Relative filesystem paths resolve
 against the configuration file's directory.
+The configuration file itself and the data directory must remain outside the
+served root, including paths reached through filesystem aliases. Startup rejects
+these placements before the static server can expose private operator fields.
 
 ```json
 {
@@ -60,10 +63,20 @@ work before releasing SQLite.
 The combined public startup/main/app, M3 startup and XLayer Phase 1 suites passed
 47 tests with offline/injected RPCs and temporary sockets. Both TypeScript
 projects, focused ESLint and formatting checks passed. Tests exercise the real
-CLI and SIGTERM, strict unknown-key handling, redacted failures, same-record
+CLI and POSIX SIGTERM, strict unknown-key handling, redacted failures, same-record
 manifest derivation, independent database paths and the manager's corrected
 projection-readiness behavior.
+The SIGTERM subprocess assertion is POSIX-only; portable server-handle close and
+CLI invalid-input tests also apply on Windows. Windows execution is not claimed
+by this macOS run.
 
 The worker's own checks are not independent approval. Root script registration,
 integrated release rehearsal and independent review remain with XLayerPM. Real
 network access and deployment are not implied by a successful local test run.
+
+The subsequent Macbeth05 review identified static configuration exposure,
+case-insensitive SQLite aliases and two Windows-specific test assumptions. The
+static exposure and fresh alias regressions failed against the prior source and
+passed with the fixes. The updated combined suite passed 51/51 on macOS, with
+both TypeScript projects and focused lint/format checks. The corrected source
+requires review of the final fix commit before integration approval is claimed.

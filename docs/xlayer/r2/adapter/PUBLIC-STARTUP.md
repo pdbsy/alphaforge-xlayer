@@ -29,6 +29,9 @@ digest and is not copied into the runtime manifest.
   All identities and paths are checked before any RPC factory or store opens.
 - SQLite paths are separate per Vault; existing database and sidecar symlinks or
   hardlinks are rejected. Databases cannot reside under the static web root.
+  New database files are atomically reserved with private permissions; actual
+  device/inode identities are compared before any runtime opens. A failed startup
+  may retain empty reserved files, but never deletes existing database contents.
   The operator must keep the data directory private to this server instance.
 - Sync calls are serialized, with a default five-second interval measured from
   completion. Library callers can set `syncIntervalMs: null` for manual sync.

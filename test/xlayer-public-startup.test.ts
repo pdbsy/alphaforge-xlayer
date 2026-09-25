@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync, writeFileSync, existsSync, linkSync, symlinkSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync, existsSync, linkSync, symlinkSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, dirname, join } from 'node:path';
 import { setImmediate } from 'node:timers/promises';
@@ -229,9 +229,12 @@ test('SQLite hardlinks cannot bypass per-Vault storage isolation', async (t) => 
 
 test('new database names cannot alias another database or its SQLite sidecars', async (t) => {
   const { options } = fixture(t, 2);
-  const first = options.runtimeDeployments[0]!;
+  const first = {
+    ...options.runtimeDeployments[0]!,
+    dbPath: join(dirname(options.runtimeDeployments[0]!.dbPath), 'State.sqlite'),
+  };
   for (const path of [
-    join(dirname(first.dbPath), basename(first.dbPath).toUpperCase()),
+    join(dirname(first.dbPath), basename(first.dbPath).toLowerCase()),
     first.dbPath + '-wal',
     first.dbPath + '-shm',
   ]) {
@@ -248,6 +251,37 @@ test('new database names cannot alias another database or its SQLite sidecars', 
     );
   }
   assert.equal(existsSync(first.dbPath), false);
+});
+
+test('fresh filesystem-normalized Unicode aliases cannot open two runtimes on one database', async (t) => {
+  const { directory, options } = fixture(t, 2);
+  const first = { ...options.runtimeDeployments[0]!, dbPath: join(directory, 'Caf\u00e9.sqlite') };
+  const second = { ...options.runtimeDeployments[1]!, dbPath: join(directory, 'Cafe\u0301.sqlite') };
+  await assert.rejects(
+    startXLayerPublicServer(
+      { ...options, runtimeDeployments: [first, second] },
+      {
+        createRpc: () => assert.fail('file identities must be isolated before runtime creation'),
+      },
+    ),
+    /INVALID_PUBLIC_STORAGE/,
+  );
+});
+
+test('all database identities are reserved and separate before the first RPC factory runs', async (t) => {
+  const { options } = fixture(t, 2);
+  let factories = 0;
+  const server = await startXLayerPublicServer(options, {
+    createRpc: () => {
+      factories++;
+      const stats = options.runtimeDeployments.map((item) => statSync(item.dbPath));
+      assert.equal(new Set(stats.map((stat) => `${stat.dev}:${stat.ino}`)).size, 2);
+      assert.ok(stats.every((stat) => stat.isFile() && stat.nlink === 1));
+      return new OfflineRpc();
+    },
+  });
+  t.after(() => server.close());
+  assert.equal(factories, 2);
 });
 
 test('SQLite symlink sidecars are rejected before runtime construction', async (t) => {
