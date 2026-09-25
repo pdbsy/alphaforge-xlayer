@@ -963,7 +963,7 @@ test('account connects a visibly mock wallet backed by the demo trading ledger',
   assert.match(html, /Use Pass/);
   assert.match(html, /Frozen \(in use\) 2\.5 · Available 7\.5/);
   assert.match(html, /Allocated 2\.5 USDC/);
-  assert.match(html, /9997\.5/);
+  assert.doesNotMatch(html, /USDC balance|wallet-usdc|9997\.5/);
   assert.match(html, /1 ETH = 2688 USDC/);
   assert.doesNotMatch(html, /Buy or sell Pass/);
   assert.equal((html.match(/<button\b/g) ?? []).length, 1);

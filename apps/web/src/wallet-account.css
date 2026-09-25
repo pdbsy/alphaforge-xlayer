@@ -238,17 +238,3 @@ body:has([data-wallet-account]) .local-backend-session {
   font-size: 12px;
   margin-top: 6px;
 }
-
-.wallet-assets {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-}
-.wallet-usdc {
-  background: #f0ebdc;
-}
-@media (max-width: 680px) {
-  .wallet-assets {
-    grid-template-columns: 1fr;
-  }
-}
