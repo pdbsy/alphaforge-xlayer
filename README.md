@@ -21,13 +21,13 @@ npm run build:xlayer
 
 The X Layer build writes the website to **`dist/xlayer/web`** and selects Testnet chain ID 1952. Building it does not deploy contracts or publish a website. Strategy descriptions, charts and rankings are illustrative.
 
-The public application requires a configured origin and explicit reviewed deployment data. Its health endpoint reports not ready until the configured chain runtimes are healthy and caught up. The repository currently exposes this application through [`buildXLayerPublicApp`](apps/server/src/xlayer-public-app.ts); deployment and hosting integration remain part of the [XLayer R2 plan](docs/superpowers/plans/2026-09-25-xlayer-r2.md).
+Run `npm run start:xlayer` to serve the build at `http://127.0.0.1:4180`. The default has no deployments and keeps RPC disabled. For hosting, use the [operator configuration](docs/xlayer/r2/adapter/PUBLIC-OPERATOR-CONFIG.md) with an exact public origin and reviewed deployment data. Keep that file and the data directory outside the website root. The health endpoint returns HTTP 503 until the configured indexers are healthy and caught up.
 
 ## Deployment preparation
 
 The [X Layer deployment template](contracts/deployment/m3-xlayer-testnet.template.json) is a **NOT_DEPLOYED / PRE_RELEASE** preparation record. Addresses, constructor inputs and transaction evidence remain unset. It cannot substitute for an actual reviewed deployment record.
 
-The [contract delivery notes](docs/xlayer/r2/contracts/DELIVERY.md) describe the test assets, Strategy Pass, Vault and Vault-created Locker. The USDT asset uses the existing `afUsdc` contract role to preserve ABI and storage compatibility. Testnet deployment, signing and broadcasting require a separate authorized operation; ordinary builds and tests stay local/mock.
+The [deployment preparation runbook](docs/xlayer/r2/contracts/RUNBOOK.md) covers explicit constructor inputs and the local simulation command. The [contract delivery notes](docs/xlayer/r2/contracts/DELIVERY.md) describe the test assets, Strategy Pass, Vault and Vault-created Locker. The USDT asset uses the existing `afUsdc` contract role to preserve ABI and storage compatibility. Testnet deployment, signing and broadcasting require a separate authorized operation; ordinary builds and tests stay local/mock.
 
 ## Development checks
 
