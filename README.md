@@ -5,7 +5,8 @@ Hackathon edition · Pre-release
 AlphaForge separates Strategy Pass access from funds held in user Vaults. The X Layer edition includes wallet integration, Vault allowances and actions, transaction tracking, and chain event reconciliation.
 
 - **Network:** X Layer Testnet, chain ID **1952** (`0x7a0`).
-- **Settlement display:** **USDT**, the application's six-decimal test token. It is not issuer-backed USDT.
+- **Wallet balance, illustrative prices and preview trading:** **OKB**.
+- **Existing Vault settlement asset:** **USDT**, the application's six-decimal test token. It is not issuer-backed USDT.
 - **Native gas token:** **OKB**.
 - **Deployment status:** **NOT_DEPLOYED**. No deployed contract addresses or live acceptance are claimed by this repository's preparation record.
 
@@ -22,6 +23,17 @@ npm run build:xlayer
 The X Layer build writes the website to **`dist/xlayer/web`** and selects Testnet chain ID 1952. Building it does not deploy contracts or publish a website. Strategy descriptions, charts and rankings are illustrative.
 
 Run `npm run start:xlayer` to serve the build at `http://127.0.0.1:4180`. The default has no deployments and keeps RPC disabled. For hosting, follow the [release and rollback steps](docs/xlayer/r2/adapter/PUBLIC-OPERATOR-CONFIG.md#website-release-and-rollback): the build requires its same-origin Node API, an exact public origin and reviewed deployment data. Uploading the static bundle alone is insufficient. Keep that file and the data directory outside the website root. The health endpoint returns HTTP 503 until the configured indexers are healthy and caught up.
+
+## Try the local preview
+
+```bash
+npm run build:xlayer:preview
+npm run preview:xlayer
+```
+
+Open `http://127.0.0.1:4194/#/account` and select **Wallet**. The button changes to the preview address and displays **1,000 OKB** with seeded Pass holdings. Its USDT estimate uses the fixed preview rate **1 OKB = 120 USDT**. Open a strategy to review and confirm a buy or sell, or expand a holding to deposit and withdraw simulated USDT strategy funds. Funding starts with 10,000 USDT and uses one Pass per USDT of capacity. Both assets share the persisted exchange state; OKB is not automatically converted into USDT.
+
+The preview is an isolated build at `dist/xlayer/preview`, with separate browser storage. It makes no wallet or chain requests. The public website continues to use the connected wallet and reviewed deployment configuration.
 
 ## Deployment preparation
 

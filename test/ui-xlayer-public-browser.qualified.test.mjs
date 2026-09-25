@@ -79,6 +79,7 @@ test(
     });
     page.on('pageerror', (error) => errors.push(error.message));
     await page.goto(origin + '/#/trade/trend');
+    await page.locator('[data-vault-controls] > summary').click();
     await page.getByRole('heading', { name: 'Your wallet & Vault.' }).waitFor();
     await page.waitForFunction(() =>
       globalThis.document
@@ -140,6 +141,8 @@ test(
     await page.evaluate(() => {
       globalThis.location.hash = '#/trade/trend';
     });
+    if ((await page.locator('[data-vault-controls]').getAttribute('open')) === null)
+      await page.locator('[data-vault-controls] > summary').click();
     await page.getByRole('button', { name: 'Connect wallet', exact: true }).click();
     await page.getByRole('alert').filter({ hasText: 'WALLET_PROVIDER_UNAVAILABLE' }).first().waitFor();
     assert.equal(await page.locator('[data-chain-action]:not([disabled])').count(), 0);
@@ -154,7 +157,7 @@ test(
     });
     await page.mouse.move(point.x, point.y);
     await page.locator('[data-candle-tooltip]').waitFor();
-    assert.match(await page.locator('[data-candle-tooltip]').innerText(), /Candle details[\s\S]*USDT/);
+    assert.match(await page.locator('[data-candle-tooltip]').innerText(), /Candle details[\s\S]*OKB/);
     await page.getByRole('button', { name: '7D', exact: true }).first().click();
     await page.getByRole('button', { name: 'Line', exact: true }).click();
     await page.getByRole('button', { name: 'Candles', exact: true }).click();

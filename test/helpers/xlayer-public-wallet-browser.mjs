@@ -149,6 +149,7 @@ export async function runXLayerPublicWalletBrowser(browser, origin) {
           if (input.method === 'eth_chainId') return `0x${state.chainId.toString(16)}`;
           if (input.method === 'eth_getCode')
             return input.params[0].toLowerCase() === pass ? '0x6001' : '0x6000';
+          if (input.method === 'eth_getBalance') return '0x22b1c8c1227a0000';
           if (input.method === 'eth_call') {
             const { data, to } = input.params[0];
             if (data === '0x8b5a851f') return addressWord(token);
@@ -193,6 +194,11 @@ export async function runXLayerPublicWalletBrowser(browser, origin) {
       globalThis.__xlayerWallet.chainId = 1952;
     });
     await connect.click();
+    await page.locator('.wallet-amount').getByText('2.5').waitFor();
+    await page.evaluate(() => {
+      globalThis.location.hash = '#/trade/trend';
+    });
+    await page.locator('[data-vault-controls] > summary').click();
     await page.locator('[data-chain-action="deposit"]:not([disabled])').waitFor();
     async function depositReview() {
       await page.locator('[data-chain-action="deposit"]').click();

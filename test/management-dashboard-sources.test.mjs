@@ -454,6 +454,30 @@ function createIntegratedPushLayout(fixture) {
   return integratedCommit;
 }
 
+function createNormalMergeLayout(fixture) {
+  const { root, baseCommit, headCommit } = fixture;
+  git(root, ['update-ref', 'refs/remotes/origin/macbeth/dashboard', headCommit]);
+  git(root, ['switch', '--quiet', '-C', 'master', baseCommit]);
+  git(root, [
+    '-c',
+    'user.name=Macbeth',
+    '-c',
+    'user.email=pdbsy@users.noreply.github.com',
+    'merge',
+    '--quiet',
+    '--no-ff',
+    '-m',
+    'ordinary source integration',
+    'refs/remotes/origin/macbeth/dashboard',
+  ]);
+  const integratedCommit = git(root, ['rev-parse', 'HEAD']);
+  git(root, ['update-ref', 'refs/remotes/origin/master', integratedCommit]);
+  assert.equal(git(root, ['rev-parse', 'HEAD^1']), baseCommit);
+  assert.equal(git(root, ['rev-parse', 'HEAD^2']), headCommit);
+  assert.equal(git(root, ['rev-parse', 'HEAD^{tree}']), git(root, ['rev-parse', `${headCommit}^{tree}`]));
+  return integratedCommit;
+}
+
 test('Git collector reports real branch, dirty state, history, and ahead/behind', async (t) => {
   const root = await mkdtemp(join(tmpdir(), 'quantpass-dashboard-git-'));
   t.after(() => rm(root, { recursive: true, force: true }));
@@ -779,6 +803,151 @@ test('recorded Git collector validates an equivalent linear-history integration 
   );
   assert.equal(forged.status, 'DATA_SOURCE_ERROR');
   assert.equal(forged.error, 'RECORDED_GIT_GRAPH_MISMATCH');
+});
+
+test('recorded Git collector preserves pre-merge metadata after an ordinary source merge', async (t) => {
+  const fixture = await createRecordedGitFixture(t);
+  const recorded = recordedGit('macbeth/dashboard', fixture.recordedCommit, fixture.recordedTree);
+  const before = await collectRecordedGitState(fixture.root, 'master', recorded);
+  assert.equal(before.status, 'READY');
+  const integratedCommit = createNormalMergeLayout(fixture);
+  const after = await collectRecordedGitState(fixture.root, 'master', recorded, {
+    observedAt,
+    environment: integratedPushEnvironment(integratedCommit),
+  });
+  assert.equal(after.status, 'READY');
+  assert.deepEqual(after.aheadBehind, before.aheadBehind);
+  assert.equal(after.commit, before.commit);
+  assert.equal(after.tree, before.tree);
+  assert.deepEqual(after.recentCommits, before.recentCommits);
+});
+
+test('ordinary integration rejects a different source tip even with an identical tree', async (t) => {
+  const fixture = await createRecordedGitFixture(t);
+  const integratedCommit = createNormalMergeLayout(fixture);
+  const sourceTree = git(fixture.root, ['rev-parse', `${fixture.headCommit}^{tree}`]);
+  const differentSource = git(fixture.root, [
+    '-c',
+    'user.name=Macbeth',
+    '-c',
+    'user.email=pdbsy@users.noreply.github.com',
+    'commit-tree',
+    sourceTree,
+    '-p',
+    fixture.headCommit,
+    '-m',
+    'different source tip with the same tree',
+  ]);
+  git(fixture.root, ['update-ref', 'refs/remotes/origin/macbeth/dashboard', differentSource]);
+  const actual = await collectRecordedGitState(
+    fixture.root,
+    'master',
+    recordedGit('macbeth/dashboard', fixture.recordedCommit, fixture.recordedTree),
+    { environment: integratedPushEnvironment(integratedCommit) },
+  );
+  assert.equal(actual.error, 'RECORDED_GIT_GRAPH_MISMATCH');
+});
+
+test('ordinary integration rejects a wrong merge parent even with an identical tree', async (t) => {
+  const fixture = await createRecordedGitFixture(t);
+  const integratedCommit = createNormalMergeLayout(fixture);
+  const wrongParent = git(fixture.root, ['rev-parse', 'HEAD^1']);
+  const sourceTree = git(fixture.root, ['rev-parse', `${fixture.headCommit}^{tree}`]);
+  const forgedMerge = git(fixture.root, [
+    '-c',
+    'user.name=Macbeth',
+    '-c',
+    'user.email=pdbsy@users.noreply.github.com',
+    'commit-tree',
+    sourceTree,
+    '-p',
+    wrongParent,
+    '-p',
+    fixture.forgedCommit,
+    '-m',
+    'wrong second parent with matching tree',
+  ]);
+  git(fixture.root, ['update-ref', 'refs/heads/master', forgedMerge, integratedCommit]);
+  git(fixture.root, ['reset', '--hard', '--quiet', forgedMerge]);
+  git(fixture.root, ['update-ref', 'refs/remotes/origin/master', forgedMerge]);
+  const actual = await collectRecordedGitState(
+    fixture.root,
+    'master',
+    recordedGit('macbeth/dashboard', fixture.recordedCommit, fixture.recordedTree),
+    { environment: integratedPushEnvironment(forgedMerge) },
+  );
+  assert.equal(actual.error, 'RECORDED_GIT_GRAPH_MISMATCH');
+});
+
+test('ordinary integration rejects a changed merge tree', async (t) => {
+  const fixture = await createRecordedGitFixture(t);
+  createNormalMergeLayout(fixture);
+  await writeFile(join(fixture.root, 'forged-merge.txt'), 'forged\n');
+  git(fixture.root, ['add', 'forged-merge.txt']);
+  const changedTree = git(fixture.root, ['write-tree']);
+  const forgedMerge = git(fixture.root, [
+    '-c',
+    'user.name=Macbeth',
+    '-c',
+    'user.email=pdbsy@users.noreply.github.com',
+    'commit-tree',
+    changedTree,
+    '-p',
+    fixture.baseCommit,
+    '-p',
+    fixture.headCommit,
+    '-m',
+    'changed merge tree',
+  ]);
+  git(fixture.root, ['reset', '--hard', '--quiet', forgedMerge]);
+  git(fixture.root, ['update-ref', 'refs/remotes/origin/master', forgedMerge]);
+  const actual = await collectRecordedGitState(
+    fixture.root,
+    'master',
+    recordedGit('macbeth/dashboard', fixture.recordedCommit, fixture.recordedTree),
+    { environment: integratedPushEnvironment(forgedMerge) },
+  );
+  assert.equal(actual.error, 'RECORDED_GIT_GRAPH_MISMATCH');
+});
+
+test('ordinary integration rejects a retained source without recorded ancestry', async (t) => {
+  const fixture = await createRecordedGitFixture(t);
+  const sourceTree = git(fixture.root, ['rev-parse', `${fixture.headCommit}^{tree}`]);
+  const unrelatedSource = git(fixture.root, [
+    '-c',
+    'user.name=Macbeth',
+    '-c',
+    'user.email=pdbsy@users.noreply.github.com',
+    'commit-tree',
+    sourceTree,
+    '-p',
+    fixture.baseCommit,
+    '-m',
+    'unrelated source with the same tree',
+  ]);
+  git(fixture.root, ['update-ref', 'refs/remotes/origin/macbeth/dashboard', unrelatedSource]);
+  git(fixture.root, ['switch', '--quiet', '-C', 'master', fixture.baseCommit]);
+  git(fixture.root, [
+    '-c',
+    'user.name=Macbeth',
+    '-c',
+    'user.email=pdbsy@users.noreply.github.com',
+    'merge',
+    '--quiet',
+    '--no-ff',
+    '-m',
+    'unrelated source integration',
+    'refs/remotes/origin/macbeth/dashboard',
+  ]);
+  const integratedCommit = git(fixture.root, ['rev-parse', 'HEAD']);
+  git(fixture.root, ['update-ref', 'refs/remotes/origin/master', integratedCommit]);
+  const actual = await collectRecordedGitState(
+    fixture.root,
+    'master',
+    recordedGit('macbeth/dashboard', fixture.recordedCommit, fixture.recordedTree),
+    { environment: integratedPushEnvironment(integratedCommit) },
+  );
+  assert.equal(actual.error, 'RECORDED_GIT_COMMIT_MISMATCH');
 });
 
 test('recorded Git collector validates an equivalent linear-history integration workflow dispatch', async (t) => {

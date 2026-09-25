@@ -3,10 +3,11 @@ import { createM3BrowserRuntime, type M3BrowserDeploymentConfig } from './m3-bro
 import { createM3BrowserRuntimeSet } from './m3-browser-runtime-set.ts';
 import type { Eip1193Provider } from './chain-wallet.ts';
 
-export function readM3BuildMode(env: Readonly<Record<string, unknown>>): 'local' | 'testnet' {
+export function readM3BuildMode(env: Readonly<Record<string, unknown>>): 'local' | 'testnet' | 'preview' {
   const network = readM3BuildNetwork(env);
   if (env.VITE_AF_APP_MODE === undefined || env.VITE_AF_APP_MODE === 'local') return 'local';
   if (env.VITE_AF_APP_MODE === 'testnet' && network.key === 'xlayer-testnet') return 'testnet';
+  if (env.VITE_AF_APP_MODE === 'preview' && network.key === 'xlayer-testnet') return 'preview';
   throw new Error('INVALID_M3_BUILD_MODE');
 }
 

@@ -60,13 +60,13 @@ test('local prototype retains its historical isolated funding behavior', () => {
   assert.equal(AF.exchange.read().cash, 1000000);
 });
 
-test('public dynamic catalogue and ranking source render USDT after every filter refresh', () => {
+test('public dynamic catalogue and ranking source render OKB after every filter refresh', () => {
   const { AF } = prototype(true);
   for (const query of ['', 'trend']) {
     AF.view.marketQuery = query;
     AF.view.marketSort = 'name';
     const cards = AF.market.results();
-    assert.match(cards, /USDT/);
+    assert.match(cards, /OKB/);
     assert.doesNotMatch(cards, /DEMO/);
   }
   for (const mode of ['price', 'volume', 'returns', 'risk']) {
@@ -74,6 +74,7 @@ test('public dynamic catalogue and ranking source render USDT after every filter
     for (const range of ['24h', '7d', '30d']) {
       AF.view.rankRange = range;
       assert.doesNotMatch(AF.pages.rankings(), /DEMO/);
+      assert.match(AF.pages.rankings(), /OKB/);
     }
   }
 });

@@ -1,15 +1,15 @@
 import { readFile } from 'node:fs/promises';
 import { defineConfig } from 'vite';
 export default defineConfig(({ mode }) => ({
-  publicDir: mode === 'xlayer' ? false : '../../docs',
+  publicDir: mode === 'xlayer' || mode === 'xlayer-preview' ? false : '../../docs',
   plugins: [
     {
       name: 'alphaforge-xlayer-release-mode',
       transformIndexHtml(html) {
-        if (mode !== 'xlayer') return html;
+        if (mode !== 'xlayer' && mode !== 'xlayer-preview') return html;
         return html.replace(
           '<script src="/user-ui.js"></script>',
-          '<script src="/xlayer-mode.js"></script>\n<script src="/user-ui.js"></script>',
+          `<script src="/${mode === 'xlayer' ? 'xlayer-mode.js' : 'xlayer-preview-mode.js'}"></script>\n<script src="/user-ui.js"></script>`,
         );
       },
       generateBundle() {
@@ -18,6 +18,12 @@ export default defineConfig(({ mode }) => ({
             type: 'asset',
             fileName: 'xlayer-mode.js',
             source: 'window.AF_PUBLIC_MODE = true;\n',
+          });
+        if (mode === 'xlayer-preview')
+          this.emitFile({
+            type: 'asset',
+            fileName: 'xlayer-preview-mode.js',
+            source: 'window.AF_PREVIEW_MODE = true;\n',
           });
       },
     },
@@ -56,7 +62,12 @@ export default defineConfig(({ mode }) => ({
     },
   ],
   build: {
-    outDir: mode === 'xlayer' ? '../../dist/xlayer/web' : 'dist',
+    outDir:
+      mode === 'xlayer'
+        ? '../../dist/xlayer/web'
+        : mode === 'xlayer-preview'
+          ? '../../dist/xlayer/preview'
+          : 'dist',
     sourcemap: false,
     emptyOutDir: true,
   },

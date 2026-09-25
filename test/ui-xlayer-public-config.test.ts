@@ -23,11 +23,21 @@ test('public mode requires an exact trusted testnet build and rejects ambiguous 
     }),
     'testnet',
   );
+  assert.equal(
+    readM3BuildMode({
+      VITE_AF_APP_MODE: 'preview',
+      VITE_AF_CHAIN: 'xlayer-testnet',
+      VITE_AF_CHAIN_ID: '1952',
+    }),
+    'preview',
+  );
   for (const env of [
     { VITE_AF_APP_MODE: 'public' },
     { VITE_AF_APP_MODE: '' },
     { VITE_AF_APP_MODE: 'testnet' },
     { VITE_AF_APP_MODE: 'testnet', VITE_AF_CHAIN: 'xlayer-testnet', VITE_AF_CHAIN_ID: '196' },
+    { VITE_AF_APP_MODE: 'preview' },
+    { VITE_AF_APP_MODE: 'preview', VITE_AF_CHAIN: 'robinhood-chain-testnet', VITE_AF_CHAIN_ID: '46630' },
   ])
     assert.throws(() => readM3BuildMode(env));
 });

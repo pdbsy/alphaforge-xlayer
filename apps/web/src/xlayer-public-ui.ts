@@ -1,12 +1,16 @@
 import { installCandleInspection } from './kline-hover.ts';
 import './kline-hover.css';
 import './xlayer-public-ui.css';
+import './wallet-account.css';
 import { loadXLayerPublicRuntime } from './xlayer-public-config.ts';
+import type { XLayerPublicConfig } from './xlayer-public-config.ts';
 import { M3_XLAYER_NETWORK } from './m3-network.ts';
 import { createM3BrowserRuntime } from './m3-browser-runtime.ts';
 import { renderM3PublicShell } from './m3-product-shell.ts';
 import { installM3WalletControls } from './m3-wallet-ui.ts';
 import { hydrateProductStyles } from './product-styles.ts';
+import { renderWalletAccount, type WalletPassHolding } from './wallet-account-view.ts';
+import { readXLayerWalletBalances } from './xlayer-wallet-balances.ts';
 
 const AF = window.AF as typeof window.AF & {
   publicMode?: boolean;
@@ -26,7 +30,7 @@ const AF = window.AF as typeof window.AF & {
 };
 if (!AF.publicMode) throw new Error('PUBLIC_BUILD_MODE_MISMATCH');
 const scope =
-  'Strategy descriptions, charts and rankings are illustrative. Wallet balances and transactions come from X Layer Testnet. USDT denotes the test token used by this application.';
+  'Strategy descriptions, charts and rankings are illustrative. Wallet balances come from X Layer Testnet. Vault transactions use the configured USDT test token.';
 const escapeHtml = (value: unknown) =>
   String(value ?? '').replace(
     /[&<>"']/g,
@@ -48,7 +52,7 @@ function publicMarkup(html: string): string {
   while (walker.nextNode()) {
     const node = walker.currentNode;
     node.textContent = (node.textContent ?? '')
-      .replace(/\bDEMO\b/g, 'USDT')
+      .replace(/\bDEMO\b/g, 'OKB')
       .replace(/\bdemo\b/gi, 'illustrative')
       .replace(/\bfixtures?\b/gi, 'examples')
       .replace(/\bmock\b/gi, 'illustrative');
@@ -62,7 +66,7 @@ const openDialog = AF.app.openDialog.bind(AF.app);
 AF.app.openDialog = (html) => openDialog(publicMarkup(html));
 const topline = document.querySelector('.topline-status');
 if (topline) topline.textContent = 'X Layer Testnet';
-installCandleInspection(AF);
+installCandleInspection(AF, document, 'OKB');
 hydrateProductStyles();
 for (const key of Object.keys(AF.pages)) {
   const original = AF.pages[key]!;
@@ -81,6 +85,11 @@ const originalTrade = AF.pages.trade;
 let runtime = createM3BrowserRuntime({ networkConfig: M3_XLAYER_NETWORK });
 let error = '';
 let loading = true;
+let config: XLayerPublicConfig | null = null;
+let accountBalance: string | null = null;
+let accountPasses: readonly WalletPassHolding[] = [];
+let accountMessage = '';
+let accountReadGeneration = 0;
 const status = document.createElement('section');
 status.className = 'wrap';
 status.setAttribute('aria-label', 'X Layer Testnet connection');
@@ -90,12 +99,24 @@ function render(): void {
   AF.app.render({ preserve: true });
 }
 const walletPanel = () => renderM3PublicShell(runtime.snapshot, M3_XLAYER_NETWORK);
-AF.pages.account = () => walletPanel();
+let vaultControlsOpen = false;
+document.addEventListener('click', (event) => {
+  const summary = (event.target as Element).closest('[data-vault-controls] > summary');
+  if (summary) vaultControlsOpen = !(summary.parentElement as HTMLDetailsElement).open;
+});
+AF.pages.account = () =>
+  renderWalletAccount({
+    address:
+      runtime.snapshot.wallet.status === 'CONNECTED' ? (runtime.snapshot.wallet.address ?? null) : null,
+    connecting: runtime.snapshot.wallet.status === 'CONNECTING',
+    balance: accountBalance,
+    passes: accountPasses,
+    ...(accountMessage ? { message: accountMessage } : {}),
+    actionAttribute: 'data-chain-connect',
+  });
 AF.pages.trade = (id) =>
   originalTrade(id) +
-  (id === 'trend'
-    ? walletPanel()
-    : '<section class="wrap dialog-notice">No Vault is configured for this strategy.</section>');
+  `<details class="wrap xlayer-vault-controls" data-vault-controls${vaultControlsOpen ? ' open' : ''}><summary>Vault controls</summary>${id === 'trend' ? walletPanel() : '<p>No Vault is configured for this strategy.</p>'}</details>`;
 const footer = document.querySelector('.footer-bottom span');
 if (footer) footer.textContent = scope;
 for (const link of document.querySelectorAll('a[href="#/account/settings"]')) {
@@ -118,7 +139,39 @@ document.addEventListener(
 AF.publicReady = true;
 render();
 try {
-  ({ runtime } = await loadXLayerPublicRuntime(fetch, window.ethereum));
+  ({ runtime, config } = await loadXLayerPublicRuntime(fetch, window.ethereum));
+  async function refreshAccount(): Promise<void> {
+    const generation = ++accountReadGeneration;
+    accountBalance = null;
+    accountPasses = [];
+    accountMessage = '';
+    const snapshot = runtime.snapshot;
+    const address = snapshot.wallet.status === 'CONNECTED' ? snapshot.wallet.address : undefined;
+    if (!address || snapshot.network.status !== 'CORRECT' || !window.ethereum || !config) {
+      if (address && snapshot.network.status !== 'CORRECT')
+        accountMessage = 'Switch to X Layer Testnet to view balances.';
+      return;
+    }
+    try {
+      const balances = await readXLayerWalletBalances({
+        provider: window.ethereum,
+        address,
+        deployments: config.deployments,
+      });
+      if (
+        generation !== accountReadGeneration ||
+        runtime.snapshot.wallet.address?.toLowerCase() !== address.toLowerCase() ||
+        runtime.snapshot.network.status !== 'CORRECT'
+      )
+        return;
+      accountBalance = balances.balance;
+      accountPasses = balances.passes;
+    } catch {
+      if (generation !== accountReadGeneration) return;
+      accountMessage = 'Wallet balances are unavailable. Try reconnecting.';
+    }
+    render();
+  }
   installM3WalletControls(
     AF,
     runtime,
@@ -138,7 +191,11 @@ try {
       render();
     },
   );
-  runtime.subscribe(render);
+  runtime.subscribe(() => {
+    void refreshAccount();
+    render();
+  });
+  void refreshAccount();
 } catch (cause) {
   error = cause instanceof Error ? cause.message : 'XLAYER_CONFIG_UNAVAILABLE';
 } finally {

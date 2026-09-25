@@ -713,15 +713,26 @@ export async function collectRecordedGitState(root, baseRef, recorded, options =
       if ((context.kind === 'integrated_branch' && context.sha !== head) || base.commit !== head)
         throw new SourceError('RECORDED_GIT_HEAD_MISMATCH');
       const sourceHead = await resolveExactCommit(root, remoteBranchRef(recordedBranch));
-      const [headTree, sourceTree, commonBase] = await settledGitQueries([
+      const [headTree, sourceTree, parentOutput] = await settledGitQueries([
         resolveExactTree(root, head),
         resolveExactTree(root, sourceHead),
-        mergeBase(root, sourceHead, head),
+        git(root, ['rev-list', '--parents', '--max-count=1', 'HEAD']),
       ]);
       if (headTree !== sourceTree) throw new SourceError('RECORDED_GIT_GRAPH_MISMATCH');
+      const parents = parentOutput.trim().split(/\s+/);
+      if (
+        ![2, 3].includes(parents.length) ||
+        parents.some((commit) => !gitCommitPattern.test(commit)) ||
+        parents[0] !== head ||
+        (parents.length === 3 && parents[2] !== sourceHead)
+      )
+        throw new SourceError('RECORDED_GIT_GRAPH_MISMATCH');
+      const commonBase = await mergeBase(root, parents[1], sourceHead);
+      if (parents.length === 3 && commonBase === sourceHead)
+        throw new SourceError('RECORDED_GIT_GRAPH_MISMATCH');
       await settledGitQueries([
         requireRecordedAncestor(root, commonBase, sourceHead),
-        requireRecordedAncestor(root, commonBase, head),
+        requireRecordedAncestor(root, commonBase, parents[1]),
       ]);
       logicalHead = sourceHead;
       comparisonBaseCommit = commonBase;

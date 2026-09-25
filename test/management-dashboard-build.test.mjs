@@ -1321,6 +1321,51 @@ test('check mode uses a versioned report in local, push, PR, queue, and integrat
   );
   const afterCiLayouts = await Promise.all([readFile(dashboardPath, 'utf8'), readFile(buildLogPath, 'utf8')]);
   assert.deepEqual(afterCiLayouts, before);
+
+  execFileSync('git', ['switch', '--quiet', '-C', 'master', baseCommit], { cwd: cloneRoot });
+  execFileSync(
+    'git',
+    [
+      '-c',
+      'user.name=Macbeth',
+      '-c',
+      'user.email=pdbsy@users.noreply.github.com',
+      'merge',
+      '--quiet',
+      '--no-ff',
+      '-m',
+      'ordinary source integration',
+      'refs/remotes/origin/macbeth/dashboard',
+    ],
+    { cwd: cloneRoot },
+  );
+  const normalMergeCommit = execFileSync('git', ['rev-parse', 'HEAD'], {
+    cwd: cloneRoot,
+    encoding: 'utf8',
+  }).trim();
+  execFileSync('git', ['update-ref', 'refs/remotes/origin/master', normalMergeCommit], {
+    cwd: cloneRoot,
+  });
+  assert.equal(
+    execFileSync('git', ['rev-parse', 'HEAD^2'], { cwd: cloneRoot, encoding: 'utf8' }).trim(),
+    checkoutCommit,
+  );
+  await assert.doesNotReject(() => main(['--check'], { root: cloneRoot, environment: {} }));
+  await assert.doesNotReject(() =>
+    main(['--check'], {
+      root: cloneRoot,
+      environment: {
+        GITHUB_ACTIONS: 'true',
+        GITHUB_EVENT_NAME: 'push',
+        GITHUB_REF: 'refs/heads/master',
+        GITHUB_SHA: normalMergeCommit,
+      },
+    }),
+  );
+  assert.deepEqual(
+    await Promise.all([readFile(dashboardPath, 'utf8'), readFile(buildLogPath, 'utf8')]),
+    before,
+  );
 });
 
 test('sparse roadmap metadata remains unavailable and never invents completion or ownership', () => {
