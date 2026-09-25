@@ -896,7 +896,7 @@ test('wallet account preserves zero and wei precision and rejects invalid wallet
     ['0', '0'],
     ['1', '0.000000000000000001'],
     ['1000000000000000000', '1'],
-  ]) {
+  ] as const) {
     assert.ok(
       renderWalletAccount({ wallet: { ...wallet, ethBalanceWei: raw }, network }).includes(
         `<strong>${formatted}</strong>`,

@@ -1912,7 +1912,7 @@
       "target_path": "apps/web/prototype/AlphaForge_v3_EN.html",
       "method": "selective source integration; shared-file resolution recorded in CONFLICTS.md",
       "original_sha256": "949627bc39a2076de97d234546ce7bebabda6db330d22b423874063eb0243b45",
-      "migrated_sha256": "b9671bca14a388d08a7e5db492f831c5e02fcb15f8ff57baab8a65e863d4ff35",
+      "migrated_sha256": "03941534370f22cf858fba1aa1bd999d93f9ef4a283279cb0a806eede8bc0ad7",
       "subsequent_revisions": [
         {
           "task": "M3-04-PHASE1-PRODUCT",
@@ -1927,6 +1927,14 @@
           "previous_sha256": "499c1bda91a8637a9d9fc12547790236947d2d19151173b3d4865f891ef52161",
           "sha256": "b9671bca14a388d08a7e5db492f831c5e02fcb15f8ff57baab8a65e863d4ff35",
           "reason": "Register independently reviewed display-only damaged activity and malformed note-ID repair; retain original and prior repair hashes and every stored record."
+        },
+        {
+          "commit": "c6494f081f4a04839dd3f4ec1d74e5d219d07e79",
+          "agent": "Macbeth01",
+          "task": "AF-ACCOUNT-WALLET-ETH",
+          "previous_sha256": "b9671bca14a388d08a7e5db492f831c5e02fcb15f8ff57baab8a65e863d4ff35",
+          "sha256": "03941534370f22cf858fba1aa1bd999d93f9ef4a283279cb0a806eede8bc0ad7",
+          "reason": "User-requested compact wallet account and ETH display denomination. Preserve original migration identity, immutable source artifacts and prior revisions; local trading stays explicitly simulated. Verification is local self-review, not independent approval."
         }
       ]
     },
@@ -1978,7 +1986,7 @@
       "target_path": "apps/web/src/product-ui.ts",
       "method": "selective source integration; shared-file resolution recorded in CONFLICTS.md; M3-04-PRODUCT-UI adds the manifest-bound Vault runtime, finite approval review and canonical evidence readback",
       "original_sha256": "c094739b2c8308526a0d1470f72c32ac74de6c2157a3dcc0b0972584da755d38",
-      "migrated_sha256": "0ce282ef2015abbddf18d15c51ab090c6d0bae737eac16befede23d92b226a51",
+      "migrated_sha256": "32f77c124c3853cec8bbf172717c944ae3f2058841e3b8859286d1044564baa7",
       "subsequent_adaptations": [
         {
           "task": "M3-01-PHASE1-CLOSEOUT",
@@ -2025,6 +2033,14 @@
           "previous_sha256": "25ad00be374caa83679a8ba5766187c3664d6eb7d0fa63d07018db7854474546",
           "current_sha256": "0ce282ef2015abbddf18d15c51ab090c6d0bae737eac16befede23d92b226a51",
           "reason": "Add the user-requested candle inspection module to the product entry; this entry is unchanged in the independently reviewed UI source 654a1e379e2becc2a98584e91394e21549cf6a8c. Preserve original migration identity and all prior revisions."
+        },
+        {
+          "commit": "c6494f081f4a04839dd3f4ec1d74e5d219d07e79",
+          "agent": "Macbeth01",
+          "task": "AF-ACCOUNT-WALLET-ETH",
+          "previous_sha256": "0ce282ef2015abbddf18d15c51ab090c6d0bae737eac16befede23d92b226a51",
+          "current_sha256": "32f77c124c3853cec8bbf172717c944ae3f2058841e3b8859286d1044564baa7",
+          "reason": "User-requested compact wallet account and ETH display denomination. Preserve original migration identity, immutable source artifacts and prior revisions; local trading stays explicitly simulated. Verification is local self-review, not independent approval."
         }
       ]
     },

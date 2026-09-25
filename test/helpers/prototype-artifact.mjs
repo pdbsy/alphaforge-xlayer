@@ -11,10 +11,13 @@ const repairCommit = '3e0e4303dc6d6621aa71b450752e2446faec759b';
 const originalSha256 = '949627bc39a2076de97d234546ce7bebabda6db330d22b423874063eb0243b45';
 const previousRepairedSha256 = '499c1bda91a8637a9d9fc12547790236947d2d19151173b3d4865f891ef52161';
 const repairedSha256 = 'b9671bca14a388d08a7e5db492f831c5e02fcb15f8ff57baab8a65e863d4ff35';
+const currencyCommit = 'c6494f081f4a04839dd3f4ec1d74e5d219d07e79';
+const currencySha256 = '03941534370f22cf858fba1aa1bd999d93f9ef4a283279cb0a806eede8bc0ad7';
 const digest = (bytes) => createHash('sha256').update(bytes).digest('hex');
 
 // Keep the original artifact in the complete, immutable Git history. The current
-// file is bound to the reviewed repair; absence of either object fails closed.
+// file is bound to an exact recorded revision; historical repair fixtures remain
+// independently verifiable. New display bytes require their real source commit.
 export async function verifiedPrototypeArtifacts(root) {
   const git = (...args) =>
     execFileSync('git', ['--no-replace-objects', ...args], {
@@ -34,8 +37,17 @@ export async function verifiedPrototypeArtifacts(root) {
   assert.equal(Buffer.byteLength(repaired), 286508);
   assert.equal(digest(repaired), repairedSha256, 'reviewed repair must remain exact');
   const current = await readFile(resolve(root, path), 'utf8');
-  assert.equal(digest(current), repairedSha256, 'current artifact must match the reviewed repair');
-  assert.equal(current, repaired);
+  const currentSha256 = digest(current);
+  const usesCurrencyRevision = currentSha256 === currencySha256;
+  if (usesCurrencyRevision) {
+    const currency = git('show', `${currencyCommit}:${path}`);
+    assert.equal(Buffer.byteLength(currency), 286457);
+    assert.equal(digest(currency), currencySha256, 'recorded ETH display revision must remain exact');
+    assert.equal(current, currency);
+  } else {
+    assert.equal(currentSha256, repairedSha256, 'only exact recorded artifact revisions are admitted');
+    assert.equal(current, repaired);
+  }
   const commit = (ref) => {
     const sha = git('rev-parse', '--verify', ref).trim();
     assert.match(sha, /^[a-f0-9]{40}$/);
@@ -52,6 +64,10 @@ export async function verifiedPrototypeArtifacts(root) {
     }
   };
   const head = commit('HEAD');
+  if (ancestor(currencyCommit, head))
+    assert.equal(currentSha256, currencySha256, 'a later candidate must not roll back the recorded revision');
+  if (usesCurrencyRevision)
+    assert.ok(ancestor(currencyCommit, head), 'ETH display revision must belong to the candidate history');
   assert.ok(ancestor(originalCommit, previousRepairCommit), 'original must precede the first repair');
   assert.ok(ancestor(previousRepairCommit, repairCommit), 'reviewed repairs must retain their exact chain');
   if (
@@ -126,5 +142,8 @@ export async function verifiedPrototypeArtifacts(root) {
     originalSha256,
     previousRepairedSha256,
     repairedSha256,
+    currencyCommit,
+    currencySha256,
+    currentSha256,
   };
 }

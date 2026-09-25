@@ -111,10 +111,7 @@ async function receipt(page, state) {
     );
   assert.equal(rows['Balance deducted (demo)'], '3.45 ETH');
   assert.equal(rows['Tradable position'], `${state.exchange.positions.trend.qty} Pass`);
-  assert.equal(
-    rows['Trading balance'],
-    state.exchange.orders.length === 1 ? '9,996.55 ETH' : '9,993.10 ETH',
-  );
+  assert.equal(rows['Trading balance'], state.exchange.orders.length === 1 ? '9,996.55 ETH' : '9,993.10 ETH');
   assert.equal(
     await dialog.locator('#pass-review-error, [data-v3-action="commit-order"]').count(),
     0,
