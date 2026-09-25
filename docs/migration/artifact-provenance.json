@@ -2211,7 +2211,7 @@
       "target_path": "test/ui-import.test.mjs",
       "method": "selective source integration; shared-file resolution recorded in CONFLICTS.md",
       "original_sha256": "91771696fc348750f34c55e49a181a95f8c1994e1f55de3f1fb62c20549e0c69",
-      "migrated_sha256": "2e27e9f91af8597727e065529bf2c206e281b9519643c2404aca4fe130cf80de",
+      "migrated_sha256": "ad6d9655fa2ff110a47919e6caa9be3c3baafc13fa86d340b1331966d9481403",
       "subsequent_revisions": [
         {
           "task": "M3-04-PHASE1-PRODUCT",
@@ -2277,6 +2277,13 @@
           "previous_sha256": "e05e81f9e3babaae874929ca1baae97de72dba1a8a6cf1142eb2d7bbab9a90a5",
           "sha256": "2e27e9f91af8597727e065529bf2c206e281b9519643c2404aca4fe130cf80de",
           "reason": "Reviewed XLayer integration; retain the original artifact and every prior revision."
+        },
+        {
+          "task": "AF-XLAYER-R2",
+          "commit": "628cdad4d3769c8d7d3299755362ab0c030266d7",
+          "previous_sha256": "2e27e9f91af8597727e065529bf2c206e281b9519643c2404aca4fe130cf80de",
+          "sha256": "ad6d9655fa2ff110a47919e6caa9be3c3baafc13fa86d340b1331966d9481403",
+          "reason": "Use reviewed HTML source ranges and exact parsed script attributes in importer assertions. Preserve original source, exact output bytes, malformed-input rejections and all prior revisions."
         }
       ]
     },
