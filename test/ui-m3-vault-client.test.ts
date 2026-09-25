@@ -522,3 +522,79 @@ test('runtime status failures are sanitized and never become healthy deployment 
     );
   }
 });
+
+for (const chainId of [1952, 46630] as const) {
+  test(`client binds every API response and submission to selected chain ${chainId}`, async () => {
+    const { M3_XLAYER_NETWORK, M3_ROBINHOOD_NETWORK } = await import('../apps/web/src/m3-network.ts');
+    const network = chainId === 1952 ? M3_XLAYER_NETWORK : M3_ROBINHOOD_NETWORK;
+    let responseChain: number = chainId;
+    let requests = 0;
+    const submission = {
+      operationId: 'selected-chain',
+      chainId,
+      owner: OWNER,
+      target: CONTRACT,
+      calldata: encodeM3VaultCall('close()', []),
+      txHash: asTransactionHash(`0x${'bb'.repeat(32)}`),
+    };
+    const client = new M3VaultApiClient(
+      async (url, init) => {
+        requests++;
+        let body: unknown = { ...payload(), chainId: responseChain };
+        if (String(url).includes('/passes/'))
+          body = {
+            chainId: responseChain,
+            owner: OWNER,
+            contract: PASS,
+            projectionKey: 'm3-strategy-pass',
+            blockNumber: '100',
+            blockHash: BLOCK_HASH,
+            state: { owner: OWNER, pass: PASS, strategyId: STRATEGY_ID, decimals: 18, balanceRaw: '1' },
+          };
+        if (String(url).includes('/runtime-status/'))
+          body = {
+            lastAttempt: 'SUCCEEDED',
+            errorCode: null,
+            database: { status: 'HEALTHY', schemaVersion: 6, integrity: 'OK' },
+            deployment: {
+              chainId: responseChain,
+              contract: CONTRACT,
+              manifestDigest: MANIFEST_DIGEST,
+              abiHash: VAULT_ABI_HASH,
+              runtimeBytecodeHash: VAULT_CODE_HASH,
+              strategyPassAddress: PASS,
+              strategyPassAbiHash: PASS_ABI_HASH,
+              strategyPassRuntimeBytecodeHash: PASS_CODE_HASH,
+            },
+          };
+        if (init?.method === 'POST')
+          body = {
+            ...submission,
+            chainId: responseChain,
+            state: 'SUBMITTED',
+            submittedAt: '2026-09-25T00:00:00.000Z',
+          };
+        return new Response(JSON.stringify(body), { status: init?.method === 'POST' ? 202 : 200 });
+      },
+      { vaultAddress: CONTRACT, passAddress: PASS },
+      network,
+    );
+    assert.equal((await client.readSnapshot(OWNER)).chainId, chainId);
+    assert.equal((await client.readPassSnapshot(OWNER)).chainId, chainId);
+    assert.equal((await client.readRuntimeStatus()).deployment.chainId, chainId);
+    assert.equal((await client.registerSubmission(submission)).chainId, chainId);
+    for (const foreign of [195, 196, chainId === 1952 ? 46630 : 1952]) {
+      responseChain = foreign;
+      await assert.rejects(client.readSnapshot(OWNER), /M3_VAULT_READ_FAILED/);
+      await assert.rejects(client.readPassSnapshot(OWNER), /M3_VAULT_READ_FAILED/);
+      await assert.rejects(client.readRuntimeStatus(), /M3_VAULT_READ_FAILED/);
+      await assert.rejects(client.registerSubmission(submission), /M3_VAULT_SUBMISSION_FAILED/);
+      const before = requests;
+      await assert.rejects(
+        client.registerSubmission({ ...submission, chainId: foreign as typeof chainId }),
+        /M3_VAULT_SUBMISSION_FAILED/,
+      );
+      assert.equal(requests, before);
+    }
+  });
+}

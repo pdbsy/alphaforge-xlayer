@@ -1,3 +1,4 @@
+import type { M3ChainId } from './m3-network.ts';
 import {
   M3SubmissionJournal,
   type PendingWalletSubmission,
@@ -75,7 +76,7 @@ export interface M3VaultReader {
   readPassSnapshot?(owner: Address): Promise<M3PassSnapshot>;
   registerSubmission?(input: {
     readonly operationId: string;
-    readonly chainId: 46_630;
+    readonly chainId: M3ChainId;
     readonly owner: Address;
     readonly target: Address;
     readonly calldata: HexData;

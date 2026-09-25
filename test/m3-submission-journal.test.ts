@@ -129,3 +129,24 @@ test('journal accepts only the configured Pass contract and exact transfer calld
   journal.record(transfer);
   assert.deepEqual(journal.read(owner), [transfer]);
 });
+
+test('journal isolates chains and rejects foreign mutations without corrupting recoverable records', () => {
+  const { saved, storage, journal } = fixture();
+  journal.record(input);
+  const xlayer = new M3SubmissionJournal({ ...context, chainId: 1952 }, storage);
+  assert.deepEqual(xlayer.read(owner), []);
+  const xinput = { ...input, chainId: 1952 as const };
+  xlayer.record(xinput);
+  assert.deepEqual(journal.read(owner), [input]);
+  assert.deepEqual(xlayer.read(owner), [xinput]);
+  const before = [...saved.entries()];
+  for (const chainId of [195, 196, 46630]) {
+    const foreign = { ...xinput, chainId: chainId as 1952, operationId: 'foreign' };
+    assert.throws(() => xlayer.record(foreign), /M3_SUBMISSION_RECOVERY_INVALID/);
+    assert.throws(
+      () => xlayer.remove({ ...foreign, operationId: xinput.operationId }),
+      /M3_SUBMISSION_RECOVERY_INVALID/,
+    );
+    assert.deepEqual([...saved.entries()], before);
+  }
+});

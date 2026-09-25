@@ -1,3 +1,4 @@
+import { M3_ROBINHOOD_NETWORK, type M3ChainId, type M3Network } from './m3-network.ts';
 import {
   asAddress,
   asBlockHash,
@@ -31,7 +32,7 @@ export class M3VaultSubmissionFailure extends Error {
 
 export interface M3VaultSubmissionInput {
   readonly operationId: string;
-  readonly chainId: 46_630;
+  readonly chainId: M3ChainId;
   readonly owner: Address;
   readonly target: Address;
   readonly calldata: HexData;
@@ -53,7 +54,7 @@ export interface M3VaultSubmissionRecord extends M3VaultSubmissionInput {
 }
 
 export interface M3VaultSnapshot {
-  readonly chainId: 46_630;
+  readonly chainId: M3ChainId;
   readonly owner: Address;
   readonly contract: Address;
   readonly projectionKey: 'm3-vault';
@@ -82,7 +83,7 @@ export interface M3VaultSnapshot {
 }
 
 export interface M3PassSnapshot {
-  readonly chainId: 46_630;
+  readonly chainId: M3ChainId;
   readonly owner: Address;
   readonly contract: Address;
   readonly projectionKey: 'm3-strategy-pass';
@@ -106,7 +107,7 @@ export interface M3RuntimeStatusSnapshot {
     integrity: 'OK';
   }>;
   readonly deployment: Readonly<{
-    chainId: 46_630;
+    chainId: M3ChainId;
     contract: Address;
     manifestDigest: BlockHash;
     abiHash: BlockHash;
@@ -148,7 +149,12 @@ function bytes32(value: unknown): HexData {
   return asHexData(value);
 }
 
-function snapshot(value: unknown, expectedOwner: Address, expectedContract?: Address): M3VaultSnapshot {
+function snapshot(
+  value: unknown,
+  expectedOwner: Address,
+  expectedChain: M3ChainId,
+  expectedContract?: Address,
+): M3VaultSnapshot {
   const row = exactObject(value, [
     'chainId',
     'owner',
@@ -184,7 +190,7 @@ function snapshot(value: unknown, expectedOwner: Address, expectedContract?: Add
   const strategyId = bytes32(state.strategyId);
   const passStrategyId = bytes32(state.passStrategyId);
   if (
-    row.chainId !== 46_630 ||
+    row.chainId !== expectedChain ||
     row.projectionKey !== 'm3-vault' ||
     typeof state.closed !== 'boolean' ||
     !sameAddress(owner, expectedOwner) ||
@@ -220,7 +226,7 @@ function snapshot(value: unknown, expectedOwner: Address, expectedContract?: Add
     closed: state.closed,
   });
   return Object.freeze({
-    chainId: 46_630,
+    chainId: expectedChain,
     owner,
     contract,
     projectionKey: 'm3-vault',
@@ -230,7 +236,12 @@ function snapshot(value: unknown, expectedOwner: Address, expectedContract?: Add
   });
 }
 
-function passSnapshot(value: unknown, expectedOwner: Address, expectedContract: Address): M3PassSnapshot {
+function passSnapshot(
+  value: unknown,
+  expectedOwner: Address,
+  expectedContract: Address,
+  expectedChain: M3ChainId,
+): M3PassSnapshot {
   const row = exactObject(value, [
     'chainId',
     'owner',
@@ -247,7 +258,7 @@ function passSnapshot(value: unknown, expectedOwner: Address, expectedContract: 
   const pass = address(state.pass);
   const strategyId = bytes32(state.strategyId);
   if (
-    row.chainId !== 46_630 ||
+    row.chainId !== expectedChain ||
     row.projectionKey !== 'm3-strategy-pass' ||
     !sameAddress(owner, expectedOwner) ||
     !sameAddress(stateOwner, expectedOwner) ||
@@ -264,7 +275,7 @@ function passSnapshot(value: unknown, expectedOwner: Address, expectedContract: 
     throw new M3VaultReadFailure();
   }
   return Object.freeze({
-    chainId: 46_630,
+    chainId: expectedChain,
     owner,
     contract,
     projectionKey: 'm3-strategy-pass',
@@ -292,6 +303,7 @@ function runtimeStatus(
   value: unknown,
   expectedVault: Address,
   expectedPass: Address,
+  expectedChain: M3ChainId,
 ): M3RuntimeStatusSnapshot {
   const row = exactObject(value, ['lastAttempt', 'errorCode', 'database', 'deployment']);
   const database = exactObject(row.database, ['status', 'schemaVersion', 'integrity']);
@@ -314,7 +326,7 @@ function runtimeStatus(
     database.integrity !== 'OK' ||
     !Number.isSafeInteger(database.schemaVersion) ||
     Number(database.schemaVersion) < 1 ||
-    deployment.chainId !== 46_630 ||
+    deployment.chainId !== expectedChain ||
     !sameAddress(contract, expectedVault) ||
     !sameAddress(strategyPassAddress, expectedPass)
   )
@@ -328,7 +340,7 @@ function runtimeStatus(
       integrity: 'OK',
     }),
     deployment: Object.freeze({
-      chainId: 46_630,
+      chainId: expectedChain,
       contract,
       manifestDigest: blockHash(deployment.manifestDigest),
       abiHash: blockHash(deployment.abiHash),
@@ -374,13 +386,13 @@ function operationId(
   return value;
 }
 
-function submissionInput(value: unknown): M3VaultSubmissionInput {
+function submissionInput(value: unknown, expectedChain: M3ChainId): M3VaultSubmissionInput {
   try {
     const row = exactObject(value, ['operationId', 'chainId', 'owner', 'target', 'calldata', 'txHash']);
-    if (row.chainId !== 46_630) throw new M3VaultSubmissionFailure();
+    if (row.chainId !== expectedChain) throw new M3VaultSubmissionFailure();
     return Object.freeze({
       operationId: operationId(row.operationId, M3VaultSubmissionFailure),
-      chainId: 46_630,
+      chainId: expectedChain,
       owner: asAddress(String(row.owner)),
       target: asAddress(String(row.target)),
       calldata: asHexData(String(row.calldata)),
@@ -404,14 +416,17 @@ function submissionRecord(value: unknown, expected: M3VaultSubmissionInput): M3V
       'txHash',
       'submittedAt',
     ]);
-    const identity = submissionInput({
-      operationId: row.operationId,
-      chainId: row.chainId,
-      owner: row.owner,
-      target: row.target,
-      calldata: row.calldata,
-      txHash: row.txHash,
-    });
+    const identity = submissionInput(
+      {
+        operationId: row.operationId,
+        chainId: row.chainId,
+        owner: row.owner,
+        target: row.target,
+        calldata: row.calldata,
+        txHash: row.txHash,
+      },
+      expected.chainId,
+    );
     if (
       identity.operationId !== expected.operationId ||
       !sameAddress(identity.owner, expected.owner) ||
@@ -493,6 +508,7 @@ function operationEvidence(value: unknown, expectedOperationId: string): Product
 }
 
 export class M3VaultApiClient {
+  readonly #chainId: M3ChainId;
   readonly #fetcher: typeof fetch;
   readonly #vaultAddress: Address | null;
   readonly #passAddress: Address | null;
@@ -500,7 +516,9 @@ export class M3VaultApiClient {
   constructor(
     fetcher: typeof fetch = fetch,
     contracts?: { readonly vaultAddress: Address; readonly passAddress: Address },
+    networkConfig: M3Network = M3_ROBINHOOD_NETWORK,
   ) {
+    this.#chainId = networkConfig.chainId;
     this.#fetcher = fetcher;
     this.#vaultAddress = contracts ? asAddress(contracts.vaultAddress) : null;
     this.#passAddress = contracts ? asAddress(contracts.passAddress) : null;
@@ -517,7 +535,7 @@ export class M3VaultApiClient {
         headers: { Accept: 'application/json' },
       });
       if (!response.ok) throw new M3VaultReadFailure();
-      return snapshot(await response.json(), owner, this.#vaultAddress ?? undefined);
+      return snapshot(await response.json(), owner, this.#chainId, this.#vaultAddress ?? undefined);
     } catch (error) {
       if (error instanceof M3VaultReadFailure) throw error;
       throw new M3VaultReadFailure();
@@ -533,7 +551,7 @@ export class M3VaultApiClient {
         headers: { Accept: 'application/json' },
       });
       if (!response.ok) throw new M3VaultReadFailure();
-      return passSnapshot(await response.json(), owner, this.#passAddress);
+      return passSnapshot(await response.json(), owner, this.#passAddress, this.#chainId);
     } catch (error) {
       if (error instanceof M3VaultReadFailure) throw error;
       throw new M3VaultReadFailure();
@@ -549,7 +567,7 @@ export class M3VaultApiClient {
         headers: { Accept: 'application/json' },
       });
       if (!response.ok) throw new M3VaultReadFailure();
-      return runtimeStatus(await response.json(), this.#vaultAddress, this.#passAddress);
+      return runtimeStatus(await response.json(), this.#vaultAddress, this.#passAddress, this.#chainId);
     } catch (error) {
       if (error instanceof M3VaultReadFailure) throw error;
       throw new M3VaultReadFailure();
@@ -558,7 +576,7 @@ export class M3VaultApiClient {
 
   async registerSubmission(input: M3VaultSubmissionInput): Promise<M3VaultSubmissionRecord> {
     try {
-      const normalized = submissionInput(input);
+      const normalized = submissionInput(input, this.#chainId);
       const response = await this.#fetcher('/api/v1/chain/operations', {
         method: 'POST',
         credentials: 'same-origin',

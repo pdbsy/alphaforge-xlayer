@@ -1,3 +1,4 @@
+import type { M3ChainId } from './m3-network.ts';
 import {
   asAddress,
   asHexData,
@@ -16,14 +17,14 @@ export interface SubmissionStorage {
 }
 export interface PendingWalletSubmission {
   readonly operationId: string;
-  readonly chainId: 46_630;
+  readonly chainId: M3ChainId;
   readonly owner: Address;
   readonly target: Address;
   readonly calldata: HexData;
   readonly txHash: TransactionHash;
 }
 interface Context {
-  readonly chainId: 46_630;
+  readonly chainId: M3ChainId;
   readonly manifestDigest: string;
   readonly vaultAddress: Address;
   readonly strategyPassAddress: Address;
@@ -34,7 +35,8 @@ export class M3SubmissionJournal {
   readonly #context: Context;
   readonly #storage: SubmissionStorage;
   constructor(context: Context, storage?: SubmissionStorage) {
-    this.#context = context;
+    if (![1952, 46_630].includes(context.chainId)) throw new Error('M3_SUBMISSION_RECOVERY_INVALID');
+    this.#context = Object.freeze({ ...context });
     const memory = new Map<string, string>();
     this.#storage =
       storage ??
@@ -114,6 +116,7 @@ export class M3SubmissionJournal {
       throw new Error('M3_SUBMISSION_RECOVERY_UNAVAILABLE');
   }
   record(input: PendingWalletSubmission): void {
+    if (input.chainId !== this.#context.chainId) throw new Error('M3_SUBMISSION_RECOVERY_INVALID');
     const previous = this.read(input.owner);
     const existing = previous.find((item) => item.operationId === input.operationId);
     if (existing && JSON.stringify(existing) !== JSON.stringify(input))
@@ -126,6 +129,7 @@ export class M3SubmissionJournal {
       throw new Error('M3_SUBMISSION_RECOVERY_UNAVAILABLE');
   }
   remove(input: PendingWalletSubmission): void {
+    if (input.chainId !== this.#context.chainId) throw new Error('M3_SUBMISSION_RECOVERY_INVALID');
     const retained = this.read(input.owner).filter((item) => item.operationId !== input.operationId);
     this.#storage.setItem(this.#key(input.owner), JSON.stringify(retained));
   }
