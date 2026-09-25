@@ -1,4 +1,4 @@
-import { ROBINHOOD_CHAIN_TESTNET } from '../../../packages/robinhood-chain/src/network.ts';
+import { M3_ROBINHOOD_NETWORK, type M3Network, type M3ChainId } from './m3-network.ts';
 import { formatUnits } from '../../../packages/domain/src/money.ts';
 import type { Address } from '../../../packages/chain-adapter/src/types.ts';
 import type { WalletSubmission } from './chain-wallet.ts';
@@ -93,7 +93,7 @@ export interface OnchainProductPresentation {
 }
 
 export interface M3VaultSelection {
-  readonly chainId: 46_630;
+  readonly chainId: M3ChainId;
   readonly vaultAddress: Address;
 }
 
@@ -111,6 +111,7 @@ export interface M3ProductChainPresentation {
 }
 
 export interface StrategyShellInput {
+  readonly networkConfig?: M3Network;
   readonly strategyId: string;
   readonly contentProvenance: ProductProvenance;
   readonly wallet?: WalletPresentation;
@@ -121,6 +122,7 @@ export interface StrategyShellInput {
 }
 
 export interface AccountShellInput {
+  readonly networkConfig?: M3Network;
   readonly accountId?: string | null;
   readonly wallet?: WalletPresentation;
   readonly network?: NetworkPresentation;
@@ -135,6 +137,7 @@ export interface M3ProductPages {
 }
 
 export interface M3PageExtensionOptions {
+  readonly networkConfig?: M3Network;
   readonly accountId: () => string | null;
   readonly contentProvenance: (strategyId: string) => ProductProvenance;
   readonly onchain?: () => OnchainProductPresentation | undefined;
@@ -185,7 +188,13 @@ export function renderWalletStatus(status: WalletStatus): string {
   return walletMessages[status];
 }
 
-export function renderNetworkStatus(status: NetworkStatus): string {
+export function renderNetworkStatus(
+  status: NetworkStatus,
+  networkConfig: M3Network = M3_ROBINHOOD_NETWORK,
+): string {
+  if (status === 'CORRECT') return `Connected to the required ${networkConfig.name}.`;
+  if (status === 'WRONG') return `Wrong network. Switch to ${networkConfig.name} before continuing.`;
+  if (status === 'RPC_UNAVAILABLE') return `${networkConfig.name} RPC is unavailable.`;
   return networkMessages[status];
 }
 
@@ -268,26 +277,26 @@ function walletCard(wallet: WalletPresentation): string {
   }${errorDetails(wallet)}</article>`;
 }
 
-function networkCard(network: NetworkPresentation): string {
+function networkCard(network: NetworkPresentation, networkConfig: M3Network): string {
   const observedChain = network.chainId === undefined ? 'Unavailable' : escapeHtml(network.chainId);
   return `<article class="sketch-box"><span class="section-label">NETWORK / TESTNET</span><h3>${escapeHtml(
     network.status,
-  )}</h3><p>${escapeHtml(renderNetworkStatus(network.status))}</p><p><strong>Required</strong> · ${escapeHtml(
-    ROBINHOOD_CHAIN_TESTNET.name,
-  )} · Chain ID ${escapeHtml(ROBINHOOD_CHAIN_TESTNET.chainId)}</p><p>Wallet chain ID · ${observedChain}</p>${errorDetails(
+  )}</h3><p>${escapeHtml(renderNetworkStatus(network.status, networkConfig))}</p><p><strong>Required</strong> · ${escapeHtml(
+    networkConfig.name,
+  )} · Chain ID ${escapeHtml(networkConfig.chainId)} · Native currency ${escapeHtml(networkConfig.nativeCurrency)}</p><p>Wallet chain ID · ${observedChain}</p>${errorDetails(
     network,
   )}</article>`;
 }
 
-function transactionCard(transaction: TransactionPresentation): string {
+function transactionCard(transaction: TransactionPresentation, networkConfig: M3Network): string {
   const validHash = /^0x[0-9a-fA-F]{64}$/.test(transaction.txHash ?? '');
   const transactionEvidence = !transaction.txHash
     ? '<p>Transaction hash · Unavailable</p>'
     : validHash
       ? `<p><strong>Transaction hash</strong> · <a class="text-link" href="${escapeHtml(
-          `${ROBINHOOD_CHAIN_TESTNET.explorerUrl}/tx/${transaction.txHash}`,
+          `${networkConfig.explorerUrl}/tx/${transaction.txHash}`,
         )}" target="_blank" rel="noopener noreferrer">${escapeHtml(transaction.txHash)} ↗</a> · Chain ID ${escapeHtml(
-          ROBINHOOD_CHAIN_TESTNET.chainId,
+          networkConfig.chainId,
         )}</p>`
       : `<p><strong>Transaction hash</strong> · ${escapeHtml(transaction.txHash)}</p>`;
   return `<article class="sketch-box"><span class="section-label">TRANSACTION / TESTNET</span><h3>${escapeHtml(
@@ -384,14 +393,14 @@ function unsupportedOnchainActions(onchain: OnchainProductPresentation): string 
   return `<p><strong>Pass contract</strong> · ${passConfigured ? escapeHtml(onchain.passAddress) : 'Unavailable'}</p><p><strong>Wallet Pass balance</strong> · ${passBalance}</p><div class="inline-actions" aria-label="Testnet Pass actions"><button class="outline-btn" data-pass-transfer ${transferEnabled ? '' : 'disabled'}>Transfer Pass</button><button class="outline-btn" disabled>Buy Pass · OUT OF PHASE ONE</button><button class="outline-btn" disabled>Sell Pass · OUT OF PHASE ONE</button><button class="outline-btn" disabled>${approval}</button></div>`;
 }
 
-function vaultSelector(selection: M3VaultSelectionState | undefined): string {
+function vaultSelector(selection: M3VaultSelectionState | undefined, networkConfig: M3Network): string {
   if (!selection || selection.options.length === 0) return '';
   const validAddress = (value: string) => /^0x[0-9a-fA-F]{40}$/.test(value);
   if (
-    selection.selected.chainId !== ROBINHOOD_CHAIN_TESTNET.chainId ||
+    selection.selected.chainId !== networkConfig.chainId ||
     !validAddress(selection.selected.vaultAddress) ||
     selection.options.some(
-      (option) => option.chainId !== ROBINHOOD_CHAIN_TESTNET.chainId || !validAddress(option.vaultAddress),
+      (option) => option.chainId !== networkConfig.chainId || !validAddress(option.vaultAddress),
     ) ||
     !selection.options.some(
       (option) =>
@@ -413,7 +422,11 @@ function vaultSelector(selection: M3VaultSelectionState | undefined): string {
     )}</select></label><p>Choose only from complete reviewed deployment records. Backend status cross-checks identity and health; it does not discover or authorize Vaults.</p>`;
 }
 
-function onchainCard(onchain: OnchainProductPresentation, selection?: M3VaultSelectionState): string {
+function onchainCard(
+  onchain: OnchainProductPresentation,
+  selection: M3VaultSelectionState | undefined,
+  networkConfig: M3Network,
+): string {
   const deploymentMessage =
     onchain.deployment === 'CONFIGURED'
       ? 'Verified deployment metadata is configured.'
@@ -468,7 +481,7 @@ function onchainCard(onchain: OnchainProductPresentation, selection?: M3VaultSel
     : '<p>Deposit allowances are unavailable. Deposit remains disabled until both AF-USDC and Pass allowances are read for the configured Vault.</p>';
   return `<article class="sketch-box"><span class="section-label">PASS + VAULT / TESTNET</span><h3>${escapeHtml(
     onchain.readiness.replaceAll('_', ' '),
-  )}</h3><p><strong>Deployment</strong> · ${escapeHtml(deploymentMessage)}</p>${vaultSelector(selection)}<p><strong>Selected Vault</strong> · ${escapeHtml(onchain.vaultAddress ?? 'Unavailable')}</p><p><strong>Initial Pass allocation</strong> · ${initialAllocation}</p><p>${escapeHtml(
+  )}</h3><p><strong>Deployment</strong> · ${escapeHtml(deploymentMessage)}</p>${vaultSelector(selection, networkConfig)}<p><strong>Selected Vault</strong> · ${escapeHtml(onchain.vaultAddress ?? 'Unavailable')}</p><p><strong>Initial Pass allocation</strong> · ${initialAllocation}</p><p>${escapeHtml(
     readinessMessages[onchain.readiness],
   )}</p><p>${escapeHtml(
     healthMessage,
@@ -487,13 +500,15 @@ function chainCards(
   transaction: TransactionPresentation,
   assetBoundary: string,
   onchain?: OnchainProductPresentation,
-  vaultSelection?: M3VaultSelectionState,
+  vaultSelection: M3VaultSelectionState | undefined = undefined,
+  networkConfig: M3Network = M3_ROBINHOOD_NETWORK,
 ): string {
-  return `<div class="strategy-grid">${walletCard(wallet)}${networkCard(network)}${transactionCard(
+  return `<div class="strategy-grid">${walletCard(wallet)}${networkCard(network, networkConfig)}${transactionCard(
     transaction,
+    networkConfig,
   )}</div>${
     onchain
-      ? `${onchainCard(onchain, vaultSelection)}<div class="inline-actions" aria-label="Testnet wallet controls"><button class="outline-btn" data-chain-connect>Connect wallet</button><button class="text-link" data-chain-refresh>Refresh chain state</button></div>`
+      ? `${onchainCard(onchain, vaultSelection, networkConfig)}<div class="inline-actions" aria-label="Testnet wallet controls"><button class="outline-btn" data-chain-connect>Connect wallet</button><button class="text-link" data-chain-refresh>Refresh chain state</button></div>`
       : `<article class="sketch-box"><span class="section-label">PASS + VAULT / TESTNET / NOT IMPLEMENTED</span><p>${escapeHtml(
           assetBoundary,
         )}</p>${disabledActions()}</article>`
@@ -532,6 +547,7 @@ export function renderM3StrategyShell(input: StrategyShellInput): string {
     assetBoundary,
     input.onchain,
     input.vaultSelection,
+    input.networkConfig,
   )}</section>`;
 }
 
@@ -548,6 +564,7 @@ export function renderM3AccountShell(input: AccountShellInput): string {
     'Chain ownership, balances, deployment evidence and supported writes are unavailable on this baseline.',
     input.onchain,
     input.vaultSelection,
+    input.networkConfig,
   )}</section>`;
 }
 
@@ -558,6 +575,7 @@ export function extendM3ProductPages(pages: M3ProductPages, options: M3PageExten
       const onchain = chain?.onchain ?? options.onchain?.();
       return (
         renderM3AccountShell({
+          ...(options.networkConfig ? { networkConfig: options.networkConfig } : {}),
           accountId: options.accountId(),
           ...(chain
             ? {
@@ -576,6 +594,7 @@ export function extendM3ProductPages(pages: M3ProductPages, options: M3PageExten
       const onchain = chain?.onchain ?? options.onchain?.();
       return (
         renderM3StrategyShell({
+          ...(options.networkConfig ? { networkConfig: options.networkConfig } : {}),
           strategyId,
           contentProvenance: options.contentProvenance(strategyId),
           ...(chain
