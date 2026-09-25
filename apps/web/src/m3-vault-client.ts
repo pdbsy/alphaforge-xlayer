@@ -529,7 +529,7 @@ export class M3VaultApiClient {
       const path = this.#vaultAddress
         ? `/api/v1/chain/vaults/${this.#vaultAddress}/${owner}`
         : `/api/v1/chain/vaults/${owner}`;
-      const response = await this.#fetcher(path, {
+      const response = await this.#fetcher(`${path}?chainId=${this.#chainId}`, {
         method: 'GET',
         credentials: 'same-origin',
         headers: { Accept: 'application/json' },
@@ -545,11 +545,14 @@ export class M3VaultApiClient {
   async readPassSnapshot(owner: Address): Promise<M3PassSnapshot> {
     try {
       if (!this.#passAddress) throw new M3VaultReadFailure();
-      const response = await this.#fetcher(`/api/v1/chain/passes/${this.#passAddress}/${owner}`, {
-        method: 'GET',
-        credentials: 'same-origin',
-        headers: { Accept: 'application/json' },
-      });
+      const response = await this.#fetcher(
+        `/api/v1/chain/passes/${this.#passAddress}/${owner}?chainId=${this.#chainId}`,
+        {
+          method: 'GET',
+          credentials: 'same-origin',
+          headers: { Accept: 'application/json' },
+        },
+      );
       if (!response.ok) throw new M3VaultReadFailure();
       return passSnapshot(await response.json(), owner, this.#passAddress, this.#chainId);
     } catch (error) {
@@ -561,11 +564,14 @@ export class M3VaultApiClient {
   async readRuntimeStatus(): Promise<M3RuntimeStatusSnapshot> {
     try {
       if (!this.#vaultAddress || !this.#passAddress) throw new M3VaultReadFailure();
-      const response = await this.#fetcher(`/api/v1/chain/runtime-status/${this.#vaultAddress}`, {
-        method: 'GET',
-        credentials: 'same-origin',
-        headers: { Accept: 'application/json' },
-      });
+      const response = await this.#fetcher(
+        `/api/v1/chain/runtime-status/${this.#vaultAddress}?chainId=${this.#chainId}`,
+        {
+          method: 'GET',
+          credentials: 'same-origin',
+          headers: { Accept: 'application/json' },
+        },
+      );
       if (!response.ok) throw new M3VaultReadFailure();
       return runtimeStatus(await response.json(), this.#vaultAddress, this.#passAddress, this.#chainId);
     } catch (error) {
@@ -603,7 +609,7 @@ export class M3VaultApiClient {
       const normalizedOperationId = operationId(requestedOperationId, M3VaultReadFailure);
       const normalizedOwner = asAddress(owner);
       const response = await this.#fetcher(
-        `/api/v1/chain/operations/${normalizedOperationId}/evidence?owner=${normalizedOwner}`,
+        `/api/v1/chain/operations/${normalizedOperationId}/evidence?owner=${normalizedOwner}&chainId=${this.#chainId}`,
         {
           method: 'GET',
           credentials: 'same-origin',

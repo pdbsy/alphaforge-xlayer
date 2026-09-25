@@ -71,7 +71,7 @@ test('web Vault client reads the canonical owner projection through the same-pro
   assert.deepEqual(await client.readSnapshot(OWNER), payload());
   assert.deepEqual(requests, [
     {
-      input: `/api/v1/chain/vaults/${CONTRACT}/${OWNER}`,
+      input: `/api/v1/chain/vaults/${CONTRACT}/${OWNER}?chainId=46630`,
       init: { method: 'GET', credentials: 'same-origin', headers: { Accept: 'application/json' } },
     },
   ]);
@@ -102,7 +102,7 @@ test('web Vault client reads an exact contract-qualified StrategyPass projection
     { vaultAddress: CONTRACT, passAddress: PASS },
   );
   assert.deepEqual(await client.readPassSnapshot(OWNER), passPayload);
-  assert.deepEqual(requests, [`/api/v1/chain/passes/${PASS}/${OWNER}`]);
+  assert.deepEqual(requests, [`/api/v1/chain/passes/${PASS}/${OWNER}?chainId=46630`]);
 });
 
 test('web Vault client reads exact contract-qualified runtime status for identity cross-checking', async () => {
@@ -133,7 +133,7 @@ test('web Vault client reads exact contract-qualified runtime status for identit
   assert.deepEqual(await client.readRuntimeStatus(), body);
   assert.deepEqual(requests, [
     {
-      input: `/api/v1/chain/runtime-status/${CONTRACT}`,
+      input: `/api/v1/chain/runtime-status/${CONTRACT}?chainId=46630`,
       init: { method: 'GET', credentials: 'same-origin', headers: { Accept: 'application/json' } },
     },
   ]);
@@ -324,7 +324,10 @@ test('web Vault client reads exact operation evidence for the registered owner',
     productReady: true,
   } as const;
   const client = new M3VaultApiClient(async (request, init) => {
-    assert.equal(String(request), `/api/v1/chain/operations/web-submission-1/evidence?owner=${OWNER}`);
+    assert.equal(
+      String(request),
+      `/api/v1/chain/operations/web-submission-1/evidence?owner=${OWNER}&chainId=46630`,
+    );
     assert.deepEqual(init, {
       method: 'GET',
       credentials: 'same-origin',
