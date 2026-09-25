@@ -1,6 +1,7 @@
 import { installCandleInspection, type CandleChartHost } from './kline-hover.ts';
 import './kline-hover.css';
 import './wallet-account.css';
+import { createMockWalletSession } from './mock-wallet.ts';
 import { ProductAdapter, type ProductVault, type StrategySummary } from './product-adapter.ts';
 import type { CommandFields, CommandReview, CommandType } from './product-client.ts';
 import { createM3BrowserRuntime, type M3BrowserDeploymentConfig } from './m3-browser-runtime.ts';
@@ -25,7 +26,8 @@ import {
 } from './m3-product-runtime.ts';
 import { formatUnits, parseUnits } from '../../../packages/domain/src/money.ts';
 interface Prototype extends CandleChartHost {
-  strategies: { id: string }[];
+  strategies: { id: string; name: string }[];
+  exchange: { read: () => unknown };
   pages: { market: () => string; account: (tab: string) => string; trade: (id: string) => string };
   app: {
     render: (options?: { preserve?: boolean }) => void;
@@ -43,6 +45,13 @@ declare global {
   }
 }
 const AF = window.AF;
+let mockWalletStorage: Storage | undefined;
+try {
+  mockWalletStorage = window.localStorage;
+} catch {
+  /* Session-only demo connection. */
+}
+const mockWallet = createMockWalletSession(() => AF.exchange.read(), AF.strategies, mockWalletStorage);
 installCandleInspection(AF);
 let onchainRuntime = AF.m3OnchainRuntime;
 if (!onchainRuntime && import.meta.env.DEV && new URLSearchParams(location.search).get('m3Fixture') === '1') {
@@ -111,7 +120,7 @@ function hydrate(root: ParentNode): void {
 }
 hydrate(document);
 const footerNote = document.querySelector('.footer-bottom > span');
-if (footerNote) footerNote.textContent = 'Trading demo · Wallet balances on Robinhood Chain Testnet';
+if (footerNote) footerNote.textContent = 'Simulated trading · Mock wallet & Testnet preview';
 new MutationObserver((records) => {
   for (const record of records)
     for (const node of record.addedNodes) if (node instanceof Element) hydrate(node);
@@ -219,6 +228,7 @@ const productPages = extendM3ProductPages(
   },
   {
     accountId: () => adapter.snapshot.user,
+    mockWallet: () => mockWallet.snapshot(),
     contentProvenance: (id) =>
       AF.strategies.some((strategy) => strategy.id === id) ? 'FIXTURE' : 'LOCAL SIMULATION',
     ...(onchainRuntime ? { chain: () => onchainRuntime.snapshot } : {}),
@@ -461,7 +471,7 @@ async function reviewPassTransfer(control: HTMLElement): Promise<void> {
 }
 document.addEventListener('click', (event) => {
   const target = (event.target as Element).closest<HTMLElement>(
-    '[data-product-login],[data-product-refresh],[data-product-retry],[data-product-dismiss],[data-product-command],[data-product-review],[data-product-confirm],[data-product-claim],[data-chain-connect],[data-chain-refresh],[data-chain-action],[data-chain-review],[data-chain-confirm],[data-chain-approve],[data-pass-transfer],[data-pass-review],[data-pass-confirm]',
+    '[data-product-login],[data-product-refresh],[data-product-retry],[data-product-dismiss],[data-product-command],[data-product-review],[data-product-confirm],[data-product-claim],[data-chain-connect],[data-wallet-choice],[data-chain-refresh],[data-chain-action],[data-chain-review],[data-chain-confirm],[data-chain-approve],[data-pass-transfer],[data-pass-review],[data-pass-confirm]',
   );
   if (!target) return;
   event.preventDefault();
@@ -496,8 +506,25 @@ document.addEventListener('click', (event) => {
       localError = null;
       openCommand(target.dataset.productCommand as CommandType);
     } else if (target.hasAttribute('data-chain-connect')) {
-      if (!onchainRuntime) throw Error('CHAIN_RUNTIME_UNAVAILABLE');
-      void run(() => onchainRuntime.connect());
+      if (target.closest('[data-wallet-account]')) {
+        AF.app.openDialog(
+          `<span class="section-label">CHOOSE YOUR WALLET</span><h2>Connect Wallet</h2><div class="wallet-options"><button class="primary-btn" data-wallet-choice="mock">Mock Wallet <span>Demo ETH &amp; Pass · No extension needed</span></button><button class="outline-btn" data-wallet-choice="browser">Browser Wallet <span>Robinhood Chain Testnet</span></button></div>${mockWallet.snapshot() ? '<button class="text-link" data-wallet-choice="disconnect">Disconnect Mock Wallet</button>' : ''}`,
+        );
+      } else {
+        if (!onchainRuntime) throw Error('CHAIN_RUNTIME_UNAVAILABLE');
+        void run(() => onchainRuntime.connect());
+      }
+    } else if (target.hasAttribute('data-wallet-choice')) {
+      const choice = target.dataset.walletChoice;
+      if (!['mock', 'browser', 'disconnect'].includes(choice ?? '')) return;
+      if (choice === 'mock') mockWallet.connect();
+      else mockWallet.disconnect();
+      AF.app.closeDialog();
+      render();
+      if (choice === 'browser') {
+        if (!onchainRuntime) throw Error('CHAIN_RUNTIME_UNAVAILABLE');
+        void run(() => onchainRuntime.connect());
+      }
     } else if (target.hasAttribute('data-chain-refresh')) {
       if (!onchainRuntime) throw Error('CHAIN_RUNTIME_UNAVAILABLE');
       void run(() => onchainRuntime.refresh());

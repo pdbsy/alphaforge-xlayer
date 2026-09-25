@@ -156,3 +156,23 @@ body:has([data-wallet-account]) .local-backend-session {
     gap: 8px;
   }
 }
+
+.wallet-pass-row + .wallet-pass-row {
+  margin-top: 16px;
+}
+.wallet-options {
+  display: grid;
+  gap: 16px;
+  margin: 24px 0;
+}
+.wallet-options button {
+  text-align: left;
+  padding: 20px;
+}
+.wallet-options button span {
+  display: block;
+  font-size: 13px;
+  font-weight: 400;
+  margin-top: 8px;
+  opacity: 0.8;
+}

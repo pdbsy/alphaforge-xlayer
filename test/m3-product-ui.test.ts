@@ -926,3 +926,86 @@ test('wallet account preserves zero and wei precision and rejects invalid wallet
   assert.match(malformed, /Connect Wallet/);
   assert.doesNotMatch(malformed, /<img|onerror|<strong>987/);
 });
+
+test('account connects a visibly mock wallet backed by the demo trading ledger', () => {
+  const pages = extendM3ProductPages(
+    { account: () => 'LOCAL ACCOUNT', trade: () => 'TRADE' },
+    {
+      accountId: () => 'bob',
+      contentProvenance: () => 'FIXTURE',
+      mockWallet: () => ({
+        address: '0x000000000000000000000000000000000000de00',
+        ethBalance: '9965.68',
+        holdings: [{ name: 'Ridgeline · Trend Following', quantity: 10 }],
+      }),
+    },
+  );
+  const html = pages.account('trades');
+  assert.match(html, /Mock wallet/);
+  assert.match(html, /0x0000…de00/);
+  assert.match(html, /9965\.68/);
+  assert.match(html, /Ridgeline · Trend Following/);
+  assert.match(html, />10<\/strong>/);
+  assert.match(html, /Simulated balances/);
+  assert.equal((html.match(/<button\b/g) ?? []).length, 1);
+  assert.doesNotMatch(pages.trade('trend'), /9965\.68|Mock wallet/);
+});
+
+test('mock session persists only its connection and always reads fresh simulated balances', async () => {
+  const { createMockWalletSession } = await import('../apps/web/src/mock-wallet.ts');
+  const stored = new Map<string, string>();
+  const storage = {
+    getItem: (key: string) => stored.get(key) ?? null,
+    setItem: (key: string, value: string) => {
+      stored.set(key, value);
+    },
+    removeItem: (key: string) => {
+      stored.delete(key);
+    },
+  };
+  let ledger: unknown = { cash: 996568, positions: { trend: { qty: 10 }, factor: { qty: 0 } } };
+  const strategies = [
+    { id: 'trend', name: 'Trend' },
+    { id: 'factor', name: 'Factor' },
+  ];
+  const create = () => createMockWalletSession(() => ledger, strategies, storage);
+  const session = create();
+  assert.equal(session.snapshot(), undefined);
+  session.connect();
+  assert.equal(session.snapshot()?.ethBalance, '9965.68');
+  assert.deepEqual(session.snapshot()?.holdings, [{ name: 'Trend', quantity: 10 }]);
+  assert.equal(create().snapshot()?.ethBalance, '9965.68', 'reload keeps the explicit choice');
+  assert.deepEqual([...stored.values()], ['connected'], 'no wallet key or private key is persisted');
+  ledger = { cash: 123, positions: { trend: { qty: 2 }, factor: { qty: 3 } } };
+  assert.equal(session.snapshot()?.ethBalance, '1.23');
+  assert.equal(session.snapshot()?.holdings?.length, 2);
+  ledger = { cash: -1, positions: { trend: { qty: 100 }, factor: { qty: 0 } } };
+  assert.equal(session.snapshot()?.ethBalance, undefined);
+  assert.equal(session.snapshot()?.holdings, undefined, 'damaged ledger cannot fabricate balances');
+  session.disconnect();
+  assert.equal(session.snapshot(), undefined);
+  assert.equal(create().snapshot(), undefined);
+});
+
+test('mock session works without persistent storage and keeps unknown balances unavailable', async () => {
+  const { createMockWalletSession } = await import('../apps/web/src/mock-wallet.ts');
+  const fail = (): never => {
+    throw Error('Storage unavailable');
+  };
+  const session = createMockWalletSession(
+    () => {
+      throw Error('Unreadable ledger');
+    },
+    [],
+    {
+      getItem: fail,
+      setItem: fail,
+      removeItem: fail,
+    },
+  );
+  session.connect();
+  assert.match(session.snapshot()?.address ?? '', /^0x[0-9a-f]{40}$/);
+  assert.equal(session.snapshot()?.ethBalance, undefined);
+  session.disconnect();
+  assert.equal(session.snapshot(), undefined);
+});

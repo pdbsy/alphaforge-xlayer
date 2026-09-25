@@ -1,6 +1,7 @@
 import { ROBINHOOD_CHAIN_TESTNET } from '../../../packages/robinhood-chain/src/network.ts';
 import { formatUnits } from '../../../packages/domain/src/money.ts';
 import type { Address } from '../../../packages/chain-adapter/src/types.ts';
+import type { MockWalletSnapshot } from './mock-wallet.ts';
 import type { WalletSubmission } from './chain-wallet.ts';
 import type { ProductOperationEvidence } from './strategy-adapter.ts';
 
@@ -137,6 +138,7 @@ export interface M3ProductPages {
 }
 
 export interface M3PageExtensionOptions {
+  readonly mockWallet?: () => MockWalletSnapshot | undefined;
   readonly accountId: () => string | null;
   readonly contentProvenance: (strategyId: string) => ProductProvenance;
   readonly onchain?: () => OnchainProductPresentation | undefined;
@@ -602,9 +604,26 @@ export function renderWalletAccount(input: AccountShellInput): string {
   </section>`;
 }
 
+function renderMockWalletAccount(mock: MockWalletSnapshot): string {
+  const holdings = mock.holdings
+    ?.map(
+      (holding) =>
+        `<article class="wallet-pass-row sketch-box"><span class="wallet-pass-icon" aria-hidden="true">α</span><div><h3>${escapeHtml(holding.name)}</h3><span class="small muted">Mock Pass</span></div><div class="wallet-pass-quantity"><strong>${escapeHtml(holding.quantity)}</strong> <span>Pass</span></div></article>`,
+    )
+    .join('');
+  return `<section class="wrap wallet-account" data-wallet-account aria-label="Wallet account">
+    <header class="wallet-account-header"><div><span class="section-label">ALPHAFORGE DEMO</span><h1>My Account</h1></div><button class="primary-btn wallet-connect" data-chain-connect title="${escapeHtml(mock.address)}"><span class="wallet-status-dot connected" aria-hidden="true"></span>${escapeHtml(mock.address.slice(0, 6))}…${escapeHtml(mock.address.slice(-4))}</button></header>
+    <div class="wallet-network"><span>Mock wallet · Simulated balances</span><span class="wallet-connected">Connected</span></div>
+    <article class="sketch-box wallet-eth"><span class="section-label">ETH balance</span><div class="wallet-amount"><strong>${escapeHtml(mock.ethBalance ?? '—')}</strong><span>ETH</span></div><p class="small muted">${mock.ethBalance === undefined ? 'Balance unavailable' : 'Available for demo trading'}</p></article>
+    <section class="wallet-passes" aria-label="Pass holdings"><header><h2>Pass holdings</h2><span class="small muted">Strategy access</span></header>${holdings || `<div class="wallet-empty sketch-box"><span class="wallet-pass-icon" aria-hidden="true">α</span><h3>${mock.holdings ? 'No Passes yet' : 'Pass balance unavailable'}</h3><p>${mock.holdings ? 'Explore the market to try a demo trade.' : 'Demo trading records could not be read.'}</p></div>`}</section>
+  </section>`;
+}
+
 export function extendM3ProductPages(pages: M3ProductPages, options: M3PageExtensionOptions): M3ProductPages {
   return {
     account: (tab) => {
+      const mock = options.mockWallet?.();
+      if (tab === 'trades' && mock) return renderMockWalletAccount(mock);
       const chain = options.chain?.();
       const onchain = chain?.onchain ?? options.onchain?.();
       if (tab === 'trades')
