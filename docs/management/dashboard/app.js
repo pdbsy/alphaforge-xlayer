@@ -28,9 +28,9 @@ let taskView = 'board';
 let dashboardQuery = '';
 
 export function statusLabel(status) {
-  const label = STATUS_LABELS[status];
-  if (!label) throw new Error(`UNKNOWN_STATUS: ${String(status)}`);
-  return label;
+  if (typeof status !== 'string' || !Object.hasOwn(STATUS_LABELS, status))
+    throw new Error(`UNKNOWN_STATUS: ${String(status)}`);
+  return STATUS_LABELS[status];
 }
 
 export function severityClass(severity) {
@@ -204,11 +204,32 @@ function renderWorkerReports(snapshot) {
   }
 }
 
+function requireUiRecord(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('INVALID_SNAPSHOT');
+}
+
+function requireUiRecords(value, optional = false) {
+  if (optional && value == null) return;
+  if (!Array.isArray(value)) throw new Error('INVALID_SNAPSHOT');
+  value.forEach(requireUiRecord);
+}
+
+function requireOptionalUiString(value) {
+  if (value != null && typeof value !== 'string') throw new Error('INVALID_SNAPSHOT');
+}
+
+function requireOptionalUiStrings(value) {
+  if (value != null && (!Array.isArray(value) || value.some((item) => typeof item !== 'string')))
+    throw new Error('INVALID_SNAPSHOT');
+}
+
 function validateSnapshotForUi(value) {
   if (!value || value.schemaVersion !== 1) throw new Error('INVALID_SNAPSHOT');
   for (const field of [
     'project',
     'integration',
+    'git',
+    'decisions',
     'security',
     'tests',
     'build',
@@ -217,17 +238,16 @@ function validateSnapshotForUi(value) {
     'host',
   ])
     statusLabel(value[field]?.status);
-  for (const item of Object.values(value.management ?? {})) statusLabel(item.status);
-  for (const field of [
-    'workers',
-    'tasks',
-    'knownIssues',
-    'blockers',
-    'links',
-    'sourceHealth',
-    'dashboardLog',
-  ])
-    if (!Array.isArray(value[field])) throw new Error('INVALID_SNAPSHOT');
+  if (!value.management || typeof value.management !== 'object' || Array.isArray(value.management))
+    throw new Error('INVALID_SNAPSHOT');
+  for (const field of ['currentStatus', 'workQueue', 'changelog'])
+    statusLabel(value.management[field]?.status);
+  for (const item of Object.values(value.management)) statusLabel(item.status);
+  if (!Array.isArray(value.decisions.items)) throw new Error('INVALID_SNAPSHOT');
+  for (const field of ['workers', 'tasks', 'blockers', 'links', 'sourceHealth', 'dashboardLog'])
+    requireUiRecords(value[field]);
+  if (!Array.isArray(value.knownIssues)) throw new Error('INVALID_SNAPSHOT');
+  for (const issue of value.knownIssues) if (typeof issue !== 'string') requireUiRecord(issue);
   value.workers.forEach((item) => statusLabel(item.status));
   if (
     value.workers.length !== 2 ||
@@ -249,6 +269,26 @@ function validateSnapshotForUi(value) {
     )
       throw new Error('INVALID_SNAPSHOT');
   });
+  requireUiRecords(value.decisions.items);
+  for (const decision of value.decisions.items) {
+    if (typeof decision.text !== 'string') throw new Error('INVALID_SNAPSHOT');
+  }
+  requireOptionalUiString(value.git.commit);
+  requireUiRecords(value.git.recentCommits, true);
+  for (const commit of value.git.recentCommits ?? []) {
+    if (typeof commit.hash !== 'string') throw new Error('INVALID_SNAPSHOT');
+  }
+  for (const worker of value.workers) requireUiRecords(worker.activities, true);
+  for (const task of value.tasks)
+    for (const field of ['dependsOn', 'acceptance', 'evidence']) requireOptionalUiStrings(task[field]);
+  requireUiRecords(value.hackathon.releaseGates, true);
+  for (const gate of value.hackathon.releaseGates ?? []) requireUiRecords(gate.checks, true);
+  requireUiRecords(value.host.links, true);
+  requireUiRecords(value.tests.items);
+  for (const check of value.tests.items) requireOptionalUiString(check.commit);
+  requireUiRecords(value.security.findings);
+  for (const finding of value.security.findings)
+    for (const field of ['component', 'mitigation', 'task']) requireOptionalUiStrings(finding[field]);
   value.tests.items.forEach((item) => statusLabel(item.status));
   value.security.findings.forEach((item) => severityClass(item.severity));
   value.blockers.forEach((item) => {
@@ -781,12 +821,14 @@ function renderRecords(id, records, emptyMessage) {
     return;
   }
   const list = element('ul', 'record-list');
-  for (const record of records) {
+  for (const entry of records) {
+    const record = typeof entry === 'string' ? { title: entry } : entry;
     const item = element('li');
     item.append(element('strong', null, `${record.id ?? '记录'} · ${record.title ?? record.source}`));
     if (record.severity && SEVERITIES.has(record.severity))
       item.append(element('span', `severity ${severityClass(record.severity)}`, record.severity));
-    if (record.status && STATUS_LABELS[record.status]) item.append(badge(record.status));
+    if (typeof record.status === 'string' && Object.hasOwn(STATUS_LABELS, record.status))
+      item.append(badge(record.status));
     list.append(item);
   }
   body.append(list);
@@ -874,7 +916,6 @@ function renderRawEvidence(snapshot) {
 }
 
 function renderDashboard(snapshot) {
-  currentSnapshot = snapshot;
   renderOverview(snapshot);
   renderTasks(snapshot);
   renderManager(snapshot);
@@ -1056,18 +1097,35 @@ async function refreshDashboard() {
   refreshButton.disabled = true;
   refreshButton.classList.add('is-loading');
   browserDocument.querySelector('#data-state').textContent = '正在刷新证据快照…';
-  const result = await loadDashboard();
-  currentSnapshot = selectSnapshotAfterLoad(currentSnapshot, result);
-  if (result.state === 'error') {
-    renderFatal(result);
-  } else {
-    renderDashboard(result.data);
-    browserDocument.querySelector('#data-state').classList.remove('data-state-error');
-    browserDocument.querySelector('#data-state').textContent = `快照：${result.data.generatedAt}`;
+  const previous = currentSnapshot;
+  try {
+    const result = await loadDashboard();
+    const next = selectSnapshotAfterLoad(previous, result);
+    if (result.state === 'error') {
+      renderFatal(result);
+    } else {
+      renderDashboard(next);
+      currentSnapshot = next;
+      browserDocument.querySelector('#data-state').classList.remove('data-state-error');
+      browserDocument.querySelector('#data-state').textContent = `快照：${next.generatedAt}`;
+    }
+    applyDashboardSearch(browserDocument.querySelector('#dashboard-search').value);
+  } catch {
+    currentSnapshot = previous;
+    if (previous) {
+      try {
+        renderDashboard(previous);
+        applyDashboardSearch(browserDocument.querySelector('#dashboard-search').value);
+      } catch {
+        // A damaged DOM may prevent restoration; the visible error remains and
+        // the finally block keeps retry available after that external fault clears.
+      }
+    }
+    renderFatal(ERROR_RESULT);
+  } finally {
+    refreshButton.disabled = false;
+    refreshButton.classList.remove('is-loading');
   }
-  applyDashboardSearch(browserDocument.querySelector('#dashboard-search').value);
-  refreshButton.disabled = false;
-  refreshButton.classList.remove('is-loading');
 }
 
 async function boot() {

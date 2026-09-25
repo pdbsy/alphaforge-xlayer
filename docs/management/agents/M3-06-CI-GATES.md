@@ -1,3 +1,5 @@
+> Current phase-one assignment (2026-09-20): see [fixed-base task registry](../phase1/ASSIGNMENTS.md). Master is `18f5352070910a867b9729b031aa2e3951785e01`; earlier candidates, task tables and no-assignment states below are historical. No merge/deployment authority or independent approval is implied.
+
 # Macbeth06 CI and merge-gate assignment
 
 Registered by Macbeth01 on 2026-09-20 following the user's explicit request for a sixth worker dedicated to gates and CI checks. This supersedes the historical no-new-worker instruction only for this role. It grants no merge, deployment or protection-bypass authority.

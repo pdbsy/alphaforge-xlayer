@@ -30,7 +30,7 @@ Gitleaks first exercises an isolated synthetic history containing root/deleted, 
 
 ## Failure and evidence semantics
 
-All reports bind source head, actual checkout/tree, root dependency hash, scanner lock/version, applicable rules/input hashes, UTC/run/image identity and coverage. Clean tracked state is required before and after. Reports are bounded JSON in job logs. Findings are FAIL; install/network/process/signal/timeout/parse/incomplete-coverage errors are BLOCKED. Both exit nonzero. Secret values, source snippets, author emails and raw scanner exceptions are excluded from summaries. Canary test code is scanned statically, never executed as application code.
+All reports bind source head, actual checkout/tree, root dependency hash, scanner lock/version, applicable rules/input hashes, UTC/run/image identity and coverage. Clean tracked state is required before and after. Reports are bounded JSON in job logs. Raw findings remain FAIL; the one approved historical occurrence described below has a separate, visible disposition. All other findings fail the gate. Install/network/process/signal/timeout/parse/incomplete-coverage errors are BLOCKED. Both exit nonzero. Secret values, source snippets, author emails and raw scanner exceptions are excluded from summaries. Canary test code is scanned statically, never executed as application code.
 
 Parsed CI contracts and platform admission reject missing, renamed, skipped or replaced scanner jobs/steps, shallow checkout, wrong architecture, changed installation commands and privilege escalation. The new regression suite is registered in both full npm tests and the management collector. In-repository checks remain mutable by repository maintainers; GOV-001/SUPPLY-001 external-trust work remains unresolved.
 
@@ -48,3 +48,13 @@ After all new-head hosted gates pass, the user-authorized change to master rules
 This applies to subsequent master PRs as well. Implementation files are not proof of a live ruleset update: the operation needs an exact before/after API receipt. No merge is authorized. PR author pdbsy cannot provide its own independent approval; Macbeth06 under that same account cannot replace it. The incomplete independent security acceptance and external-governance findings are not closed by this migration.
 
 See [scanner qualification](SCANNER-QUALIFICATION.md) for sources and limitations.
+
+## GITLEAKS-FP-001: approved exact historical disposition
+
+On 2026-09-20 the user approved only the occurrence in historical commit `69330dfffeceb86cf793fa0163ff4f72a466f3eb`, file `docs/product/PHASE1-PRODUCT-WALLET-FLOWS.md`, line 12, detector `generic-api-key`. The immutable file blob is `b118b774535825efd5d7afe8931e134827f4f974`; it records a real Git tree, not an issued credential. The source commit is `28ff3d4b5c6e70ff0c6ea1b11ad0fea4283887fd`. The tree object is `7f4abc27757e099c1b5b26a66509395015bdb7b7`.
+
+`tools/security/gitleaks-disposition.mjs` re-reads typed Git objects with replacements disabled, verifies the historical path-to-blob identity and SHA-256 of all four exact object byte sequences, then checks the immutable document lines and referenced commit's root tree. Only exactly one matching single-line historical finding can qualify. Missing objects, altered bytes, premature/expired proof, malformed reports or failed scanner execution stay BLOCKED; mismatched, duplicate and additional findings remain FAIL. Current-file scans and every canary still use the unchanged strict classifier.
+
+This is a bounded exception under the existing toolchain exception policy: valid from 2026-09-20 UTC until **2026-10-20 00:00 UTC**, with no automatic renewal. Macbeth01 owns the implementation and Macbeth06 independently verifies it. The expiry deliberately prevents this one approval becoming an unbounded scanner policy. The full default scanner, all fetched refs, empty ignore file, disabled inline allowances, redaction and required checks are unchanged.
+
+The emitted report preserves `history.state: FAIL`, its complete sanitized finding list, scanner exit code and raw-report SHA-256; `historyDisposition` separately reports the exact proof and effective state. No raw secrets, email addresses or source snippets are emitted. Previous failed CI runs remain failed. This disposition alone does not establish readiness, independent security approval, GitHub review or deployment authorization.

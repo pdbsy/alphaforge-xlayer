@@ -1,5 +1,7 @@
 # AlphaForge Hackathon on Robinhood Chain Testnet
 
+> **Current checkpoint (2026-09-20):** PR #21 is merged as `18f5352070910a867b9729b031aa2e3951785e01` (`65%finish`); its complete local suite and nine hosted CI jobs passed. Phase One remains in progress: see the [current status](docs/management/CURRENT-STATUS.md), [full remaining-work matrix](docs/management/phase1/REMAINING-TASKS.md) and [worker assignments](docs/management/phase1/ASSIGNMENTS.md). Initial Pass distribution and transfers are in scope; paid sales and real Buy/Sell are explicitly out of Phase One. Runtime remains Local/Mock/NOT_DEPLOYED; independent final security/governance acceptance and real Testnet acceptance are incomplete.
+
 AlphaForge is a safety-first prototype for separating strategy access rights from user funds. It targets Robinhood Chain Testnet, an Arbitrum Chain built with Arbitrum Nitro. The current demo makes allowance, idle cash, active strategy cash, pending withdrawals, positions and fees independently visible in an auditable ledger.
 
 ## Hackathon status

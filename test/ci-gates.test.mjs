@@ -1,14 +1,46 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, writeFile, mkdir, rm, symlink, readFile } from 'node:fs/promises';
+import { mkdtemp, writeFile, mkdir, rm, symlink, readFile, truncate } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { parse, stringify } from 'yaml';
+import { ESLint } from 'eslint';
 import { validateContractHost, runContractStages } from '../tools/ci/verify-contracts.mjs';
 import { scanSources, sourceTargets } from '../tools/ci/check-source-policy.mjs';
 import { compareLocks, classifyAudit, candidateRefs } from '../tools/ci/check-dependency-delta.mjs';
 import { validateCIGateWorkflows } from '../tools/ci/workflow-contract.mjs';
 import { assertUnchanged } from '../tools/ci/context.mjs';
+
+test('source policy rejects a real aggregate byte overflow before linting any files', async (t) => {
+  const root = await mkdtemp(join(tmpdir(), 'alphaforge-source-byte-limit-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const paths = [];
+  for (let index = 0; index < 17; index++) {
+    const path = `source-${index}.ts`;
+    await writeFile(join(root, path), '');
+    await truncate(join(root, path), 2 * 1024 * 1024);
+    paths.push(path);
+  }
+  await assert.rejects(scanSources(root, paths), /Source coverage exceeds limit/);
+});
+
+test('source policy rejects an incomplete result at the real ESLint executor boundary', async (t) => {
+  const root = await mkdtemp(join(tmpdir(), 'alphaforge-source-incomplete-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  for (const name of ['x.ts', 'y.ts']) await writeFile(join(root, name), 'export const x = 1;\n');
+  const original = ESLint.prototype.lintFiles;
+  let observed = 0;
+  t.mock.method(ESLint.prototype, 'lintFiles', async function (...args) {
+    const results = await original.apply(this, args);
+    assert.equal(results.length, 2);
+    observed++;
+    // Explicit fault injection: lose one genuine engine result. This is a
+    // reconciliation test, not a claim that this ESLint version drops files.
+    return results.slice(1);
+  });
+  await assert.rejects(scanSources(root, ['x.ts', 'y.ts']), /Incomplete source scan/);
+  assert.equal(observed, 1);
+});
 
 test('gate evidence rejects dirty state and changed commit, tree or lock after execution', () => {
   const before = {
@@ -60,7 +92,16 @@ test('contract stages stop on bootstrap/probe/test failure and never invent ABI 
   });
   assert.equal(report.state, 'PASS');
   assert.equal(report.abi, 'PASS');
-  assert.deepEqual(calls[2], ['/bin/bash', ['contracts/script/check-m3-vault.sh']]);
+  assert.deepEqual(calls[2], ['/bin/bash', ['contracts/script/check-phase1-contracts.sh']]);
+});
+
+test('Phase One contract gate cannot skip artifact manifest and rehearsal failures', () => {
+  const report = runContractStages((_file, args) => ({
+    status: args.includes('contracts/script/check-phase1-contracts.sh') ? 1 : 0,
+    signal: null,
+  }));
+  assert.equal(report.state, 'FAIL');
+  assert.notEqual(report.abi, 'PASS');
 });
 
 async function sourceFixture(t, text, name = 'entry.tsx') {
@@ -222,6 +263,21 @@ test('actual CI gate contracts reject skipped, replaced and weakened jobs', asyn
     ]) {
       const bad = structuredClone(workflow);
       mutate(bad);
+      assert.throws(() => validateCIGateWorkflows(stringify(bad)));
+    }
+  }
+});
+
+test('Python gate qualification refuses version, architecture and floating setup drift', async () => {
+  const workflow = parse(await readFile(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8'));
+  for (const job of ['contracts-m3-macos', 'semgrep-ce']) {
+    for (const patch of [
+      { 'python-version': '3.12.10' },
+      { architecture: 'unsupported' },
+      { 'check-latest': true },
+    ]) {
+      const bad = structuredClone(workflow);
+      Object.assign(bad.jobs[job].steps[4].with, patch);
       assert.throws(() => validateCIGateWorkflows(stringify(bad)));
     }
   }

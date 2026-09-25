@@ -1,0 +1,30 @@
+{
+  "browser-tool-copy.json": {
+    "bytes": 220,
+    "sha256": "23a766b9bc48626981b666372fece925b27e4f35d59444928c4b737723633330"
+  },
+  "f26e919-browser-permitted.log": {
+    "bytes": 3851,
+    "sha256": "22c5888990a8453f2ac5d8e24d482deef065ec4d6eadfe623918411cdcac2357"
+  },
+  "f26e919-browser-sandbox.log": {
+    "bytes": 500,
+    "sha256": "007a733a9179dbfbcb343b2893abc1e6364822f5487a80c75751389ba4960811"
+  },
+  "f26e919-browser-tests.log": {
+    "bytes": 4394,
+    "sha256": "cb35b3df8d0234f98f7f21afa376f9f9d3b18a61ac0a593b9dd659754a56f7ce"
+  },
+  "f26e919-typecheck.log": {
+    "bytes": 112,
+    "sha256": "2a6a2c0222a96232b5dd3dea2c3e4411abfc22401c3a741d0a8e3f88ad508016"
+  },
+  "result.json": {
+    "bytes": 3724,
+    "sha256": "0110494eb972ee4d6310167a04119301e5e9fbbec7c685c9c9b1c9e06b2bf6f2"
+  },
+  "historical-ignored-m3-browser-journey.json": {
+    "bytes": 281,
+    "sha256": "633b98595fb0147eccc9abc7a9dd882ee023415eecaf085e17e4797e15fdc4d9"
+  }
+}
