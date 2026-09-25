@@ -220,6 +220,10 @@ body:has([data-wallet-account]) .local-backend-session {
 .wallet-funding .order-quote {
   margin: 24px 0;
 }
+.wallet-funding .order-side button[aria-pressed='true'] {
+  background: #a34e36;
+  color: #fffaf0;
+}
 .wallet-funding .full {
   width: 100%;
   margin-top: 12px;

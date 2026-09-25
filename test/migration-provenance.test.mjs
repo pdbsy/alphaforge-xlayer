@@ -42,8 +42,8 @@ test('migration inventory accounts for source versions and validates imported ar
     (row) => row.target_path === 'apps/web/prototype/AlphaForge_v3_EN.html',
   );
   assert.equal(record.original_sha256, prototype.originalSha256);
-  assert.equal(record.migrated_sha256, prototype.currencySha256);
-  assert.equal(record.subsequent_revisions.length, 3);
+  assert.equal(record.migrated_sha256, prototype.usdcSha256);
+  assert.equal(record.subsequent_revisions.length, 6);
   const prior = record.subsequent_revisions[0];
   assert.equal(prior.commit, prototype.previousRepairCommit);
   assert.equal(prior.previous_sha256, prototype.originalSha256);
@@ -56,7 +56,19 @@ test('migration inventory accounts for source versions and validates imported ar
   assert.equal(currency.commit, prototype.currencyCommit);
   assert.equal(currency.previous_sha256, prototype.repairedSha256);
   assert.equal(currency.sha256, prototype.currencySha256);
-  assert.equal(prototype.currentSha256, prototype.currencySha256);
+  const trade = record.subsequent_revisions[3];
+  assert.equal(trade.commit, prototype.tradeCommit);
+  assert.equal(trade.previous_sha256, prototype.currencySha256);
+  assert.equal(trade.sha256, prototype.tradeSha256);
+  const funding = record.subsequent_revisions[4];
+  assert.equal(funding.commit, prototype.fundingCommit);
+  assert.equal(funding.previous_sha256, prototype.tradeSha256);
+  assert.equal(funding.sha256, prototype.fundingSha256);
+  const usdc = record.subsequent_revisions[5];
+  assert.equal(usdc.commit, prototype.usdcCommit);
+  assert.equal(usdc.previous_sha256, prototype.fundingSha256);
+  assert.equal(usdc.sha256, prototype.usdcSha256);
+  assert.equal(prototype.currentSha256, prototype.usdcSha256);
 });
 
 test('generated Forum uses external assets under the existing dashboard CSP', async () => {
