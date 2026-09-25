@@ -170,7 +170,7 @@ test('retained UI history validates a tree-identical master integration without 
   }
   // A real post-integration checkout already has rewritten ancestry. Preserve
   // its admitted source reference instead of mislabelling that master as source.
-  const source = execute(root, ['rev-parse', '--verify', directSource ? 'HEAD' : sourceRef]);
+  const source = execute(root, ['rev-parse', '--verify', directSource ? 'HEAD' : admitted.retainedSourceRef]);
   execute(cwd, ['fetch', '--no-tags', root, source]);
   const tree = git('rev-parse', `${source}^{tree}`);
   const master = execute(cwd, ['commit-tree', tree, '-p', base], 'Local squash-shaped fixture only\n');

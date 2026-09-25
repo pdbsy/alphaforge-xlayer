@@ -52,6 +52,12 @@ export async function verifiedPrototypeArtifacts(root) {
     }
   };
   const head = commit('HEAD');
+  const xlayerBase = 'b2ed61311df8d1c97a48f623d1b4872798f5e888';
+  const xlayerSource = '77a35249dc1b95605bf32e4cabed456ea104a669';
+  const importedSource = ancestor(xlayerBase, head);
+  const retainedSourceRef = importedSource
+    ? 'refs/remotes/upstream/macbeth01/m3-phase1-closeout'
+    : 'refs/remotes/origin/macbeth01/m3-phase1-closeout';
   assert.ok(ancestor(originalCommit, previousRepairCommit), 'original must precede the first repair');
   assert.ok(ancestor(previousRepairCommit, repairCommit), 'reviewed repairs must retain their exact chain');
   if (
@@ -62,8 +68,14 @@ export async function verifiedPrototypeArtifacts(root) {
     // A squash/rebase preserves the reviewed source branch but changes ancestry.
     // Require an exact whole-tree integration bridge on actual master history;
     // matching only this HTML, or merely possessing the old objects, is not enough.
-    const master = commit('refs/remotes/origin/master');
-    const retained = commit('refs/remotes/origin/macbeth01/m3-phase1-closeout');
+    // XLayer retains an exact upstream import. Never relabel the target's master
+    // as the upstream master: both immutable source objects must match the pins.
+    const master = commit(importedSource ? 'refs/remotes/upstream/master' : 'refs/remotes/origin/master');
+    const retained = commit(retainedSourceRef);
+    if (importedSource) {
+      assert.equal(master, xlayerBase, 'the upstream import must remain the user-selected base');
+      assert.equal(retained, xlayerSource, 'the retained upstream source must remain exact');
+    }
     const base = '18f5352070910a867b9729b031aa2e3951785e01';
     for (const [before, after] of [
       [base, master],
@@ -126,5 +138,6 @@ export async function verifiedPrototypeArtifacts(root) {
     originalSha256,
     previousRepairedSha256,
     repairedSha256,
+    retainedSourceRef,
   };
 }
