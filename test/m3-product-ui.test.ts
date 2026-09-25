@@ -78,7 +78,7 @@ test('My Account renders wallet ETH and Pass independently with an address conne
   assert.match(wrong, /Switch to Robinhood Chain Testnet/);
 });
 
-test('page extension preserves product pages and prepends route-specific M3 shells', () => {
+test('page extension preserves the trade page without a chain diagnostics panel', () => {
   let accountId: string | null = 'alice';
   const pages = extendM3ProductPages(
     {
@@ -92,12 +92,10 @@ test('page extension preserves product pages and prepends route-specific M3 shel
   );
 
   const fixture = pages.trade('trend');
-  assert.ok(fixture.indexOf('M3 product chain status') < fixture.indexOf('original trade trend'));
-  assert.match(fixture, /FIXTURE/);
+  assert.equal(fixture, '<div>original trade trend</div>');
 
   const local = pages.trade('core-flow-demo');
-  assert.match(local, /LOCAL SIMULATION/);
-  assert.match(local, /original trade core-flow-demo/);
+  assert.equal(local, '<div>original trade core-flow-demo</div>');
 
   assert.match(pages.account('funds'), /AlphaForge account · alice/);
   accountId = 'bob';
@@ -739,7 +737,7 @@ test('reorged projection permits only owner exit actions backed by live simulati
   assert.match(html, /data-chain-action="close"[^>]*>Close<\/button>/);
 });
 
-test('actual product page extension reads fresh onchain state on every render', () => {
+test('account diagnostics read fresh onchain state without adding diagnostics to trade', () => {
   let health = 'LIVE' as 'LIVE' | 'DEGRADED';
   let walletAddress = '0x1111111111111111111111111111111111111111';
   const pages = extendM3ProductPages(
@@ -767,12 +765,14 @@ test('actual product page extension reads fresh onchain state on every render', 
     },
   );
 
-  assert.doesNotMatch(pages.trade('trend'), /INDEXER DEGRADED/);
-  assert.match(pages.trade('trend'), new RegExp(walletAddress));
-  assert.match(pages.trade('trend'), /INDEXING/);
+  assert.equal(pages.trade('trend'), '<div>trade trend</div>');
+  assert.doesNotMatch(pages.account('funds'), /INDEXER DEGRADED/);
+  assert.match(pages.account('funds'), new RegExp(walletAddress));
+  assert.match(pages.account('funds'), /INDEXING/);
   health = 'DEGRADED';
   walletAddress = '0x2222222222222222222222222222222222222222';
-  assert.match(pages.trade('trend'), /INDEXER DEGRADED/);
+  assert.equal(pages.trade('trend'), '<div>trade trend</div>');
+  assert.match(pages.account('funds'), /INDEXER DEGRADED/);
   assert.match(pages.account('funds'), new RegExp(walletAddress));
   assert.match(pages.account('funds'), /INJECTED MOCK/);
 });
@@ -883,10 +883,10 @@ test('unreviewed or cross-chain Vault selector metadata never becomes an actiona
       }),
     },
   );
-  for (const html of [pages.account('funds'), pages.trade('trend')]) {
-    assert.match(html, /data-chain-vault-select/);
-    assert.match(html, new RegExp(`value="46630:${vaultA}" selected`));
-  }
+  const account = pages.account('funds');
+  assert.match(account, /data-chain-vault-select/);
+  assert.match(account, new RegExp(`value="46630:${vaultA}" selected`));
+  assert.doesNotMatch(pages.trade('trend'), /data-chain-vault-select/);
 });
 
 test('wallet account preserves zero and wei precision and rejects invalid wallet values', () => {

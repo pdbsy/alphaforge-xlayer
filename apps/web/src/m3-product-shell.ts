@@ -646,24 +646,6 @@ export function extendM3ProductPages(pages: M3ProductPages, options: M3PageExten
         }) + pages.account(tab)
       );
     },
-    trade: (strategyId) => {
-      const chain = options.chain?.();
-      const onchain = chain?.onchain ?? options.onchain?.();
-      return (
-        renderM3StrategyShell({
-          strategyId,
-          contentProvenance: options.contentProvenance(strategyId),
-          ...(chain
-            ? {
-                wallet: chain.wallet,
-                network: chain.network,
-                transaction: chain.transaction,
-                ...(chain.vaultSelection ? { vaultSelection: chain.vaultSelection } : {}),
-              }
-            : {}),
-          ...(onchain ? { onchain } : {}),
-        }) + pages.trade(strategyId)
-      );
-    },
+    trade: (strategyId) => pages.trade(strategyId),
   };
 }
