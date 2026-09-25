@@ -3,6 +3,7 @@ import cookie from '@fastify/cookie';
 import staticFiles from '@fastify/static';
 import { randomBytes } from 'node:crypto';
 import { readConfig } from '../../../packages/config/src/index.ts';
+import { readXLayerLocalConfig } from '../../../packages/xlayer-chain/src/network.ts';
 import { DomainError, type Command } from '../../../packages/domain/src/vault.ts';
 import { localSimulation } from './simulation.ts';
 import { LocalStore } from './store.ts';
@@ -53,7 +54,8 @@ export async function buildApp(options: {
   webRoot?: string;
   chainRuntime?: M3ChainRuntime;
 }) {
-  readConfig(options.env);
+  if (Object.keys(options.env).some((key) => key.startsWith('XLAYER_'))) readXLayerLocalConfig(options.env);
+  else readConfig(options.env);
   const origin = new URL(options.origin);
   if (origin.protocol !== 'http:' || !['127.0.0.1', 'localhost'].includes(origin.hostname))
     throw new Error('LOOPBACK_ORIGIN_REQUIRED');

@@ -14,10 +14,10 @@ Authority: AF-XLAYER-R2-03-ADAPTER delegation from XLayerPM; isolated clone and 
 
 ## Batch 2 — API isolation and phase-one behavior
 
-- [ ] Add real runtime/store/Fastify tests with identical addresses and operation ids on 1952 and 46630. Explicit chainId query must select the requested chain for status, Vault, Pass and operation evidence. Unknown/invalid chain must reject; no selector must fail closed if ambiguous; single-chain legacy queries remain valid.
-- [ ] Run RED tests, then narrow chain-routes.ts lookup/schema changes; preserve submission chain+target matching and stale projection refusal.
-- [ ] Exercise XLayer shared Pass owner selection, one-wei transfer and rescue, multi-Vault storage and reconciliation; reuse real existing integration behavior with offline RPC doubles only at the network boundary. Add restore/backup checks with real SQLite fixtures if existing coverage is chain-specific.
-- [ ] Verify focused tests and typecheck immediately; commit and report exact SHA. Document any manager-owned catalog/config/recovery integration dependencies before claiming end-to-end readiness.
+- [x] Add real runtime/store/Fastify tests with identical addresses and operation ids on 1952 and 46630. Explicit chainId query must select the requested chain for status, Vault, Pass and operation evidence. Unknown/invalid chain must reject; no selector must fail closed if ambiguous; single-chain legacy queries remain valid.
+- [x] Run RED tests, then narrow chain-routes.ts lookup/schema changes; preserve submission chain+target matching and stale projection refusal.
+- [x] Exercise XLayer shared Pass owner selection, one-wei transfer and rescue, multi-Vault storage and reconciliation; reuse real existing integration behavior with offline RPC doubles only at the network boundary. Add restore/backup checks with real SQLite fixtures if existing coverage is chain-specific.
+- [x] Verify focused tests and typecheck immediately; commit and report exact SHA. Document any manager-owned catalog/config/recovery integration dependencies before claiming end-to-end readiness.
 
 ## Delivery
 
