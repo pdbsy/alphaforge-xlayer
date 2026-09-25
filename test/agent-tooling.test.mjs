@@ -158,3 +158,62 @@ Related-PR: ${url}`;
     assert.equal(snapshot.threads[0].last_updated_at, record.updated_at);
   }
 });
+
+test('Forum rendering preserves historical source links while rejecting foreign and unsafe destinations', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const { runInNewContext } = await import('node:vm');
+  const urls = [
+    'https://github.com/pdbsy/quantpass-arbitrum-hackathon/pull/22#issuecomment-1',
+    'https://github.com/pdbsy/alphaforge-xlayer/pull/7',
+    'https://github.com/other/alphaforge-xlayer/pull/7',
+    'https://github.com/pdbsy/alphaforge-xlayer/pull/7?token=synthetic',
+    'https://user@github.com/pdbsy/alphaforge-xlayer/pull/7',
+    'javascript:alert(1)',
+  ];
+  const nodes = [];
+  const node = (tag) => {
+    const value = {
+      tag,
+      value: '',
+      children: [],
+      append(...children) {
+        this.children.push(...children);
+      },
+      replaceChildren() {
+        this.children = [];
+      },
+      addEventListener() {},
+    };
+    nodes.push(value);
+    return value;
+  };
+  const ids = new Map();
+  const get = (id) => {
+    if (!ids.has(id)) ids.set(id, node('div'));
+    return ids.get(id);
+  };
+  get('forum-snapshot').textContent = JSON.stringify({
+    source: { state: 'STALE', last_sync_at: null },
+    threads: [],
+    messages: urls.map((url) => ({
+      agent: 'Macbeth03',
+      type: 'NOTICE',
+      thread: 'AF-XLAYER-R2',
+      body: 'Preserved source',
+      related_pr: url,
+      source_url: url,
+    })),
+  });
+  runInNewContext(await readFile(new URL('../tools/agent-forum-app.js', import.meta.url), 'utf8'), {
+    URL,
+    document: { getElementById: get, createElement: node, createTextNode: (text) => ({ text }) },
+  });
+  assert.deepEqual(
+    nodes.filter((n) => n.tag === 'a').map((n) => n.href),
+    [urls[0], urls[0], urls[1], urls[1]],
+  );
+  for (const link of nodes.filter((n) => n.tag === 'a')) {
+    assert.equal(link.target, '_blank');
+    assert.equal(link.rel, 'noopener noreferrer');
+  }
+});
