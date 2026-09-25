@@ -9,9 +9,9 @@ import { importUserUI, normalizeStyles } from '../tools/import-user-ui.mjs';
 import { analyzeHtmlSource } from '../tools/html-source-ranges.mjs';
 test('actual importer preserves the reviewed public source and the historical repaired artifact', async (t) => {
   const artifacts = await verifiedPrototypeArtifacts(resolve(import.meta.dirname, '..'));
-  assert.equal(artifacts.currentSha256, 'e73751920d4bcf5da76ed12474702e34eb9553cc4b9b3498ad81b8e62451423e');
-  assert.equal(artifacts.currentReviewCommit, 'fe1f9ffaa589d3c33525561212da41afe68f71ec');
-  assert.equal(Buffer.byteLength(artifacts.current), 287492);
+  assert.equal(artifacts.currentSha256, 'bff7d13474b074efad385aad44af4ed995db18897b543413ea66219e20187c6a');
+  assert.equal(artifacts.currentReviewCommit, '6d21dcbd15e35ddef88c82cac414c3fb7b6696a9');
+  assert.equal(Buffer.byteLength(artifacts.current), 293149);
   assert.equal(Buffer.byteLength(artifacts.repaired), 286508);
   for (const source of [artifacts.current, artifacts.repaired]) {
     const parsed = analyzeHtmlSource(source);
