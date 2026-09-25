@@ -23,3 +23,15 @@ Offline lifecycle coverage: one-wei Pass transfer, exact finite USDT/Pass allowa
 Raw RED/GREEN logs remain in ignored `.checks/xlayer-r2-contracts/`. Local test results are self-verification; Macbeth03's independent review is pending. Root test/management registration for `test/xlayer-deployment-template.test.mjs` is manager-owned. Forge discovers `contracts/test/XLayerPhase1.t.sol` through the existing all-tests gate.
 
 No RPC, key use, signing, broadcast, chain deployment or mainnet. Hosted verification and actual deployment remain NOT_RUN. No historical manager checks or generated PASS evidence were edited.
+
+## Simulation-only follow-up — 2026-09-26
+
+The manager reported Macbeth05's independent review of b839291: template/asset design accepted, with one P2 in the Node test's use of URL.pathname on Windows. Commit cde0587900130c3d9780185fcf946a7c2936daf6 uses fileURLToPath instead. The original copied test failed in a path with spaces; corrected path-fixture plus current/legacy tests passed 22/22. Native Windows execution remains NOT_RUN.
+
+`tools/prepare-xlayer-deployment.mjs` now prepares only an offline simulation, accepting exactly `--output <new path>` plus the public constructor variables documented in RUNBOOK.md. Every broadcast, RPC, wallet and arbitrary extra flag is rejected. The child receives only explicit parameters, fixed profile and a bounded PATH. The script uses local VM impersonation and never collects transactions for broadcast.
+
+The output has six simulated addresses and exact constructor strings. It remains NOT_DEPLOYED / PRE_RELEASE / SIMULATION_ONLY / LOCAL_SIMULATION_ONLY. Receipt blocks/transactions, creation/runtime hashes and evidence refs remain null. It cannot be used as a verified frontend/backend deployment configuration. The script's real in-memory execution confirms five direct creations and an internally created Locker; wrong chain and missing/zero parameters fail before creation.
+
+Verification: 23 focused Node tests including the real CLI/Forge integration; full Forge 165/165; both TypeScript projects; changed-file ESLint; Prettier and Forge format checks; original compiled Phase One manifest and frozen Vault ABI checks. Test fixture corrections (payable cast, environment mutation ordering and chain restoration) are retained in ignored logs, separate from valid RED failures. A single Solidity test sequences environment mutations to avoid parallel test-process environment races.
+
+The attempted broadcast-capable patch was rejected by automatic approval review and was not applied. Specific authorization remains pending; this batch implements the explicitly assigned simulation-only alternative. It adds no npm/CI entry or broadcast command. Manager registration requested for `test/xlayer-deployment-command.test.mjs`; `test/xlayer-simulation-native.qualified.test.mjs` is an explicit native qualification requiring installed pinned Forge tools. Independent review of this follow-up is pending.

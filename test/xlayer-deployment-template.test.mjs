@@ -123,7 +123,10 @@ test('thresholds stay bounded while object key ordering is irrelevant', () => {
 test('checker CLI is read-only and never reflects rejected input', async () => {
   assert.equal(typeof validate, 'function');
   const before = await readFile(templateUrl);
-  const result = spawnSync(process.execPath, [fileURLToPath(moduleUrl)], { encoding: 'utf8', timeout: 10000 });
+  const result = spawnSync(process.execPath, [fileURLToPath(moduleUrl)], {
+    encoding: 'utf8',
+    timeout: 10000,
+  });
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /5 direct.*1 Vault-created.*NOT_DEPLOYED/);
   assert.deepEqual(await readFile(templateUrl), before);

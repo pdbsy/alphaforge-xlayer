@@ -26,7 +26,7 @@ Interface: `validateXLayerDeploymentTemplate(value)` returns the valid input or 
 - [x] Write rejection tests for 195/196/46630/string IDs, missing/extra fields at every depth, wrong constructor shapes, added deployment roles, independent Locker deployment, non-null evidence and malformed thresholds.
 - [x] Run `node --test test/xlayer-deployment-template.test.mjs`; retain the expected missing-implementation failure.
 - [x] Implement exact recursive shape/value validation with bounded soft-ready/reorg settings, and a JSON-only template with complete constructor descriptors.
-- [ ] Run new tests and `test/m3-deployment-template.test.mjs`; commit and send the exact source SHA to XLayerPM.
+- [x] Run new tests and `test/m3-deployment-template.test.mjs`; commit and send the exact source SHA to XLayerPM.
 
 ## Task 2: USDT asset and offline chain/lifecycle checks
 
@@ -38,4 +38,18 @@ Interface: `AlphaForgeTestUSDT(uint256 fixedSupply_, address recipient_)`, name 
 - [x] Add the minimal subclass, then verify metadata, constructor supply/recipient, transfer precision and no extra mint path.
 - [x] Rehearse transfer/deposit/withdraw/close/token and native rescue at local chain ID 1952, including finite allowances and direct owner isolation.
 - [x] Verify the existing digest preview differs between 1952, 195, 196 and 46630 and between verifying contracts; this adds no business signing or permit authorization.
-- [ ] Run both original and new Forge tests, compare historical ABI/bytecode artifacts, run focused JS checks, and request Macbeth03's independent review with exact source SHA and validation limits.
+- [x] Run both original and new Forge tests, compare historical ABI/bytecode artifacts, run focused JS checks, and request independent review with exact source SHA and validation limits. Manager reassigned the review to Macbeth05; the reported native-path P2 is fixed by cde0587.
+
+## Task 3: Simulation-only operator preparation
+
+Assignment updated 2026-09-26: finish an entry that rejects `--broadcast`; broadcast-capable source remains blocked pending specific authorization. No alternate broadcast path is included.
+
+Files: `contracts/script/SimulateXLayerPhase1.s.sol`, `contracts/test/XLayerDeploymentScript.t.sol`, `tools/prepare-xlayer-deployment.mjs`, `test/xlayer-deployment-command.test.mjs`, `test/xlayer-simulation-native.qualified.test.mjs`, `docs/xlayer/r2/contracts/RUNBOOK.md`.
+
+Interface: `prepareXLayerDeployment(args, env)` only accepts `--output <new path>` and explicit public constructor variables. `runXLayerPreparation(args, env)` invokes the pinned local Forge script with chain 1952, validates its returned addresses and writes a new simulation record. `buildXLayerDeploymentRecord(command, addresses)` preserves exact argument strings and labels all addresses LOCAL_SIMULATION_ONLY; receipts and runtime hashes remain null.
+
+- [x] Capture failing tests for missing operator entry and no-op script behavior.
+- [x] Implement local VM impersonation and mandatory parameter/chain checks before any creation; no broadcast cheatcodes or RPC settings.
+- [x] Reject all additional CLI flags and strip ambient wallet/RPC/Foundry environment settings from the child process.
+- [x] Run the real CLI, check constructor/address mapping, null evidence and overwrite refusal, then run all Solidity tests and focused Node tests.
+- [ ] Commit the batch, report its exact SHA and ask the manager to obtain an independent review.
