@@ -1,8 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { asAddress, asBlockHash } from '../packages/chain-adapter/src/types.ts';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { asAddress, asBlockHash, asHexData } from '../packages/chain-adapter/src/types.ts';
 import { buildXLayerPublicApp } from '../apps/server/src/xlayer-public-app.ts';
+import { composeM3ChainRuntime } from '../apps/server/src/m3-chain-runtime.ts';
 import { deploymentManifestDigest } from '../packages/chain-adapter/src/manifest.ts';
+import { keccak256 } from '../packages/chain-adapter/src/keccak.ts';
+import { encodeM3VaultCall } from '../packages/chain-adapter/src/vault-abi.ts';
+import type { ReadonlyRpc } from '../packages/chain-adapter/src/rpc.ts';
 import {
   validateXLayerPublicDeployment,
   type XLayerPublicDeployment,
@@ -164,4 +171,95 @@ test('duplicate public Vault records fail before constructing a server', async (
     buildXLayerPublicApp({ origin, deployments: [deployment, deployment] }),
     /INVALID_PUBLIC_DEPLOYMENT_SET/,
   );
+});
+
+test('public readiness requires a caught-up runtime and clears after failed sync or closure', async () => {
+  const directory = mkdtempSync(join(tmpdir(), 'alphaforge-xlayer-public-health-'));
+  const code = asHexData('0x6000');
+  const body = {
+    ...manifest,
+    deploymentBlock: '1',
+    strategyPassDeploymentBlock: '1',
+    runtimeBytecodeHash: keccak256(code),
+    strategyPassRuntimeBytecodeHash: keccak256(code),
+  };
+  const manifestDigest = deploymentManifestDigest(body);
+  const deployment: XLayerPublicDeployment = {
+    ...publicDeployment(),
+    deploymentBlock: body.deploymentBlock,
+    strategyPassDeploymentBlock: body.strategyPassDeploymentBlock,
+    runtimeBytecodeHash: body.runtimeBytecodeHash,
+    strategyPassRuntimeBytecodeHash: body.strategyPassRuntimeBytecodeHash,
+    manifestDigest,
+  };
+  const word = (value: bigint) => value.toString(16).padStart(64, '0');
+  let failHead = false;
+  const rpc: ReadonlyRpc = {
+    chainId: async () => 1952,
+    code: async () => code,
+    receipt: async () => null,
+    logs: async () => [],
+    block: async (number) => {
+      if (failHead && number === 'latest') throw new Error('OFFLINE_HEAD_UNAVAILABLE');
+      const height = number === 'latest' ? 10n : number;
+      return {
+        number: height,
+        hash: asBlockHash(`0x${word(height)}`),
+        parentHash: asBlockHash(`0x${word(height - 1n)}`),
+        timestamp: height,
+      };
+    },
+    call: async ({ data }) => {
+      if (data === encodeM3VaultCall('pass()', []))
+        return asHexData(`0x${body.strategyPassAddress.slice(2).padStart(64, '0')}`);
+      if (data === encodeM3VaultCall('strategyId()', [])) return asHexData(`0x${word(1n)}`);
+      if (data === '0x313ce567') return asHexData(`0x${word(18n)}`);
+      return asHexData(`0x${word(0n)}`);
+    },
+  };
+  const runtime = composeM3ChainRuntime(
+    {
+      deploymentStatus: 'DEPLOYED',
+      dbPath: join(directory, 'runtime.sqlite'),
+      rpcEndpoints: ['https://rpc.invalid'],
+      manifestDocument: { ...body, manifestDigest },
+      expectedManifestDigest: manifestDigest,
+      expectedContractAddress: body.contractAddress,
+      expectedNetwork: { environment: 'xlayer-testnet', chainId: 1952 },
+      maxBlocksPerSync: 1,
+    },
+    { createRpc: () => rpc },
+  )!;
+  const app = await buildXLayerPublicApp({ origin, deployments: [deployment], runtimes: [runtime] });
+  const health = async () => {
+    const response = await app.inject({ url: '/api/health', headers });
+    return { status: response.statusCode, ready: response.json().ready as boolean };
+  };
+  try {
+    const beforeSync = await health();
+    await runtime.syncToHead();
+    assert.equal(runtime.store.checkpoint(1952, body.contractAddress)?.blockNumber, 1n);
+    const catchingUp = await health();
+    for (let index = 1; index < 10; index++) await runtime.syncToHead();
+    assert.equal(runtime.store.checkpoint(1952, body.contractAddress)?.blockNumber, 10n);
+    const caughtUp = await health();
+    failHead = true;
+    await assert.rejects(runtime.syncToHead(), /OFFLINE_HEAD_UNAVAILABLE/);
+    const failed = await health();
+    runtime.close();
+    const closed = await health();
+    assert.deepEqual(
+      { beforeSync, catchingUp, caughtUp, failed, closed },
+      {
+        beforeSync: { status: 503, ready: false },
+        catchingUp: { status: 503, ready: false },
+        caughtUp: { status: 200, ready: true },
+        failed: { status: 503, ready: false },
+        closed: { status: 503, ready: false },
+      },
+    );
+  } finally {
+    await app.close();
+    rmSync(directory, { recursive: true, force: true });
+  }
 });

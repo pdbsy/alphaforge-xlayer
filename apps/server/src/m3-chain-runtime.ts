@@ -84,6 +84,8 @@ export class M3ChainRuntime {
   readonly passSynchronizer: ChainSynchronizer;
   readonly manifest: DeploymentManifest;
   #closed = false;
+  #activeSyncs = 0;
+  #observedHead: Readonly<{ number: bigint; hash: BlockHash }> | null = null;
   #lastSyncAttempt: 'NOT_RUN' | 'SUCCEEDED' | 'FAILED' = 'NOT_RUN';
   #ownsStrategyPassProjection = true;
   #strategyPassOwnershipConfigured = false;
@@ -142,6 +144,24 @@ export class M3ChainRuntime {
       this.store.close();
       throw error;
     }
+  }
+
+  /** True only while both owned projections match the last successfully observed head. */
+  get caughtUp(): boolean {
+    if (this.#closed || this.#activeSyncs || this.#lastSyncAttempt !== 'SUCCEEDED' || !this.#observedHead)
+      return false;
+    const head = this.#observedHead;
+    const contracts = this.#ownsStrategyPassProjection
+      ? [this.manifest.contractAddress, this.manifest.strategyPassAddress]
+      : [this.manifest.contractAddress];
+    return contracts.every((contract) => {
+      const checkpoint = this.store.checkpoint(this.manifest.chainId, contract);
+      const projection = this.store.projectionCheckpoint(this.manifest.chainId, contract);
+      return [checkpoint, projection].every(
+        (value) =>
+          value?.blockNumber === head.number && value.blockHash.toLowerCase() === head.hash.toLowerCase(),
+      );
+    });
   }
 
   get chainEvidence(): ChainEvidenceRoutesOptions {
@@ -230,6 +250,7 @@ export class M3ChainRuntime {
   }
 
   async syncToHead(): Promise<M3RuntimeSyncResult> {
+    this.#activeSyncs++;
     try {
       const result = await this.#syncToHead();
       this.#lastSyncAttempt = 'SUCCEEDED';
@@ -237,6 +258,8 @@ export class M3ChainRuntime {
     } catch (error) {
       this.#lastSyncAttempt = 'FAILED';
       throw error;
+    } finally {
+      this.#activeSyncs--;
     }
   }
 
@@ -256,6 +279,7 @@ export class M3ChainRuntime {
       this.#deploymentVerified = true;
     }
     const head = await this.synchronizer.head();
+    this.#observedHead = { number: head.number, hash: head.hash };
     const syncContract = async (
       synchronizer: ChainSynchronizer,
       contract: Address,

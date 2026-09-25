@@ -110,17 +110,15 @@ export async function buildXLayerPublicApp(options: {
     const httpError = error as Partial<FastifyError>;
     const response = error instanceof DomainError ? apiError(error.code) : null;
     const status = response?.status ?? (httpError.validation ? 400 : 500);
-    return reply
-      .code(status)
-      .send({
-        error: response?.body.code ?? (status === 400 ? 'INVALID_REQUEST' : 'SERVICE_UNAVAILABLE'),
-        message:
-          status === 400
-            ? 'Invalid request.'
-            : status === 404
-              ? 'Requested record was not found.'
-              : 'The operation is currently unavailable.',
-      });
+    return reply.code(status).send({
+      error: response?.body.code ?? (status === 400 ? 'INVALID_REQUEST' : 'SERVICE_UNAVAILABLE'),
+      message:
+        status === 400
+          ? 'Invalid request.'
+          : status === 404
+            ? 'Requested record was not found.'
+            : 'The operation is currently unavailable.',
+    });
   });
   app.setNotFoundHandler((_request, reply) =>
     reply.code(404).send({ error: 'NOT_FOUND', message: 'Requested resource was not found.' }),
@@ -131,7 +129,7 @@ export async function buildXLayerPublicApp(options: {
       runtimes.length > 0 &&
       runtimes.every((runtime) => {
         const status = runtime.chainEvidence.syncStatus();
-        return status.lastAttempt === 'SUCCEEDED' && status.database.status === 'HEALTHY';
+        return runtime.caughtUp && status.database.status === 'HEALTHY';
       });
     return reply.code(ready ? 200 : 503).send({ ready, network: 'xlayer-testnet', deploymentStatus });
   });
