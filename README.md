@@ -21,7 +21,7 @@ npm run build:xlayer
 
 The X Layer build writes the website to **`dist/xlayer/web`** and selects Testnet chain ID 1952. Building it does not deploy contracts or publish a website. Strategy descriptions, charts and rankings are illustrative.
 
-Run `npm run start:xlayer` to serve the build at `http://127.0.0.1:4180`. The default has no deployments and keeps RPC disabled. For hosting, use the [operator configuration](docs/xlayer/r2/adapter/PUBLIC-OPERATOR-CONFIG.md) with an exact public origin and reviewed deployment data. Keep that file and the data directory outside the website root. The health endpoint returns HTTP 503 until the configured indexers are healthy and caught up.
+Run `npm run start:xlayer` to serve the build at `http://127.0.0.1:4180`. The default has no deployments and keeps RPC disabled. For hosting, follow the [release and rollback steps](docs/xlayer/r2/adapter/PUBLIC-OPERATOR-CONFIG.md#website-release-and-rollback): the build requires its same-origin Node API, an exact public origin and reviewed deployment data. Uploading the static bundle alone is insufficient. Keep that file and the data directory outside the website root. The health endpoint returns HTTP 503 until the configured indexers are healthy and caught up.
 
 ## Deployment preparation
 

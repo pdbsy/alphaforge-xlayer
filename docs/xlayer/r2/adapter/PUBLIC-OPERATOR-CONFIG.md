@@ -79,6 +79,61 @@ CLI failures print fixed English codes and exit unsuccessfully without raw input
 paths or stack traces. SIGINT/SIGTERM closes the listener and drains accepted sync
 work before releasing SQLite.
 
+## Website release and rollback
+
+The public website requires the same-origin Node server. Uploading only
+`dist/xlayer/web` to static hosting is insufficient: the browser loads its trusted
+configuration from `/api/xlayer/config`, and chain reads use the same API origin.
+The server must receive both website requests and `/api/*` requests.
+
+Use an independent checkout of the exact reviewed release commit. Activate the
+repository-pinned Node 24.21.0 and npm 11.19.1, then run from its root:
+
+```sh
+npm ci --ignore-scripts
+npm run build:xlayer
+```
+
+Keep this complete runtime checkout, its installed dependencies, and the generated
+`dist/xlayer/web` together. The Node entry imports the server and shared packages
+directly from source. Keep `.git`, source files and `node_modules` outside the
+served directory; only `webRoot` is served as static content. A static-only hosting
+service cannot run this release without a separately configured same-origin API.
+
+Create the eight-key operator configuration described above outside `webRoot`.
+Set `webRoot` to the absolute path of this release's `dist/xlayer/web`, `dataDir`
+to private persistent storage outside every release's served directory, and
+`origin` to the exact public HTTPS origin. For the initial website-only release,
+keep RPC disabled and deployments empty. Set `CONFIG_PATH` to the absolute path
+of this configuration file, then start from the release root:
+
+```sh
+AF_XLAYER_CONFIG="$CONFIG_PATH" npm run start:xlayer
+```
+
+Run this process under the hosting platform's process supervisor. Terminate TLS
+at its HTTPS proxy and forward every path, including `/api/*`, to the configured
+Node listener. Preserve the public `Host` and browser `Origin` headers; do not
+rewrite them to the loopback listener address. For a proxy on the same host, keep
+`listen.host` at `127.0.0.1`. Configure writable persistent storage for `dataDir`
+and ensure only this server instance owns its SQLite files.
+
+Verify the HTTPS home page, all six navigation routes and
+`/api/xlayer/config` through the public proxy. Confirm an untrusted Host/Origin
+is rejected. `/api/health` reports chain readiness: it intentionally stays 503
+with no deployment or an indexer that is not caught up. Do not treat that initial
+503 as proof that the website process failed, or a successful home-page response
+as proof that chain indexing is ready. After real deployment evidence is reviewed,
+configure read-only RPCs and deployments, then require health 200 and the wallet
+flow checks before accepting the live Testnet release.
+
+For rollback, stop the current process with SIGTERM and wait for its listener and
+SQLite handles to close. Restart the previously reviewed release with its matching
+external configuration and private data snapshot. Never run two releases against
+the same writable SQLite files. Retain the previous checkout and configuration
+until the new release's public checks pass. A website rollback does not undo any
+on-chain transaction.
+
 ## Verification
 
 The combined public startup/main/app, M3 startup and XLayer Phase 1 suites passed
