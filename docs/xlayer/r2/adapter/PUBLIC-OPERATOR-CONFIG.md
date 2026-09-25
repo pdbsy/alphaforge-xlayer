@@ -45,7 +45,28 @@ endpoints without credentials, queries or fragments. No environment variable
 implicitly unlocks RPC. This entry never signs or broadcasts transactions.
 
 Populate `deployments` only with reviewed `XLayerPublicDeployment` records from
-the release conversion workflow. The array is the only deployment source: there
+the offline conversion command:
+
+```sh
+node tools/create-xlayer-public-deployment.ts --manifest ./reviewed-manifest.json --output ./public-deployment.json
+```
+
+The input must be an independently reviewed record from a real deployment:
+the existing M3 `DeploymentManifestDocument` plus its `manifestDigest`, with the
+fixed XLayer testnet identity 1952 and nonzero Vault/Pass runtime code hashes.
+The tool reuses both existing manifest and public-deployment validators, accepts
+only bounded regular JSON, and rejects NOT_DEPLOYED, simulation/template markers,
+unknown keys and invalid digests. It writes one public-deployment object to a new
+file without overwriting anything. Place that object in the operator `deployments`
+array; it is not a complete operator configuration. Optional Pass initial supply
+and recipient fields are omitted because the core digest does not bind them.
+
+Conversion is entirely offline. It does not verify review provenance or on-chain
+facts and does not sign or deploy. Runtime startup still independently checks
+the observed chain ID and deployed Vault/Pass code before accepting indexed
+evidence. A successful conversion is not evidence that a contract exists.
+
+The array is the only deployment source: there
 is no independent manifest array or operator-supplied database filename. Main
 validates the records and derives runtime pins and manifests from them. Each Vault
 uses `<lowercase-vault-address>.sqlite` under `dataDir`. Duplicate Vault addresses
