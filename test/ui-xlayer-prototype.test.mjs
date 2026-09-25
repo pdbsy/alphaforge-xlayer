@@ -59,3 +59,21 @@ test('local prototype retains its historical isolated funding behavior', () => {
   assert.equal(AF.store.read().idle, before + 100);
   assert.equal(AF.exchange.read().cash, 1000000);
 });
+
+test('public dynamic catalogue and ranking source render USDT after every filter refresh', () => {
+  const { AF } = prototype(true);
+  for (const query of ['', 'trend']) {
+    AF.view.marketQuery = query;
+    AF.view.marketSort = 'name';
+    const cards = AF.market.results();
+    assert.match(cards, /USDT/);
+    assert.doesNotMatch(cards, /DEMO/);
+  }
+  for (const mode of ['price', 'volume', 'returns', 'risk']) {
+    AF.view.rankMode = mode;
+    for (const range of ['24h', '7d', '30d']) {
+      AF.view.rankRange = range;
+      assert.doesNotMatch(AF.pages.rankings(), /DEMO/);
+    }
+  }
+});

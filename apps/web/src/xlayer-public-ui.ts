@@ -1,5 +1,6 @@
 import { installCandleInspection } from './kline-hover.ts';
 import './kline-hover.css';
+import './xlayer-public-ui.css';
 import { loadXLayerPublicRuntime } from './xlayer-public-config.ts';
 import { M3_XLAYER_NETWORK } from './m3-network.ts';
 import { createM3BrowserRuntime } from './m3-browser-runtime.ts';
@@ -10,6 +11,8 @@ import { hydrateProductStyles } from './product-styles.ts';
 const AF = window.AF as typeof window.AF & {
   publicMode?: boolean;
   publicReady?: boolean;
+  homeHtml: string;
+  rankings: { teaser: () => string };
   pages: Record<string, (...args: string[]) => string>;
   charts: typeof window.AF.charts & {
     priceBlock: (strategy: unknown) => string;
@@ -52,6 +55,13 @@ function publicMarkup(html: string): string {
   }
   return template.innerHTML;
 }
+AF.homeHtml = publicMarkup(AF.homeHtml);
+const teaser = AF.rankings.teaser.bind(AF.rankings);
+AF.rankings.teaser = () => publicMarkup(teaser());
+const openDialog = AF.app.openDialog.bind(AF.app);
+AF.app.openDialog = (html) => openDialog(publicMarkup(html));
+const topline = document.querySelector('.topline-status');
+if (topline) topline.textContent = 'X Layer Testnet';
 installCandleInspection(AF);
 hydrateProductStyles();
 for (const key of Object.keys(AF.pages)) {
@@ -82,10 +92,10 @@ function render(): void {
 const walletPanel = () => renderM3PublicShell(runtime.snapshot, M3_XLAYER_NETWORK);
 AF.pages.account = () => walletPanel();
 AF.pages.trade = (id) =>
+  originalTrade(id) +
   (id === 'trend'
     ? walletPanel()
-    : '<section class="wrap dialog-notice">No Vault is configured for this strategy.</section>') +
-  originalTrade(id);
+    : '<section class="wrap dialog-notice">No Vault is configured for this strategy.</section>');
 const footer = document.querySelector('.footer-bottom span');
 if (footer) footer.textContent = scope;
 for (const link of document.querySelectorAll('a[href="#/account/settings"]')) {

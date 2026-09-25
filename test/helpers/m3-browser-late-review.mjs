@@ -149,7 +149,7 @@ async function exercise(parent, origin, scenario) {
         scenario.kind === 'pass'
           ? /2000000000000000000 Pass base units/
           : scenario.kind === 'vault'
-            ? /2000000 AF-USDC base units/
+            ? /2000000 USDT base units/
             : /required 2000000/,
       );
       assert.doesNotMatch(body, /DEV_REVIEW_REJECTED/);
@@ -191,8 +191,8 @@ async function exercise(parent, origin, scenario) {
         assert.doesNotMatch(body, /Amount1000000000000000000 Pass base units/);
         assert.doesNotMatch(body, /DEV_REVIEW_REJECTED/);
       } else if (scenario.kind === 'vault') {
-        assert.match(body, /2000000 AF-USDC base units/);
-        assert.doesNotMatch(body, /Amount1000000 AF-USDC base units/);
+        assert.match(body, /2000000 USDT base units/);
+        assert.doesNotMatch(body, /Amount1000000 USDT base units/);
       } else {
         assert.match(body, /required 2000000/);
         assert.doesNotMatch(body, /required 1000000/);

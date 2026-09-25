@@ -77,15 +77,21 @@ test(
     await page.goto(origin + '/#/trade/trend');
     await page.getByRole('heading', { name: 'Your wallet & Vault.' }).waitFor();
     await page.waitForFunction(() =>
-      globalThis.document.querySelector('[aria-label="X Layer Testnet connection"]')?.textContent.includes('1952'),
+      globalThis.document
+        .querySelector('[aria-label="X Layer Testnet connection"]')
+        ?.textContent.includes('1952'),
     );
-    for (const route of ['market', 'rankings', 'account', 'trade/trend']) {
+    for (const route of ['home', 'market', 'rankings', 'forum', 'account', 'trade/trend']) {
       await page.evaluate((route) => {
         globalThis.location.hash = '#/' + route;
       }, route);
       await page.waitForTimeout(80);
       const body = await page.locator('body').innerText();
-      assert.doesNotMatch(body, /\bDEMO\b|\bmock\b|\bfixture\b|Alice|Bob|AF-USDC|[\p{Script=Han}]/iu, route);
+      assert.doesNotMatch(
+        body,
+        /\bDEMO\b|\bmock\b|\bfixture\b|Alice|Bob|AF-USDC|Local prototype|[\p{Script=Han}]/iu,
+        route,
+      );
       assert.equal(
         await page
           .locator('[data-product-login],[data-product-claim],[data-cash],#pass-order-form,#allocate-form')
@@ -93,6 +99,43 @@ test(
         0,
       );
     }
+    const assertEnglishUsdt = async () => {
+      assert.doesNotMatch(
+        await page.locator('body').innerText(),
+        /\bDEMO\b|\bmock\b|\bfixtures?\b|Alice|Bob|AF-USDC|Local prototype|[\p{Script=Han}]/iu,
+      );
+    };
+    await page.evaluate(() => {
+      globalThis.location.hash = '#/market';
+    });
+    await page.locator('#market-search').fill('trend');
+    await assertEnglishUsdt();
+    await page.locator('#market-search').fill('');
+    await page.locator('#market-sort').selectOption('name');
+    await assertEnglishUsdt();
+    await page.locator('[data-market-category="Trend"]').click();
+    await assertEnglishUsdt();
+    await page.locator('[data-market-category="All"]').click();
+    await page.locator('[data-compare]').nth(0).check();
+    await page.locator('[data-compare]').nth(1).check();
+    await page.locator('[data-action="compare-open"]').click();
+    await assertEnglishUsdt();
+    await page.locator('#close-dialog').click();
+    await page.evaluate(() => {
+      globalThis.location.hash = '#/rankings';
+    });
+    await page.locator('[data-rank-mode="volume"]').click();
+    await assertEnglishUsdt();
+    await page.locator('[data-rank-range="7d"]').click();
+    await assertEnglishUsdt();
+    await page.locator('#rank-search').fill('trend');
+    await assertEnglishUsdt();
+    await page.locator('[data-v3-action="rank-method"]').click();
+    await assertEnglishUsdt();
+    await page.locator('#close-dialog').click();
+    await page.evaluate(() => {
+      globalThis.location.hash = '#/trade/trend';
+    });
     await page.getByRole('button', { name: 'Connect wallet', exact: true }).click();
     await page.getByRole('alert').filter({ hasText: 'WALLET_PROVIDER_UNAVAILABLE' }).first().waitFor();
     assert.equal(await page.locator('[data-chain-action]:not([disabled])').count(), 0);
