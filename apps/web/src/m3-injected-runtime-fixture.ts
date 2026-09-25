@@ -1,3 +1,4 @@
+import { M3_ROBINHOOD_NETWORK, type M3Network } from './m3-network.ts';
 import {
   asAddress,
   asBlockHash,
@@ -270,17 +271,20 @@ export interface M3InjectedRuntimeFixture {
   setClosed(): Promise<void>;
 }
 
-export function createM3InjectedRuntimeFixture(): M3InjectedRuntimeFixture {
+export function createM3InjectedRuntimeFixture(
+  networkConfig: M3Network = M3_ROBINHOOD_NETWORK,
+): M3InjectedRuntimeFixture {
   const provider = new DevProvider();
-  const reader = new DevVaultReader(vaultSnapshot);
-  const secondReader = new DevVaultReader(secondVaultSnapshot);
+  const reader = new DevVaultReader({ ...vaultSnapshot, chainId: networkConfig.chainId });
+  const secondReader = new DevVaultReader({ ...secondVaultSnapshot, chainId: networkConfig.chainId });
   const readers = new Map<string, DevVaultReader>([
     [VAULT.toLowerCase(), reader],
     [SECOND_VAULT.toLowerCase(), secondReader],
   ]);
   const runtime = createM3BrowserRuntimeSet({
     provider,
-    deployments: [deployment, secondDeployment],
+    networkConfig,
+    deployments: [deployment, secondDeployment].map((item) => ({ ...item, chainId: networkConfig.chainId })),
     vaultReader: (item) => readers.get(item.vaultAddress.toLowerCase())!,
     transportProvenance: 'DEV_MOCK',
     now: () => '2026-09-20T00:00:00.000Z',
@@ -290,7 +294,7 @@ export function createM3InjectedRuntimeFixture(): M3InjectedRuntimeFixture {
     runtime,
     providerRequests: provider.requests,
     setCorrectNetwork: () => {
-      provider.chainId = 46_630;
+      provider.chainId = networkConfig.chainId;
     },
     setWrongNetwork: async () => {
       provider.chainId = 1;
@@ -312,8 +316,9 @@ export function createM3InjectedRuntimeFixture(): M3InjectedRuntimeFixture {
       provider.account = null;
       await runtime.refresh();
     },
-    selectFirstVault: () => runtime.selectVault({ chainId: 46_630, vaultAddress: VAULT }),
-    selectSecondVault: () => runtime.selectVault({ chainId: 46_630, vaultAddress: SECOND_VAULT }),
+    selectFirstVault: () => runtime.selectVault({ chainId: networkConfig.chainId, vaultAddress: VAULT }),
+    selectSecondVault: () =>
+      runtime.selectVault({ chainId: networkConfig.chainId, vaultAddress: SECOND_VAULT }),
     setSoftReady: async () => {
       const selected = currentReader();
       selected.degraded = false;

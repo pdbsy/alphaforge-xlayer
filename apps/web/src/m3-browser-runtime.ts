@@ -1,4 +1,4 @@
-import type { M3ChainId } from './m3-network.ts';
+import { M3_ROBINHOOD_NETWORK, type M3Network, type M3ChainId } from './m3-network.ts';
 import {
   M3SubmissionJournal,
   type PendingWalletSubmission,
@@ -15,7 +15,6 @@ import {
   type TransactionHash,
 } from '../../../packages/chain-adapter/src/types.ts';
 import { decodeM3VaultCalldata } from '../../../packages/chain-adapter/src/vault-abi.ts';
-import { ROBINHOOD_CHAIN_TESTNET } from '../../../packages/robinhood-chain/src/network.ts';
 import {
   Eip1193Wallet,
   Eip1193WalletConnection,
@@ -48,14 +47,11 @@ import {
   type M3VaultSnapshot,
 } from './m3-vault-client.ts';
 import { readM3VaultLiveSnapshot } from './m3-vault-live-reader.ts';
-import {
-  type ProductOperationEvidence,
-  type SimulatingRobinhoodTestnetStrategyAdapter,
-} from './strategy-adapter.ts';
+import { type ProductOperationEvidence, type SimulatingTestnetStrategyAdapter } from './strategy-adapter.ts';
 
 export interface M3BrowserDeploymentConfig {
   readonly source: 'reviewed-deployment-manifest';
-  readonly chainId: 46_630;
+  readonly chainId: M3ChainId;
   readonly vaultAddress: Address;
   readonly deploymentBlock: string;
   readonly abiVersion: string;
@@ -86,6 +82,7 @@ export interface M3VaultReader {
 }
 
 export interface M3BrowserRuntimeOptions {
+  readonly networkConfig?: M3Network;
   readonly provider?: Eip1193Provider;
   readonly deployment?: M3BrowserDeploymentConfig;
   readonly vaultReader?: M3VaultReader;
@@ -128,11 +125,14 @@ function operationId(
   return value;
 }
 
-function validDeployment(value: M3BrowserDeploymentConfig | undefined): M3BrowserDeploymentConfig | null {
+function validDeployment(
+  value: M3BrowserDeploymentConfig | undefined,
+  networkConfig: M3Network,
+): M3BrowserDeploymentConfig | null {
   if (!value) return null;
   if (
     value.source !== 'reviewed-deployment-manifest' ||
-    value.chainId !== ROBINHOOD_CHAIN_TESTNET.chainId ||
+    value.chainId !== networkConfig.chainId ||
     !/^[1-9][0-9]*$/.test(value.deploymentBlock) ||
     !/^[1-9][0-9]*$/.test(value.strategyPassDeploymentBlock) ||
     value.abiVersion !== reviewedVaultAbiVersion
@@ -234,6 +234,7 @@ function productAction(request: M3ProductActionRequest, operationId: string) {
 }
 
 class M3BrowserRuntime implements M3ProductRuntime {
+  readonly #networkConfig: M3Network;
   readonly #provider: Eip1193Provider | null;
   readonly #deployment: M3BrowserDeploymentConfig | null;
   readonly #reader: M3VaultReader | null;
@@ -256,20 +257,25 @@ class M3BrowserRuntime implements M3ProductRuntime {
   #snapshot: M3ProductChainPresentation;
 
   constructor(options: M3BrowserRuntimeOptions) {
+    this.#networkConfig = options.networkConfig ?? M3_ROBINHOOD_NETWORK;
     this.#provider = options.provider ?? null;
-    this.#deployment = validDeployment(options.deployment);
+    this.#deployment = validDeployment(options.deployment, this.#networkConfig);
     this.#journal = this.#deployment
       ? new M3SubmissionJournal(this.#deployment, options.submissionStorage)
       : null;
     this.#reader = this.#deployment
       ? (options.vaultReader ??
-        new M3VaultApiClient(undefined, {
-          vaultAddress: this.#deployment.vaultAddress,
-          passAddress: this.#deployment.strategyPassAddress,
-        }))
+        new M3VaultApiClient(
+          undefined,
+          {
+            vaultAddress: this.#deployment.vaultAddress,
+            passAddress: this.#deployment.strategyPassAddress,
+          },
+          this.#networkConfig,
+        ))
       : null;
     this.#connection = this.#provider
-      ? new Eip1193WalletConnection(this.#provider, ROBINHOOD_CHAIN_TESTNET.chainId)
+      ? new Eip1193WalletConnection(this.#provider, this.#networkConfig.chainId)
       : null;
     this.#now = options.now ?? (() => new Date().toISOString());
     this.#writeMode = options.transportProvenance === 'DEV_MOCK' ? 'INJECTED_MOCK' : 'LIVE_AUTHORIZED';
@@ -286,12 +292,8 @@ class M3BrowserRuntime implements M3ProductRuntime {
         actionAuthority: factory.authority,
         now: this.#now,
       });
-      const adapter: SimulatingRobinhoodTestnetStrategyAdapter<
-        RuntimeSnapshot,
-        M3ProductActionRequest,
-        never
-      > = {
-        mode: 'robinhood-testnet',
+      const adapter: SimulatingTestnetStrategyAdapter<RuntimeSnapshot, M3ProductActionRequest, never> = {
+        mode: this.#networkConfig.key === 'xlayer-testnet' ? 'xlayer-testnet' : 'robinhood-testnet',
         readSnapshot: ({ wallet: owner }) => {
           if (!owner) return Promise.reject(new Error('WALLET_CONNECTION_REQUIRED'));
           return this.#readFlowSnapshot(owner);
@@ -737,7 +739,7 @@ class M3BrowserRuntime implements M3ProductRuntime {
           },
           network: observed
             ? {
-                status: observed.chainId === ROBINHOOD_CHAIN_TESTNET.chainId ? 'CORRECT' : 'WRONG',
+                status: observed.chainId === this.#networkConfig.chainId ? 'CORRECT' : 'WRONG',
                 chainId: observed.chainId,
               }
             : { status: code === 'WALLET_WRONG_CHAIN' ? 'WRONG' : 'UNAVAILABLE' },
@@ -775,7 +777,7 @@ class M3BrowserRuntime implements M3ProductRuntime {
           ...this.#snapshot,
           wallet: { status: 'ACCOUNT_CHANGED', address: observed.account },
           network: {
-            status: observed.chainId === ROBINHOOD_CHAIN_TESTNET.chainId ? 'CORRECT' : 'WRONG',
+            status: observed.chainId === this.#networkConfig.chainId ? 'CORRECT' : 'WRONG',
             chainId: observed.chainId,
           },
           onchain: {
@@ -787,7 +789,7 @@ class M3BrowserRuntime implements M3ProductRuntime {
         });
         return;
       }
-      if (observed.chainId !== ROBINHOOD_CHAIN_TESTNET.chainId) {
+      if (observed.chainId !== this.#networkConfig.chainId) {
         await publish({
           ...this.#snapshot,
           wallet: { status: 'CONNECTED', address: observed.account },
@@ -907,7 +909,7 @@ class M3BrowserRuntime implements M3ProductRuntime {
           ...this.#snapshot,
           wallet: { status: 'CONNECTED', address: observed.account },
           network: {
-            status: observed.chainId === ROBINHOOD_CHAIN_TESTNET.chainId ? 'CORRECT' : 'WRONG',
+            status: observed.chainId === this.#networkConfig.chainId ? 'CORRECT' : 'WRONG',
             chainId: observed.chainId,
           },
         });
