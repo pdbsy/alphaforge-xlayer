@@ -1,40 +1,46 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { test } from 'node:test';
-import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { verifiedPrototypeArtifacts } from './helpers/prototype-artifact.mjs';
 import { importUserUI, normalizeStyles } from '../tools/import-user-ui.mjs';
-test('actual importer preserves the reviewed repair and the historical original artifact', async (t) => {
-  const { current: source } = await verifiedPrototypeArtifacts(resolve(import.meta.dirname, '..'));
-  const out = await mkdtemp(join(tmpdir(), 'af-import-'));
-  t.after(() => rm(out, { recursive: true, force: true }));
-  await importUserUI(source, out);
-  const html = await readFile(join(out, 'index.html'), 'utf8');
-  const css = await readFile(join(out, 'public/user-ui.css'), 'utf8');
-  const js = await readFile(join(out, 'public/user-ui.js'), 'utf8');
-  assert.equal(css, source.match(/<style>([\s\S]*?)<\/style>/)[1]);
-  assert.equal(js, normalizeStyles(source.match(/<script>([\s\S]*?)<\/script>/)[1]));
-  assert.equal(
-    html,
-    normalizeStyles(
-      source
-        .replace(/<style>[\s\S]*?<\/style>/, '<link rel="stylesheet" href="/user-ui.css">')
-        .replace(
-          /<script>[\s\S]*?<\/script>/,
-          '<script src="/user-ui.js"></script>\n<script type="module" src="/src/product-ui.ts"></script>',
-        ),
-    ),
-  );
-  assert.doesNotMatch(html, /<style>|<script>/);
-  assert.doesNotMatch(js, /\sstyle=/);
-  assert.ok(js.includes('data-price-style'));
-  assert.ok(js.includes('font-style'));
-  await importUserUI(source, out);
-  assert.equal(await readFile(join(out, 'index.html'), 'utf8'), html);
-  assert.equal(await readFile(join(out, 'public/user-ui.css'), 'utf8'), css);
-  assert.equal(await readFile(join(out, 'public/user-ui.js'), 'utf8'), js);
+test('actual importer preserves the reviewed public source and the historical repaired artifact', async (t) => {
+  const artifacts = await verifiedPrototypeArtifacts(resolve(import.meta.dirname, '..'));
+  assert.equal(artifacts.currentSha256, 'e73751920d4bcf5da76ed12474702e34eb9553cc4b9b3498ad81b8e62451423e');
+  assert.equal(artifacts.currentReviewCommit, 'fe1f9ffaa589d3c33525561212da41afe68f71ec');
+  assert.equal(Buffer.byteLength(artifacts.current), 287492);
+  assert.equal(Buffer.byteLength(artifacts.repaired), 286508);
+  for (const source of [artifacts.current, artifacts.repaired]) {
+    const out = await mkdtemp(join(tmpdir(), 'af-import-'));
+    t.after(() => rm(out, { recursive: true, force: true }));
+    await importUserUI(source, out);
+    const html = await readFile(join(out, 'index.html'), 'utf8');
+    const css = await readFile(join(out, 'public/user-ui.css'), 'utf8');
+    const js = await readFile(join(out, 'public/user-ui.js'), 'utf8');
+    assert.equal(css, source.match(/<style>([\s\S]*?)<\/style>/)[1]);
+    assert.equal(js, normalizeStyles(source.match(/<script>([\s\S]*?)<\/script>/)[1]));
+    assert.equal(
+      html,
+      normalizeStyles(
+        source
+          .replace(/<style>[\s\S]*?<\/style>/, '<link rel="stylesheet" href="/user-ui.css">')
+          .replace(
+            /<script>[\s\S]*?<\/script>/,
+            '<script src="/user-ui.js"></script>\n<script type="module" src="/src/product-ui.ts"></script>',
+          ),
+      ),
+    );
+    assert.doesNotMatch(html, /<style>|<script>/);
+    assert.doesNotMatch(js, /\sstyle=/);
+    assert.ok(js.includes('data-price-style'));
+    assert.ok(js.includes('font-style'));
+    await importUserUI(source, out);
+    assert.equal(await readFile(join(out, 'index.html'), 'utf8'), html);
+    assert.equal(await readFile(join(out, 'public/user-ui.css'), 'utf8'), css);
+    assert.equal(await readFile(join(out, 'public/user-ui.js'), 'utf8'), js);
+  }
 });
 test('mechanical style normalization preserves escaped JSON and unrelated attribute names', () => {
   assert.equal(
@@ -161,6 +167,41 @@ test('retained UI history validates a tree-identical master integration without 
   const sourceRef = 'refs/remotes/origin/macbeth01/m3-phase1-closeout';
   const masterRef = 'refs/remotes/origin/master';
   const admitted = await verifiedPrototypeArtifacts(root);
+  await t.test('only the exact reviewed public bytes qualify on the current import history', async () => {
+    git('checkout', '--force', '--detach', 'HEAD');
+    for (const ref of ['refs/remotes/upstream/master', admitted.retainedSourceRef]) {
+      const sha = execute(root, ['rev-parse', '--verify', ref]);
+      execute(cwd, ['fetch', '--no-tags', root, sha]);
+      git('update-ref', ref, sha);
+    }
+    execute(cwd, ['fetch', '--no-tags', root, admitted.currentReviewCommit]);
+    const artifacts = await verifiedPrototypeArtifacts(cwd);
+    assert.equal(artifacts.current, admitted.current);
+    const file = join(cwd, 'apps/web/prototype/AlphaForge_v3_EN.html');
+    try {
+      await writeFile(file, admitted.current + '\n');
+      await assert.rejects(
+        verifiedPrototypeArtifacts(cwd),
+        /current artifact must match a reviewed revision/,
+      );
+      const supersededPublic = execFileSync(
+        'git',
+        [
+          '--no-replace-objects',
+          'show',
+          'b637466a2e6eb767309fa92c7ff3c9f0995ead43:apps/web/prototype/AlphaForge_v3_EN.html',
+        ],
+        { cwd: root, env, encoding: 'utf8', timeout: 15000, maxBuffer: 1024 * 1024 },
+      );
+      await writeFile(file, supersededPublic);
+      await assert.rejects(
+        verifiedPrototypeArtifacts(cwd),
+        /current artifact must match a reviewed revision/,
+      );
+    } finally {
+      await writeFile(file, admitted.current);
+    }
+  });
   let directSource = true;
   try {
     execute(root, ['merge-base', '--is-ancestor', admitted.repairCommit, 'HEAD']);
@@ -182,6 +223,9 @@ test('retained UI history validates a tree-identical master integration without 
     const artifacts = await verifiedPrototypeArtifacts(cwd);
     assert.equal(Buffer.byteLength(artifacts.original), 285969);
     assert.equal(Buffer.byteLength(artifacts.current), 286508);
+    assert.equal(artifacts.current, artifacts.repaired);
+    assert.equal(artifacts.currentSha256, artifacts.repairedSha256);
+    assert.equal(artifacts.currentReviewCommit, artifacts.repairCommit);
     assert.notEqual(artifacts.current, artifacts.original);
   });
   await t.test(

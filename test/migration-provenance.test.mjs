@@ -42,16 +42,24 @@ test('migration inventory accounts for source versions and validates imported ar
     (row) => row.target_path === 'apps/web/prototype/AlphaForge_v3_EN.html',
   );
   assert.equal(record.original_sha256, prototype.originalSha256);
-  assert.equal(record.migrated_sha256, prototype.repairedSha256);
-  assert.equal(record.subsequent_revisions.length, 2);
+  assert.equal(record.migrated_sha256, prototype.currentSha256);
+  assert.equal(record.subsequent_revisions.length, 4);
   const prior = record.subsequent_revisions[0];
   assert.equal(prior.commit, prototype.previousRepairCommit);
   assert.equal(prior.previous_sha256, prototype.originalSha256);
   assert.equal(prior.sha256, prototype.previousRepairedSha256);
-  const revision = record.subsequent_revisions.at(-1);
+  const revision = record.subsequent_revisions[1];
   assert.equal(revision.commit, prototype.repairCommit);
   assert.equal(revision.previous_sha256, prototype.previousRepairedSha256);
   assert.equal(revision.sha256, prototype.repairedSha256);
+  const publicEntry = record.subsequent_revisions[2];
+  assert.equal(publicEntry.commit, 'b637466a2e6eb767309fa92c7ff3c9f0995ead43');
+  assert.equal(publicEntry.previous_sha256, prototype.repairedSha256);
+  assert.equal(publicEntry.sha256, '09b1a8f92cf7d35c081f5daca78da2bde5b14adcd4260265aff11b9d5822e474');
+  const publicFix = record.subsequent_revisions[3];
+  assert.equal(publicFix.commit, prototype.currentReviewCommit);
+  assert.equal(publicFix.previous_sha256, publicEntry.sha256);
+  assert.equal(publicFix.sha256, prototype.currentSha256);
 });
 
 test('generated Forum uses external assets under the existing dashboard CSP', async () => {

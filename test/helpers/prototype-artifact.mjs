@@ -11,10 +11,12 @@ const repairCommit = '3e0e4303dc6d6621aa71b450752e2446faec759b';
 const originalSha256 = '949627bc39a2076de97d234546ce7bebabda6db330d22b423874063eb0243b45';
 const previousRepairedSha256 = '499c1bda91a8637a9d9fc12547790236947d2d19151173b3d4865f891ef52161';
 const repairedSha256 = 'b9671bca14a388d08a7e5db492f831c5e02fcb15f8ff57baab8a65e863d4ff35';
+const publicReviewCommit = 'fe1f9ffaa589d3c33525561212da41afe68f71ec';
+const publicSha256 = 'e73751920d4bcf5da76ed12474702e34eb9553cc4b9b3498ad81b8e62451423e';
 const digest = (bytes) => createHash('sha256').update(bytes).digest('hex');
 
 // Keep the original artifact in the complete, immutable Git history. The current
-// file is bound to the reviewed repair; absence of either object fails closed.
+// file is bound to an exact reviewed revision; missing source objects fail closed.
 export async function verifiedPrototypeArtifacts(root) {
   const git = (...args) =>
     execFileSync('git', ['--no-replace-objects', ...args], {
@@ -34,8 +36,13 @@ export async function verifiedPrototypeArtifacts(root) {
   assert.equal(Buffer.byteLength(repaired), 286508);
   assert.equal(digest(repaired), repairedSha256, 'reviewed repair must remain exact');
   const current = await readFile(resolve(root, path), 'utf8');
-  assert.equal(digest(current), repairedSha256, 'current artifact must match the reviewed repair');
-  assert.equal(current, repaired);
+  const currentSha256 = digest(current);
+  assert.ok(
+    currentSha256 === repairedSha256 || currentSha256 === publicSha256,
+    'current artifact must match a reviewed revision',
+  );
+  const currentReviewCommit = currentSha256 === publicSha256 ? publicReviewCommit : repairCommit;
+  if (currentReviewCommit === repairCommit) assert.equal(current, repaired);
   const commit = (ref) => {
     const sha = git('rev-parse', '--verify', ref).trim();
     assert.match(sha, /^[a-f0-9]{40}$/);
@@ -55,6 +62,17 @@ export async function verifiedPrototypeArtifacts(root) {
   const xlayerBase = 'b2ed61311df8d1c97a48f623d1b4872798f5e888';
   const xlayerSource = '77a35249dc1b95605bf32e4cabed456ea104a669';
   const importedSource = ancestor(xlayerBase, head);
+  if (currentReviewCommit === publicReviewCommit) {
+    assert.ok(importedSource, 'the public revision requires the exact XLayer import history');
+    assert.ok(
+      ancestor(xlayerBase, commit(publicReviewCommit)),
+      'public review must retain the imported base',
+    );
+    const reviewedPublic = git('show', `${publicReviewCommit}:${path}`);
+    assert.equal(Buffer.byteLength(reviewedPublic), 287492);
+    assert.equal(digest(reviewedPublic), publicSha256, 'reviewed public artifact must remain exact');
+    assert.equal(current, reviewedPublic);
+  }
   const retainedSourceRef = importedSource
     ? 'refs/remotes/upstream/macbeth01/m3-phase1-closeout'
     : 'refs/remotes/origin/macbeth01/m3-phase1-closeout';
@@ -126,12 +144,18 @@ export async function verifiedPrototypeArtifacts(root) {
   const prior = blocks(previousRepair);
   assert.equal(prior.style, before.style, 'prior repair CSS remains byte-identical');
   assert.equal(prior.outsideScript, before.outsideScript, 'prior script boundary remains exact');
-  const after = blocks(current);
+  const after = blocks(repaired);
   assert.equal(after.style, before.style, 'the original CSS remains byte-identical');
   assert.equal(after.outsideScript, before.outsideScript, 'HTML outside the repaired script remains exact');
+  const currentBlocks = blocks(current);
+  assert.equal(currentBlocks.style, after.style, 'public revision preserves the repaired CSS exactly');
+  assert.equal(currentBlocks.outsideScript, after.outsideScript, 'public revision only changes the script');
   return {
     original,
+    repaired,
     current,
+    currentSha256,
+    currentReviewCommit,
     originalCommit,
     previousRepairCommit,
     repairCommit,
