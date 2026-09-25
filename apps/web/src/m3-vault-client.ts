@@ -519,7 +519,8 @@ export class M3VaultApiClient {
     networkConfig: M3Network = M3_ROBINHOOD_NETWORK,
   ) {
     this.#chainId = networkConfig.chainId;
-    this.#fetcher = fetcher;
+    // Native browser fetch must not receive the client instance as its receiver.
+    this.#fetcher = (input, init) => fetcher(input, init);
     this.#vaultAddress = contracts ? asAddress(contracts.vaultAddress) : null;
     this.#passAddress = contracts ? asAddress(contracts.passAddress) : null;
   }

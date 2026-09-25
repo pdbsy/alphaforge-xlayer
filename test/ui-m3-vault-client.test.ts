@@ -601,3 +601,11 @@ for (const chainId of [1952, 46630] as const) {
     }
   });
 }
+
+test('client invokes the injected fetch function without a class receiver', async () => {
+  const client = new M3VaultApiClient(function (this: unknown) {
+    assert.equal(this, undefined, 'browser fetch requires a neutral receiver');
+    return Promise.resolve(new Response(JSON.stringify(payload())));
+  });
+  assert.deepEqual(await client.readSnapshot(OWNER), payload());
+});

@@ -33,19 +33,19 @@ Files: m3-browser-runtime.ts, m3-browser-runtime-set.ts, m3-vault-client.ts, m3-
 
 Interfaces: optional networkConfig on runtime/client construction; propagate exact supported chain ID through snapshots/submissions/deployment validation. Preserve existing checks for manifest, ABI, bytecode, token bindings and stale review generations. Keep existing journal storage keys with their chain ID component.
 
-- [ ] Add parameterized 1952/46630 success and 195/196/opposite-chain rejection cases at actual client/live-reader/runtime boundaries, including no wallet send after network change.
-- [ ] Capture RED, implement the minimal parameter flow, then run affected focused tests and typecheck.
-- [ ] Verify multi-Vault selection, Pass transfer, approvals, post-close rescue and persisted pending submissions remain scoped to selected chain/deployment/account.
-- [ ] Commit and report immediately. Native OKB display must not rename stable afEth token/storage protocol identifiers.
+- [x] Add parameterized 1952/46630 success and 195/196/opposite-chain rejection cases at actual client/live-reader/runtime boundaries, including no wallet send after network change.
+- [x] Capture RED, implement the minimal parameter flow, then run affected focused tests and typecheck.
+- [x] Verify multi-Vault selection, Pass transfer, approvals, post-close rescue and persisted pending submissions remain scoped to selected chain/deployment/account.
+- [x] Commit and report immediately. Native OKB display must not rename stable afEth token/storage protocol identifiers.
 
 ## Batch 3: Build entry and native browser
 
 Files: product-ui.ts, m3-injected-runtime-fixture.ts, vite-env.d.ts and related browser tests under test/.
 
-- [ ] Resolve the trusted Vite build pair once at product entry; pass it to shell, runtime set and mock fixture. Preserve the local ProductAdapter.
-- [ ] Parameterize the fixture provider/deployments to selected testnet and retain all real UI interactions; do not use chain labels as behavioral evidence.
-- [ ] Verify the built XLayer product, wrong-chain rejection, explorer/OKB display, multi-Vault and chart interactions with mock wallet in a real local browser. No external chain requests.
-- [ ] Run focused tests/typecheck at this batch, create normal commits, push only the new task branch and open a new Draft PR with explicit dependency and validation boundaries.
+- [x] Resolve the trusted Vite build pair once at product entry; pass it to shell, runtime set and mock fixture. Preserve the local ProductAdapter.
+- [x] Parameterize the fixture provider/deployments to selected testnet and retain all real UI interactions; do not use chain labels as behavioral evidence.
+- [x] Verify the built XLayer product, wrong-chain rejection, explorer/OKB display, multi-Vault and chart interactions with mock wallet in a real local browser. No external chain requests.
+- [x] Run focused tests/typecheck at this batch, create normal commits, push only the new task branch and open a new Draft PR with explicit dependency and validation boundaries.
 
 Permit domains: inspect the actual frontend signing surface before changing it. If no permit signing exists, preserve that fact and test chain-bound action authorization rather than introducing a new signing feature.
 
@@ -66,3 +66,7 @@ Batch 3b first runnable public UI: product entry validates build mode and lazily
 Validation at first build: 53 focused tests, both TypeScript projects and changed-file lint passed; build:xlayer succeeds using manager dependency 50a6fce (local copy 1ddfe75, not worker-owned). Native browser route checks passed up to a test locator ambiguity; full browser verification and subsequent fixes remain in progress. Current prototype bytes require manager provenance binding after independent review; no historical artifact assertions were changed by this worker.
 
 Batch 3c independent P2 fix: native browser reproduced DEMO reappearing after market search. Fixed the original card/ranking value/results and methodology/compare render sources for public mode, retaining local rendering behavior. Public composition covers home and dialogs, removes the obsolete topline and empty toast, and keeps the original strategy chart above the wallet panel. Browser regression now executes search, name sort, category, compare, ranking mode/range/search and methodology dialog, plus all six routes, config failure and chart inspection. It passes in Chrome 153.0.8010.54 with only the config API requested and injected deployment authority ignored. Original full mock-wallet browser CLI also passes all 29 checks with no page/CSP errors; its retained report is .checks/M3-04-PHASE1-PRODUCT/browser-rh2OMX/result.json. Updated USDT assertions in existing browser tests; historical provenance remains manager-owned.
+
+Batch 3d native-fetch regression and final public-wallet verification: the deployed-config browser scenario exposed an Illegal invocation before any API request because the client called native fetch with a class receiver. A focused RED test captures the receiver contract; the client now invokes fetch through a neutral closure. Client and actual Fastify integration regressions pass (20 tests). A real Chrome test now exercises the built public bundle using a same-origin mocked config/API and an injected mock wallet: 195/196/46630 rejection, 1952 connection, finite USDT and Pass approvals, a 1.000001 deposit, confirmation rejection after switching away from 1952, a one-raw-unit Pass transfer, and connecting the second configured Vault. It observes four mock sends and two chain-scoped registrations; external requests and page errors must remain empty. There is no actual wallet signing or broadcast. The separate qualified candle browser regression also passes.
+
+Delivery status: Draft PR 8 in pdbsy/alphaforge-xlayer targets codex/xlayer-r2-base. Public source and focused/browser evidence are ready for XLayerPM independent review. Manager-owned provenance binding, complete integration gates, approval and merge remain outside this worker's completion claim. No deployment was performed.
