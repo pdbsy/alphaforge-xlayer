@@ -1260,13 +1260,22 @@
       "target_path": "tools/agent-forum.mjs",
       "method": "selective import; canonical repository allowlist and dashboard link adapted; PR11 closeout defensive adaptation; PR11 review remediation: atomic product snapshot, identity lifecycle or bounded logical-message Forum as applicable; user-authorized Macbeth06 CI/gate role registration (2026-09-20), historical source identity unchanged",
       "original_sha256": "562111e0bc5badc25b53562f8113e5288860ed17d79b32cd94dd978457674359",
-      "migrated_sha256": "0b4ec2e7418a361d13fde41ff33e7cd27bc1fba743a5e31ab518bcc22cdb2539",
+      "migrated_sha256": "ab58a06ea8ced27cffae066d2f0806a44359579bfa7af6a5350425a2bcd0fc62",
       "subsequent_adaptations": [
         {
           "task": "AF-M3-IDENTITY",
           "base_commit": "45e80f921df2d3f9172ddbbc8e6ab37c327107e7",
           "previous_sha256": "78ca6aa58d895ade79c658c3dd28f00f590e26f1335072496c54fa294c5eaa2f",
           "reason": "M3 worker identity and assignment compatibility; original migration source is preserved."
+        }
+      ],
+      "subsequent_revisions": [
+        {
+          "task": "AF-XLAYER-R2-TEMPB",
+          "commit": "980a846aa5af1be803c374d07b3f7fbf71f15b17",
+          "previous_sha256": "0b4ec2e7418a361d13fde41ff33e7cd27bc1fba743a5e31ab518bcc22cdb2539",
+          "sha256": "ab58a06ea8ced27cffae066d2f0806a44359579bfa7af6a5350425a2bcd0fc62",
+          "reason": "Reviewed XLayer integration; retain the original artifact and every prior revision."
         }
       ]
     },
@@ -1278,7 +1287,16 @@
       "target_path": "tools/agent-forum-app.js",
       "method": "selective import; canonical repository allowlist and dashboard link adapted; PR11 closeout defensive adaptation; PR11 review remediation: atomic product snapshot, identity lifecycle or bounded logical-message Forum as applicable; user-authorized Macbeth06 CI/gate role registration (2026-09-20), historical source identity unchanged",
       "original_sha256": "798d168b50b340ce4a3e73f4d2a4e68e1c33469edf02d5e52325f649e09b6bc6",
-      "migrated_sha256": "2788e38b53c585297ffa53aecee58115f72ac58d796dcb5bb60976ef35b5d68b"
+      "migrated_sha256": "f21dfb3cab4ce0dd13e5a0ec0b29450fdfd00676fb705d0d0d0f01148d55e555",
+      "subsequent_revisions": [
+        {
+          "task": "AF-XLAYER-R2-TEMPB",
+          "commit": "41096362bc88f4dc90eb0d269be97ecaab2bd065",
+          "previous_sha256": "2788e38b53c585297ffa53aecee58115f72ac58d796dcb5bb60976ef35b5d68b",
+          "sha256": "f21dfb3cab4ce0dd13e5a0ec0b29450fdfd00676fb705d0d0d0f01148d55e555",
+          "reason": "Reviewed XLayer integration; retain the original artifact and every prior revision."
+        }
+      ]
     },
     {
       "source_repository": "pdbsy/quantpass",
@@ -1298,7 +1316,7 @@
       "target_path": "tools/agent-identity.mjs",
       "method": "selective import; canonical repository allowlist and dashboard link adapted; reviewed PR11 closeout adaptation (see PR11-CLOSEOUT.md); PR11 review remediation: atomic product snapshot, identity lifecycle or bounded logical-message Forum as applicable; user-authorized Macbeth06 CI/gate role registration (2026-09-20), historical source identity unchanged",
       "original_sha256": "f1b67a9cdb2ce0fa25c95d7927dbffda16cd5320d636891a9b60b721491395a6",
-      "migrated_sha256": "b88730d1350a71a13c7fbbbb2bd13a1a9c4b3c5c402b90d17376949ac3f17527",
+      "migrated_sha256": "84c7df54e57afcb196fd2704a4a3e8c2bb7aa611e6a7efa2c8cd9d2bd2c31410",
       "subsequent_adaptations": [
         {
           "task": "AF-M3-IDENTITY",
@@ -1318,6 +1336,15 @@
           "previous_sha256": "4ac390783fe996e0f3107fb3156e1bbffae1f211b0189f3ad8301be314048aeb",
           "reason": "Restore exact Phase One manager branch registration with unchanged fixed-base, bounded-source and per-commit attribution validation after loss of temporary workspace."
         }
+      ],
+      "subsequent_revisions": [
+        {
+          "task": "AF-XLAYER-R2-TEMPB",
+          "commit": "b9adbfec9361576f0536c2345e7873ad8b4ec120",
+          "previous_sha256": "b88730d1350a71a13c7fbbbb2bd13a1a9c4b3c5c402b90d17376949ac3f17527",
+          "sha256": "84c7df54e57afcb196fd2704a4a3e8c2bb7aa611e6a7efa2c8cd9d2bd2c31410",
+          "reason": "Reviewed XLayer integration; retain the original artifact and every prior revision."
+        }
       ]
     },
     {
@@ -1328,13 +1355,22 @@
       "target_path": "tools/agent-identity-set.mjs",
       "method": "selective import; canonical repository allowlist and dashboard link adapted; PR11 review remediation: atomic product snapshot, identity lifecycle or bounded logical-message Forum as applicable",
       "original_sha256": "a7f79ed3ebfc5d0b5d54e9b6eb29182ac72e3460fc3ed2cf9540e34aa4154b73",
-      "migrated_sha256": "1d20914019f0f1a67c5d6f4d9b55aa9e3e2ead22c2235c428f5428fe3ca13686",
+      "migrated_sha256": "666bee7d8dbc653830cec39f836010aed23717aa50607d53cf31c63a3bde40cf",
       "subsequent_adaptations": [
         {
           "task": "AF-M3-IDENTITY",
           "base_commit": "45e80f921df2d3f9172ddbbc8e6ab37c327107e7",
           "previous_sha256": "d3f5786f0e5b5b0fb2d4321ea5b46d67375a1b18121adccd9dc7bde264028504",
           "reason": "M3 worker identity and assignment compatibility; original migration source is preserved."
+        }
+      ],
+      "subsequent_revisions": [
+        {
+          "task": "AF-XLAYER-R2-TEMPB",
+          "commit": "b9adbfec9361576f0536c2345e7873ad8b4ec120",
+          "previous_sha256": "1d20914019f0f1a67c5d6f4d9b55aa9e3e2ead22c2235c428f5428fe3ca13686",
+          "sha256": "666bee7d8dbc653830cec39f836010aed23717aa50607d53cf31c63a3bde40cf",
+          "reason": "Reviewed XLayer integration; retain the original artifact and every prior revision."
         }
       ]
     },
@@ -1346,7 +1382,7 @@
       "target_path": "tools/check-agent-identity.mjs",
       "method": "selective import; canonical repository allowlist and dashboard link adapted; PR11 review remediation: atomic product snapshot, identity lifecycle or bounded logical-message Forum as applicable",
       "original_sha256": "d3cebb25a3334804f336e867a92c00e60d71cfb20e11191a5469fdbad24d6e3e",
-      "migrated_sha256": "306af6bf2043be0bc2701ae536b7773f9bd71537e1d352aded696a2a78dc788e",
+      "migrated_sha256": "3eb198ac842a67b3b8e0192de25235f6bc8be1d6865e97329a529e9d7df21f80",
       "subsequent_adaptations": [
         {
           "task": "AF-M3-IDENTITY",
@@ -1372,6 +1408,22 @@
           "previous_sha256": "e08bbea8e63e84dad081c9060911a3a640cb553c3428d7c7f7bf37f2c2cbefed",
           "reason": "Register explicitly assigned partial-onchain integration while preserving bounded source admission and repair job-scoped private CodeQL metadata-read permission."
         }
+      ],
+      "subsequent_revisions": [
+        {
+          "task": "AF-XLAYER-R2-TEMPB",
+          "commit": "980a846aa5af1be803c374d07b3f7fbf71f15b17",
+          "previous_sha256": "306af6bf2043be0bc2701ae536b7773f9bd71537e1d352aded696a2a78dc788e",
+          "sha256": "701aa1a98268f3e420e6f43899e10605f99f3562f7c0595d0cbcdf82e75e976a",
+          "reason": "Reviewed XLayer integration; retain the original artifact and every prior revision."
+        },
+        {
+          "task": "AF-XLAYER-R2-TEMPB",
+          "commit": "b9adbfec9361576f0536c2345e7873ad8b4ec120",
+          "previous_sha256": "701aa1a98268f3e420e6f43899e10605f99f3562f7c0595d0cbcdf82e75e976a",
+          "sha256": "3eb198ac842a67b3b8e0192de25235f6bc8be1d6865e97329a529e9d7df21f80",
+          "reason": "Reviewed XLayer integration; retain the original artifact and every prior revision."
+        }
       ]
     },
     {
@@ -1392,7 +1444,7 @@
       "target_path": "tools/sync-agent-forum.mjs",
       "method": "selective import; canonical repository allowlist and dashboard link adapted; PR11 review remediation: atomic product snapshot, identity lifecycle or bounded logical-message Forum as applicable",
       "original_sha256": "d4743301b018a830585c1fc00c988122844cc455aa21b35b426165cab56e5acd",
-      "migrated_sha256": "998dda0c09279866ebbf7511ca45f7f1c9d494cea3af1d20aa05acddc7e79b0d",
+      "migrated_sha256": "77810464fcb2108d2309f61a2a3c6c528c0074d579230ba5f42bf8ba0b59a54c",
       "subsequent_revisions": [
         {
           "commit": "bfb85376b13f49c7a77220095991cf5b3d4365c3",
@@ -1401,6 +1453,13 @@
           "previous_sha256": "618dc6c4655f143579e1ebef7352b1891013bf401d3d7e0d4c10db0f3514e53a",
           "current_sha256": "998dda0c09279866ebbf7511ca45f7f1c9d494cea3af1d20aa05acddc7e79b0d",
           "reason": "Accept the exact canonical HTTPS remote emitted by standard GitHub checkout while retaining the original two exact origins and rejecting foreign hosts or paths. Original migration metadata and hashes retained."
+        },
+        {
+          "task": "AF-XLAYER-R2-TEMPB",
+          "commit": "980a846aa5af1be803c374d07b3f7fbf71f15b17",
+          "previous_sha256": "998dda0c09279866ebbf7511ca45f7f1c9d494cea3af1d20aa05acddc7e79b0d",
+          "sha256": "77810464fcb2108d2309f61a2a3c6c528c0074d579230ba5f42bf8ba0b59a54c",
+          "reason": "Reviewed XLayer integration; retain the original artifact and every prior revision."
         }
       ]
     },
@@ -1598,7 +1657,7 @@
       "target_path": "docs/management/agents/registry.json",
       "method": "registry migrated; historical confirmations reset for canonical repository; user-authorized Macbeth06 CI/gate role registration (2026-09-20), historical source identity unchanged",
       "original_sha256": "ecb05bfdcccf1abb036c4e4fdd16155e959ae706395020db4a1dac49e43f50b6",
-      "migrated_sha256": "4061231b7dcd76a782b8d4a3d059e02f4009c45e1c85aefe79d61c51593e1792",
+      "migrated_sha256": "7874ee46854c9f2f9505adc2315a642f725bfdfad9ce400112be84a64bd0dd41",
       "subsequent_adaptations": [
         {
           "task": "AF-M3-IDENTITY",
@@ -1666,6 +1725,15 @@
           "previous_sha256": "3f191a5d21c0489442a4791859dfa30cb9a41f89de259581a4bee546b6d13510",
           "reason": "Record verified worker04 intake, corrected worker03 source branch and actual minimum worker06 receipt; do not invent public ACK."
         }
+      ],
+      "subsequent_revisions": [
+        {
+          "task": "AF-XLAYER-R2-TEMPB",
+          "commit": "980a846aa5af1be803c374d07b3f7fbf71f15b17",
+          "previous_sha256": "4061231b7dcd76a782b8d4a3d059e02f4009c45e1c85aefe79d61c51593e1792",
+          "sha256": "7874ee46854c9f2f9505adc2315a642f725bfdfad9ce400112be84a64bd0dd41",
+          "reason": "Reviewed XLayer integration; retain the original artifact and every prior revision."
+        }
       ]
     },
     {
@@ -1696,7 +1764,7 @@
       "target_path": "test/agent-management.test.mjs",
       "method": "selective source integration; shared-file resolution recorded in CONFLICTS.md; reviewed PR11 closeout adaptation (see PR11-CLOSEOUT.md); PR11 review remediation: atomic product snapshot, identity lifecycle or bounded logical-message Forum as applicable; user-authorized Macbeth06 CI/gate role registration (2026-09-20), historical source identity unchanged",
       "original_sha256": "f5c916f2f10f3fbc2e31e89bce0cf041bf091cae876b20490eac7f87140ebc42",
-      "migrated_sha256": "aab08f62d135578c0c859420cf949a9eb58cb7482838d002cfbae8fda9e79b4d",
+      "migrated_sha256": "c1ad79a6498eb28dedc662dd7464b23171426465cf0b54e8d9f5fcd0d0c0898b",
       "subsequent_adaptations": [
         {
           "task": "AF-M3-IDENTITY",
@@ -1736,6 +1804,20 @@
           "previous_sha256": "6471d437c7b743c619cb56d5058068468a2767c092ad34b033dec1e4d47b522b",
           "sha256": "aab08f62d135578c0c859420cf949a9eb58cb7482838d002cfbae8fda9e79b4d",
           "reason": "Concentrated forum provenance and identity validation boundary tests. Preserve historical source and all prior adaptations."
+        },
+        {
+          "task": "AF-XLAYER-R2-TEMPB",
+          "commit": "980a846aa5af1be803c374d07b3f7fbf71f15b17",
+          "previous_sha256": "aab08f62d135578c0c859420cf949a9eb58cb7482838d002cfbae8fda9e79b4d",
+          "sha256": "b1a9eeb4478ce3812c5c55c96ddb8e17846f82999a1d2b51e69fd3f6c6f0b5df",
+          "reason": "Reviewed XLayer integration; retain the original artifact and every prior revision."
+        },
+        {
+          "task": "AF-XLAYER-R2-TEMPB",
+          "commit": "b9adbfec9361576f0536c2345e7873ad8b4ec120",
+          "previous_sha256": "b1a9eeb4478ce3812c5c55c96ddb8e17846f82999a1d2b51e69fd3f6c6f0b5df",
+          "sha256": "c1ad79a6498eb28dedc662dd7464b23171426465cf0b54e8d9f5fcd0d0c0898b",
+          "reason": "Reviewed XLayer integration; retain the original artifact and every prior revision."
         }
       ]
     },
@@ -1747,7 +1829,16 @@
       "target_path": "test/agent-security-regressions.test.mjs",
       "method": "selective source integration; shared-file resolution recorded in CONFLICTS.md",
       "original_sha256": "e22d5f6afae8f7aa6ffa588cc431d04c40536601570187e557781aa5c1247412",
-      "migrated_sha256": "0c6af517dffa0a7d5988701af96e44ffbea6a9668b1c8420b277da1035dbdff6"
+      "migrated_sha256": "156769c043235408d7c5863f11b61624cfb4d3caf0d9195c145cfd00189e2ba4",
+      "subsequent_revisions": [
+        {
+          "task": "AF-XLAYER-R2-TEMPB",
+          "commit": "980a846aa5af1be803c374d07b3f7fbf71f15b17",
+          "previous_sha256": "0c6af517dffa0a7d5988701af96e44ffbea6a9668b1c8420b277da1035dbdff6",
+          "sha256": "156769c043235408d7c5863f11b61624cfb4d3caf0d9195c145cfd00189e2ba4",
+          "reason": "Reviewed XLayer integration; retain the original artifact and every prior revision."
+        }
+      ]
     },
     {
       "source_repository": "pdbsy/quantpass",
@@ -1757,7 +1848,7 @@
       "target_path": "test/agent-tooling.test.mjs",
       "method": "selective source integration; shared-file resolution recorded in CONFLICTS.md; PR11 review remediation: atomic product snapshot, identity lifecycle or bounded logical-message Forum as applicable",
       "original_sha256": "8ea91af803dc35a566ab7f1e63c16536a473fdecf77729efe07cc4352f57a707",
-      "migrated_sha256": "bb756b92e672357e2e4b72f7fdbfd025fe91087771a6f6ce2871f4a4da63c423",
+      "migrated_sha256": "68dab8351c56fc14f707e74de06cca59f3251a0ae7d045cd7f90a5fa13d0a910",
       "subsequent_revisions": [
         {
           "task": "M3-01-PHASE1-CLOSEOUT",
@@ -1772,6 +1863,13 @@
           "previous_sha256": "752d02d178d6fad2d5b0ce97c10645c063badedd137c9769f01efe7c9e7e66e3",
           "sha256": "bb756b92e672357e2e4b72f7fdbfd025fe91087771a6f6ce2871f4a4da63c423",
           "reason": "Add assertions for complete message headers and retention of newer stale Forum records. Preserve the historical source and prior migrated digest."
+        },
+        {
+          "task": "AF-XLAYER-R2-TEMPB",
+          "commit": "41096362bc88f4dc90eb0d269be97ecaab2bd065",
+          "previous_sha256": "bb756b92e672357e2e4b72f7fdbfd025fe91087771a6f6ce2871f4a4da63c423",
+          "sha256": "68dab8351c56fc14f707e74de06cca59f3251a0ae7d045cd7f90a5fa13d0a910",
+          "reason": "Reviewed XLayer integration; retain the original artifact and every prior revision."
         }
       ]
     },
@@ -1921,7 +2019,7 @@
       "target_path": "apps/web/prototype/AlphaForge_v3_EN.html",
       "method": "selective source integration; shared-file resolution recorded in CONFLICTS.md",
       "original_sha256": "949627bc39a2076de97d234546ce7bebabda6db330d22b423874063eb0243b45",
-      "migrated_sha256": "b9671bca14a388d08a7e5db492f831c5e02fcb15f8ff57baab8a65e863d4ff35",
+      "migrated_sha256": "e73751920d4bcf5da76ed12474702e34eb9553cc4b9b3498ad81b8e62451423e",
       "subsequent_revisions": [
         {
           "task": "M3-04-PHASE1-PRODUCT",
@@ -1936,6 +2034,20 @@
           "previous_sha256": "499c1bda91a8637a9d9fc12547790236947d2d19151173b3d4865f891ef52161",
           "sha256": "b9671bca14a388d08a7e5db492f831c5e02fcb15f8ff57baab8a65e863d4ff35",
           "reason": "Register independently reviewed display-only damaged activity and malformed note-ID repair; retain original and prior repair hashes and every stored record."
+        },
+        {
+          "task": "AF-XLAYER-R2-04-UI",
+          "commit": "b637466a2e6eb767309fa92c7ff3c9f0995ead43",
+          "previous_sha256": "b9671bca14a388d08a7e5db492f831c5e02fcb15f8ff57baab8a65e863d4ff35",
+          "sha256": "09b1a8f92cf7d35c081f5daca78da2bde5b14adcd4260265aff11b9d5822e474",
+          "reason": "Reviewed XLayer integration; retain the original artifact and every prior revision."
+        },
+        {
+          "task": "AF-XLAYER-R2-04-UI",
+          "commit": "fe1f9ffaa589d3c33525561212da41afe68f71ec",
+          "previous_sha256": "09b1a8f92cf7d35c081f5daca78da2bde5b14adcd4260265aff11b9d5822e474",
+          "sha256": "e73751920d4bcf5da76ed12474702e34eb9553cc4b9b3498ad81b8e62451423e",
+          "reason": "Reviewed XLayer integration; retain the original artifact and every prior revision."
         }
       ]
     },
@@ -1987,7 +2099,7 @@
       "target_path": "apps/web/src/product-ui.ts",
       "method": "selective source integration; shared-file resolution recorded in CONFLICTS.md; M3-04-PRODUCT-UI adds the manifest-bound Vault runtime, finite approval review and canonical evidence readback",
       "original_sha256": "c094739b2c8308526a0d1470f72c32ac74de6c2157a3dcc0b0972584da755d38",
-      "migrated_sha256": "0ce282ef2015abbddf18d15c51ab090c6d0bae737eac16befede23d92b226a51",
+      "migrated_sha256": "9b2579f2e8944b77dc7143384eca029c33e756d2b3c1373cd3e95d1e2dd1b23b",
       "subsequent_adaptations": [
         {
           "task": "M3-01-PHASE1-CLOSEOUT",
@@ -2034,6 +2146,13 @@
           "previous_sha256": "25ad00be374caa83679a8ba5766187c3664d6eb7d0fa63d07018db7854474546",
           "current_sha256": "0ce282ef2015abbddf18d15c51ab090c6d0bae737eac16befede23d92b226a51",
           "reason": "Add the user-requested candle inspection module to the product entry; this entry is unchanged in the independently reviewed UI source 654a1e379e2becc2a98584e91394e21549cf6a8c. Preserve original migration identity and all prior revisions."
+        },
+        {
+          "task": "AF-XLAYER-R2-04-UI",
+          "commit": "b637466a2e6eb767309fa92c7ff3c9f0995ead43",
+          "previous_sha256": "0ce282ef2015abbddf18d15c51ab090c6d0bae737eac16befede23d92b226a51",
+          "sha256": "9b2579f2e8944b77dc7143384eca029c33e756d2b3c1373cd3e95d1e2dd1b23b",
+          "reason": "Reviewed XLayer integration; retain the original artifact and every prior revision."
         }
       ]
     },
@@ -2064,7 +2183,7 @@
       "target_path": "test/ui-import.test.mjs",
       "method": "selective source integration; shared-file resolution recorded in CONFLICTS.md",
       "original_sha256": "91771696fc348750f34c55e49a181a95f8c1994e1f55de3f1fb62c20549e0c69",
-      "migrated_sha256": "e05e81f9e3babaae874929ca1baae97de72dba1a8a6cf1142eb2d7bbab9a90a5",
+      "migrated_sha256": "2e27e9f91af8597727e065529bf2c206e281b9519643c2404aca4fe130cf80de",
       "subsequent_revisions": [
         {
           "task": "M3-04-PHASE1-PRODUCT",
@@ -2123,6 +2242,13 @@
           "previous_sha256": "fb8fb483bad510bc196c096335d7ec298b0025e5a08cb27662df8748fb5d0bc5",
           "current_sha256": "e05e81f9e3babaae874929ca1baae97de72dba1a8a6cf1142eb2d7bbab9a90a5",
           "reason": "Preserve source-history negative regressions while using the exact upstream retained source for the XLayer import."
+        },
+        {
+          "task": "AF-XLAYER-R2",
+          "commit": "fd1177af5ab2f439b70a1827935f2262bfed77e7",
+          "previous_sha256": "e05e81f9e3babaae874929ca1baae97de72dba1a8a6cf1142eb2d7bbab9a90a5",
+          "sha256": "2e27e9f91af8597727e065529bf2c206e281b9519643c2404aca4fe130cf80de",
+          "reason": "Reviewed XLayer integration; retain the original artifact and every prior revision."
         }
       ]
     },

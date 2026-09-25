@@ -1,62 +1,49 @@
-# AlphaForge Hackathon on Robinhood Chain Testnet
+# AlphaForge on X Layer Testnet
 
-> **Current checkpoint (2026-09-20):** PR #21 is merged as `18f5352070910a867b9729b031aa2e3951785e01` (`65%finish`); its complete local suite and nine hosted CI jobs passed. Phase One remains in progress: see the [current status](docs/management/CURRENT-STATUS.md), [full remaining-work matrix](docs/management/phase1/REMAINING-TASKS.md) and [worker assignments](docs/management/phase1/ASSIGNMENTS.md). Initial Pass distribution and transfers are in scope; paid sales and real Buy/Sell are explicitly out of Phase One. Runtime remains Local/Mock/NOT_DEPLOYED; independent final security/governance acceptance and real Testnet acceptance are incomplete.
+Hackathon edition · Pre-release
 
-AlphaForge is a safety-first prototype for separating strategy access rights from user funds. It targets Robinhood Chain Testnet, an Arbitrum Chain built with Arbitrum Nitro. The current demo makes allowance, idle cash, active strategy cash, pending withdrawals, positions and fees independently visible in an auditable ledger.
+AlphaForge separates Strategy Pass access from funds held in user Vaults. The X Layer edition includes wallet integration, Vault allowances and actions, transaction tracking, and chain event reconciliation.
 
-## Hackathon status
+- **Network:** X Layer Testnet, chain ID **1952** (`0x7a0`).
+- **Settlement display:** **USDT**, the application's six-decimal test token. It is not issuer-backed USDT.
+- **Native gas token:** **OKB**.
+- **Deployment status:** **NOT_DEPLOYED**. No deployed contract addresses or live acceptance are claimed by this repository's preparation record.
 
-- Local end-to-end simulator with persistent SQLite state
-- Strict money parsing and vault invariants
-- Idempotent commands, optimistic revisions and audit history
-- Robinhood Chain Testnet metadata and fail-closed configuration guard
-- ABI-independent M3 wallet, read-only RPC, canonical indexer and reorg-safe projection foundation
-- Automated tests, linting, formatting, build and baseline secret checks
+## Build the website
 
-No contract is deployed yet and the application does not wire or broadcast Testnet transactions. The M3 chain foundation remains inactive behind a reviewed ABI and deployment-manifest boundary. Every balance in the current UI is simulated. See [the M3 chain adapter guide](docs/M3-CHAIN-ADAPTER.md) for implemented interfaces and current limits.
-
-## Quick start
-
-Requirements: exact Node from `.node-version` and exact npm from `package.json#packageManager`. Follow [the development toolchain specification](docs/DEVELOPMENT-TOOLCHAIN.md) and [current implementation status](docs/DEVELOPMENT-TOOLCHAIN-STATUS.md). macOS developers use fnm after authorized host setup. The offline `node tools/check-environment.mjs` admission check precedes dependency installation; CI uses `npm run verify:ci`.
+Use **Node 24.21.0** and **npm 11.19.1**, pinned in [`.node-version`](.node-version) and [`package.json`](package.json). On macOS, activate the approved runtime through fnm. See the [toolchain specification](docs/DEVELOPMENT-TOOLCHAIN.md) and [implementation status](docs/DEVELOPMENT-TOOLCHAIN-STATUS.md) for environment setup.
 
 ```bash
+node tools/check-environment.mjs
 npm ci --ignore-scripts
+npm run build:xlayer
+```
+
+The X Layer build writes the website to **`dist/xlayer/web`** and selects Testnet chain ID 1952. Building it does not deploy contracts or publish a website. Strategy descriptions, charts and rankings are illustrative.
+
+The public application requires a configured origin and explicit reviewed deployment data. Its health endpoint reports not ready until the configured chain runtimes are healthy and caught up. The repository currently exposes this application through [`buildXLayerPublicApp`](apps/server/src/xlayer-public-app.ts); deployment and hosting integration remain part of the [XLayer R2 plan](docs/superpowers/plans/2026-09-25-xlayer-r2.md).
+
+## Deployment preparation
+
+The [X Layer deployment template](contracts/deployment/m3-xlayer-testnet.template.json) is a **NOT_DEPLOYED / PRE_RELEASE** preparation record. Addresses, constructor inputs and transaction evidence remain unset. It cannot substitute for an actual reviewed deployment record.
+
+The [contract delivery notes](docs/xlayer/r2/contracts/DELIVERY.md) describe the test assets, Strategy Pass, Vault and Vault-created Locker. The USDT asset uses the existing `afUsdc` contract role to preserve ABI and storage compatibility. Testnet deployment, signing and broadcasting require a separate authorized operation; ordinary builds and tests stay local/mock.
+
+## Development checks
+
+```bash
+npm run typecheck
+npm test
 npm run check
-npm run demo
 ```
 
-Open `http://127.0.0.1:4180`. The Chinese security board is available at `http://127.0.0.1:4180/task-board.html`. Runtime data is written to `.data/` and is ignored by Git.
+These are registered repository checks. A passing historical run does not establish acceptance of the current X Layer candidate. Missing deployment evidence and external prerequisites remain explicit.
 
-The evidence-backed Chinese Control Center is generated separately and served only on loopback:
+## Compatibility and historical documentation
 
-```bash
-npm run management:build
-npm run management:check
-npm run management:serve
-```
+This repository is [AlphaForge XLayer](https://github.com/pdbsy/alphaforge-xlayer). It preserves the upstream Robinhood history and stable protocol, storage and package identifiers. Historical plans, localized boards and evidence describe their original scope; they are not X Layer launch instructions or current deployment evidence.
 
-Open `http://127.0.0.1:4181`. See the [Control Center operations guide](docs/management/dashboard/README.md) before refreshing evidence or serving the snapshot.
-
-To validate only the target network configuration:
-
-```bash
-npm run robinhood:check
-npm run governance:check
-npm run supply:check
-```
-
-## Project layout
-
-```text
-apps/server/          Fastify API and SQLite-backed ledger
-apps/web/             React competition demo
-packages/robinhood-chain/  Robinhood Chain Testnet boundary
-packages/chain-adapter/  M3 transaction, manifest, RPC and reconciliation types
-packages/config/      Runtime safety gate
-packages/domain/      Exact money and vault state machine
-src/security-model/   Threat and trust-boundary model
-test/                 Unit, integration and HTTP end-to-end tests
-```
+The governance policy below is retained unchanged because its exact section is checked by the governance provenance validator. Current X Layer implementation work is tracked in the [R2 plan](docs/superpowers/plans/2026-09-25-xlayer-r2.md).
 
 ## Current work
 
@@ -70,17 +57,6 @@ GOV-001 acceptance evidence is tied to a real Git ancestor and a closed first-tr
 
 This in-repository check is defense in depth, not its own trust root: one hostile commit could otherwise replace the workflow, validator and tests together. GOV-001 is therefore explicitly blocked on the current task, SUPPLY-001, which must establish a protected repository-external required workflow/status check and branch policy before governance can be accepted. In-repository reviewer IDs remain audit labels only; they are not external identity assurance. Both Testnet write planes remain closed.
 
-## Safety
+## Security
 
-- Never commit `.env`, wallets, seed phrases, private keys or provider credentials.
-- `.env.example` contains public network metadata only.
-- The default app remains local-only until a reviewed testnet adapter is explicitly wired in.
-- This prototype is not an investment product and does not handle real funds.
-
-## Product identity
-
-The current product is **AlphaForge**, Hackathon edition. The GitHub repository address and existing protocol/storage identifiers remain stable for compatibility. Historical source documents preserve the names and claims that applied when they were written.
-
-## AlphaForge migration
-
-[Consolidation report](docs/migration/REPORT.md) and [Draft PR #11](https://github.com/pdbsy/quantpass-arbitrum-hackathon/pull/11) track the import of the existing user UI, product API, Worker Forum and local contract preview. All new work belongs to this repository. Historical evidence does not grant current acceptance. One protected, uncommitted Dashboard refresh awaits input; no merge or chain transaction is authorized.
+Keep private keys, seed phrases, wallets and provider credentials outside the repository. The public server does not hold signing keys. Report vulnerabilities through [SECURITY.md](SECURITY.md).

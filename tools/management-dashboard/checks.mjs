@@ -9,6 +9,14 @@ import { validateCheckReport } from './schema.mjs';
 import { collectGitState as collectRepositoryGitState } from './sources.mjs';
 
 const unitTests = [
+  'test/xlayer-identity.test.mjs',
+  'test/ui-xlayer-client-app.test.ts',
+  'test/ui-xlayer-prototype.test.mjs',
+  'test/ui-xlayer-public-browser.qualified.test.mjs',
+  'test/ui-xlayer-public-config.test.ts',
+  'test/ui-xlayer-runtime.test.ts',
+  'test/xlayer-deployment-template.test.mjs',
+  'test/xlayer-source.test.mjs',
   'test/xlayer-release-build.test.mjs',
   'test/xlayer-public-app.test.ts',
   'test/xlayer-local-app.test.ts',
