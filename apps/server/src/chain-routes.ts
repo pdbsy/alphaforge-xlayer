@@ -84,14 +84,31 @@ export function registerChainEvidenceRoutes(
       identities.add(passIdentity);
     }
   }
-  const runtimeForContract = (contract: Address) =>
-    runtimes.find((runtime) => sameAddress(runtime.contract, contract)) ?? null;
-  const runtimeForTarget = (contract: Address) =>
-    runtimes.find(
-      (runtime) =>
-        sameAddress(runtime.contract, contract) ||
-        (runtime.passContract !== undefined && sameAddress(runtime.passContract, contract)),
-    ) ?? null;
+  const chainIdSchema = {
+    type: 'string',
+    enum: [...new Set(runtimes.map((runtime) => String(runtime.chainId)))],
+  };
+  const chainQuerySchema = {
+    type: 'object',
+    additionalProperties: false,
+    properties: { chainId: chainIdSchema },
+  };
+  const selectedRuntimes = (chainId?: string) =>
+    runtimes.filter((runtime) => chainId === undefined || String(runtime.chainId) === chainId);
+  const uniqueRuntime = (matches: readonly ChainEvidenceRoutesOptions[]) => {
+    if (matches.length > 1) throw new DomainError('INVALID_REQUEST');
+    return matches[0] ?? null;
+  };
+  const runtimeForContract = (contract: Address, chainId?: string) =>
+    uniqueRuntime(selectedRuntimes(chainId).filter((runtime) => sameAddress(runtime.contract, contract)));
+  const runtimeForTarget = (contract: Address, chainId?: string) =>
+    uniqueRuntime(
+      selectedRuntimes(chainId).filter(
+        (runtime) =>
+          sameAddress(runtime.contract, contract) ||
+          (runtime.passContract !== undefined && sameAddress(runtime.passContract, contract)),
+      ),
+    );
   const readProjection = (
     runtime: ChainEvidenceRoutesOptions,
     owner: Address,
@@ -112,15 +129,21 @@ export function registerChainEvidenceRoutes(
     return { ...projection, blockNumber: projection.blockNumber.toString() };
   };
 
-  app.get('/api/v1/chain/runtime-status', async () =>
-    runtimes.length === 1
-      ? runtimes[0]!.syncStatus()
-      : { runtimes: runtimes.map((runtime) => runtime.syncStatus()) },
+  app.get<{ Querystring: { chainId?: string } }>(
+    '/api/v1/chain/runtime-status',
+    { schema: { querystring: chainQuerySchema } },
+    async (request) => {
+      const selected = selectedRuntimes(request.query.chainId);
+      return selected.length === 1
+        ? selected[0]!.syncStatus()
+        : { runtimes: selected.map((runtime) => runtime.syncStatus()) };
+    },
   );
-  app.get<{ Params: { contract: string } }>(
+  app.get<{ Params: { contract: string }; Querystring: { chainId?: string } }>(
     '/api/v1/chain/runtime-status/:contract',
     {
       schema: {
+        querystring: chainQuerySchema,
         params: {
           type: 'object',
           additionalProperties: false,
@@ -130,7 +153,7 @@ export function registerChainEvidenceRoutes(
       },
     },
     async (request) => {
-      const runtime = runtimeForTarget(asAddress(request.params.contract));
+      const runtime = runtimeForTarget(asAddress(request.params.contract), request.query.chainId);
       if (!runtime) throw new DomainError('CHAIN_PROJECTION_NOT_FOUND');
       return runtime.syncStatus();
     },
@@ -209,7 +232,7 @@ export function registerChainEvidenceRoutes(
       });
     },
   );
-  app.get<{ Params: { operationId: string }; Querystring: { owner: string } }>(
+  app.get<{ Params: { operationId: string }; Querystring: { owner: string; chainId?: string } }>(
     '/api/v1/chain/operations/:operationId/evidence',
     {
       schema: {
@@ -223,13 +246,13 @@ export function registerChainEvidenceRoutes(
           type: 'object',
           additionalProperties: false,
           required: ['owner'],
-          properties: { owner: addressSchema },
+          properties: { owner: addressSchema, chainId: chainIdSchema },
         },
       },
     },
     async (request) => {
       const owner = asAddress(request.query.owner);
-      const matches = runtimes.flatMap((runtime) => {
+      const matches = selectedRuntimes(request.query.chainId).flatMap((runtime) => {
         const operation = runtime.store.operation(request.params.operationId);
         return operation &&
           operation.chainId === runtime.chainId &&
@@ -251,10 +274,11 @@ export function registerChainEvidenceRoutes(
       return { operationId: operation.operationId, ...evidence };
     },
   );
-  app.get<{ Params: { contract: string; owner: string } }>(
+  app.get<{ Params: { contract: string; owner: string }; Querystring: { chainId?: string } }>(
     '/api/v1/chain/passes/:contract/:owner',
     {
       schema: {
+        querystring: chainQuerySchema,
         params: {
           type: 'object',
           additionalProperties: false,
@@ -265,7 +289,7 @@ export function registerChainEvidenceRoutes(
     },
     async (request) => {
       const contract = asAddress(request.params.contract);
-      const runtime = runtimeForTarget(contract);
+      const runtime = runtimeForTarget(contract, request.query.chainId);
       if (
         !runtime ||
         runtime.passContract === undefined ||
@@ -276,10 +300,11 @@ export function registerChainEvidenceRoutes(
       return readProjection(runtime, asAddress(request.params.owner), contract, runtime.passProjectionKey);
     },
   );
-  app.get<{ Params: { contract: string; owner: string } }>(
+  app.get<{ Params: { contract: string; owner: string }; Querystring: { chainId?: string } }>(
     '/api/v1/chain/vaults/:contract/:owner',
     {
       schema: {
+        querystring: chainQuerySchema,
         params: {
           type: 'object',
           additionalProperties: false,
@@ -289,15 +314,16 @@ export function registerChainEvidenceRoutes(
       },
     },
     async (request) => {
-      const runtime = runtimeForContract(asAddress(request.params.contract));
+      const runtime = runtimeForContract(asAddress(request.params.contract), request.query.chainId);
       if (!runtime) throw new DomainError('CHAIN_PROJECTION_NOT_FOUND');
       return readProjection(runtime, asAddress(request.params.owner));
     },
   );
-  app.get<{ Params: { owner: string } }>(
+  app.get<{ Params: { owner: string }; Querystring: { chainId?: string } }>(
     '/api/v1/chain/vaults/:owner',
     {
       schema: {
+        querystring: chainQuerySchema,
         params: {
           type: 'object',
           additionalProperties: false,
@@ -307,8 +333,9 @@ export function registerChainEvidenceRoutes(
       },
     },
     async (request) => {
-      if (runtimes.length !== 1) throw new DomainError('INVALID_REQUEST');
-      return readProjection(runtimes[0]!, asAddress(request.params.owner));
+      const selected = selectedRuntimes(request.query.chainId);
+      if (selected.length !== 1) throw new DomainError('INVALID_REQUEST');
+      return readProjection(selected[0]!, asAddress(request.params.owner));
     },
   );
 }
