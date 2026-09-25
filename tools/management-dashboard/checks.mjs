@@ -12,7 +12,6 @@ const unitTests = [
   'test/xlayer-deployment-command.test.mjs',
   'test/xlayer-public-main.test.ts',
   'test/xlayer-public-startup.test.ts',
-  'test/xlayer-simulation-native.qualified.test.mjs',
   'test/xlayer-identity.test.mjs',
   'test/ui-xlayer-client-app.test.ts',
   'test/ui-xlayer-prototype.test.mjs',

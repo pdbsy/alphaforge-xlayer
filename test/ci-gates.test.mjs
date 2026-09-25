@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, writeFile, mkdir, rm, symlink, readFile, truncate } from 'node:fs/promises';
+import { writeFileSync } from 'node:fs';
+import { mkdtemp, writeFile, mkdir, rm, symlink, readFile, truncate, realpath } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { parse, stringify } from 'yaml';
@@ -93,7 +94,51 @@ test('contract stages stop on bootstrap/probe/test failure and never invent ABI 
   assert.equal(report.state, 'PASS');
   assert.equal(report.abi, 'PASS');
   assert.deepEqual(calls[2], ['/bin/bash', ['contracts/script/check-phase1-contracts.sh']]);
+  assert.equal(calls.length, 4);
+  assert.deepEqual(calls[3], [
+    process.execPath,
+    ['--test', 'test/xlayer-simulation-native.qualified.test.mjs'],
+  ]);
 });
+
+for (const [name, result, expectedState, incomplete] of [
+  ['failed test', { status: 1, signal: null }, 'FAIL', false],
+  ['missing executable', { status: null, error: new Error('ENOENT') }, 'BLOCKED', true],
+  ['interrupted test', { status: null, signal: 'SIGTERM' }, 'BLOCKED', true],
+  ['missing exit status', { status: undefined, signal: null }, 'BLOCKED', true],
+]) {
+  test(`native XLayer simulation ${name} cannot be hidden by successful contracts and Slither`, async (t) => {
+    const dir = await realpath(await mkdtemp(join(tmpdir(), 'alphaforge-native-ci-')));
+    t.after(() => rm(dir, { recursive: true, force: true }));
+    const path = join(dir, 'slither.json');
+    const calls = [];
+    // Fault injection at the external executor boundary avoids downloading or
+    // invoking Forge while the real gate validates a fresh Slither artifact.
+    const report = runContractStages((file, args) => {
+      calls.push([file, args]);
+      if (file === process.execPath) return result;
+      if (args[0] === 'contracts/script/check-phase1-contracts.sh')
+        writeFileSync(path, '{"success":true,"error":null,"results":{}}\n');
+      return { status: 0, signal: null };
+    }, path);
+    assert.equal(report.state, expectedState);
+    assert.equal(report.abi, 'PASS');
+    assert.equal(report.slither.state, 'PASS');
+    assert.equal(report.slither.previousReportPreserved, false);
+    assert.equal(calls.length, 4);
+    assert.deepEqual(calls[3], [
+      process.execPath,
+      ['--test', 'test/xlayer-simulation-native.qualified.test.mjs'],
+    ]);
+    assert.ok(report.stages.slice(0, 3).every((stage) => stage.state === 'PASS'));
+    assert.deepEqual(report.stages[3], {
+      stage: 'xlayer-simulation-native',
+      state: expectedState,
+      exitCode: result.status,
+      incomplete,
+    });
+  });
+}
 
 test('Phase One contract gate cannot skip artifact manifest and rehearsal failures', () => {
   const report = runContractStages((_file, args) => ({

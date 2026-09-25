@@ -165,6 +165,7 @@ export function runContractStages(execute, slitherReportPath) {
       return report;
     }
   }
+  const report = { state: 'PASS', abi: 'PASS', stages: results };
   if (slitherReportPath !== undefined) {
     let slither;
     try {
@@ -172,14 +173,14 @@ export function runContractStages(execute, slitherReportPath) {
     } catch {
       slither = { state: 'BLOCKED', reason: 'A fresh readable bounded Slither report is required' };
     }
-    return {
-      state: slither.state,
-      abi: 'PASS',
-      stages: results,
-      slither: { ...slither, previousReportPreserved },
-    };
+    report.slither = { ...slither, previousReportPreserved };
+    if (slither.state !== 'PASS') return { ...report, state: slither.state };
   }
-  return { state: 'PASS', abi: 'PASS', stages: results };
+  const result = execute(process.execPath, ['--test', 'test/xlayer-simulation-native.qualified.test.mjs']);
+  const incomplete = Boolean(result.error || result.signal || !Number.isInteger(result.status));
+  const state = incomplete ? 'BLOCKED' : result.status === 0 ? 'PASS' : 'FAIL';
+  results.push({ stage: 'xlayer-simulation-native', state, exitCode: result.status, incomplete });
+  return { ...report, state };
 }
 await main(import.meta.url, () => {
   const before = inspect();
