@@ -149,3 +149,28 @@ test('live reads reject malformed quantities, block identities and deployment op
     /M3_LIVE_READ_FAILED/,
   );
 });
+
+for (const chainId of [1952, 46630] as const) {
+  test(`live snapshot pins selected chain ${chainId} before and after canonical reads`, async () => {
+    const selected = { chainId, vaultAddress: VAULT };
+    const provider = new Provider();
+    provider.chain = `0x${chainId.toString(16)}`;
+    assert.equal((await readM3VaultLiveSnapshot(provider, selected)).chainId, chainId);
+    assert.equal(provider.chainReads, 2);
+    for (const foreign of [195, 196, chainId === 1952 ? 46630 : 1952]) {
+      const wrong = new Provider();
+      wrong.chain = `0x${foreign.toString(16)}`;
+      await assert.rejects(readM3VaultLiveSnapshot(wrong, selected), /M3_LIVE_WRONG_CHAIN/);
+      assert.equal(wrong.calls.length, 1);
+      const changed = new Provider();
+      const request = changed.request.bind(changed);
+      changed.chain = `0x${chainId.toString(16)}`;
+      changed.request = (input) => {
+        if (input.method === 'eth_chainId' && changed.chainReads > 0)
+          changed.chain = `0x${foreign.toString(16)}`;
+        return request(input);
+      };
+      await assert.rejects(readM3VaultLiveSnapshot(changed, selected), /M3_LIVE_WRONG_CHAIN/);
+    }
+  });
+}
