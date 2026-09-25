@@ -329,14 +329,14 @@ const workflowProfiles = new Map([
   [
     '.github/workflows/dependency-review.yml',
     {
-      events: ['workflow_dispatch'],
+      events: ['pull_request', 'workflow_dispatch'],
       jobs: new Map([['dependency-review', readContents]]),
     },
   ],
   [
     '.github/workflows/codeql.yml',
     {
-      events: ['workflow_dispatch'],
+      events: ['push', 'pull_request', 'workflow_dispatch'],
       jobs: new Map([
         ['analyze', { contents: 'read', actions: 'read', packages: 'read', 'security-events': 'write' }],
       ]),
