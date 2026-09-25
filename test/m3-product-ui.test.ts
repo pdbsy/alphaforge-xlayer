@@ -9,6 +9,7 @@ import {
   WALLET_STATUSES,
   extendM3ProductPages,
   renderM3AccountShell,
+  renderWalletAccount,
   renderM3StrategyShell,
   renderNetworkStatus,
   onchainActionEnabled,
@@ -26,6 +27,56 @@ const operationEvidenceDefaults = {
   indexerStatus: 'HEALTHY' as const,
   degradedReason: null,
 };
+
+test('My Account shows one wallet connection and unavailable holdings without exposing local balances', () => {
+  const pages = extendM3ProductPages(
+    { account: () => '<div>LOCAL BALANCE 10000</div>', trade: () => '' },
+    { accountId: () => 'alice', contentProvenance: () => 'FIXTURE' },
+  );
+  const html = pages.account('trades');
+  assert.match(html, /Connect Wallet/);
+  assert.equal((html.match(/<button\b/g) ?? []).length, 1);
+  assert.match(html, /ETH balance/);
+  assert.match(html, /Pass holdings/);
+  assert.doesNotMatch(html, /LOCAL BALANCE|alice|NOT DEPLOYED|API ACCOUNT|WALLET \/ TESTNET/);
+});
+
+test('My Account renders wallet ETH and Pass independently with an address connection button', () => {
+  const chain = {
+    wallet: {
+      status: 'CONNECTED' as const,
+      address: '0x1234567890abcdef1234567890abcdef12345678',
+      ethBalanceWei: '1250000000000000001',
+    },
+    network: { status: 'CORRECT' as 'CORRECT' | 'WRONG', chainId: 46630 },
+    transaction: { status: 'IDLE' as const },
+    onchain: {
+      deployment: 'CONFIGURED' as const,
+      health: 'LIVE' as const,
+      readiness: 'FINALITY_UNKNOWN' as const,
+      owner: 'OWNER' as const,
+      writeMode: 'DISABLED' as const,
+      exitPath: 'UNAVAILABLE' as const,
+      supportedActions: [],
+      passAddress: '0x4444444444444444444444444444444444444444',
+      passBalanceBaseUnits: '12000000000000000000',
+    },
+  };
+  const pages = extendM3ProductPages(
+    { account: () => '', trade: () => '' },
+    { accountId: () => 'bob', contentProvenance: () => 'FIXTURE', chain: () => chain },
+  );
+  const html = pages.account('trades');
+  assert.match(html, /0x1234…5678/);
+  assert.match(html, /title="0x1234567890abcdef1234567890abcdef12345678"/);
+  assert.match(html, /1\.250000000000000001/);
+  assert.match(html, />12<\/strong>\s*<span>Pass/);
+  assert.doesNotMatch(html, /Connect Wallet|LOCAL SIMULATION|DEPLOYED|Deposit|Withdraw/);
+  chain.network.status = 'WRONG';
+  const wrong = pages.account('trades');
+  assert.doesNotMatch(wrong, /1\.250000000000000001|>12<\/strong>/);
+  assert.match(wrong, /Switch to Robinhood Chain Testnet/);
+});
 
 test('page extension preserves product pages and prepends route-specific M3 shells', () => {
   let accountId: string | null = 'alice';
@@ -836,4 +887,42 @@ test('unreviewed or cross-chain Vault selector metadata never becomes an actiona
     assert.match(html, /data-chain-vault-select/);
     assert.match(html, new RegExp(`value="46630:${vaultA}" selected`));
   }
+});
+
+test('wallet account preserves zero and wei precision and rejects invalid wallet values', () => {
+  const wallet = { status: 'CONNECTED' as const, address: '0x1111111111111111111111111111111111111111' };
+  const network = { status: 'CORRECT' as const, chainId: 46630 };
+  for (const [raw, formatted] of [
+    ['0', '0'],
+    ['1', '0.000000000000000001'],
+    ['1000000000000000000', '1'],
+  ]) {
+    assert.ok(
+      renderWalletAccount({ wallet: { ...wallet, ethBalanceWei: raw }, network }).includes(
+        `<strong>${formatted}</strong>`,
+      ),
+    );
+  }
+  for (const raw of ['-1', '01', '1.5', '<img src=x onerror=alert(1)>', (2n ** 256n).toString()]) {
+    const html = renderWalletAccount({ wallet: { ...wallet, ethBalanceWei: raw }, network });
+    assert.match(html, /<strong>—<\/strong>/);
+    assert.doesNotMatch(html, /<img|onerror/);
+  }
+  for (const status of ['ACCOUNT_CHANGED', 'DISCONNECTED', 'CONNECTING'] as const) {
+    const html = renderWalletAccount({
+      wallet: { ...wallet, status, ethBalanceWei: '987000000000000000000' },
+      network,
+    });
+    assert.doesNotMatch(html, /<strong>987/);
+  }
+  const malformed = renderWalletAccount({
+    wallet: {
+      status: 'CONNECTED',
+      address: '<img onerror=alert(1)>',
+      ethBalanceWei: '987000000000000000000',
+    },
+    network,
+  });
+  assert.match(malformed, /Connect Wallet/);
+  assert.doesNotMatch(malformed, /<img|onerror|<strong>987/);
 });

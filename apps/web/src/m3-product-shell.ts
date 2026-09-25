@@ -46,6 +46,8 @@ export type ProductProvenance = 'FIXTURE' | 'LOCAL SIMULATION';
 export interface WalletPresentation {
   readonly status: WalletStatus;
   readonly address?: string;
+  /** Native ETH only, in wei. Never populated from a local demo ledger. */
+  readonly ethBalanceWei?: string;
   readonly errorCode?: string;
   readonly errorMessage?: string;
 }
@@ -551,11 +553,65 @@ export function renderM3AccountShell(input: AccountShellInput): string {
   )}</section>`;
 }
 
+function walletAmount(raw: string | undefined): string {
+  if (raw === undefined || !/^(0|[1-9][0-9]{0,77})$/.test(raw) || BigInt(raw) >= 2n ** 256n) return '—';
+  const [whole, fraction] = formatUnits(raw, 18).split('.');
+  const trimmed = fraction?.replace(/0+$/, '');
+  return trimmed ? `${whole}.${trimmed}` : whole!;
+}
+
+/** The account landing page shows wallet assets, never the independent local ledgers. */
+export function renderWalletAccount(input: AccountShellInput): string {
+  const wallet = input.wallet ?? unavailableWallet;
+  const network = input.network ?? unavailableNetwork;
+  const address = wallet.address && /^0x[0-9a-fA-F]{40}$/.test(wallet.address) ? wallet.address : undefined;
+  const connected = wallet.status === 'CONNECTED' && !!address;
+  const readable =
+    connected && network.status === 'CORRECT' && network.chainId === ROBINHOOD_CHAIN_TESTNET.chainId;
+  const eth = readable ? walletAmount(wallet.ethBalanceWei) : '—';
+  const pass =
+    readable && input.onchain?.deployment === 'CONFIGURED'
+      ? walletAmount(input.onchain.passBalanceBaseUnits)
+      : '—';
+  const connecting = wallet.status === 'CONNECTING';
+  const label = connecting
+    ? 'Connecting…'
+    : address && ['CONNECTED', 'ACCOUNT_CHANGED'].includes(wallet.status)
+      ? `${address.slice(0, 6)}…${address.slice(-4)}`
+      : 'Connect Wallet';
+  let notice = '';
+  if (network.status === 'WRONG') notice = 'Switch to Robinhood Chain Testnet to view your assets.';
+  else if (wallet.status === 'CONNECTION_REJECTED')
+    notice = 'Connection cancelled. Try again when you’re ready.';
+  else if (wallet.status === 'ACCOUNT_CHANGED')
+    notice = 'Wallet changed. Reconnect to refresh your holdings.';
+  else if (wallet.errorCode === 'WALLET_PROVIDER_UNAVAILABLE')
+    notice = 'Open this page in a wallet-enabled browser.';
+  else if (wallet.errorCode) notice = 'Wallet unavailable. Please reconnect.';
+  const mock = input.onchain?.writeMode === 'INJECTED_MOCK';
+  return `<section class="wrap wallet-account" data-wallet-account aria-label="Wallet account">
+    <header class="wallet-account-header"><div><span class="section-label">MY WORKSHOP</span><h1>My Account</h1></div>
+      <button class="primary-btn wallet-connect" data-chain-connect ${connecting ? 'disabled' : ''}${address ? ` title="${escapeHtml(address)}"` : ''}><span class="wallet-status-dot${connected ? ' connected' : ''}" aria-hidden="true"></span>${label}</button>
+    </header>
+    <div class="wallet-network"><span>${mock ? 'Demo wallet' : 'Robinhood Chain Testnet'}</span>${connected ? '<span class="wallet-connected">Connected</span>' : ''}</div>
+    ${notice ? `<p class="wallet-notice" role="status">${notice}</p>` : ''}
+    <article class="sketch-box wallet-eth"><span class="section-label">ETH balance</span><div class="wallet-amount"><strong>${eth}</strong><span>ETH</span></div><p class="small muted">${connected ? (eth === '—' ? 'Balance unavailable' : 'Available in your wallet') : 'Connect your wallet to view your balance'}</p></article>
+    <section class="wallet-passes" aria-label="Pass holdings"><header><h2>Pass holdings</h2><span class="small muted">Strategy access</span></header>
+      ${pass === '—' ? `<div class="wallet-empty sketch-box"><span class="wallet-pass-icon" aria-hidden="true">α</span><h3>${connected ? 'Pass balance unavailable' : 'Your Passes, in one place'}</h3><p>${connected ? 'No verified Pass balance to display yet.' : 'Connect your wallet to see the Passes you hold.'}</p></div>` : `<article class="wallet-pass-row sketch-box"><span class="wallet-pass-icon" aria-hidden="true">α</span><div><h3>Strategy Pass</h3><span class="small muted" title="${escapeHtml(input.onchain?.passAddress ?? '')}">${escapeHtml(input.onchain?.passAddress ? `${input.onchain.passAddress.slice(0, 6)}…${input.onchain.passAddress.slice(-4)}` : 'Robinhood Chain Testnet')}</span></div><div class="wallet-pass-quantity"><strong>${pass}</strong> <span>Pass</span></div></article>`}
+    </section>
+  </section>`;
+}
+
 export function extendM3ProductPages(pages: M3ProductPages, options: M3PageExtensionOptions): M3ProductPages {
   return {
     account: (tab) => {
       const chain = options.chain?.();
       const onchain = chain?.onchain ?? options.onchain?.();
+      if (tab === 'trades')
+        return renderWalletAccount({
+          ...(chain ? { wallet: chain.wallet, network: chain.network, transaction: chain.transaction } : {}),
+          ...(onchain ? { onchain } : {}),
+        });
       return (
         renderM3AccountShell({
           accountId: options.accountId(),

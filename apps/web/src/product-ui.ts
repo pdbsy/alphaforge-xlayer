@@ -1,5 +1,6 @@
 import { installCandleInspection, type CandleChartHost } from './kline-hover.ts';
 import './kline-hover.css';
+import './wallet-account.css';
 import { ProductAdapter, type ProductVault, type StrategySummary } from './product-adapter.ts';
 import type { CommandFields, CommandReview, CommandType } from './product-client.ts';
 import { createM3BrowserRuntime, type M3BrowserDeploymentConfig } from './m3-browser-runtime.ts';
@@ -109,12 +110,14 @@ function hydrate(root: ParentNode): void {
   }
 }
 hydrate(document);
+const footerNote = document.querySelector('.footer-bottom > span');
+if (footerNote) footerNote.textContent = 'Trading demo · Wallet balances on Robinhood Chain Testnet';
 new MutationObserver((records) => {
   for (const record of records)
     for (const node of record.addedNodes) if (node instanceof Element) hydrate(node);
 }).observe(document.body, { childList: true, subtree: true });
 const status = document.createElement('section');
-status.className = 'wrap';
+status.className = 'wrap local-backend-session';
 status.setAttribute('aria-label', 'Local backend session');
 document.querySelector('main')!.before(status);
 let localError: string | null = null;
@@ -634,6 +637,14 @@ window.addEventListener('hashchange', () => {
 });
 client.subscribe(() => render());
 onchainRuntime?.subscribe(() => render());
+if (window.ethereum) {
+  // Wallet events invalidate the displayed owner immediately through the runtime.
+  // Refresh is read-only and never requests a signature or another account grant.
+  for (const event of ['accountsChanged', 'chainChanged', 'disconnect'] as const)
+    window.ethereum.on(event, () => {
+      void run(() => onchainRuntime!.refresh());
+    });
+}
 void run(async () => {
   await client.refresh();
   await alignVault();
