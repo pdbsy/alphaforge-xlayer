@@ -161,7 +161,7 @@ await main(import.meta.url, async () => {
     const historyResult = historyScan.classification;
     const historyDisposition = adjudicateGitleaksHistory(
       historyScan.scanValue,
-      historyResult.state === 'FAIL' ? readGitleaksExceptionProof(root) : null,
+      historyResult.state === 'FAIL' ? readGitleaksExceptionProof(root, historyScan.scanValue.report) : null,
     );
     const source = join(tool.directory, 'source');
     mkdirSync(source);

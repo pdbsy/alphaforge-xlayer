@@ -53,8 +53,24 @@ See [scanner qualification](SCANNER-QUALIFICATION.md) for sources and limitation
 
 On 2026-09-20 the user approved only the occurrence in historical commit `69330dfffeceb86cf793fa0163ff4f72a466f3eb`, file `docs/product/PHASE1-PRODUCT-WALLET-FLOWS.md`, line 12, detector `generic-api-key`. The immutable file blob is `b118b774535825efd5d7afe8931e134827f4f974`; it records a real Git tree, not an issued credential. The source commit is `28ff3d4b5c6e70ff0c6ea1b11ad0fea4283887fd`. The tree object is `7f4abc27757e099c1b5b26a66509395015bdb7b7`.
 
-`tools/security/gitleaks-disposition.mjs` re-reads typed Git objects with replacements disabled, verifies the historical path-to-blob identity and SHA-256 of all four exact object byte sequences, then checks the immutable document lines and referenced commit's root tree. Only exactly one matching single-line historical finding can qualify. Missing objects, altered bytes, premature/expired proof, malformed reports or failed scanner execution stay BLOCKED; mismatched, duplicate and additional findings remain FAIL. Current-file scans and every canary still use the unchanged strict classifier.
+`tools/security/gitleaks-disposition.mjs` re-reads typed Git objects with replacements disabled, verifies the historical path-to-blob identity and SHA-256 of all four exact object byte sequences, then checks the immutable document lines and referenced commit's root tree. This approval applies only to its exact single-line historical occurrence. The XLayer approvals below extend the adjudicator to their two additional exact occurrences. Missing objects, altered bytes, premature/expired proof, malformed reports or failed scanner execution stay BLOCKED; mismatched, duplicate and additional findings remain FAIL. Current-file scans and every canary still use the unchanged strict classifier.
 
 This is a bounded exception under the existing toolchain exception policy: valid from 2026-09-20 UTC until **2026-10-20 00:00 UTC**, with no automatic renewal. Macbeth01 owns the implementation and Macbeth06 independently verifies it. The expiry deliberately prevents this one approval becoming an unbounded scanner policy. The full default scanner, all fetched refs, empty ignore file, disabled inline allowances, redaction and required checks are unchanged.
 
 The emitted report preserves `history.state: FAIL`, its complete sanitized finding list, scanner exit code and raw-report SHA-256; `historyDisposition` separately reports the exact proof and effective state. No raw secrets, email addresses or source snippets are emitted. Previous failed CI runs remain failed. This disposition alone does not establish readiness, independent security approval, GitHub review or deployment authorization.
+
+
+## GITLEAKS-FP-002 and GITLEAKS-FP-003: approved XLayer historical dispositions
+
+On 2026-09-26 the user explicitly approved these two occurrences of the same non-credential task-scope sentence. Both use detector `generic-api-key`, file `docs/xlayer/ci/AF-XLAYER-06-CI.md`, and start/end line 18.
+
+| Disposition | Historical commit | Commit object SHA-256 |
+| --- | --- | --- |
+| GITLEAKS-FP-002 | `d86cea95a6e3c478bd5d373f404d4980f2580cb2` | `fbde96c8fa98e2e3039b981151f5230e62c7c89fb1b10c6af47a350559681379` |
+| GITLEAKS-FP-003 | `a270b36d7cde2fd87e283580d20b107249d072bf` | `56d70070dcb4d0626d2506271cce5e0959ec3e5e8615fdd0792a14333cc72828` |
+
+Both paths resolve to blob `168f7009d4191ee6b803716fd9e205c11e59c843`, with SHA-256 `e585d0ad77715fec4ff88f130c499aa172ecf5918141ea9c1487dbd648943ab2`. Line 18, excluding its LF terminator, has SHA-256 `bd921ec17d275de4a2e37aaf03f392f29b0f8b102c626808182626b8cfdf22e7`. The scanner matched ordinary words in a sentence excluding deployment, credentials and repository administration from the old task; it did not identify an issued key.
+
+The new dispositions are valid from **2026-09-25 18:07:21 UTC** (a recorded instant after approval on September 26 in Asia/Shanghai) until **2026-10-20 00:00 UTC**, without automatic renewal. Each requires its own typed commit bytes, exact path-to-blob identity, complete blob bytes and line hash. Missing, altered or expired proof remains BLOCKED. Only a subset of the three approved occurrences, with no duplicates or additional findings, can qualify. The original FP-001 proof and expiry remain unchanged.
+
+Full history scanning, all fetched refs, default rules, empty ignore files, canaries and current-file scans remain unchanged. The complete sanitized raw finding list and raw FAIL are retained separately from the effective disposition. This approval changes no Git history, required checks, repository settings or deployment authority. XLayerPM owns this implementation; independent review is recorded separately and is not an external security identity.

@@ -22,7 +22,46 @@ const objectDigests = Object.freeze({
   tree: '41011151ed23434cd2f3743951b414ab65705f36b5e45082de27afcc055298a7',
 });
 
-export function readGitleaksExceptionProof(cwd) {
+// Approved by the XLayer user on 2026-09-26; only these two immutable occurrences.
+const xlayerOccurrences = Object.freeze(
+  [
+    {
+      id: 'GITLEAKS-FP-002',
+      commit: 'd86cea95a6e3c478bd5d373f404d4980f2580cb2',
+      commitSha256: 'fbde96c8fa98e2e3039b981151f5230e62c7c89fb1b10c6af47a350559681379',
+    },
+    {
+      id: 'GITLEAKS-FP-003',
+      commit: 'a270b36d7cde2fd87e283580d20b107249d072bf',
+      commitSha256: '56d70070dcb4d0626d2506271cce5e0959ec3e5e8615fdd0792a14333cc72828',
+    },
+  ].map((item) =>
+    Object.freeze({
+      ...item,
+      rule: 'generic-api-key',
+      file: 'docs/xlayer/ci/AF-XLAYER-06-CI.md',
+      line: 18,
+      blob: '168f7009d4191ee6b803716fd9e205c11e59c843',
+      blobSha256: 'e585d0ad77715fec4ff88f130c499aa172ecf5918141ea9c1487dbd648943ab2',
+      lineSha256: 'bd921ec17d275de4a2e37aaf03f392f29b0f8b102c626808182626b8cfdf22e7',
+      validFrom: '2026-09-25T18:07:21Z',
+      expiresAt: '2026-10-20T00:00:00Z',
+    }),
+  ),
+);
+
+function matches(row, approved) {
+  return (
+    row.RuleID === approved.rule &&
+    row.Commit === approved.commit &&
+    row.File === approved.file &&
+    row.StartLine === approved.line &&
+    row.EndLine === approved.line
+  );
+}
+const sha256 = (bytes) => createHash('sha256').update(bytes).digest('hex');
+
+export function readGitleaksExceptionProof(cwd, findings) {
   const read = (...args) =>
     execFileSync('git', ['--no-replace-objects', ...args], {
       cwd,
@@ -36,8 +75,9 @@ export function readGitleaksExceptionProof(cwd) {
       maxBuffer: 64 * 1024,
       stdio: ['ignore', 'pipe', 'pipe'],
     });
+  let proof = null;
   try {
-    return {
+    proof = {
       historicalCommit: read('cat-file', 'commit', occurrence.commit),
       blobOid: read('rev-parse', '--verify', `${occurrence.commit}:${occurrence.file}`).toString().trim(),
       blob: read('cat-file', 'blob', occurrence.blob),
@@ -45,11 +85,26 @@ export function readGitleaksExceptionProof(cwd) {
       tree: read('cat-file', 'tree', occurrence.tree),
     };
   } catch {
-    return null;
+    // Missing legacy objects do not substantiate the legacy occurrence.
   }
+  if (!Array.isArray(findings)) return proof;
+  const xlayer = {};
+  for (const approved of xlayerOccurrences) {
+    if (!findings.some((row) => matches(row, approved))) continue;
+    try {
+      xlayer[approved.commit] = {
+        historicalCommit: read('cat-file', 'commit', approved.commit),
+        blobOid: read('rev-parse', '--verify', `${approved.commit}:${approved.file}`).toString().trim(),
+        blob: read('cat-file', 'blob', approved.blob),
+      };
+    } catch {
+      // Each requested occurrence must provide its own complete immutable proof.
+    }
+  }
+  return { ...proof, xlayer };
 }
 
-export function adjudicateGitleaksHistory(value, proof, observedAt = new Date()) {
+function adjudicateLegacy(value, proof, observedAt = new Date()) {
   const raw = classifyGitleaks(value);
   const result = { raw, state: raw.state, dispositions: [] };
   if (raw.state !== 'FAIL' || raw.findings.length !== 1) return result;
@@ -95,4 +150,49 @@ export function adjudicateGitleaksHistory(value, proof, observedAt = new Date())
       },
     ],
   };
+}
+
+export function adjudicateGitleaksHistory(value, proof, observedAt = new Date()) {
+  const raw = classifyGitleaks(value);
+  const result = { raw, state: raw.state, dispositions: [] };
+  if (raw.state !== 'FAIL') return result;
+  const approvedRows = value.report.map((row) =>
+    [occurrence, ...xlayerOccurrences].find((approved) => matches(row, approved)),
+  );
+  // Never partially clear a scan containing an unknown or duplicate occurrence.
+  if (approvedRows.some((item) => !item) || new Set(approvedRows).size !== approvedRows.length) return result;
+  const dispositions = [];
+  for (const approved of approvedRows) {
+    if (approved === occurrence) {
+      const legacy = adjudicateLegacy(
+        { ...value, report: value.report.filter((row) => matches(row, occurrence)) },
+        proof,
+        observedAt,
+      );
+      if (legacy.state !== 'PASS') return { ...result, state: legacy.state, reason: legacy.reason };
+      dispositions.push(...legacy.dispositions);
+      continue;
+    }
+    const evidence = proof?.xlayer?.[approved.commit];
+    const instant = observedAt instanceof Date ? observedAt.getTime() : NaN;
+    if (
+      !Number.isFinite(instant) ||
+      instant < Date.parse(approved.validFrom) ||
+      instant >= Date.parse(approved.expiresAt) ||
+      !evidence ||
+      evidence.blobOid !== approved.blob ||
+      !Buffer.isBuffer(evidence.historicalCommit) ||
+      sha256(evidence.historicalCommit) !== approved.commitSha256 ||
+      !Buffer.isBuffer(evidence.blob) ||
+      sha256(evidence.blob) !== approved.blobSha256 ||
+      sha256(evidence.blob.toString('utf8').split('\n')[approved.line - 1] ?? '') !== approved.lineSha256
+    )
+      return { ...result, state: 'BLOCKED', reason: 'Approved historical proof missing, altered or expired' };
+    dispositions.push({
+      ...approved,
+      decision: 'USER_APPROVED_FALSE_POSITIVE',
+      proof: 'VERIFIED',
+    });
+  }
+  return { ...result, state: 'PASS', dispositions };
 }
