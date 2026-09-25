@@ -12,7 +12,7 @@ public website first using the root task's registered build command. A website
 without deployed/indexed contracts remains available while `/api/health` returns
 HTTP 503. Absence of a build directory is a startup error.
 
-An explicit `AF_XLAYER_CONFIG` points to a UTF-8 JSON file. All nine top-level keys
+An explicit `AF_XLAYER_CONFIG` points to a UTF-8 JSON file. All eight top-level keys
 below are required. Unknown keys at either level are rejected. The file must be
 a regular file, not a link, and at most 256 KiB. Relative filesystem paths resolve
 against the configuration file's directory.
