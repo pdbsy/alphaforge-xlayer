@@ -446,7 +446,7 @@ test('a newly connected owner cannot deposit without both Vault-only token allow
   });
 
   assert.equal(onchainActionEnabled(onchain, 'deposit'), false);
-  assert.match(html, /AF-USDC allowance[\s\S]*0 base units/);
+  assert.match(html, /USDT allowance[\s\S]*0 base units/);
   assert.match(html, /Pass allowance[\s\S]*0 base units/);
   assert.match(html, /spender[\s\S]*0x2222222222222222222222222222222222222222/);
   assert.match(html, /two exact finite approvals/i);

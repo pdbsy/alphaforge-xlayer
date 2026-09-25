@@ -44,14 +44,14 @@ export function renderM3DepositApprovalDialog(review: M3DepositApprovalReview): 
   return `<span class="section-label">TESTNET / EXACT APPROVALS</span><h2>Authorize Deposit.</h2><p>Each approval fixes one token, the configured Vault spender and the exact finite amount required for this Deposit. Submit one approval, wait for its receipt, then start a new review for the remaining requirement.</p><div class="receipt"><div class="receipt-lines">${review.requirements
     .map(
       (requirement) =>
-        `<div><span>${requirement.kind === 'af-usdc' ? 'AF-USDC' : 'Pass'} · allowance ${escapeHtml(requirement.allowance)}</span><span>required ${escapeHtml(requirement.requiredRaw)} · ${escapeHtml(requirement.token)} → ${escapeHtml(requirement.spender)}</span></div>`,
+        `<div><span>${requirement.kind === 'af-usdc' ? 'USDT' : 'Pass'} · allowance ${escapeHtml(requirement.allowance)}</span><span>required ${escapeHtml(requirement.requiredRaw)} · ${escapeHtml(requirement.token)} → ${escapeHtml(requirement.spender)}</span></div>`,
     )
     .join(
       '',
     )}</div></div><p data-product-dialog-error class="form-error" role="alert"></p><div class="inline-actions">${required
     .map(
       (requirement) =>
-        `<button class="primary-btn" data-chain-approve="${requirement.kind}">Approve exact ${requirement.kind === 'af-usdc' ? 'AF-USDC' : 'Pass'} amount ↗</button>`,
+        `<button class="primary-btn" data-chain-approve="${requirement.kind}">Approve exact ${requirement.kind === 'af-usdc' ? 'USDT' : 'Pass'} amount ↗</button>`,
     )
     .join('')}<button class="text-link" data-close>Cancel</button></div>`;
 }
