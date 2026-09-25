@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync, writeFileSync, existsSync, linkSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { basename, dirname, join } from 'node:path';
 import { setImmediate } from 'node:timers/promises';
 import { ChainStore } from '../apps/server/src/chain-store.ts';
 import {
@@ -225,6 +225,29 @@ test('SQLite hardlinks cannot bypass per-Vault storage isolation', async (t) => 
   new ChainStore(first).close();
   linkSync(first, options.runtimeDeployments[1]!.dbPath);
   await assert.rejects(startXLayerPublicServer(options), /INVALID_PUBLIC_STORAGE/);
+});
+
+test('new database names cannot alias another database or its SQLite sidecars', async (t) => {
+  const { options } = fixture(t, 2);
+  const first = options.runtimeDeployments[0]!;
+  for (const path of [
+    join(dirname(first.dbPath), basename(first.dbPath).toUpperCase()),
+    first.dbPath + '-wal',
+    first.dbPath + '-shm',
+  ]) {
+    await assert.rejects(
+      startXLayerPublicServer(
+        { ...options, runtimeDeployments: [first, { ...options.runtimeDeployments[1]!, dbPath: path }] },
+        {
+          createRpc: () => {
+            assert.fail('aliases must fail before resource creation');
+          },
+        },
+      ),
+      /INVALID_PUBLIC_STORAGE/,
+    );
+  }
+  assert.equal(existsSync(first.dbPath), false);
 });
 
 test('SQLite symlink sidecars are rejected before runtime construction', async (t) => {

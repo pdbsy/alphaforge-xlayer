@@ -89,14 +89,16 @@ function validateStorage(inputs: readonly DeployedRuntimeInput[], webRoot?: stri
     for (const input of inputs) {
       if (typeof input.dbPath !== 'string' || !isAbsolute(input.dbPath)) throw new Error();
       const path = join(realpathSync(dirname(input.dbPath)), basename(input.dbPath));
-      if (paths.has(path)) throw new Error();
-      paths.add(path);
       if (publicRoot) {
         const rel = relative(publicRoot, path);
         if (rel === '' || (!rel.startsWith('..' + '/') && !rel.startsWith('..' + '\\') && !isAbsolute(rel)))
           throw new Error();
       }
       for (const suffix of ['', '-wal', '-shm', '-journal']) {
+        // Reserve sidecar names too, including aliases on case-insensitive hosts.
+        const canonicalName = (path + suffix).toLowerCase();
+        if (paths.has(canonicalName)) throw new Error();
+        paths.add(canonicalName);
         const stat = lstatSync(path + suffix, { throwIfNoEntry: false });
         if (!stat) continue;
         const id = `${stat.dev}:${stat.ino}`;
