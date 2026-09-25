@@ -626,3 +626,40 @@ test('identity registry and bootstrap reject unrecognized state and malformed id
   for (const patch of [{ branch: null }, { prTitle: 42 }, { prTitle: '[Macbeth99][AF-SETUP] Check' }])
     assert.throws(() => validateCommitIdentity({ ...commit, ...patch }));
 });
+
+test('XLayer assignments require the exact branch, agent and task without granting prefix privileges', () => {
+  const assignments = [
+    ['codex/xlayer-r2', 'XLayerPM', 'AF-XLAYER-R2', 'XLayer', 'Manager-ID'],
+    ['macbeth03/xlayer-r2-adapter', 'Macbeth03', 'AF-XLAYER-R2-03-ADAPTER', 'Macbeth03', 'Agent-ID'],
+    ['macbeth03/xlayer-r2-public-startup', 'Macbeth03', 'AF-XLAYER-R2-03-ADAPTER', 'Macbeth03', 'Agent-ID'],
+    ['macbeth04/xlayer-r2-ui', 'Macbeth04', 'AF-XLAYER-R2-04-UI', 'Macbeth04', 'Agent-ID'],
+    ['codex/xlayer-r2-contracts', 'Temp-A', 'AF-XLAYER-R2-CONTRACTS', 'Temp-A', 'Agent-ID'],
+    ['codex/xlayer-r2-ci', 'TempB', 'AF-XLAYER-R2-TEMPB', 'TempB', 'Agent-ID'],
+    ['macbeth06/xlayer-r2-ci', 'Macbeth06', 'AF-XLAYER-R2-06-CI', 'Macbeth06', 'Agent-ID'],
+  ];
+  for (const [branch, agent, task, label, trailer] of assignments) {
+    const valid = {
+      branch,
+      subject: `[${label}][${task}] Assigned change`,
+      body: `${trailer}: ${agent}\nTask-ID: ${task}`,
+      prTitle: `[${label}][${task}] Assigned change`,
+    };
+    assert.deepEqual(validateCommitIdentity(valid), { agentId: agent, taskId: task });
+    for (const patch of [
+      { branch: `${branch}-unassigned` },
+      { body: `${trailer}: ${agent}\nTask-ID: AF-XLAYER-R2-OTHER` },
+      { body: `${trailer}: ${agent}\nTask-ID: ${task}\n${trailer}: ${agent}` },
+      { body: `Agent-ID: Macbeth01\nTask-ID: ${task}` },
+      { prTitle: `[Macbeth01][${task}] Forged manager` },
+      { subject: `[${label}][AF-OTHER] Wrong task` },
+    ])
+      assert.throws(() => validateCommitIdentity({ ...valid, ...patch }));
+  }
+  assert.throws(() =>
+    validateCommitIdentity({
+      branch: 'macbeth03/other',
+      subject: '[Macbeth03][AF-XLAYER-R2-04-UI] Foreign task',
+      body: 'Agent-ID: Macbeth03\nTask-ID: AF-XLAYER-R2-04-UI',
+    }),
+  );
+});

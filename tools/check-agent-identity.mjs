@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
-import { agentForBranch, MANAGER_INTEGRATIONS } from './agent-identity.mjs';
+import { agentForBranch, MANAGER_INTEGRATIONS, XLAYER_ASSIGNMENTS } from './agent-identity.mjs';
 import { validateCommitSetIdentity } from './agent-identity-set.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
@@ -31,7 +31,7 @@ export function commitsInRange(base, head) {
       return { sha, subject, body };
     });
 }
-export function check() {
+export async function check() {
   const event = eventPayload();
   const eventName = process.env.GITHUB_EVENT_NAME || 'local';
   const pull = eventName === 'pull_request' ? event.pull_request : null;
@@ -69,6 +69,7 @@ export function check() {
     );
     if (
       manifestHistory ||
+      range.some((commit) => /^Task-ID:\s*AF-XLAYER-R2\s*$/m.test(commit.body)) ||
       range.some((commit) =>
         MANAGER_INTEGRATIONS.some(
           ({ task }) =>
@@ -78,6 +79,29 @@ export function check() {
       )
     )
       throw new Error('Integration merge queue is not authorized without trusted PR/source binding');
+  }
+  if (XLAYER_ASSIGNMENTS.some((profile) => profile.branch === branch)) {
+    if (
+      (eventName !== 'local' && process.env.GITHUB_REPOSITORY !== 'pdbsy/alphaforge-xlayer') ||
+      (pull &&
+        (pull.head.ref !== branch ||
+          pull.head.sha !== head ||
+          pull.base.ref !== 'master' ||
+          pull.head.repo?.full_name !== 'pdbsy/alphaforge-xlayer' ||
+          pull.base.repo?.full_name !== 'pdbsy/alphaforge-xlayer'))
+    )
+      throw new Error('XLayer requires canonical head/base repository and refs');
+    const { verifyXLayerIntegration } = await import('./xlayer-integration-identity.mjs');
+    const result = verifyXLayerIntegration(root, {
+      branch,
+      head: git('rev-parse', '--verify', `${head}^{commit}`),
+      prTitle,
+      pullBase: pull?.base ?? null,
+    });
+    console.log(
+      `XLayer identity: ${result.verified} records verified; ${result.imported} retained source records and ${result.own} assigned owner records`,
+    );
+    return result;
   }
   if (MANAGER_INTEGRATIONS.some((profile) => profile.branch === branch)) {
     if (
