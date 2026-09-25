@@ -120,3 +120,57 @@ test('provider errors are reported as sanitized connectivity failures and never 
     return true;
   });
 });
+
+test('live reads reject malformed quantities, block identities and deployment options', async () => {
+  for (const chain of ['not-hex', '0x01']) {
+    const provider = new Provider();
+    provider.chain = chain;
+    await assert.rejects(readM3VaultLiveSnapshot(provider, options), /M3_LIVE_READ_FAILED/);
+  }
+  const zeroChain = new Provider();
+  zeroChain.chain = '0x0';
+  await assert.rejects(readM3VaultLiveSnapshot(zeroChain, options), /M3_LIVE_WRONG_CHAIN/);
+
+  const malformedBlock = new Provider();
+  const request = malformedBlock.request.bind(malformedBlock);
+  malformedBlock.request = (input) =>
+    input.method === 'eth_getBlockByNumber' ? Promise.resolve(null) : request(input);
+  await assert.rejects(readM3VaultLiveSnapshot(malformedBlock, options), /M3_LIVE_READ_FAILED/);
+
+  await assert.rejects(
+    readM3VaultLiveSnapshot(new Provider(), { ...options, chainId: 1 as 46_630 }),
+    /M3_LIVE_READ_FAILED/,
+  );
+  await assert.rejects(
+    readM3VaultLiveSnapshot(new Provider(), {
+      ...options,
+      vaultAddress: asAddress('0x0000000000000000000000000000000000000000'),
+    }),
+    /M3_LIVE_READ_FAILED/,
+  );
+});
+
+for (const chainId of [1952, 46630] as const) {
+  test(`live snapshot pins selected chain ${chainId} before and after canonical reads`, async () => {
+    const selected = { chainId, vaultAddress: VAULT };
+    const provider = new Provider();
+    provider.chain = `0x${chainId.toString(16)}`;
+    assert.equal((await readM3VaultLiveSnapshot(provider, selected)).chainId, chainId);
+    assert.equal(provider.chainReads, 2);
+    for (const foreign of [195, 196, chainId === 1952 ? 46630 : 1952]) {
+      const wrong = new Provider();
+      wrong.chain = `0x${foreign.toString(16)}`;
+      await assert.rejects(readM3VaultLiveSnapshot(wrong, selected), /M3_LIVE_WRONG_CHAIN/);
+      assert.equal(wrong.calls.length, 1);
+      const changed = new Provider();
+      const request = changed.request.bind(changed);
+      changed.chain = `0x${chainId.toString(16)}`;
+      changed.request = (input) => {
+        if (input.method === 'eth_chainId' && changed.chainReads > 0)
+          changed.chain = `0x${foreign.toString(16)}`;
+        return request(input);
+      };
+      await assert.rejects(readM3VaultLiveSnapshot(changed, selected), /M3_LIVE_WRONG_CHAIN/);
+    }
+  });
+}

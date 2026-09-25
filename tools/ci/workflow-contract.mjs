@@ -6,6 +6,18 @@ const node = 'actions/setup-node@820762786026740c76f36085b0efc47a31fe5020';
 const python = 'actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c';
 export function validateCIGateWorkflows(text) {
   const workflow = parse(text);
+  for (const jobId of ['verify', 'verify-windows', 'verify-macos']) {
+    const steps = workflow.jobs?.[jobId]?.steps ?? [];
+    const evidence = steps.filter((step) => step.run === 'node tools/fetch-xlayer-source.mjs');
+    const index = steps.indexOf(evidence[0]);
+    if (
+      evidence.length !== 1 ||
+      Object.keys(evidence[0]).some((key) => !['name', 'run'].includes(key)) ||
+      steps[index - 1]?.run !== 'node tools/check-environment.mjs --ci' ||
+      steps[index + 1]?.run !== 'npm ci --ignore-scripts'
+    )
+      throw new Error(`Invalid immutable source evidence step: ${jobId}`);
+  }
   for (const [jobId, runner, command] of [
     ['contracts-m3-macos', 'macos-15', 'node tools/ci/verify-contracts.mjs'],
     ['source-policy-js', 'ubuntu-24.04', 'node tools/ci/check-source-policy.mjs'],

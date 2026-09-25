@@ -1,5 +1,6 @@
 // Explicit manager integration assignments; never infer privilege from a prefix.
 export const MANAGER_INTEGRATIONS = Object.freeze([
+  Object.freeze({ branch: 'macbeth01/m3-phase1-closeout', task: 'M3-01-PHASE1-CLOSEOUT' }),
   Object.freeze({ branch: 'macbeth01/AF-M3-CLOSEOUT', task: 'AF-M3-CLOSEOUT' }),
   Object.freeze({
     branch: 'macbeth01/m3-partial-onchain-integration',
@@ -7,6 +8,41 @@ export const MANAGER_INTEGRATIONS = Object.freeze([
   }),
 ]);
 
+// Current XLayer assignments are exact tuples, separate from the historical registry.
+export const XLAYER_ASSIGNMENTS = Object.freeze(
+  [
+    { branch: 'codex/xlayer-r2', agent: 'XLayerPM', task: 'AF-XLAYER-R2', label: 'XLayer' },
+    {
+      branch: 'macbeth03/xlayer-r2-adapter',
+      agent: 'Macbeth03',
+      task: 'AF-XLAYER-R2-03-ADAPTER',
+      label: 'Macbeth03',
+    },
+    {
+      branch: 'macbeth03/xlayer-r2-public-startup',
+      agent: 'Macbeth03',
+      task: 'AF-XLAYER-R2-03',
+      label: 'XLayer',
+      base: '1285830766bf1b410e1f4450b883e03863e2438a',
+    },
+    { branch: 'macbeth04/xlayer-r2-ui', agent: 'Macbeth04', task: 'AF-XLAYER-R2-04-UI', label: 'Macbeth04' },
+    {
+      branch: 'macbeth04/xlayer-r2-ui-corrected',
+      agent: 'Macbeth04',
+      task: 'AF-XLAYER-R2-04-UI',
+      label: 'Macbeth04',
+    },
+    { branch: 'codex/xlayer-r2-contracts', agent: 'Temp-A', task: 'AF-XLAYER-R2-CONTRACTS', label: 'Temp-A' },
+    {
+      branch: 'codex/xlayer-r2-ci',
+      agent: 'TempB',
+      task: 'AF-XLAYER-R2-TEMPB',
+      label: 'TempB',
+      base: '653cd5ed7e97dd4286d98f220c9792a13bf5f664',
+    },
+    { branch: 'macbeth06/xlayer-r2-ci', agent: 'Macbeth06', task: 'AF-XLAYER-R2-06-CI', label: 'Macbeth06' },
+  ].map(Object.freeze),
+);
 const AGENTS = [1, 2, 3, 4, 5, 6].map((number) => `Macbeth0${number}`);
 const AGENT_SET = new Set(AGENTS);
 const WORKSPACE_STATUSES = new Set(['NOT_STARTED', 'CONFIG_PREPARED', 'WORKSPACE_PREPARED', 'BLOCKED']);
@@ -24,11 +60,15 @@ const LEGACY_TASK_PATTERN = /^AF-[A-Z0-9]+(?:-[A-Z0-9]+)*$/;
 
 export function agentForBranch(branch) {
   if (typeof branch !== 'string') return null;
+  const assigned = XLAYER_ASSIGNMENTS.find((entry) => entry.branch === branch);
+  if (assigned) return assigned.agent;
   const match = branch.match(/^(?:macbeth(0[1-6])|(0[2-6]))\//);
   return match ? `Macbeth${match[1] ?? match[2]}` : null;
 }
 
 export function taskMatchesAgent(task, agentId) {
+  if (typeof task === 'string' && /^AF-XLAYER(?:-|$)/.test(task))
+    return XLAYER_ASSIGNMENTS.some((entry) => entry.task === task && entry.agent === agentId);
   if (typeof task !== 'string' || !AGENT_SET.has(agentId)) return false;
   if (LEGACY_TASK_PATTERN.test(task)) return true;
   const match = task.match(/^M3-(0[1-6])-[A-Z0-9]+(?:-[A-Z0-9]+)*$/);
@@ -99,6 +139,31 @@ function oneMatch(text, pattern, label) {
 export function validateCommitProvenance({ subject, body }) {
   for (const [label, value] of Object.entries({ subject, body }))
     if (typeof value !== 'string' || !value.trim()) fail(`${label} is required`);
+  if (
+    /\[(?:XLayer|Temp-?A|TempB)\]/i.test(subject) ||
+    /^Manager-ID:/im.test(body) ||
+    /^Task-ID:\s*AF-XLAYER(?:-|\s*$)/im.test(body)
+  ) {
+    const taskId = oneMatch(body, /^Task-ID:\s*(\S+)\s*$/gm, 'commit body Task-ID');
+    const profile = XLAYER_ASSIGNMENTS.find((entry) => entry.task === taskId);
+    if (!profile) fail('unassigned XLayer task');
+    const manager = profile.agent === 'XLayerPM';
+    const agentId = oneMatch(
+      body,
+      manager ? /^Manager-ID:\s*(\S+)\s*$/gm : /^Agent-ID:\s*(\S+)\s*$/gm,
+      'commit identity',
+    );
+    if (agentId !== profile.agent || (manager ? /^Agent-ID:/im : /^Manager-ID:/im).test(body))
+      fail('XLayer identity does not match assignment');
+    if (
+      !subject.startsWith(`[${profile.label}][${taskId}] `) ||
+      !subject.slice(`[${profile.label}][${taskId}] `.length).trim()
+    )
+      fail('XLayer subject does not match assignment');
+    if ([...subject.matchAll(/\[(?:Macbeth\d{2}|XLayer|Temp-?A|TempB)\]/g)].length !== 1)
+      fail('ambiguous XLayer subject identity');
+    return { agentId, taskId };
+  }
   const subjectAgent = oneMatch(subject, /\[(Macbeth\d{2})\]/g, 'commit subject Agent-ID');
   const bodyAgent = oneMatch(body, /^Agent-ID:\s*(\S+)\s*$/gm, 'commit body Agent-ID');
   const bodyTask = oneMatch(body, /^Task-ID:\s*(\S+)\s*$/gm, 'commit body Task-ID');
@@ -117,6 +182,19 @@ export function validateCommitIdentity({ branch, prTitle = null, subject, body }
   if (!branchAgent) fail('branch must use a registered worker prefix');
   const { agentId, taskId: bodyTask } = validateCommitProvenance({ subject, body });
   if (agentId !== branchAgent) fail('branch and commit agent do not match');
+  const xlayer = XLAYER_ASSIGNMENTS.find((entry) => entry.branch === branch);
+  if (xlayer || bodyTask.startsWith('AF-XLAYER')) {
+    if (!xlayer || xlayer.agent !== agentId || xlayer.task !== bodyTask)
+      fail('XLayer branch/task is not assigned');
+    if (
+      prTitle !== null &&
+      (typeof prTitle !== 'string' ||
+        !prTitle.startsWith(`[${xlayer.label}][${bodyTask}] `) ||
+        !prTitle.slice(`[${xlayer.label}][${bodyTask}] `.length).trim())
+    )
+      fail('XLayer PR title does not match assignment');
+    return { agentId, taskId: bodyTask };
+  }
   if (prTitle !== null) {
     if (typeof prTitle !== 'string') fail('PR title must be text');
     const match = prTitle.match(/^\[(Macbeth\d{2})\]\[((?:AF|M3)-[A-Z0-9]+(?:-[A-Z0-9]+)*)\]\s+\S/);

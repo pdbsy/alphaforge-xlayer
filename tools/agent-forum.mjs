@@ -29,7 +29,7 @@ function githubUrl(value, { allowAnchor = true } = {}) {
   }
   if (url.origin !== 'https://github.com' || url.username || url.password)
     fail('GitHub URL must use the allowed origin');
-  if (!/^\/pdbsy\/quantpass-arbitrum-hackathon\/pull\/\d+$/.test(url.pathname))
+  if (!/^\/pdbsy\/alphaforge-xlayer\/pull\/\d+$/.test(url.pathname))
     fail('GitHub URL is outside the repository');
   if (url.search) fail('GitHub URL must not contain query parameters');
   if (!allowAnchor && url.hash) fail('related PR URL must not contain an anchor');
@@ -64,7 +64,7 @@ function owningAgent(value) {
   if (!branchAgent || !title || !taskMatchesAgent(title[2], title[1]))
     fail('PR does not have a registered worker identity');
   if (branchAgent !== title[1]) fail('PR branch and title identities disagree');
-  if (value.pr_head_repo !== 'pdbsy/quantpass-arbitrum-hackathon') fail('PR head repository is not trusted');
+  if (value.pr_head_repo !== 'pdbsy/alphaforge-xlayer') fail('PR head repository is not trusted');
   if (typeof value.pr_author !== 'string' || value.github_author !== value.pr_author)
     fail('message author does not own the source PR');
   return branchAgent;

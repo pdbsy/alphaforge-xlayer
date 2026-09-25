@@ -4,6 +4,8 @@ import { readFile, lstat } from 'node:fs/promises';
 import { resolve, relative, sep } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { verifiedPrototypeArtifacts } from './helpers/prototype-artifact.mjs';
+import { analyzeHtmlSource } from '../tools/html-source-ranges.mjs';
 const root = fileURLToPath(new URL('../', import.meta.url));
 const readJson = async (path) => JSON.parse(await readFile(resolve(root, path), 'utf8'));
 
@@ -36,18 +38,46 @@ test('migration inventory accounts for source versions and validates imported ar
       artifact.target_path,
     );
   }
-  const protectedUi = await readFile(resolve(root, 'apps/web/prototype/AlphaForge_v3_EN.html'));
-  assert.equal(
-    createHash('sha256').update(protectedUi).digest('hex'),
-    '949627bc39a2076de97d234546ce7bebabda6db330d22b423874063eb0243b45',
+  const prototype = await verifiedPrototypeArtifacts(root);
+  const record = manifest.artifacts.find(
+    (row) => row.target_path === 'apps/web/prototype/AlphaForge_v3_EN.html',
   );
+  assert.equal(record.original_sha256, prototype.originalSha256);
+  assert.equal(record.migrated_sha256, prototype.currentSha256);
+  assert.equal(record.subsequent_revisions.length, 5);
+  const prior = record.subsequent_revisions[0];
+  assert.equal(prior.commit, prototype.previousRepairCommit);
+  assert.equal(prior.previous_sha256, prototype.originalSha256);
+  assert.equal(prior.sha256, prototype.previousRepairedSha256);
+  const revision = record.subsequent_revisions[1];
+  assert.equal(revision.commit, prototype.repairCommit);
+  assert.equal(revision.previous_sha256, prototype.previousRepairedSha256);
+  assert.equal(revision.sha256, prototype.repairedSha256);
+  const publicEntry = record.subsequent_revisions[2];
+  assert.equal(publicEntry.commit, 'b637466a2e6eb767309fa92c7ff3c9f0995ead43');
+  assert.equal(publicEntry.previous_sha256, prototype.repairedSha256);
+  assert.equal(publicEntry.sha256, '09b1a8f92cf7d35c081f5daca78da2bde5b14adcd4260265aff11b9d5822e474');
+  const publicFix = record.subsequent_revisions[3];
+  assert.equal(publicFix.commit, prototype.publicReviewCommit);
+  assert.equal(publicFix.previous_sha256, publicEntry.sha256);
+  assert.equal(publicFix.sha256, prototype.publicSha256);
+  const wallet = record.subsequent_revisions[4];
+  assert.equal(wallet.commit, prototype.currentReviewCommit);
+  assert.equal(wallet.previous_sha256, publicFix.sha256);
+  assert.equal(wallet.sha256, prototype.currentSha256);
 });
 
 test('generated Forum uses external assets under the existing dashboard CSP', async () => {
   const page = await readFile(resolve(root, 'docs/management/dashboard/agent-forum.html'), 'utf8');
-  assert.match(page, /<script src="\.\/agent-forum-app\.js"><\/script>/);
+  const parsed = analyzeHtmlSource(page);
+  assert.equal(parsed.scripts.filter((script) => script.kind === 'inline').length, 0);
+  assert.deepEqual(
+    parsed.scripts.filter((script) => script.kind === 'external').map((script) => ({ ...script.attributes })),
+    [{ src: './agent-forum-app.js' }],
+  );
   assert.match(page, /href="\.\/agent-forum\.css"/);
-  assert.doesNotMatch(page, /unsafe-inline|<style>|<script>/);
+  assert.doesNotMatch(page, /unsafe-inline/);
+  assert.equal(parsed.styles.length, 0);
 });
 
 test('all eleven uncommitted Dashboard sources have explicit final dispositions', async () => {

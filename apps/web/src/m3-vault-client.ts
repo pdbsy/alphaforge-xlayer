@@ -1,3 +1,4 @@
+import { M3_ROBINHOOD_NETWORK, type M3ChainId, type M3Network } from './m3-network.ts';
 import {
   asAddress,
   asBlockHash,
@@ -31,7 +32,7 @@ export class M3VaultSubmissionFailure extends Error {
 
 export interface M3VaultSubmissionInput {
   readonly operationId: string;
-  readonly chainId: 46_630;
+  readonly chainId: M3ChainId;
   readonly owner: Address;
   readonly target: Address;
   readonly calldata: HexData;
@@ -53,7 +54,7 @@ export interface M3VaultSubmissionRecord extends M3VaultSubmissionInput {
 }
 
 export interface M3VaultSnapshot {
-  readonly chainId: 46_630;
+  readonly chainId: M3ChainId;
   readonly owner: Address;
   readonly contract: Address;
   readonly projectionKey: 'm3-vault';
@@ -78,6 +79,42 @@ export interface M3VaultSnapshot {
     trackedAfBtc: string;
     openTrackedPositionCount: string;
     closed: boolean;
+  }>;
+}
+
+export interface M3PassSnapshot {
+  readonly chainId: M3ChainId;
+  readonly owner: Address;
+  readonly contract: Address;
+  readonly projectionKey: 'm3-strategy-pass';
+  readonly blockNumber: string;
+  readonly blockHash: BlockHash;
+  readonly state: Readonly<{
+    owner: Address;
+    pass: Address;
+    strategyId: HexData;
+    decimals: 18;
+    balanceRaw: string;
+  }>;
+}
+
+export interface M3RuntimeStatusSnapshot {
+  readonly lastAttempt: 'NOT_RUN' | 'SUCCEEDED';
+  readonly errorCode: null;
+  readonly database: Readonly<{
+    status: 'HEALTHY';
+    schemaVersion: number;
+    integrity: 'OK';
+  }>;
+  readonly deployment: Readonly<{
+    chainId: M3ChainId;
+    contract: Address;
+    manifestDigest: BlockHash;
+    abiHash: BlockHash;
+    runtimeBytecodeHash: BlockHash;
+    strategyPassAddress: Address;
+    strategyPassAbiHash: BlockHash;
+    strategyPassRuntimeBytecodeHash: BlockHash;
   }>;
 }
 
@@ -112,7 +149,12 @@ function bytes32(value: unknown): HexData {
   return asHexData(value);
 }
 
-function snapshot(value: unknown, expectedOwner: Address): M3VaultSnapshot {
+function snapshot(
+  value: unknown,
+  expectedOwner: Address,
+  expectedChain: M3ChainId,
+  expectedContract?: Address,
+): M3VaultSnapshot {
   const row = exactObject(value, [
     'chainId',
     'owner',
@@ -143,14 +185,16 @@ function snapshot(value: unknown, expectedOwner: Address): M3VaultSnapshot {
     'closed',
   ]);
   const owner = address(row.owner);
+  const contract = address(row.contract);
   const stateOwner = address(state.owner);
   const strategyId = bytes32(state.strategyId);
   const passStrategyId = bytes32(state.passStrategyId);
   if (
-    row.chainId !== 46_630 ||
+    row.chainId !== expectedChain ||
     row.projectionKey !== 'm3-vault' ||
     typeof state.closed !== 'boolean' ||
     !sameAddress(owner, expectedOwner) ||
+    (expectedContract !== undefined && !sameAddress(contract, expectedContract)) ||
     !sameAddress(stateOwner, expectedOwner) ||
     strategyId.toLowerCase() !== passStrategyId.toLowerCase()
   )
@@ -182,13 +226,129 @@ function snapshot(value: unknown, expectedOwner: Address): M3VaultSnapshot {
     closed: state.closed,
   });
   return Object.freeze({
-    chainId: 46_630,
+    chainId: expectedChain,
     owner,
-    contract: address(row.contract),
+    contract,
     projectionKey: 'm3-vault',
     blockNumber: decimal(row.blockNumber),
     blockHash,
     state: normalizedState,
+  });
+}
+
+function passSnapshot(
+  value: unknown,
+  expectedOwner: Address,
+  expectedContract: Address,
+  expectedChain: M3ChainId,
+): M3PassSnapshot {
+  const row = exactObject(value, [
+    'chainId',
+    'owner',
+    'contract',
+    'projectionKey',
+    'blockNumber',
+    'blockHash',
+    'state',
+  ]);
+  const state = exactObject(row.state, ['owner', 'pass', 'strategyId', 'decimals', 'balanceRaw']);
+  const owner = address(row.owner);
+  const contract = address(row.contract);
+  const stateOwner = address(state.owner);
+  const pass = address(state.pass);
+  const strategyId = bytes32(state.strategyId);
+  if (
+    row.chainId !== expectedChain ||
+    row.projectionKey !== 'm3-strategy-pass' ||
+    !sameAddress(owner, expectedOwner) ||
+    !sameAddress(stateOwner, expectedOwner) ||
+    !sameAddress(contract, expectedContract) ||
+    !sameAddress(pass, expectedContract) ||
+    /^0x0{64}$/i.test(strategyId) ||
+    state.decimals !== 18
+  )
+    throw new M3VaultReadFailure();
+  let blockHash: BlockHash;
+  try {
+    blockHash = asBlockHash(String(row.blockHash));
+  } catch {
+    throw new M3VaultReadFailure();
+  }
+  return Object.freeze({
+    chainId: expectedChain,
+    owner,
+    contract,
+    projectionKey: 'm3-strategy-pass',
+    blockNumber: decimal(row.blockNumber),
+    blockHash,
+    state: Object.freeze({
+      owner: stateOwner,
+      pass,
+      strategyId,
+      decimals: 18,
+      balanceRaw: decimal(state.balanceRaw),
+    }),
+  });
+}
+
+function blockHash(value: unknown): BlockHash {
+  try {
+    return asBlockHash(String(value));
+  } catch {
+    throw new M3VaultReadFailure();
+  }
+}
+
+function runtimeStatus(
+  value: unknown,
+  expectedVault: Address,
+  expectedPass: Address,
+  expectedChain: M3ChainId,
+): M3RuntimeStatusSnapshot {
+  const row = exactObject(value, ['lastAttempt', 'errorCode', 'database', 'deployment']);
+  const database = exactObject(row.database, ['status', 'schemaVersion', 'integrity']);
+  const deployment = exactObject(row.deployment, [
+    'chainId',
+    'contract',
+    'manifestDigest',
+    'abiHash',
+    'runtimeBytecodeHash',
+    'strategyPassAddress',
+    'strategyPassAbiHash',
+    'strategyPassRuntimeBytecodeHash',
+  ]);
+  const contract = address(deployment.contract);
+  const strategyPassAddress = address(deployment.strategyPassAddress);
+  if (
+    !['NOT_RUN', 'SUCCEEDED'].includes(String(row.lastAttempt)) ||
+    row.errorCode !== null ||
+    database.status !== 'HEALTHY' ||
+    database.integrity !== 'OK' ||
+    !Number.isSafeInteger(database.schemaVersion) ||
+    Number(database.schemaVersion) < 1 ||
+    deployment.chainId !== expectedChain ||
+    !sameAddress(contract, expectedVault) ||
+    !sameAddress(strategyPassAddress, expectedPass)
+  )
+    throw new M3VaultReadFailure();
+  return Object.freeze({
+    lastAttempt: row.lastAttempt as M3RuntimeStatusSnapshot['lastAttempt'],
+    errorCode: null,
+    database: Object.freeze({
+      status: 'HEALTHY',
+      schemaVersion: database.schemaVersion as number,
+      integrity: 'OK',
+    }),
+    deployment: Object.freeze({
+      chainId: expectedChain,
+      contract,
+      manifestDigest: blockHash(deployment.manifestDigest),
+      abiHash: blockHash(deployment.abiHash),
+      runtimeBytecodeHash: blockHash(deployment.runtimeBytecodeHash),
+      strategyPassAddress,
+      strategyPassAbiHash: blockHash(deployment.strategyPassAbiHash),
+      strategyPassRuntimeBytecodeHash: blockHash(deployment.strategyPassRuntimeBytecodeHash),
+    }),
   });
 }
 
@@ -226,13 +386,13 @@ function operationId(
   return value;
 }
 
-function submissionInput(value: unknown): M3VaultSubmissionInput {
+function submissionInput(value: unknown, expectedChain: M3ChainId): M3VaultSubmissionInput {
   try {
     const row = exactObject(value, ['operationId', 'chainId', 'owner', 'target', 'calldata', 'txHash']);
-    if (row.chainId !== 46_630) throw new M3VaultSubmissionFailure();
+    if (row.chainId !== expectedChain) throw new M3VaultSubmissionFailure();
     return Object.freeze({
       operationId: operationId(row.operationId, M3VaultSubmissionFailure),
-      chainId: 46_630,
+      chainId: expectedChain,
       owner: asAddress(String(row.owner)),
       target: asAddress(String(row.target)),
       calldata: asHexData(String(row.calldata)),
@@ -256,14 +416,17 @@ function submissionRecord(value: unknown, expected: M3VaultSubmissionInput): M3V
       'txHash',
       'submittedAt',
     ]);
-    const identity = submissionInput({
-      operationId: row.operationId,
-      chainId: row.chainId,
-      owner: row.owner,
-      target: row.target,
-      calldata: row.calldata,
-      txHash: row.txHash,
-    });
+    const identity = submissionInput(
+      {
+        operationId: row.operationId,
+        chainId: row.chainId,
+        owner: row.owner,
+        target: row.target,
+        calldata: row.calldata,
+        txHash: row.txHash,
+      },
+      expected.chainId,
+    );
     if (
       identity.operationId !== expected.operationId ||
       !sameAddress(identity.owner, expected.owner) ||
@@ -345,21 +508,73 @@ function operationEvidence(value: unknown, expectedOperationId: string): Product
 }
 
 export class M3VaultApiClient {
+  readonly #chainId: M3ChainId;
   readonly #fetcher: typeof fetch;
+  readonly #vaultAddress: Address | null;
+  readonly #passAddress: Address | null;
 
-  constructor(fetcher: typeof fetch = fetch) {
-    this.#fetcher = fetcher;
+  constructor(
+    fetcher: typeof fetch = fetch,
+    contracts?: { readonly vaultAddress: Address; readonly passAddress: Address },
+    networkConfig: M3Network = M3_ROBINHOOD_NETWORK,
+  ) {
+    this.#chainId = networkConfig.chainId;
+    // Native browser fetch must not receive the client instance as its receiver.
+    this.#fetcher = (input, init) => fetcher(input, init);
+    this.#vaultAddress = contracts ? asAddress(contracts.vaultAddress) : null;
+    this.#passAddress = contracts ? asAddress(contracts.passAddress) : null;
   }
 
   async readSnapshot(owner: Address): Promise<M3VaultSnapshot> {
     try {
-      const response = await this.#fetcher(`/api/v1/chain/vaults/${owner}`, {
+      const path = this.#vaultAddress
+        ? `/api/v1/chain/vaults/${this.#vaultAddress}/${owner}`
+        : `/api/v1/chain/vaults/${owner}`;
+      const response = await this.#fetcher(`${path}?chainId=${this.#chainId}`, {
         method: 'GET',
         credentials: 'same-origin',
         headers: { Accept: 'application/json' },
       });
       if (!response.ok) throw new M3VaultReadFailure();
-      return snapshot(await response.json(), owner);
+      return snapshot(await response.json(), owner, this.#chainId, this.#vaultAddress ?? undefined);
+    } catch (error) {
+      if (error instanceof M3VaultReadFailure) throw error;
+      throw new M3VaultReadFailure();
+    }
+  }
+
+  async readPassSnapshot(owner: Address): Promise<M3PassSnapshot> {
+    try {
+      if (!this.#passAddress) throw new M3VaultReadFailure();
+      const response = await this.#fetcher(
+        `/api/v1/chain/passes/${this.#passAddress}/${owner}?chainId=${this.#chainId}`,
+        {
+          method: 'GET',
+          credentials: 'same-origin',
+          headers: { Accept: 'application/json' },
+        },
+      );
+      if (!response.ok) throw new M3VaultReadFailure();
+      return passSnapshot(await response.json(), owner, this.#passAddress, this.#chainId);
+    } catch (error) {
+      if (error instanceof M3VaultReadFailure) throw error;
+      throw new M3VaultReadFailure();
+    }
+  }
+
+  async readRuntimeStatus(): Promise<M3RuntimeStatusSnapshot> {
+    try {
+      if (!this.#vaultAddress || !this.#passAddress) throw new M3VaultReadFailure();
+      const response = await this.#fetcher(
+        `/api/v1/chain/runtime-status/${this.#vaultAddress}?chainId=${this.#chainId}`,
+        {
+          method: 'GET',
+          credentials: 'same-origin',
+          headers: { Accept: 'application/json' },
+        },
+      );
+      if (!response.ok) throw new M3VaultReadFailure();
+      return runtimeStatus(await response.json(), this.#vaultAddress, this.#passAddress, this.#chainId);
     } catch (error) {
       if (error instanceof M3VaultReadFailure) throw error;
       throw new M3VaultReadFailure();
@@ -368,7 +583,7 @@ export class M3VaultApiClient {
 
   async registerSubmission(input: M3VaultSubmissionInput): Promise<M3VaultSubmissionRecord> {
     try {
-      const normalized = submissionInput(input);
+      const normalized = submissionInput(input, this.#chainId);
       const response = await this.#fetcher('/api/v1/chain/operations', {
         method: 'POST',
         credentials: 'same-origin',
@@ -395,7 +610,7 @@ export class M3VaultApiClient {
       const normalizedOperationId = operationId(requestedOperationId, M3VaultReadFailure);
       const normalizedOwner = asAddress(owner);
       const response = await this.#fetcher(
-        `/api/v1/chain/operations/${normalizedOperationId}/evidence?owner=${normalizedOwner}`,
+        `/api/v1/chain/operations/${normalizedOperationId}/evidence?owner=${normalizedOwner}&chainId=${this.#chainId}`,
         {
           method: 'GET',
           credentials: 'same-origin',

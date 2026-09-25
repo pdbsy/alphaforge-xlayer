@@ -1,7 +1,11 @@
 name: CodeQL
 
-# Optional legacy integration; automatic gates are Semgrep CE, OSV and Gitleaks.
+# Public-repository analysis complements Semgrep CE, OSV and Gitleaks.
 on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
   workflow_dispatch:
 
 permissions:

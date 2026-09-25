@@ -1,3 +1,4 @@
+import type { M3ChainId } from './m3-network.ts';
 import type { Eip1193Provider } from './chain-wallet.ts';
 import type { M3VaultSnapshot } from './m3-vault-client.ts';
 import {
@@ -40,14 +41,14 @@ function block(value: unknown) {
 /** Read contract state directly; Account identity and indexer health never authorize this read. */
 export async function readM3VaultLiveSnapshot(
   provider: Eip1193Provider,
-  options: { readonly chainId: 46_630; readonly vaultAddress: Address },
+  options: { readonly chainId: M3ChainId; readonly vaultAddress: Address },
 ): Promise<M3VaultSnapshot> {
   try {
-    if (options.chainId !== 46_630 || /^0x0{40}$/i.test(options.vaultAddress))
+    if (![1952, 46_630].includes(options.chainId) || /^0x0{40}$/i.test(options.vaultAddress))
       throw new M3VaultLiveReadFailure('M3_LIVE_READ_FAILED');
     const vault = asAddress(options.vaultAddress);
     const assertChain = async () => {
-      if (quantity(await provider.request({ method: 'eth_chainId' })) !== 46_630n)
+      if (quantity(await provider.request({ method: 'eth_chainId' })) !== BigInt(options.chainId))
         throw new M3VaultLiveReadFailure('M3_LIVE_WRONG_CHAIN');
     };
     await assertChain();
@@ -129,7 +130,7 @@ export async function readM3VaultLiveSnapshot(
     if (canonical.number !== head.number || canonical.hash.toLowerCase() !== head.hash.toLowerCase())
       throw new M3VaultLiveReadFailure('M3_LIVE_CANONICAL_CHANGED');
     return Object.freeze({
-      chainId: 46_630,
+      chainId: options.chainId,
       owner,
       contract: vault,
       projectionKey: 'm3-vault',

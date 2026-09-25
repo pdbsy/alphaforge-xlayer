@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
+import { buildForumSnapshot, parseAgentMessages } from '../tools/agent-forum.mjs';
 import { renderForumPage } from '../tools/build-agent-forum.mjs';
 import { createFailureSnapshot, parseGithubRemote } from '../tools/sync-agent-forum.mjs';
 
@@ -23,17 +24,15 @@ test('forum renderer injects each asset once and makes snapshot JSON script-safe
 });
 
 test('GitHub collector accepts only the configured repository remote', () => {
+  assert.equal(parseGithubRemote('git@github.com:pdbsy/alphaforge-xlayer.git'), 'pdbsy/alphaforge-xlayer');
   assert.equal(
-    parseGithubRemote('git@github.com:pdbsy/quantpass-arbitrum-hackathon.git'),
-    'pdbsy/quantpass-arbitrum-hackathon',
-  );
-  assert.equal(
-    parseGithubRemote('https://github.com/pdbsy/quantpass-arbitrum-hackathon.git'),
-    'pdbsy/quantpass-arbitrum-hackathon',
+    parseGithubRemote('https://github.com/pdbsy/alphaforge-xlayer.git'),
+    'pdbsy/alphaforge-xlayer',
   );
   assert.throws(() => parseGithubRemote('git@github.com:pdbsy/quantpass.git'));
+  assert.throws(() => parseGithubRemote('https://github.com/pdbsy/quantpass-arbitrum-hackathon.git'));
   assert.throws(() => parseGithubRemote('git@github.com:other/repo.git'));
-  assert.throws(() => parseGithubRemote('https://evil.example/pdbsy/quantpass-arbitrum-hackathon.git'));
+  assert.throws(() => parseGithubRemote('https://evil.example/pdbsy/alphaforge-xlayer.git'));
 });
 
 test('failed sync preserves last trusted messages and records only a bounded generic error', () => {
@@ -56,7 +55,7 @@ test('PR11-P5 GitHub collector paginates comments beyond 100 and exposes hard bo
   const { collectGithubForum } = await import('../tools/sync-agent-forum.mjs');
   for (const count of [150, 600]) {
     const calls = [];
-    const result = await collectGithubForum('pdbsy/quantpass-arbitrum-hackathon', async (endpoint) => {
+    const result = await collectGithubForum('pdbsy/alphaforge-xlayer', async (endpoint) => {
       calls.push(endpoint);
       const url = new URL(endpoint, 'https://api.github.com/');
       const page = Number(url.searchParams.get('page'));
@@ -76,7 +75,7 @@ test('PR11-P5 GitHub collector paginates comments beyond 100 and exposes hard bo
 
 test('PR11-P5 bounded PR pagination and request budget report PARTIAL rather than silent OK', async () => {
   const { collectGithubForum } = await import('../tools/sync-agent-forum.mjs');
-  const result = await collectGithubForum('pdbsy/quantpass-arbitrum-hackathon', async (endpoint) => {
+  const result = await collectGithubForum('pdbsy/alphaforge-xlayer', async (endpoint) => {
     const url = new URL(endpoint, 'https://api.github.com/');
     if (!url.pathname.endsWith('/pulls')) return [];
     const page = Number(url.searchParams.get('page'));
@@ -85,4 +84,136 @@ test('PR11-P5 bounded PR pagination and request budget report PARTIAL rather tha
   assert.equal(result.pulls.length, 200);
   assert.equal(result.partial, true);
   assert.equal(result.calls, 40);
+});
+
+test('a missing or malformed previous Forum snapshot cannot invent trusted messages after sync failure', () => {
+  for (const previous of [undefined, null, {}, { source: {}, messages: {}, threads: 'bad' }]) {
+    const failure = createFailureSnapshot(previous, 'GitHub source unavailable');
+    assert.deepEqual(failure, {
+      schema_version: 1,
+      source: { state: 'ERROR', error: 'GitHub source unavailable', last_sync_at: null },
+      messages: [],
+      threads: [],
+    });
+  }
+});
+
+test('Forum collection rejects malformed or oversized pages without declaring partial results complete', async () => {
+  const { collectGithubForum } = await import('../tools/sync-agent-forum.mjs');
+  for (const page of [null, {}, Array.from({ length: 101 }, (_, index) => ({ number: index + 1 }))]) {
+    let calls = 0;
+    await assert.rejects(
+      collectGithubForum('pdbsy/alphaforge-xlayer', async () => {
+        calls++;
+        return page;
+      }),
+      /Invalid bounded GitHub page/,
+    );
+    assert.equal(calls, 1);
+  }
+});
+
+test('Forum rejects a complete header block without Body and never replaces a newer message with stale content', () => {
+  const url = 'https://github.com/pdbsy/alphaforge-xlayer/pull/22';
+  const headers = `[AGENT-MESSAGE]
+Schema-Version: 1
+Agent: Macbeth01
+To: Macbeth02
+Type: NOTICE
+Thread: M3-01-PHASE1-CLOSEOUT
+Reply-To: NONE
+Related-PR: ${url}`;
+  const record = {
+    source_type: 'PR_COMMENT',
+    source_url: `${url}#issuecomment-1`,
+    pr_url: url,
+    pr_number: 22,
+    github_author: 'pdbsy',
+    pr_author: 'pdbsy',
+    pr_head_ref: 'macbeth01/m3-phase1-closeout',
+    pr_title: '[Macbeth01][M3-01-PHASE1-CLOSEOUT] Local fixture',
+    pr_head_repo: 'pdbsy/alphaforge-xlayer',
+    created_at: '2026-09-22T01:00:00.000Z',
+    updated_at: '2026-09-22T03:00:00.000Z',
+    text: `${headers}\nBody:\nCurrent instruction\n[/AGENT-MESSAGE]`,
+  };
+  assert.throws(
+    () => parseAgentMessages({ ...record, text: `${headers}\n[/AGENT-MESSAGE]` }),
+    /missing required fields/,
+  );
+  const older = {
+    ...record,
+    updated_at: '2026-09-22T02:00:00.000Z',
+    text: record.text.replace('Current instruction', 'Stale instruction'),
+  };
+  for (const records of [
+    [record, older],
+    [older, record],
+  ]) {
+    const snapshot = buildForumSnapshot(records, { syncedAt: '2026-09-22T04:00:00.000Z' });
+    assert.equal(snapshot.source.state, 'OK');
+    assert.equal(snapshot.messages.length, 1);
+    assert.equal(snapshot.messages[0].body, 'Current instruction');
+    assert.equal(snapshot.messages[0].updated_at, record.updated_at);
+    assert.equal(snapshot.threads[0].last_updated_at, record.updated_at);
+  }
+});
+
+test('Forum rendering preserves historical source links while rejecting foreign and unsafe destinations', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const { runInNewContext } = await import('node:vm');
+  const urls = [
+    'https://github.com/pdbsy/quantpass-arbitrum-hackathon/pull/22#issuecomment-1',
+    'https://github.com/pdbsy/alphaforge-xlayer/pull/7',
+    'https://github.com/other/alphaforge-xlayer/pull/7',
+    'https://github.com/pdbsy/alphaforge-xlayer/pull/7?token=synthetic',
+    'https://user@github.com/pdbsy/alphaforge-xlayer/pull/7',
+    'javascript:alert(1)',
+  ];
+  const nodes = [];
+  const node = (tag) => {
+    const value = {
+      tag,
+      value: '',
+      children: [],
+      append(...children) {
+        this.children.push(...children);
+      },
+      replaceChildren() {
+        this.children = [];
+      },
+      addEventListener() {},
+    };
+    nodes.push(value);
+    return value;
+  };
+  const ids = new Map();
+  const get = (id) => {
+    if (!ids.has(id)) ids.set(id, node('div'));
+    return ids.get(id);
+  };
+  get('forum-snapshot').textContent = JSON.stringify({
+    source: { state: 'STALE', last_sync_at: null },
+    threads: [],
+    messages: urls.map((url) => ({
+      agent: 'Macbeth03',
+      type: 'NOTICE',
+      thread: 'AF-XLAYER-R2',
+      body: 'Preserved source',
+      related_pr: url,
+      source_url: url,
+    })),
+  });
+  runInNewContext(await readFile(new URL('../tools/agent-forum-app.js', import.meta.url), 'utf8'), {
+    URL,
+    document: { getElementById: get, createElement: node, createTextNode: (text) => ({ text }) },
+  });
+  assert.deepEqual(
+    nodes.filter((n) => n.tag === 'a').map((n) => n.href),
+    [urls[0], urls[0], urls[1], urls[1]],
+  );
+  for (const link of nodes.filter((n) => n.tag === 'a')) {
+    assert.equal(link.target, '_blank');
+    assert.equal(link.rel, 'noopener noreferrer');
+  }
 });

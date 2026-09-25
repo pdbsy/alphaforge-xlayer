@@ -1,9 +1,10 @@
 import { createHash } from 'node:crypto';
-import { mkdirSync, readFileSync, writeFileSync, unlinkSync } from 'node:fs';
+import { lstatSync, mkdirSync, readFileSync, writeFileSync, unlinkSync } from 'node:fs';
 import { join } from 'node:path';
 import { root, git, inspect, assertUnchanged, run, emit, main, cleanEnvironment } from './context.mjs';
 import { installScanner } from '../security/bootstrap.mjs';
 import { classifyGitleaks, decodeReport } from '../security/results.mjs';
+import { adjudicateGitleaksHistory, readGitleaksExceptionProof } from '../security/gitleaks-disposition.mjs';
 import { stageSources } from '../security/staging.mjs';
 
 function gitIn(cwd, args) {
@@ -41,7 +42,21 @@ export function historyCoverage(cwd) {
   return { refs, commits, refsSha256: createHash('sha256').update(JSON.stringify(refs)).digest('hex') };
 }
 
+export function assertNoSourceIgnore(target) {
+  // Gitleaks 8.30.1 reads source/.gitleaksignore in addition to the explicit
+  // --gitleaks-ignore-path. The approved history disposition is applied only
+  // after complete, unsuppressed scanning; source-controlled ignores cannot apply.
+  try {
+    lstatSync(join(target, '.gitleaksignore'));
+  } catch (error) {
+    if (error?.code === 'ENOENT') return;
+    throw new Error('Gitleaks source ignore path could not be verified', { cause: error });
+  }
+  throw new Error('Gitleaks source ignore files are not permitted');
+}
+
 function scan(tool, mode, target, reportName) {
+  assertNoSourceIgnore(target);
   const path = join(tool.directory, reportName);
   const args = [
     mode,
@@ -63,13 +78,15 @@ function scan(tool, mode, target, reportName) {
   if (mode === 'git') args.push('--log-opts=--all HEAD --full-history --root -m');
   args.push(target);
   const result = run(tool.binary, args, { cwd: tool.directory, env: tool.env, timeout: 330000 });
+  assertNoSourceIgnore(target);
   let text = '';
   try {
     text = readFileSync(path, 'utf8');
   } catch {
     /* absent report is BLOCKED */
   }
-  return { classification: classifyGitleaks({ ...result, report: decodeReport(text) }), text };
+  const scanValue = { ...result, report: decodeReport(text) };
+  return { classification: classifyGitleaks(scanValue), text, scanValue };
 }
 
 export function verifySecretCanary(tool) {
@@ -140,7 +157,12 @@ await main(import.meta.url, async () => {
     writeFileSync(join(tool.directory, 'gitleaks.toml'), '[extend]\nuseDefault = true\n');
     writeFileSync(join(tool.directory, 'empty-ignore'), '');
     const canary = verifySecretCanary(tool);
-    const historyResult = scan(tool, 'git', root, 'history.json').classification;
+    const historyScan = scan(tool, 'git', root, 'history.json');
+    const historyResult = historyScan.classification;
+    const historyDisposition = adjudicateGitleaksHistory(
+      historyScan.scanValue,
+      historyResult.state === 'FAIL' ? readGitleaksExceptionProof(root, historyScan.scanValue.report) : null,
+    );
     const source = join(tool.directory, 'source');
     mkdirSync(source);
     const coverage = stageSources(root, source, git('ls-files', '-z').split('\0').filter(Boolean));
@@ -149,9 +171,9 @@ await main(import.meta.url, async () => {
     if (JSON.stringify(history) !== JSON.stringify(after))
       throw new Error('History refs changed during Gitleaks scan');
     assertUnchanged(before, inspect());
-    const state = [historyResult.state, filesResult.state].includes('BLOCKED')
+    const state = [historyDisposition.state, filesResult.state].includes('BLOCKED')
       ? 'BLOCKED'
-      : [historyResult.state, filesResult.state].includes('FAIL')
+      : [historyDisposition.state, filesResult.state].includes('FAIL')
         ? 'FAIL'
         : 'PASS';
     emit({
@@ -166,6 +188,9 @@ await main(import.meta.url, async () => {
       refs: history.refs,
       refsSha256: history.refsSha256,
       history: historyResult,
+      historyDisposition,
+      historyReportSha256: createHash('sha256').update(historyScan.text).digest('hex'),
+      historyScannerExit: historyScan.scanValue.status,
       currentFiles: filesResult,
       boundary:
         'Pinned CLI default detectors on all locally fetched refs plus HEAD and tracked current files. No remote credential validity check; no coverage of unavailable/deleted remote refs or untracked personal files.',

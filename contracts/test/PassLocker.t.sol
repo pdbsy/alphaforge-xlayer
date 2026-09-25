@@ -4,6 +4,7 @@ pragma solidity 0.8.31;
 import { PassLocker } from "../src/PassLocker.sol";
 import { StrategyPass } from "../src/StrategyPass.sol";
 import { ReentrantPass } from "./mocks/ReentrantPass.sol";
+import { ConfigurableStrategyPass } from "./mocks/ConfigurableAsset.sol";
 
 interface LockerVm {
     function prank(address sender) external;
@@ -33,6 +34,29 @@ contract PassLockerTest {
         require(locker.lockedBalance() == 10 ether, "wrong locked accounting");
         require(pass.balanceOf(address(locker)) == 10 ether, "escrow did not receive Pass");
         require(pass.balanceOf(ALICE) == 90 ether, "owner free balance not reduced");
+    }
+
+    // Every immutable authority/custody dependency is required at construction.
+    function test_ConstructorRejectsZeroDependencies() public {
+        require(!_tryDeploy(address(0), ALICE, pass), "zero Vault accepted");
+        require(!_tryDeploy(address(this), address(0), pass), "zero owner accepted");
+        require(!_tryDeploy(address(this), ALICE, StrategyPass(address(0))), "zero Pass accepted");
+    }
+
+    // Real escrow balance may never fall below the amount already recorded as locked.
+    function test_EscrowDeficitRejectsAdditionalLockWithoutAccountingMutation() public {
+        ConfigurableStrategyPass burnable =
+            new ConfigurableStrategyPass("Burnable", "BURN", STRATEGY_ID, SUPPLY, ALICE);
+        PassLocker deficitLocker = new PassLocker(address(this), ALICE, burnable);
+        VM.prank(ALICE);
+        require(burnable.transfer(address(deficitLocker), 2 ether), "deficit funding failed");
+        deficitLocker.lock(2 ether);
+        burnable.forceBurn(address(deficitLocker), 1 ether);
+
+        (bool success,) = address(deficitLocker).call(abi.encodeCall(deficitLocker.lock, (1)));
+        require(!success, "deficit lock accepted");
+        require(deficitLocker.lockedBalance() == 2 ether, "deficit changed accounting");
+        require(burnable.balanceOf(address(deficitLocker)) == 1 ether, "deficit balance changed");
     }
 
     // Catches unlock paths that change accounting without returning the escrowed Pass.
@@ -152,6 +176,65 @@ contract PassLockerTest {
         require(pass.balanceOf(ALICE) == SUPPLY - remaining, "fuzz owner balance mismatch");
     }
 
+    // Rescue removes only unaccounted raw units and cannot spend a recorded lock.
+    function test_ExcessRescueRetainsLockedPassAndOnlyControllerCanCall() public {
+        _fundEscrow(10 ether + 1);
+        locker.lock(10 ether);
+        VM.prank(ALICE);
+        (bool unauthorized,) =
+            address(locker).call(abi.encodeWithSignature("rescueUntrackedPass()"));
+        require(!unauthorized, "owner bypassed Vault authority");
+        (bool success, bytes memory result) =
+            address(locker).call(abi.encodeWithSignature("rescueUntrackedPass()"));
+        require(success && abi.decode(result, (uint256)) == 1, "excess rescue failed");
+        require(locker.lockedBalance() == 10 ether, "excess rescue changed locked accounting");
+        require(pass.balanceOf(address(locker)) == 10 ether, "excess rescue spent locked Pass");
+        require(pass.balanceOf(ALICE) == SUPPLY - 10 ether, "excess went to wrong recipient");
+        (success, result) = address(locker).call(abi.encodeWithSignature("rescueUntrackedPass()"));
+        require(success && abi.decode(result, (uint256)) == 0, "empty excess should return zero");
+    }
+
+    function test_ExcessRescueRejectsDeficitWithoutChangingLock() public {
+        ConfigurableStrategyPass burnable =
+            new ConfigurableStrategyPass("Burnable", "BURN", STRATEGY_ID, SUPPLY, ALICE);
+        PassLocker deficitLocker = new PassLocker(address(this), ALICE, burnable);
+        VM.prank(ALICE);
+        require(burnable.transfer(address(deficitLocker), 2 ether), "funding failed");
+        deficitLocker.lock(2 ether);
+        burnable.forceBurn(address(deficitLocker), 1);
+        (bool success,) =
+            address(deficitLocker).call(abi.encodeWithSignature("rescueUntrackedPass()"));
+        require(!success, "deficit rescue accepted");
+        require(deficitLocker.lockedBalance() == 2 ether, "deficit rescue changed lock");
+        require(
+            burnable.balanceOf(address(deficitLocker)) == 2 ether - 1, "deficit rescue moved funds"
+        );
+    }
+
+    function test_ExcessRescueRejectsReentrantControllerCallback() public {
+        ReentrantPass malicious = new ReentrantPass(SUPPLY, ALICE);
+        attackLocker = new PassLocker(address(this), ALICE, malicious);
+        VM.prank(ALICE);
+        require(malicious.transfer(address(attackLocker), 10 ether + 1), "funding failed");
+        attackLocker.lock(10 ether);
+        malicious.configureCallback(address(this), abi.encodeCall(this.reenterExcessRescue, ()));
+        (bool success, bytes memory result) =
+            address(attackLocker).call(abi.encodeWithSignature("rescueUntrackedPass()"));
+        require(success && abi.decode(result, (uint256)) == 1, "excess rescue failed");
+        require(malicious.callbackAttempted(), "callback not attempted");
+        require(!malicious.callbackSucceeded(), "callback reentered rescue");
+        require(attackLocker.lockedBalance() == 10 ether, "callback changed lock");
+        require(
+            malicious.balanceOf(address(attackLocker)) == 10 ether, "callback spent locked Pass"
+        );
+    }
+
+    function reenterExcessRescue() external {
+        (bool success,) =
+            address(attackLocker).call(abi.encodeWithSignature("rescueUntrackedPass()"));
+        require(success, "nested rescue rejected");
+    }
+
     function reenterUnlock() external {
         attackLocker.unlock(1);
     }
@@ -159,5 +242,16 @@ contract PassLockerTest {
     function _fundEscrow(uint256 amount) private {
         VM.prank(ALICE);
         require(pass.transfer(address(locker), amount), "escrow funding failed");
+    }
+
+    function _tryDeploy(address vault_, address owner_, StrategyPass pass_)
+        private
+        returns (bool success)
+    {
+        try new PassLocker(vault_, owner_, pass_) returns (PassLocker) {
+            return true;
+        } catch {
+            return false;
+        }
     }
 }

@@ -27,7 +27,9 @@
       parsed.username ||
       parsed.password ||
       parsed.search ||
-      !/^\/pdbsy\/quantpass-arbitrum-hackathon\/pull\/\d+$/.test(parsed.pathname)
+      // Historical messages retain their original repository links. This display
+      // allowlist does not change the collector's current-repository trust rule.
+      !/^\/pdbsy\/(?:alphaforge-xlayer|quantpass-arbitrum-hackathon)\/pull\/\d+$/.test(parsed.pathname)
     )
       return el('span', '', '来源链接无效');
     const link = el('a', 'source-link', text);

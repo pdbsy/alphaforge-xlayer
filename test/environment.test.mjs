@@ -1,9 +1,17 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import fs from 'node:fs';
+import { syncBuiltinESMExports } from 'node:module';
 import { readFileSync, mkdtempSync, mkdirSync, symlinkSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { validateInputs, evaluate, overrideKinds, CONFIG } from '../tools/environment/policy.mjs';
+import {
+  validateInputs,
+  evaluate,
+  overrideKinds,
+  nativePackagesValid,
+  CONFIG,
+} from '../tools/environment/policy.mjs';
 import { validateReport, writeReport } from '../tools/environment/report.mjs';
 
 const root = new URL('../', import.meta.url);
@@ -55,6 +63,34 @@ const observation = () => ({
     'legacy-peer-deps': 'false',
   },
   commands: [],
+});
+
+test('empty and approved overrides stay clean while proxy, mirror and npm overrides are rejected', () => {
+  assert.deepEqual(overrideKinds({ NODE_OPTIONS: '', FNM_NODE_DIST_MIRROR: 'https://nodejs.org/dist' }), []);
+  assert.deepEqual(
+    overrideKinds({
+      FNM_NODE_DIST_MIRROR: 'https://example.invalid/node',
+      https_proxy: 'https://example.invalid/proxy',
+      npm_config_unreviewed_setting: 'synthetic',
+    }),
+    ['download-source', 'npm', 'proxy'],
+  );
+});
+
+test('environment policy rejects malformed native inventory and unsupported report inputs', () => {
+  for (const lock of [null, {}, { packages: null }, { packages: 'invalid' }])
+    assert.equal(nativePackagesValid(lock, 'linux', 'x64'), false);
+  assert.equal(nativePackagesValid({ packages: { '': {} } }, 'linux', 'x64'), true);
+  assert.throws(() => evaluate(inputs(), observation(), 'production'), /Invalid environment mode/);
+  const report = evaluate(inputs(), { ...observation(), platform: 'unrecognized', arch: 'unknown' }, 'ci');
+  assert.equal(report.exitCode, 1);
+  assert.equal(report.eligibleForEvidence, false);
+  assert.equal(report.platform, null);
+  assert.equal(report.arch, null);
+  const missingPorts = evaluate(inputs(), { ...observation(), ports: 'unknown' }, 'ci');
+  assert.equal(missingPorts.checks.find((item) => item.id === 'ports').status, 'BLOCKED');
+  assert.equal(missingPorts.exitCode, 2);
+  assert.equal(missingPorts.eligibleForEvidence, false);
 });
 
 test('exact input sources reject engine and root lock drift without mutation', () => {
@@ -182,6 +218,33 @@ test('reports enforce shape, freshness, exact tree and safe fixed destination', 
   }
 });
 
+test('failed atomic report writes preserve the prior report and remove their temporary file', (t) => {
+  const root = mkdtempSync(join(tmpdir(), 'alphaforge-report-atomic-'));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const report = evaluate(inputs(), observation(), 'ci');
+  const destination = writeReport(root, report);
+  const before = readFileSync(destination);
+  const original = fs.writeFileSync;
+  const hook = t.mock.method(fs, 'writeFileSync', (target, ...args) => {
+    if (typeof target === 'number') {
+      const failure = new Error('synthetic disk full');
+      failure.code = 'ENOSPC';
+      throw failure;
+    }
+    return original(target, ...args);
+  });
+  syncBuiltinESMExports();
+  try {
+    assert.throws(() => writeReport(root, report), { code: 'ENOSPC' });
+    assert.deepEqual(readFileSync(destination), before);
+    assert.deepEqual(fs.readdirSync(join(root, '.checks/environment')), ['report.json']);
+  } finally {
+    hook.mock.restore();
+    syncBuiltinESMExports();
+  }
+  assert.equal(writeReport(root, report), destination);
+});
+
 test('installed optional native packages must match the actual platform and CPU', async () => {
   const { nativePackagesValid } = await import('../tools/environment/policy.mjs');
   assert.equal(
@@ -247,4 +310,134 @@ test('Intel macOS is outside the user-approved platform scope', () => {
   o.arch = o.nativeArch = 'x64';
   o.job = 'verify-macos';
   assert.equal(evaluate(inputs(), o, 'ci').exitCode, 1);
+});
+
+test('environment report rejects forged eligibility, status and command evidence', () => {
+  const valid = evaluate(inputs(), observation(), 'ci');
+  for (const mutate of [
+    (r) => {
+      r.mode = 'production';
+    },
+    (r) => {
+      r.scope = 'mainnet';
+    },
+    (r) => {
+      r.remoteFreshness = 'PASS';
+    },
+    (r) => {
+      r.baseObservedAt = 'invalid';
+    },
+    (r) => {
+      r.lockSha256 = 'unbound';
+    },
+    (r) => {
+      r.platform = 'unknown';
+    },
+    (r) => {
+      r.arch = 'x86';
+    },
+    (r) => {
+      r.context = 'self-review';
+    },
+    (r) => {
+      r.generatedAt = new Date(Date.now() + 120000).toISOString();
+    },
+    (r) => {
+      r.checks[0].status = 'WARN';
+    },
+    (r) => {
+      r.checks[0].status = 'NOT_RUN';
+    },
+    (r) => {
+      r.checks[0].extra = true;
+    },
+    (r) => {
+      r.checks.at(-1).status = 'PASS';
+    },
+    (r) => {
+      r.eligibleForEvidence = false;
+    },
+    (r) => {
+      r.exitCode = 1;
+    },
+    (r) => {
+      r.head = null;
+    },
+    (r) => {
+      r.node = null;
+    },
+    (r) => {
+      r.commands = null;
+    },
+    (r) => {
+      r.commands = Array(81).fill({ id: 'git-version', exitCode: 0 });
+    },
+    (r) => {
+      r.commands = [{ id: 'unregistered', exitCode: 0 }];
+    },
+    (r) => {
+      r.commands = [{ id: 'git-version', exitCode: -1 }];
+    },
+    (r) => {
+      r.commands = [{ id: 'git-version', exitCode: 256 }];
+    },
+    (r) => {
+      r.commands = [{ id: 'git-version', exitCode: 0, stdout: 'untrusted' }];
+    },
+  ]) {
+    const report = structuredClone(valid);
+    mutate(report);
+    assert.throws(() => validateReport(report));
+  }
+  for (const key of ['head', 'tree', 'base', 'sourceHead', 'sourceTree', 'node', 'npm', 'git', 'image']) {
+    const report = structuredClone(valid);
+    report[key] = 'invalid';
+    assert.throws(() => validateReport(report));
+  }
+  assert.throws(() => validateReport(valid, { branch: 'fixture' }));
+  for (const status of ['FAIL', 'BLOCKED']) {
+    const report = structuredClone(valid);
+    report.checks[0].status = status;
+    report.exitCode = status === 'FAIL' ? 1 : 2;
+    report.eligibleForEvidence = false;
+    report.commands = [{ id: 'git-version', exitCode: null }];
+    report.head = null;
+    report.node = null;
+    assert.equal(validateReport(report), report);
+  }
+  const warning = evaluate(inputs(), { ...observation(), clean: false }, 'dev');
+  assert.equal(validateReport(warning).eligibleForEvidence, false);
+});
+
+test('environment writer refuses hard-linked or symlinked report destinations and safely replaces its own file', async (t) => {
+  const { linkSync } = await import('node:fs');
+  const dir = mkdtempSync(join(tmpdir(), 'alphaforge-report-destination-'));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  const report = evaluate(inputs(), observation(), 'ci');
+  const destination = writeReport(dir, report);
+  const original = readFileSync(destination, 'utf8');
+  const linked = join(dir, 'shared');
+  linkSync(destination, linked);
+  assert.throws(() => writeReport(dir, report), /environment report/);
+  assert.equal(readFileSync(linked, 'utf8'), original);
+  rmSync(destination);
+  symlinkSync(linked, destination);
+  assert.throws(() => writeReport(dir, report), /environment report/);
+  assert.equal(readFileSync(linked, 'utf8'), original);
+  rmSync(destination);
+  writeReport(dir, report);
+  const next = { ...report, generatedAt: new Date().toISOString() };
+  writeReport(dir, next);
+  assert.deepEqual(JSON.parse(readFileSync(destination, 'utf8')), next);
+  assert.equal(readFileSync(linked, 'utf8'), original);
+});
+
+test('XLayer admission accepts only the assigned repository policy', () => {
+  const candidate = inputs();
+  candidate.supply.repository = 'pdbsy/alphaforge-xlayer';
+  assert.doesNotThrow(() => validateInputs(candidate));
+  for (const repository of ['pdbsy/quantpass-arbitrum-hackathon', 'other/alphaforge-xlayer']) {
+    candidate.supply.repository = repository;
+    assert.throws(() => validateInputs(candidate), /environment inputs/);
+  }
 });

@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
 import {
+  checkSupplyChain,
   renderNpmSbom,
   validatePackageLock,
   validateSupplyChainPolicy,
@@ -16,6 +17,30 @@ const packageJson = JSON.parse(await readFile(new URL('../package.json', import.
 const lockfile = JSON.parse(await readFile(new URL('../package-lock.json', import.meta.url), 'utf8'));
 
 const engineeringWorkflow = await readFile(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8');
+const codeqlWorkflow = await readFile(new URL('../.github/workflows/codeql.yml', import.meta.url), 'utf8');
+
+test('real supply-chain entrypoint validates the repository without mutating the checkout', async () => {
+  const result = await checkSupplyChain();
+  assert.ok(result.packages > 0);
+  assert.ok(result.workflows >= 3);
+});
+
+test('workflow parser admits bounded null nodes and read access under a write ceiling', () => {
+  const withNullEnvironment = valid.replace(
+    'permissions:\n  contents: read',
+    'env:\npermissions:\n  contents: read',
+  );
+  assert.doesNotThrow(() => validateWorkflowText(ciPath, withNullEnvironment, policy));
+  const readOnlyCodeQL = codeqlWorkflow.replace('security-events: write', 'security-events: read');
+  assert.doesNotThrow(() => validateWorkflowText('.github/workflows/codeql.yml', readOnlyCodeQL, policy));
+});
+
+test('workflow parser rejects a real YAML document with no root node', () => {
+  assert.throws(
+    () => validateWorkflowText(ciPath, '---\n', policy),
+    /\.github\/workflows\/ci\.yml must be a mapping/,
+  );
+});
 
 test('supply-chain policy and npm lock are closed and produce deterministic SPDX', () => {
   assert.equal(validateSupplyChainPolicy(policy), policy);
@@ -31,6 +56,30 @@ test('supply-chain policy and npm lock are closed and produce deterministic SPDX
   assert.equal(parsed.spdxVersion, 'SPDX-2.3');
   assert.equal(parsed.packages.length, locked.length + 1);
   assert.match(parsed.documentNamespace, /\/sbom\/[0-9a-f]{64}$/);
+});
+
+test('SBOM preserves resolved packages when optional root dependency sections are absent', () => {
+  const candidate = structuredClone(lockfile);
+  const manifest = structuredClone(packageJson);
+  for (const field of ['dependencies', 'devDependencies', 'optionalDependencies']) {
+    delete manifest[field];
+    delete candidate.packages[''][field];
+  }
+  const locked = validatePackageLock(candidate, manifest, policy);
+  const sbom = JSON.parse(renderNpmSbom(candidate, manifest, policy));
+  assert.equal(sbom.packages.length, locked.length + 1);
+  assert.equal(
+    sbom.relationships.filter(
+      (row) => row.spdxElementId === 'SPDXRef-RootPackage' && row.relationshipType === 'DEPENDS_ON',
+    ).length,
+    0,
+  );
+  candidate.packages[''].dependencies = { 'unresolved-fixture-package': '1.0.0' };
+  manifest.dependencies = { 'unresolved-fixture-package': '1.0.0' };
+  assert.throws(
+    () => renderNpmSbom(candidate, manifest, policy),
+    /dependency unresolved-fixture-package is unresolved/,
+  );
 });
 
 test('npm lock validation rejects source, integrity, license and version drift', () => {
@@ -292,4 +341,18 @@ test('private CodeQL job has only read access to Actions metadata', async () => 
     () => validateWorkflowText(path, text.replace('      actions: read', '      actions: write'), policy),
     /Invalid supply-chain state/,
   );
+});
+
+test('XLayer supply policy binds generated SPDX to the destination repository', () => {
+  const candidate = structuredClone(policy);
+  candidate.repository = 'pdbsy/alphaforge-xlayer';
+  candidate.sbom.documentNamespaceBase = 'https://github.com/pdbsy/alphaforge-xlayer/sbom';
+  assert.doesNotThrow(() => validateSupplyChainPolicy(candidate));
+  const sbom = JSON.parse(renderNpmSbom(lockfile, packageJson, candidate));
+  assert.ok(sbom.documentNamespace.startsWith('https://github.com/pdbsy/alphaforge-xlayer/sbom/'));
+  for (const repository of ['pdbsy/quantpass-arbitrum-hackathon', 'other/alphaforge-xlayer']) {
+    assert.throws(() => validateSupplyChainPolicy({ ...candidate, repository }), /policy.repository/);
+  }
+  candidate.sbom.documentNamespaceBase = 'https://github.com/pdbsy/quantpass-arbitrum-hackathon/sbom';
+  assert.throws(() => validateSupplyChainPolicy(candidate), /SBOM namespace/);
 });

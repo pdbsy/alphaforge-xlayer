@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
+import { syncBuiltinESMExports } from 'node:module';
 import { performance } from 'node:perf_hooks';
 import test from 'node:test';
 
@@ -214,6 +216,10 @@ test('check report requires terminal records and matching completed state', () =
     ],
   };
   assert.equal(validateCheckReport(report), report);
+
+  const missingCommit = structuredClone(report);
+  delete missingCommit.commit;
+  assert.throws(() => validateCheckReport(missingCommit), /check report commit/);
 
   const incomplete = structuredClone(report);
   incomplete.complete = false;
@@ -1370,4 +1376,375 @@ test('redaction preserves repeated safe aliases while still terminating real cyc
   const redacted = redactValue({ primary: shared, repeated: shared });
   assert.deepEqual(redacted.primary, shared);
   assert.deepEqual(redacted.repeated, shared);
+});
+
+test('redaction bounds encoded JSON, oversized containers and Unicode log output', () => {
+  let deep = { public: 'end' };
+  for (let n = 0; n < 18; n++) deep = { nested: deep };
+  const deepResult = sanitizeLog(JSON.stringify(deep));
+  assert.match(deepResult, /MAX_DEPTH/);
+  assert.doesNotMatch(deepResult, /end/);
+  const array = JSON.parse(sanitizeLog(JSON.stringify(Array(1002).fill('public'))));
+  assert.equal(array.length, 1001);
+  assert.equal(array.at(-1), '[TRUNCATED 2 ITEMS]');
+  let encoded = 'public';
+  for (let n = 0; n < 10; n++) encoded = JSON.stringify(encoded);
+  assert.match(sanitizeLog(encoded), /REDACTED NESTED STRING/);
+  for (const limit of [0, 1, 5, 11, 12, 14, 20]) {
+    const result = sanitizeLog('界'.repeat(20), { maxBytes: limit });
+    assert.ok(Buffer.byteLength(result) <= limit);
+    assert.doesNotMatch(result, /\uFFFD/);
+  }
+  assert.equal(redactValue('public'.repeat(10), { maxStringLength: 5 }), '[TRUN');
+});
+
+test('structured metadata preserves safe nulls and diagnostic codes while rejecting inherited credentials', () => {
+  const record = Object.assign(Object.create({ inherited: 'must-not-appear' }), {
+    authStatus: null,
+    authEnabled: null,
+    token: 'local-fixture-marker',
+    descriptor: { key: 'code', value: 'DATA_SOURCE_ERROR' },
+    emptyScheme: { bearer: '' },
+  });
+  assert.deepEqual(redactValue(record), {
+    authStatus: null,
+    authEnabled: null,
+    token: '[REDACTED]',
+    descriptor: { key: 'code', value: 'DATA_SOURCE_ERROR' },
+    emptyScheme: { bearer: '' },
+  });
+  const quoted = redactValue({ "'code'": 'local-fixture-marker' });
+  assert.doesNotMatch(JSON.stringify(quoted), /local-fixture-marker/);
+});
+
+test('nested URL and malformed JSON boundaries never reveal embedded credentials', () => {
+  let nested = 'https://service.example.test/?token=local-fixture-marker';
+  for (let n = 0; n < 6; n++) nested = `https://service.example.test/?next=${encodeURIComponent(nested)}`;
+  const result = sanitizeLog(nested);
+  assert.doesNotMatch(result, /local-fixture-marker/);
+  assert.match(decodeURIComponent(result), /REDACTED/);
+  assert.match(sanitizeLog('https://service.example.test/%E0%A4%A'), /REDACTED/);
+  for (const prefix of ['{]', '[}', '{"escaped":"a\\\\b"}', '['.repeat(65)]) {
+    const output = sanitizeLog(`${prefix} {"password":"local-fixture-marker"}`);
+    assert.doesNotMatch(output, /local-fixture-marker/);
+    assert.match(output, /REDACTED/);
+  }
+});
+
+test('credential redaction survives malformed CLI tails and quoted assignments without leaking payloads', () => {
+  const marker = 'local_fixture_payload_73';
+  for (const tail of [
+    '',
+    ' ',
+    ' --',
+    ' --9bad value',
+    ` --${'x'.repeat(257)} value`,
+    ' --status',
+    ' --status="ok"joined',
+    ' status=',
+    ` ${'x'.repeat(257)}=ok`,
+    ' status="ok" next="ok"',
+  ]) {
+    for (const prefix of [
+      '--token ',
+      '--token=',
+      "['token'] = ",
+      "'token' = ",
+      'token = ',
+      'authorization: Bearer ',
+    ]) {
+      const result = sanitizeLog(`${prefix}${marker}${tail}`);
+      assert.doesNotMatch(result, new RegExp(marker), `${prefix} + ${tail}`);
+      assert.match(result, /REDACTED/);
+    }
+  }
+  for (const input of [
+    "['bearer'] = '' status=PASS",
+    "['authEnabled'] = true status=PASS",
+    "['authEnabled'] = true unstructured trailing payload",
+    'authMethod=bearer --status ok --mode public',
+  ])
+    assert.doesNotMatch(sanitizeLog(input), /undefined|\uFFFD/);
+  const nested = Array.from(
+    { length: 33 },
+    (_, n) => `https://service.example.test/${n}?token=${marker}`,
+  ).join(' ');
+  const result = sanitizeLog(`https://service.example.test/?next=${encodeURIComponent(nested)}`);
+  assert.doesNotMatch(result, new RegExp(marker));
+  assert.match(decodeURIComponent(result), /REDACTED/);
+});
+
+test('mixed assignment grammars redact the earliest credential regardless of matcher order', () => {
+  const forms = [
+    (value) => `--token=${value}`,
+    (value) => `--password ${value}`,
+    (value) => `'token' = ${value}`,
+    (value) => `"password": "${value}"`,
+    (value) => `token = ${value}`,
+    (value) => `client secret = ${value}`,
+    (value) => `['token'] = ${value}`,
+  ];
+  for (const first of forms) {
+    for (const second of forms) {
+      const input = `result=PASS ${first('fixture_payload_first_73')} ${second('fixture_payload_second_74')}`;
+      const output = sanitizeLog(input);
+      assert.doesNotMatch(output, /fixture_payload_(?:first_73|second_74)/, input);
+      assert.match(output, /^result=PASS /);
+      assert.match(output, /REDACTED/);
+    }
+  }
+});
+
+test('safe metadata exemptions require a complete bounded structured tail', () => {
+  const marker = 'fixture_payload_tail_91';
+  const invalid = [
+    `tokenCount=2 ${'a'.repeat(257)}=${marker}`,
+    'tokenCount=2 status=',
+    `command --tokenCount=2 --${'a'.repeat(257)} ${marker}`,
+    `command --tokenCount 2 --9invalid ${marker}`,
+    'command --tokenCount=2 --status=',
+    `command --tokenCount=2 --status? ${marker}`,
+    `command --tokenCount=2 --status=ok --${'a'.repeat(257)}=${marker}`,
+  ];
+  for (const input of invalid) {
+    const output = sanitizeLog(input);
+    assert.match(output, /REDACTED/, input);
+    assert.doesNotMatch(output, /fixture_payload_tail_91/);
+  }
+  for (const input of [
+    `tokenCount=2 ${'a'.repeat(256)}=public`,
+    `command --tokenCount=2 --${'a'.repeat(256)} public`,
+    'command --tokenCount=2 --authEnabled=true --status=ok',
+    'command --tokenCount 2 --authEnabled true --status ok',
+    'command --Bearer=disabled --status=ok',
+    'command --Bearer disabled --status ok',
+  ])
+    assert.equal(sanitizeLog(input), input, input);
+});
+
+test('snapshot PASS requires commit evidence even when the presentation omits an exit-code field', () => {
+  const snapshot = validSnapshot();
+  snapshot.tests.items = [
+    {
+      id: 'lint',
+      status: 'PASS',
+      source: '.checks/management/latest.json',
+      observedAt,
+      commit: 'a'.repeat(40),
+      evidence: '.checks/management/example/lint.log',
+    },
+  ];
+  assert.equal(validateDashboardSnapshot(snapshot), snapshot);
+  const missing = structuredClone(snapshot);
+  delete missing.tests.items[0].evidence;
+  assert.throws(() => validateDashboardSnapshot(missing), /PASS requires/);
+  const nonzero = structuredClone(snapshot);
+  nonzero.tests.items[0].exitCode = 1;
+  assert.throws(() => validateDashboardSnapshot(nonzero), /PASS requires exitCode 0/);
+});
+
+test('short standalone Basic and Bearer credentials are redacted with or without header labels', () => {
+  const basic = Buffer.from('user:pass').toString('base64');
+  const bearer = ['abcdef', '123456'].join('');
+  for (const [scheme, payload] of [
+    ['Basic', basic],
+    ['Basic', Buffer.from('a:').toString('base64')],
+    ['Bearer', bearer],
+    ['Bearer', 'abc'],
+  ]) {
+    for (const prefix of ['', 'upstream replied ', 'Authorization: ']) {
+      const output = sanitizeLog(`${prefix}${scheme} ${payload}`);
+      assert.equal(output.includes(payload), false, `${scheme} credential leaked without its header label`);
+      assert.match(output, /\[REDACTED\]/);
+    }
+  }
+  assert.equal(sanitizeLog(`upstream replied Bearer ${bearer} (401)`).includes(bearer), false);
+  for (const prose of ['Basic authentication remains disabled.', 'Bearer market conditions', 'OAuth x'])
+    assert.equal(sanitizeLog(prose), prose);
+});
+
+test('standalone credential boundaries include quoted responses and diagnostic suffixes', () => {
+  const basic = Buffer.from('user:pass').toString('base64');
+  for (const credential of [`Basic ${basic}`, 'Bearer abc']) {
+    for (const input of [
+      credential,
+      `${credential} (401)`,
+      `response "${credential}"`,
+      `${credential}, rejected`,
+      `${credential} status=401`,
+    ]) {
+      const output = sanitizeLog(input);
+      assert.equal(output.includes(credential.split(' ')[1]), false, 'standalone credential suffix leaked');
+      assert.match(output, /\[REDACTED\]/);
+    }
+  }
+  assert.equal(sanitizeLog('Basic authentication'), 'Basic authentication');
+  assert.match(sanitizeLog('Bearer support'), /\[REDACTED\]/);
+  assert.equal(sanitizeLog('authMethod=Bearer status=ok'), 'authMethod=Bearer status=ok');
+});
+
+test('redaction preserves safe values and rejects boundary-shaped credentials through both public APIs', () => {
+  const cases = [
+    {
+      id: 'safe-fragment',
+      input: 'https://service.example.test/#overview?view=public',
+      expected: 'https://service.example.test/#overview?view=public',
+    },
+    {
+      id: 'bare-cli-prefix',
+      input: 'command --tokenCount=2 --',
+      expected: 'command --[REDACTED KEY]=[REDACTED]',
+    },
+    {
+      id: 'empty-auth-key',
+      input: '=Bearer abcd1234-efgh',
+      expected: '=Bearer [REDACTED]',
+    },
+    {
+      id: 'nonword-auth-boundary',
+      input: '_authMethod=Bearer abcd1234-efgh',
+      expected: '_authMethod=Bearer [REDACTED]',
+    },
+    {
+      id: 'nonmetadata-key',
+      input: 'method=Bearer abcd1234-efgh',
+      expected: 'method=Bearer [REDACTED]',
+    },
+    {
+      id: 'cli-trailing-space',
+      input: 'command --tokenCount=2   ',
+      expected: 'command --tokenCount=2   ',
+    },
+    {
+      id: 'quoted-secret-container',
+      input: '"password"={not-json}',
+      expected: 'password= [REDACTED]',
+    },
+    {
+      id: 'empty-bracket-scalar',
+      input: 'object["password"]=',
+      expected: 'object["password"]=[REDACTED]',
+    },
+    {
+      id: 'short-punctuated-token',
+      input: 'Bearer abcd1234-efgh',
+      expected: 'Bearer [REDACTED]',
+    },
+    {
+      id: 'escaped-quoted-scalar',
+      input: '\\"password\\"=SYNTHETIC_REVIEW_MARKER',
+      expected: 'password= [REDACTED]',
+    },
+  ];
+  for (const { id, input, expected } of cases) {
+    assert.equal(sanitizeLog(input), expected, `${id}: log`);
+    assert.equal(redactValue(input, { maxStringLength: 262144 }), expected, `${id}: value`);
+  }
+});
+
+test('redaction rejects quoted short scheme payloads and preserves quoted explanatory prose', () => {
+  for (const quote of ['"', "'", '`']) {
+    for (const [scheme, token] of [
+      ['Basic', 'dXNlcjpwYXNz'],
+      ['Bearer', 'abc'],
+    ]) {
+      for (const tail of ['', ' status=401', ', denied']) {
+        const input = `upstream ${scheme} ${quote}${token}${quote}${tail}`;
+        for (const output of [sanitizeLog(input), redactValue(input)]) {
+          assert.doesNotMatch(output, new RegExp(token), input);
+          assert.match(output, /\[REDACTED\]/, input);
+        }
+      }
+    }
+    for (const prose of [
+      `Basic ${quote}authentication remains disabled${quote}`,
+      `Bearer ${quote}market conditions${quote}`,
+    ]) {
+      assert.equal(sanitizeLog(prose), prose);
+      assert.equal(redactValue(prose), prose);
+    }
+  }
+});
+
+test('redaction fails closed for quoted credential tails and line separators', () => {
+  const basic = Buffer.from('user:pass').toString('base64');
+  for (const tail of ['foo', '_tail', '/tail', '\u2028next', '\u2029next']) {
+    for (const quote of ['"', "'", '`']) {
+      for (const [scheme, token] of [
+        ['Basic', basic],
+        ['Bearer', 'abc'],
+      ]) {
+        const input = `${scheme} ${quote}${token}${quote}${tail}`;
+        for (const output of [sanitizeLog(input), redactValue(input)]) {
+          assert.doesNotMatch(output, new RegExp(token), input);
+          assert.match(output, /\[REDACTED\]/, input);
+        }
+      }
+    }
+  }
+});
+
+test('redaction preserves explicit truncation and maximum-depth boundaries', () => {
+  const truncated = redactValue('x'.repeat(5000), { maxStringLength: 32 });
+  assert.equal(truncated, `${'x'.repeat(21)}[TRUNCATED]`);
+  const nested = {};
+  let cursor = nested;
+  for (let index = 0; index < 10; index++) {
+    cursor.value = {};
+    cursor = cursor.value;
+  }
+  cursor.secret = 'SYNTHETIC_DEPTH_MARKER';
+  const bounded = redactValue(nested);
+  assert.match(JSON.stringify(bounded), /\[MAX_DEPTH\]/);
+  assert.doesNotMatch(JSON.stringify(bounded), /SYNTHETIC_DEPTH_MARKER/);
+});
+
+test('quoted Basic noncredentials retain prose while explicit authorization remains private', () => {
+  const harmless = Buffer.from('hello').toString('base64');
+  // This noncanonical encoding decodes a colon but fails canonical roundtrip.
+  const noncanonical = 'Oh==';
+  assert.equal(Buffer.from(noncanonical, 'base64').toString(), ':');
+  assert.notEqual(Buffer.from(noncanonical, 'base64').toString('base64'), noncanonical);
+  for (const token of [harmless, noncanonical]) {
+    for (const quote of ['"', "'", '`']) {
+      const prose = `Basic ${quote}${token}${quote} diagnostic`;
+      for (const sanitize of [sanitizeLog, redactValue]) {
+        assert.equal(sanitize(prose), prose);
+        assert.equal(sanitize(`Authorization: ${prose}`), 'Authorization: [REDACTED]');
+      }
+    }
+  }
+});
+
+test('a controlled URL marker nonce collision fails closed without inventing a URL', () => {
+  const original = crypto.randomUUID;
+  const nonce = 'c7d5c665-3083-48ae-af19-216941ceea52';
+  // Fault injection controls only the entropy boundary. Actual public parsing,
+  // marker lookup and redaction run unchanged; no coverage state is modified.
+  try {
+    crypto.randomUUID = () => nonce;
+    syncBuiltinESMExports();
+    const collision = `\0QUANTPASS_URL_${nonce}_S999\0`;
+    const input = `prefix ${collision} https://public.example.test/path`;
+    const expected = 'prefix [REDACTED URL] https://public.example.test/path';
+    assert.equal(sanitizeLog(input), expected);
+    assert.equal(redactValue(input), expected);
+  } finally {
+    crypto.randomUUID = original;
+    syncBuiltinESMExports();
+  }
+  assert.equal(crypto.randomUUID, original);
+});
+
+test('quoted challenge schemes redact opaque credentials without erasing short explanatory prose', () => {
+  const credential = ['fictional', 'challenge', 'payload', '123456'].join('-');
+  for (const scheme of ['Digest', 'DPoP', 'Negotiate', 'OAuth', 'Token']) {
+    for (const quote of ['"', "'", '`']) {
+      const privateValue = `${scheme} ${quote}${credential}${quote}`;
+      assert.equal(sanitizeLog(privateValue), `${scheme} [REDACTED]`);
+      assert.equal(redactValue({ message: privateValue }).message, `${scheme} [REDACTED]`);
+      const prose = `${scheme} ${quote}hello${quote} is an example`;
+      assert.equal(sanitizeLog(prose), prose);
+    }
+  }
 });

@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 
 const maximumGitOutputBytes = 4 * 1024 * 1024;
 const maximumTextBytes = 2 * 1024 * 1024;
-const maximumTotalTextBytes = 8 * 1024 * 1024;
+const maximumTotalTextBytes = 10 * 1024 * 1024;
 const maximumFiles = 10_000;
 const maximumStructuredDepth = 32;
 const maximumStructuredProperties = 10_000;
@@ -1230,6 +1230,10 @@ export async function scanPublicMetadata(root) {
       failures.push(`${file}: symbolic-link-not-allowed`);
       continue;
     }
+    if (!pathMetadata.isFile()) {
+      failures.push(`${file}: non-regular-file`);
+      continue;
+    }
     let resolved;
     try {
       resolved = await realpath(candidate);
@@ -1243,7 +1247,9 @@ export async function scanPublicMetadata(root) {
     }
     let handle;
     try {
-      handle = await open(candidate, constants.O_RDONLY | noFollow);
+      // A regular path can become a FIFO between lstat and open. Nonblocking
+      // open lets the handle identity/type checks reject it without a writer.
+      handle = await open(candidate, constants.O_RDONLY | noFollow | (constants.O_NONBLOCK ?? 0));
     } catch {
       failures.push(`${file}: unreadable-path`);
       continue;
@@ -1262,7 +1268,10 @@ export async function scanPublicMetadata(root) {
         failures.push(`${file}: path-changed-during-scan`);
         continue;
       }
-      if (!metadata.isFile()) continue;
+      if (!metadata.isFile()) {
+        failures.push(`${file}: non-regular-file`);
+        continue;
+      }
       if (metadata.size > BigInt(maximumTextBytes)) {
         failures.push(`${file}: text-file-too-large`);
         continue;

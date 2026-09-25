@@ -1,0 +1,1964 @@
+{
+  "schemaVersion": 1,
+  "status": "QUALIFIED_TOOL_BYTES_METHOD_ADMISSION_PENDING",
+  "node": "24.21.0",
+  "npm": "11.19.1",
+  "instrumenter": {
+    "name": "istanbul-lib-instrument",
+    "version": "6.0.3",
+    "sourceCommit": "1902c0d6830e82e6b7a6e4ea401f752334e5ba84"
+  },
+  "sourceMaps": {
+    "name": "istanbul-lib-source-maps",
+    "version": "5.0.6",
+    "sourceCommit": "9ac4dd7c6923a104acffd622e3c0e4c77b1c069b"
+  },
+  "instrumentation": {
+    "lockfile": "planning/coverage-instrumentation.package-lock.json",
+    "lockSha256": "b0cf3fd5d2f5eff84cc078b7c5360c1e427cd60777b61976b98e7fd82bb79903",
+    "packages": [
+      {
+        "name": "@babel/code-frame",
+        "version": "7.29.7",
+        "positions": ["node_modules/@babel/code-frame"],
+        "url": "https://registry.npmjs.org/@babel/code-frame/-/code-frame-7.29.7.tgz",
+        "integrity": "sha512-Aup7aUOfpbAUg2ROOJN6Iw5f9DMBlzu0mIkm/malLQFN/YQgO48wCj0Kxa3sEHJvPVFg7siR+qRInwXd2qhQKw==",
+        "sha256": "fa8b176fa0b5d1d72b41ad33443f1f4f75933157a45010dffb51719f40c19c67",
+        "bytes": 10384,
+        "license": "MIT",
+        "licenseInProductPolicy": true,
+        "licenseFiles": [
+          {
+            "file": "package/LICENSE",
+            "sha256": "117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76",
+            "bytes": 1106
+          }
+        ],
+        "repository": {
+          "type": "git",
+          "url": "https://github.com/babel/babel.git",
+          "directory": "packages/babel-code-frame"
+        },
+        "engines": {
+          "node": ">=6.9.0"
+        },
+        "scripts": {}
+      },
+      {
+        "name": "@babel/compat-data",
+        "version": "7.29.7",
+        "positions": ["node_modules/@babel/compat-data"],
+        "url": "https://registry.npmjs.org/@babel/compat-data/-/compat-data-7.29.7.tgz",
+        "integrity": "sha512-locTkQyKvwIEgBzVrn8693ebc97F2U8ZHjbXwDXJ5Fn2TCpNwTlKcaKLkdHop5c/icOFE7qt7Q9JC5hnKNa6Gg==",
+        "sha256": "0cf63b5ed704654bdc7574be035883b2eb3f8872c795a6b8dbb690cb7a3d54b9",
+        "bytes": 6658,
+        "license": "MIT",
+        "licenseInProductPolicy": true,
+        "licenseFiles": [
+          {
+            "file": "package/LICENSE",
+            "sha256": "117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76",
+            "bytes": 1106
+          }
+        ],
+        "repository": {
+          "type": "git",
+          "url": "https://github.com/babel/babel.git",
+          "directory": "packages/babel-compat-data"
+        },
+        "engines": {
+          "node": ">=6.9.0"
+        },
+        "scripts": {
+          "build-data": "./scripts/download-compat-table.sh && node ./scripts/build-data.mjs && node ./scripts/build-modules-support.mjs && node ./scripts/build-bugfixes-targets.mjs"
+        }
+      },
+      {
+        "name": "@babel/core",
+        "version": "7.29.7",
+        "positions": ["node_modules/@babel/core"],
+        "url": "https://registry.npmjs.org/@babel/core/-/core-7.29.7.tgz",
+        "integrity": "sha512-RgHBCvtjbOK2gXSNBNIkNoEc9qoVEtau3hj8gEqKQuL3HZAibKarWFEI3Lfm6EYKkLalOh8eSrj9b+ch9H/VBA==",
+        "sha256": "46dd458b3d2bc29daa0e9e01f13b399ab544a8013f27ac6c51b56b831c8a0ed3",
+        "bytes": 192830,
+        "license": "MIT",
+        "licenseInProductPolicy": true,
+        "licenseFiles": [
+          {
+            "file": "package/LICENSE",
+            "sha256": "117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76",
+            "bytes": 1106
+          }
+        ],
+        "repository": {
+          "type": "git",
+          "url": "https://github.com/babel/babel.git",
+          "directory": "packages/babel-core"
+        },
+        "engines": {
+          "node": ">=6.9.0"
+        },
+        "scripts": {}
+      },
+      {
+        "name": "semver",
+        "version": "6.3.1",
+        "positions": [
+          "node_modules/@babel/core/node_modules/semver",
+          "node_modules/@babel/helper-compilation-targets/node_modules/semver"
+        ],
+        "url": "https://registry.npmjs.org/semver/-/semver-6.3.1.tgz",
+        "integrity": "sha512-BR7VvDCVHO+q2xBEWskxS6DJE1qRnb7DxzUrogb71CWoSficBxYsiAGd+Kl0mmq/MprG9yArRkyrQxTO6XjMzA==",
+        "sha256": "3c9b042a38e099cbd00a9bd792042aefb62a70b3f0f1ba1a3cbddf07e5eb1230",
+        "bytes": 19093,
+        "license": "ISC",
+        "licenseInProductPolicy": true,
+        "licenseFiles": [
+          {
+            "file": "package/LICENSE",
+            "sha256": "4ec3d4c66cd87f5c8d8ad911b10f99bf27cb00cdfcff82621956e379186b016b",
+            "bytes": 765
+          }
+        ],
+        "repository": {
+          "type": "git",
+          "url": "https://github.com/npm/node-semver.git"
+        },
+        "engines": null,
+        "scripts": {
+          "test": "tap test/ --100 --timeout=30",
+          "lint": "echo linting disabled",
+          "postlint": "template-oss-check",
+          "template-oss-apply": "template-oss-apply --force",
+          "lintfix": "npm run lint -- --fix",
+          "snap": "tap test/ --100 --timeout=30",
+          "posttest": "npm run lint"
+        }
+      },
+      {
+        "name": "@babel/generator",
+        "version": "7.29.8",
+        "positions": ["node_modules/@babel/generator"],
+        "url": "https://registry.npmjs.org/@babel/generator/-/generator-7.29.8.tgz",
+        "integrity": "sha512-gZbepsdh3WDtgZKWL+vTPh71LSBrm/Y4/QDZBVCcYfmeTEEuoOYwlSy+G1StfJg+/Zy550u/3TATbm7qDbbMtg==",
+        "sha256": "b5ced4fd7c23a580549182676c43c03a8731b9625e66270f443ab27cd21b502d",
+        "bytes": 113664,
+        "license": "MIT",
+        "licenseInProductPolicy": true,
+        "licenseFiles": [
+          {
+            "file": "package/LICENSE",
+            "sha256": "117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76",
+            "bytes": 1106
+          }
+        ],
+        "repository": {
+          "type": "git",
+          "url": "https://github.com/babel/babel.git",
+          "directory": "packages/babel-generator"
+        },
+        "engines": {
+          "node": ">=6.9.0"
+        },
+        "scripts": {}
+      },
+      {
+        "name": "@babel/helper-compilation-targets",
+        "version": "7.29.7",
+        "positions": ["node_modules/@babel/helper-compilation-targets"],
+        "url": "https://registry.npmjs.org/@babel/helper-compilation-targets/-/helper-compilation-targets-7.29.7.tgz",
+        "integrity": "sha512-wem6WaBj4NaVYVdNhLPPVacES6ZJ+KBBfSkTMD3YZxbP3rm3Di85tJU5ljaUNhaOynt+Aj0xruhYuzQBt8n71g==",
+        "sha256": "5b5446f3d32b10ba38cb308af5f65e76afcddaacd7b817e71055a6de6ab934e0",
+        "bytes": 14864,
+        "license": "MIT",
+        "licenseInProductPolicy": true,
+        "licenseFiles": [
+          {
+            "file": "package/LICENSE",
+            "sha256": "117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76",
+            "bytes": 1106
+          }
+        ],
+        "repository": {
+          "type": "git",
+          "url": "https://github.com/babel/babel.git",
+          "directory": "packages/babel-helper-compilation-targets"
+        },
+        "engines": {
+          "node": ">=6.9.0"
+        },
+        "scripts": {}
+      },
+      {
+        "name": "@babel/helper-globals",
+        "version": "7.29.7",
+        "positions": ["node_modules/@babel/helper-globals"],
+        "url": "https://registry.npmjs.org/@babel/helper-globals/-/helper-globals-7.29.7.tgz",
+        "integrity": "sha512-3nQVUAtvkKH9zahfWgw96Jc/uFOmjACE1kQz82E2lqWmHBgjzbNlsC22nuQTfahmWeQtTq5nQ/4Nnd2A1wj4zA==",
+        "sha256": "94fb962c489aae2c4e5581f1494721083dc76dddd7c703314dd4d7ff965d2a3f",
+        "bytes": 6839,
+        "license": "MIT",
+        "licenseInProductPolicy": true,
+        "licenseFiles": [
+          {
+            "file": "package/LICENSE",
+            "sha256": "117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76",
+            "bytes": 1106
+          }
+        ],
+        "repository": {
+          "type": "git",
+          "url": "https://github.com/babel/babel.git",
+          "directory": "packages/babel-helper-globals"
+        },
+        "engines": {
+          "node": ">=6.9.0"
+        },
+        "scripts": {}
+      },
+      {
+        "name": "@babel/helper-module-imports",
+        "version": "7.29.7",
+        "positions": ["node_modules/@babel/helper-module-imports"],
+        "url": "https://registry.npmjs.org/@babel/helper-module-imports/-/helper-module-imports-7.29.7.tgz",
+        "integrity": "sha512-ejHwrQQYcm9xnTivShn2IDOlIzInN34AXskvq9QicvCtEzq1Vzclu/tKF8Jq1Cg8JG2GL6/EmjgsCT7lXepE3g==",
+        "sha256": "4bdf46cf597b875ce16770f151159ca34f96c20ba3c112dc8d7f6c6d6cce770c",
+        "bytes": 14064,
+        "license": "MIT",
+        "licenseInProductPolicy": true,
+        "licenseFiles": [
+          {
+            "file": "package/LICENSE",
+            "sha256": "117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76",
+            "bytes": 1106
+          }
+        ],
+        "repository": {
+          "type": "git",
+          "url": "https://github.com/babel/babel.git",
+          "directory": "packages/babel-helper-module-imports"
+        },
+        "engines": {
+          "node": ">=6.9.0"
+        },
+        "scripts": {}
+      },
+      {
+        "name": "@babel/helper-module-transforms",
+        "version": "7.29.7",
+        "positions": ["node_modules/@babel/helper-module-transforms"],
+        "url": "https://registry.npmjs.org/@babel/helper-module-transforms/-/helper-module-transforms-7.29.7.tgz",
+        "integrity": "sha512-UPUVSyXbOh627KiCIGQSgwWzGeBKLkaJ9PJEdrngIwMSzxLR4jS4+f1f1jb7VzBbg8nFLaYotvVPFCTqdrmTAg==",
+        "sha256": "dbb3b9b10b0a2828f5af58a6317685b1a150464c6bd54995069c526aba45e6e4",
+        "bytes": 37783,
+        "license": "MIT",
+        "licenseInProductPolicy": true,
+        "licenseFiles": [
+          {
+            "file": "package/LICENSE",
+            "sha256": "117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76",
+            "bytes": 1106
+          }
+        ],
+        "repository": {
+          "type": "git",
+          "url": "https://github.com/babel/babel.git",
+          "directory": "packages/babel-helper-module-transforms"
+        },
+        "engines": {
+          "node": ">=6.9.0"
+        },
+        "scripts": {}
+      },
+      {
+        "name": "@babel/helper-string-parser",
+        "version": "7.29.7",
+        "positions": ["node_modules/@babel/helper-string-parser"],
+        "url": "https://registry.npmjs.org/@babel/helper-string-parser/-/helper-string-parser-7.29.7.tgz",
+        "integrity": "sha512-Pb5ijPrZ89GDH8223L4UP8i6QApWxs04RbPQJTeWDV0/keR2E36MeKnyr6LYmUUvqRRI+Iv87SuF1W6ErINzYw==",
+        "sha256": "124565ecd300d7187973060ba6b1d1c4f296e55f0489ddfd6af794f516fed127",
+        "bytes": 8383,
+        "license": "MIT",
+        "licenseInProductPolicy": true,
+        "licenseFiles": [
+          {
+            "file": "package/LICENSE",
+            "sha256": "117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76",
+            "bytes": 1106
+          }
+        ],
+        "repository": {
+          "type": "git",
+          "url": "https://github.com/babel/babel.git",
+          "directory": "packages/babel-helper-string-parser"
+        },
+        "engines": {
+          "node": ">=6.9.0"
+        },
+        "scripts": {}
+      },
+      {
+        "name": "@babel/helper-validator-identifier",
+        "version": "7.29.7",
+        "positions": ["node_modules/@babel/helper-validator-identifier"],
+        "url": "https://registry.npmjs.org/@babel/helper-validator-identifier/-/helper-validator-identifier-7.29.7.tgz",
+        "integrity": "sha512-qehxGkRj55h/ff8EMaJ+cYhyaKlHIxqYDn682wQD7RNp9UujOQsHog2uS0r2vzr4pW+sXf90NeeayjcNaX3fFg==",
+        "sha256": "7a31904bc45f1bb232d5e5dd797d12296f4a27fb4bf0f6d517827700f997dc1f",
+        "bytes": 14245,
+        "license": "MIT",
+        "licenseInProductPolicy": true,
+        "licenseFiles": [
+          {
+            "file": "package/LICENSE",
+            "sha256": "117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76",
+            "bytes": 1106
+          }
+        ],
+        "repository": {
+          "type": "git",
+          "url": "https://github.com/babel/babel.git",
+          "directory": "packages/babel-helper-validator-identifier"
+        },
+        "engines": {
+          "node": ">=6.9.0"
+        },
+        "scripts": {}
+      },
+      {
+        "name": "@babel/helper-validator-option",
+        "version": "7.29.7",
+        "positions": ["node_modules/@babel/helper-validator-option"],
+        "url": "https://registry.npmjs.org/@babel/helper-validator-option/-/helper-validator-option-7.29.7.tgz",
+        "integrity": "sha512-N9ZErrD+yW5geCDtBqnOoxmR8+tNKiGuxKlDpuJxfsqpa2dFcexaziGAE/qoHLiDDreVNMupxGmSoNlyvsA3gw==",
+        "sha256": "e32d8ff2cc0455c5210f92f0844d2cb6e1d61b83ee17d7b328fe410f9021e4cd",
+        "bytes": 4384,
+        "license": "MIT",
+        "licenseInProductPolicy": true,
+        "licenseFiles": [
+          {
+            "file": "package/LICENSE",
+            "sha256": "117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76",
+            "bytes": 1106
+          }
+        ],
+        "repository": {
+          "type": "git",
+          "url": "https://github.com/babel/babel.git",
+          "directory": "packages/babel-helper-validator-option"
+        },
+        "engines": {
+          "node": ">=6.9.0"
+        },
+        "scripts": {}
+      },
+      {
+        "name": "@babel/helpers",
+        "version": "7.29.7",
+        "positions": ["node_modules/@babel/helpers"],
+        "url": "https://registry.npmjs.org/@babel/helpers/-/helpers-7.29.7.tgz",
+        "integrity": "sha512-1k2lAGRMfHTcwuNYcCNUmaUffmQv8KWMfh2iJUUeRlwlwH4FdNG7mfPI10NPfLHJFThE4Tyr4mv7kTNZOiPuBg==",
+        "sha256": "87dcd8372e8f2d0225de852c9f810c23712616cc2681556f8f4292535b7e42c6",
+        "bytes": 188848,
+        "license": "MIT",
+        "licenseInProductPolicy": true,
+        "licenseFiles": [
+          {
+            "file": "package/LICENSE",
+            "sha256": "4be9d87b56a306293223b490c0d0b245e9e94f39884147bf051a6c7b825aeb30",
+            "bytes": 1189
+          }
+        ],
+        "repository": {
+          "type": "git",
+          "url": "https://github.com/babel/babel.git",
+          "directory": "packages/babel-helpers"
+        },
+        "engines": {
+          "node": ">=6.9.0"
+        },
+        "scripts": {}
+      },
+      {
+        "name": "@babel/parser",
+        "version": "7.29.9",
+        "positions": ["node_modules/@babel/parser"],
+        "url": "https://registry.npmjs.org/@babel/parser/-/parser-7.29.9.tgz",
+        "integrity": "sha512-CjXrNHTnvqBVqHgdBysY3vk2T8tpJHb5/RMeHJBTyVa9xgugCB0CJTx/3oO8RV2QRQP391RWpB7D6hLjm8V9uA==",
+        "sha256": "8f3b9fbc531e0c08e2c329cf1ff57bbe121e2d10061b65a05614a25b2255cc43",
+        "bytes": 439123,
+        "license": "MIT",
+        "licenseInProductPolicy": true,
+        "licenseFiles": [
+          {
+            "file": "package/LICENSE",
+            "sha256": "2e97627cb278aa7556fb9e8817368302301a595b6c7582512b8d74c57b773652",
+            "bytes": 1086
+          }
+        ],
+        "repository": {
+          "type": "git",
+          "url": "https://github.com/babel/babel.git",
+          "directory": "packages/babel-parser"
+        },
+        "engines": {
+          "node": ">=6.0.0"
+        },
+        "scripts": {}
+      },
+      {
+        "name": "@babel/template",
+        "version": "7.29.7",
+        "positions": ["node_modules/@babel/template"],
+        "url": "https://registry.npmjs.org/@babel/template/-/template-7.29.7.tgz",
+        "integrity": "sha512-puq+Gf35oI24FeN11LkoUQFqv9uwNeWpxXZi/Ji3rRIoKAzKnxRaZ+Gkj0vKS9ZCiTESfng1N9LyOyXvo+m+Gg==",
+        "sha256": "5e0ee28d5536e986cf5ff2da0f096fb84810d9136c2a64c6c78a6b495a0e7764",
+        "bytes": 18157,
+        "license": "MIT",
+        "licenseInProductPolicy": true,
+        "licenseFiles": [
+          {
+            "file": "package/LICENSE",
+            "sha256": "117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76",
+            "bytes": 1106
+          }
+        ],
+        "repository": {
+          "type": "git",
+          "url": "https://github.com/babel/babel.git",
+          "directory": "packages/babel-template"
+        },
+        "engines": {
+          "node": ">=6.9.0"
+        },
+        "scripts": {}
+      },
+      {
+        "name": "@babel/traverse",
+        "version": "7.29.8",
+        "positions": ["node_modules/@babel/traverse"],
+        "url": "https://registry.npmjs.org/@babel/traverse/-/traverse-7.29.8.tgz",
+        "integrity": "sha512-I5z7H3bf/41ktsNVLtpN0wAa336HkqIHQ5BuPLEhTkt1jVSyZpeNKIzTgEWmlxjdg81R0IgUCcaE+Ok3NvrfZg==",
+        "sha256": "cf16861f356fd766361ba4d85d5462b6320e0e59f05cb55c762d8f5dff83e234",
+        "bytes": 168479,
+        "license": "MIT",
+        "licenseInProductPolicy": true,
+        "licenseFiles": [
+          {
+            "file": "package/LICENSE",
+            "sha256": "117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76",
+            "bytes": 1106
+          }
+        ],
+        "repository": {
+          "type": "git",
+          "url": "https://github.com/babel/babel.git",
+          "directory": "packages/babel-traverse"
+        },
+        "engines": {
+          "node": ">=6.9.0"
+        },
+        "scripts": {}
+      },
+      {
+        "name": "@babel/types",
+        "version": "7.29.8",
+        "positions": ["node_modules/@babel/types"],
+        "url": "https://registry.npmjs.org/@babel/types/-/types-7.29.8.tgz",
+        "integrity": "sha512-Vj1jF3cPfxg7OAfoI7QnVKLoILlm2JF9pnVHrX8qx7AHMiYWT+NDAA7jChlNgRS4WTLc/fD1lXLmPixluj+3Gg==",
+        "sha256": "514a4ed09355fe1417f03e89c5a5f518745e2eb75a4069d25b55a3e7298069de",
+        "bytes": 301854,
+        "license": "MIT",
+        "licenseInProductPolicy": true,
+        "licenseFiles": [
+          {
+            "file": "package/LICENSE",
+            "sha256": "117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76",
+            "bytes": 1106
+          }
+        ],
+        "repository": {
+          "type": "git",
+          "url": "https://github.com/babel/babel.git",
+          "directory": "packages/babel-types"
+        },
+        "engines": {
+          "node": ">=6.9.0"
+        },
+        "scripts": {}
+      },
+      {
+        "name": "@istanbuljs/schema",
+        "version": "0.1.6",
+        "positions": ["node_modules/@istanbuljs/schema"],
+        "url": "https://registry.npmjs.org/@istanbuljs/schema/-/schema-0.1.6.tgz",
+        "integrity": "sha512-+Sg6GCR/wy1oSmQDFq4LQDAhm3ETKnorxN+y5nbLULOR3P0c14f2Wurzj3/xqPXtasLFfHd5iRFQ7AJt4KH2cw==",
+        "sha256": "686e2155f59489709b36c324cc01ce179d9616a625349efa8cf1ba8ff4ae2456",
+        "bytes": 5660,
+        "license": "MIT",
+        "licenseInProductPolicy": true,
+        "licenseFiles": [
+          {
+            "file": "package/LICENSE",
+            "sha256": "5a547aafe7b171c859ec64de1dd3c3363689f830133f508d043c83da12a6d0a2",
+            "bytes": 1068
+          }
+        ],
+        "repository": {
+          "type": "git",
+          "url": "git+https://github.com/istanbuljs/schema.git"
+        },
+        "engines": {
+          "node": ">=8"
+        },
+        "scripts": {
+          "test": "nyc node --test test/test.js",
+          "test:update-snapshots": "nyc node --test --test-update-snapshots test/test.js"
+        }
+      },
+      {
+        "name": "@jridgewell/gen-mapping",
+        "version": "0.3.13",
+        "positions": ["node_modules/@jridgewell/gen-mapping"],
+        "url": "https://registry.npmjs.org/@jridgewell/gen-mapping/-/gen-mapping-0.3.13.tgz",
+        "integrity": "sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA==",
+        "sha256": "bc16f658c1f6d63e0c8738ab881d03f49f1955d8f853cdcb8f7d315cf62f0082",
+        "bytes": 17972,
+        "license": "MIT",
+        "licenseInProductPolicy": true,
+        "licenseFiles": [
+          {
+            "file": "package/LICENSE",
+            "sha256": "769d154fbde32a915af110b1123650bc79f4cbe675acc66e005265bf069c6c6c",
+            "bytes": 1080
+          }
+        ],
+        "repository": {
+          "type": "git",
+          "url": "git+https://github.com/jridgewell/sourcemaps.git",
+          "directory": "packages/gen-mapping"
+        },
+        "engines": null,
+        "scripts": {
+          "benchmark": "run-s build:code benchmark:*",
+          "benchmark:install": "cd benchmark && npm install",
+          "benchmark:only": "node --expose-gc benchmark/index.js",
+          "build": "run-s -n build:code build:types",
+          "build:code": "node ../../esbuild.mjs gen-mapping.ts",
+          "build:types": "run-s build:types:force build:types:emit build:types:mts",
+          "build:types:force": "rimraf tsconfig.build.tsbuildinfo",
+          "build:types:emit": "tsc --project tsconfig.build.json",
+          "build:types:mts": "node ../../mts-types.mjs",
+          "clean": "run-s -n clean:code clean:types",
+          "clean:code": "tsc --build --clean tsconfig.build.json",
+          "clean:types": "rimraf dist types",
+          "test": "run-s -n test:types test:only test:format",
+          "test:format": "prettier --check '{src,test}/**/*.ts'",
+          "test:only": "mocha",
+          "test:types": "eslint '{src,test}/**/*.ts'",
+          "lint": "run-s -n lint:types lint:format",
+          "lint:format": "npm run test:format -- --write",
+          "lint:types": "npm run test:types -- --fix",
+          "prepublishOnly": "npm run-s -n build test"
+        }
+      },
+      {
+        "name": "@jridgewell/remapping",
+        "version": "2.3.5",
+        "positions": ["node_modules/@jridgewell/remapping"],
+        "url": "https://registry.npmjs.org/@jridgewell/remapping/-/remapping-2.3.5.tgz",
+        "integrity": "sha512-LI9u/+laYG4Ds1TDKSJW2YPrIlcVYOwi2fUC6xB43lueCjgxV4lffOCZCtYFiH6TNOX+tQKXx97T4IKHbhyHEQ==",
+        "sha256": "70b16782a39ad16672e47c33473559a25bff9640214df91cb9dd153005d71a02",
+        "bytes": 14624,
+        "license": "MIT",
+        "licenseInProductPolicy": true,
+        "licenseFiles": [
+          {
+            "file": "package/LICENSE",
+            "sha256": "769d154fbde32a915af110b1123650bc79f4cbe675acc66e005265bf069c6c6c",
+            "bytes": 1080
+          }
+        ],
+        "repository": {
+          "type": "git",
+          "url": "git+https://github.com/jridgewell/sourcemaps.git",
+          "directory": "packages/remapping"
+        },
+        "engines": null,
+        "scripts": {
+          "benchmark": "run-s build:code benchmark:*",
+          "benchmark:install": "cd benchmark && npm install",
+          "benchmark:only": "node --expose-gc benchmark/index.js",
+          "build": "run-s -n build:code build:types",
+          "build:code": "node ../../esbuild.mjs remapping.ts",
+          "build:types": "run-s build:types:force build:types:emit build:types:mts",
+          "build:types:force": "rimraf tsconfig.build.tsbuildinfo",
+          "build:types:emit": "tsc --project tsconfig.build.json",
+          "build:types:mts": "node ../../mts-types.mjs",
+          "clean": "run-s -n clean:code clean:types",
+          "clean:code": "tsc --build --clean tsconfig.build.json",
+          "clean:types": "rimraf dist types",
+          "test": "run-s -n test:types test:only test:format",
+          "test:format": "prettier --check '{src,test}/**/*.ts'",
+          "test:only": "mocha",
+          "test:types": "eslint '{src,test}/**/*.ts'",
+          "lint": "run-s -n lint:types lint:format",
+          "lint:format": "npm run test:format -- --write",
+          "lint:types": "npm run test:types -- --fix",
+          "prepublishOnly": "npm run-s -n build test"
+        }
+      },
+      {
+        "name": "@jridgewell/resolve-uri",
+        "version": "3.1.2",
+        "positions": ["node_modules/@jridgewell/resolve-uri"],
+        "url": "https://registry.npmjs.org/@jridgewell/resolve-uri/-/resolve-uri-3.1.2.tgz",
+        "integrity": "sha512-bRISgCIjP20/tbWSPWMEi54QVPRZExkuD9lJL+UIxUKtwVJA8wW1Trb1jMs1RFXo1CBTNZ/5hpC9QvmKWdopKw==",
+        "sha256": "db52f9f62558baab13353dd39e3200750fc33e6a129a575b46226f493776e230",
+        "bytes": 9622,
+        "license": "MIT",
+        "licenseInProductPolicy": true,
+        "licenseFiles": [
+          {
+            "file": "package/LICENSE",
+            "sha256": "b8778b155bfde5a28b023a558753c0fa058a52bb9de35c343c250be1bbcdedab",
+            "bytes": 1079
+          }
+        ],
+        "repository": "https://github.com/jridgewell/resolve-uri",
+        "engines": {
+          "node": ">=6.0.0"
+        },
+        "scripts": {
+          "prebuild": "rm -rf dist",
+          "build": "run-s -n build:*",
+          "build:rollup": "rollup -c rollup.config.js",
+          "build:ts": "tsc --project tsconfig.build.json",
+          "lint": "run-s -n lint:*",
+          "lint:prettier": "npm run test:lint:prettier -- --write",
+          "lint:ts": "npm run test:lint:ts -- --fix",
+          "pretest": "run-s build:rollup",
+          "test": "run-s -n test:lint test:only",
+          "test:debug": "mocha --inspect-brk",
+          "test:lint": "run-s -n test:lint:*",
+          "test:lint:prettier": "prettier --check '{src,test}/**/*.ts'",
+          "test:lint:ts": "eslint '{src,test}/**/*.ts'",
+          "test:only": "mocha",
+          "test:coverage": "c8 mocha",
+          "test:watch": "mocha --watch",
+          "prepublishOnly": "npm run preversion",
+          "preversion": "run-s test build"
+        }
+      },
+      {
+        "name": "@jridgewell/sourcemap-codec",
+        "version": "1.6.0",
+        "positions": ["node_modules/@jridgewell/sourcemap-codec"],
+        "url": "https://registry.npmjs.org/@jridgewell/sourcemap-codec/-/sourcemap-codec-1.6.0.tgz",
+        "integrity": "sha512-T7jf+5zgsZHwNJ4lvQ7/aezbyk0nNX+zJVWpmHA7VYsEx7a7qr5Rg5IbtJFqkgze5Y2sruq1RUY8Q837Od7iFw==",
+        "sha256": "f30a35f6af8c347d01b8ff2f8662272f7d986cf21b916704d86c249a90b97e25",
+        "bytes": 18401,
+        "license": "MIT",
+        "licenseInProductPolicy": true,
+        "licenseFiles": [
+          {
+            "file": "package/LICENSE",
+            "sha256": "769d154fbde32a915af110b1123650bc79f4cbe675acc66e005265bf069c6c6c",
+            "bytes": 1080
+          }
+        ],
+        "repository": {
+          "type": "git",
+          "url": "git+https://github.com/jridgewell/sourcemaps.git",
+          "directory": "packages/sourcemap-codec"
+        },
+        "engines": null,
+        "scripts": {
+          "benchmark": "run-s build:code benchmark:*",
+          "benchmark:install": "cd benchmark && npm install",
+          "benchmark:only": "node --expose-gc benchmark/index.js",
+          "build": "run-s -n build:code build:types",
+          "build:code": "node ../../esbuild.mjs sourcemap-codec.ts",
+          "build:types": "run-s build:types:force build:types:emit build:types:mts",
+          "build:types:force": "rimraf tsconfig.build.tsbuildinfo",
+          "build:types:emit": "tsc --project tsconfig.build.json",
+          "build:types:mts": "node ../../mts-types.mjs",
+          "clean": "run-s -n clean:code clean:types",
+          "clean:code": "tsc --build --clean tsconfig.build.json",
+          "clean:types": "rimraf dist types",
+          "test": "run-s -n test:types test:only test:format",
+          "test:format": "prettier --check '{src,test}/**/*.ts'",
+          "test:only": "mocha",
+          "test:types": "eslint '{src,test}/**/*.ts'",
+          "test:watch": "mocha --watch",
+          "lint": "run-s -n lint:types lint:format",
+          "lint:format": "npm run test:format -- --write",
+          "lint:types": "npm run test:types -- --fix",
+          "prepublishOnly": "npm run-s -n build test"
+        }
+      },
+      {
+        "name": "@jridgewell/trace-mapping",
+        "version": "0.3.31",
+        "positions": ["node_modules/@jridgewell/trace-mapping"],
+        "url": "https://registry.npmjs.org/@jridgewell/trace-mapping/-/trace-mapping-0.3.31.tgz",
+        "integrity": "sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==",
+        "sha256": "c64c71a119630d5abe8246889edf334b2ca9ddad094e20d623332956b1453ccf",
+        "bytes": 30747,
+        "license": "MIT",
+        "licenseInProductPolicy": true,
+        "licenseFiles": [
+          {
+            "file": "package/LICENSE",
+            "sha256": "769d154fbde32a915af110b1123650bc79f4cbe675acc66e005265bf069c6c6c",
+            "bytes": 1080
+          }
+        ],
+        "repository": {
+          "type": "git",
+          "url": "git+https://github.com/jridgewell/sourcemaps.git",
+          "directory": "packages/trace-mapping"
+        },
+        "engines": null,
+        "scripts": {
+          "benchmark": "run-s build:code benchmark:*",
+          "benchmark:install": "cd benchmark && npm install",
+          "benchmark:only": "node --expose-gc benchmark/index.mjs",
+          "build": "run-s -n build:code build:types",
+          "build:code": "node ../../esbuild.mjs trace-mapping.ts",
+          "build:types": "run-s build:types:force build:types:emit build:types:mts",
+          "build:types:force": "rimraf tsconfig.build.tsbuildinfo",
+          "build:types:emit": "tsc --project tsconfig.build.json",
+          "build:types:mts": "node ../../mts-types.mjs",
+          "clean": "run-s -n clean:code clean:types",
+          "clean:code": "tsc --build --clean tsconfig.build.json",
+          "clean:types": "rimraf dist types",
+          "test": "run-s -n test:types test:only test:format",
+          "test:format": "prettier --check '{src,test}/**/*.ts'",
+          "test:only": "mocha",
+          "test:types": "eslint '{src,test}/**/*.ts'",
+          "lint": "run-s -n lint:types lint:format",
+          "lint:format": "npm run test:format -- --write",
+          "lint:types": "npm run test:types -- --fix",
+          "prepublishOnly": "npm run-s -n build test"
+        }
+      },
+      {
+        "name": "baseline-browser-mapping",
+        "version": "2.11.25",
+        "positions": ["node_modules/baseline-browser-mapping"],
+        "url": "https://registry.npmjs.org/baseline-browser-mapping/-/baseline-browser-mapping-2.11.25.tgz",
+        "integrity": "sha512-gMmEShwwq7FJqMwvfRwvCl00v4kN+KOfJqXn+f4nrufak5gNHJOksd/60Dvjuz7sI8Y5WiSFBa8FEYr+zoyqCw==",
+        "sha256": "210d31df7ef5cb5a734e94d9860ab5d78da0eaff8aa061a8fca8aeba2bb26c50",
+        "bytes": 41665,
+        "license": "Apache-2.0",
+        "licenseInProductPolicy": true,
+        "licenseFiles": [
+          {
+            "file": "package/LICENSE.txt",
+            "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+            "bytes": 11357
+          }
+        ],
+        "repository": {
+          "type": "git",
+          "url": "git+https://github.com/web-platform-dx/baseline-browser-mapping.git"
+        },
+        "engines": {
+          "node": ">=6.0.0"
+        },
+        "scripts": {
+          "fix-cli-permissions": "output=$(npx baseline-browser-mapping 2>&1); path=$(printf '%s\n' \"$output\" | sed -n 's/^.*: \\(.*\\): Permission denied$/\\1/p; t; s/^\\(.*\\): Permission denied$/\\1/p'); if [ -n \"$path\" ]; then echo \"Permission denied for: $path\"; echo \"Removing $path ...\"; rm -rf \"$path\"; else echo \"$output\"; fi",
+          "test:format": "npx prettier --check .",
+          "test:lint": "npx eslint .",
+          "test:legacy-test": "node spec/legacy-tests/legacy-test.cjs; node dist/cli.cjs",
+          "test:jasmine": "npx jasmine",
+          "test:jasmine-browser": "npx jasmine-browser-runner runSpecs --config ./spec/support/jasmine-browser.js",
+          "test": "npm run build && npm run fix-cli-permissions && npm run test:format && npm run test:lint && npm run test:jasmine && npm run test:jasmine-browser",
+          "build": "rm -rf dist; npx prettier . --write; rollup -c; rm -rf ./dist/scripts/expose-data.d.ts ./dist/cli.d.ts",
+          "refresh-downstream": "npx tsx scripts/refresh-downstream.ts",
+          "refresh-static": "npx tsx scripts/refresh-static.ts",
+          "update-timeline": "npx tsx scripts/create-timeline.ts; npx prettier ./src/data/timeline.js --write",
+          "update-data-dependencies": "npm i @mdn/browser-compat-data@latest web-features@latest -D",
+          "check-timeline-changes": "git diff --name-only | grep -q '^src/data/timeline.js$' && echo 'changes-available=TRUE' || echo 'changes-available=FALSE'"
+        }
+      },
+      {
+        "name": "browserslist",
+        "version": "4.29.0",
+        "positions": ["node_modules/browserslist"],
+        "url": "https://registry.npmjs.org/browserslist/-/browserslist-4.29.0.tgz",
+        "integrity": "sha512-3GSvyjvDI4Dur1Meg2BekJquu5uF+9R9a1+5M1Mde192eZoXbeXjzgOsgqPS2V8D5wrrip0gR5Hf/GhWQ9ZzaA==",
+        "sha256": "004cfd29e260cf949725b5238a259b53ba75554b256ce9ac6d42fc1c5f913bfe",
+        "bytes": 18707,
+        "license": "MIT",
+        "licenseInProductPolicy": true,
+        "licenseFiles": [
+          {
+            "file": "package/LICENSE",
+            "sha256": "21c2679a63d7699c0e644409e2f17d0adbc7a965003feb06b3ff4b833d21f722",
+            "bytes": 1118
+          }
+        ],
+        "repository": "browserslist/browserslist",
+        "engines": {
+          "node": "^6 || ^7 || ^8 || ^9 || ^10 || ^11 || ^12 || >=13.7"
+        },
+        "scripts": {}
+      },
+      {
+        "name": "caniuse-lite",
+        "version": "1.0.30001810",
+        "positions": ["node_modules/caniuse-lite"],
+        "url": "https://registry.npmjs.org/caniuse-lite/-/caniuse-lite-1.0.30001810.tgz",
+        "integrity": "sha512-TITQPUkaz+aVk5GL6NhOdwk1aEaNTSDPsGFWrTuhKGtjTF70jL/Oht2W4c6rXUe5fu7Ie19VIahAXHIIiWWNeg==",
+        "sha256": "90358545393506a7f65ea1b2778ce68638114c327e441a463a705e26b58a85df",
+        "bytes": 323010,
+        "license": "CC-BY-4.0",
+        "licenseInProductPolicy": false,
+        "licenseFiles": [
+          {
+            "file": "package/LICENSE",
+            "sha256": "fd3a263fe19ed8faa9068b43abaebafc02c77897b0c6fc09abc04bb592e5f16e",
+            "bytes": 18651
+          }
+        ],
+        "repository": "browserslist/caniuse-lite",
+        "engines": null,
+        "scripts": {}
+      },
+      {
+        "name": "convert-source-map",
+        "version": "2.0.0",
+        "positions": ["node_modules/convert-source-map"],
+        "url": "https://registry.npmjs.org/convert-source-map/-/convert-source-map-2.0.0.tgz",
+        "integrity": "sha512-Kvp459HrV2FEJ1CAsi1Ku+MY3kasH19TFykTz2xWmMeq6bk2NU3XXvfJ+Q61m0xktWwt+1HSYf3JZsTms3aRJg==",
+        "sha256": "17f7253ec7e4e09f68371192fded2b5241a5cf85e610e5059b1d49e878fe1898",
+        "bytes": 4952,
+        "license": "MIT",
+        "licenseInProductPolicy": true,
+        "licenseFiles": [
+          {
+            "file": "package/LICENSE",
+            "sha256": "1fa6ee8bb95a81ae3d73a5bd074a3ac380ffec13697051063ca1a601921b91db",
+            "bytes": 1078
+          }
+        ],
+        "repository": {
+          "type": "git",
+          "url": "git://github.com/thlorenz/convert-source-map.git"
+        },
+        "engines": null,
+        "scripts": {
+          "test": "tap test/*.js --color"
+        }
+      },
+      {
+        "name": "debug",
+        "version": "4.4.3",
+        "positions": ["node_modules/debug"],
+        "url": "https://registry.npmjs.org/debug/-/debug-4.4.3.tgz",
+        "integrity": "sha512-RGwwWnwQvkVfavKVt22FGLw+xYSdzARwm0ru6DhTVA3umU5hZc28V3kO4stgYryrTlLpuvgI9GiijltAjNbcqA==",
+        "sha256": "89c1ac9c946ee8905a875837114528e97eeae35e03be3190584b2216af43e4a7",
+        "bytes": 13449,
+        "license": "MIT",
+        "licenseInProductPolicy": true,
+        "licenseFiles": [
+          {
+            "file": "package/LICENSE",
+            "sha256": "3a61c6c96caf5c1d9b623fb9b04c822b783dfcb78aa7e49c76a3f643e6ed7f95",
+            "bytes": 1139
+          }
+        ],
+        "repository": {
+          "type": "git",
+          "url": "git://github.com/debug-js/debug.git"
+        },
+        "engines": {
+          "node": ">=6.0"
+        },
+        "scripts": {
+          "lint": "xo",
+          "test": "npm run test:node && npm run test:browser && npm run lint",
+          "test:node": "mocha test.js test.node.js",
+          "test:browser": "karma start --single-run",
+          "test:coverage": "cat ./coverage/lcov.info | coveralls"
+        }
+      },
+      {
+        "name": "electron-to-chromium",
+        "version": "1.5.433",
+        "positions": ["node_modules/electron-to-chromium"],
+        "url": "https://registry.npmjs.org/electron-to-chromium/-/electron-to-chromium-1.5.433.tgz",
+        "integrity": "sha512-5lCAbyZBjtmUt/RAGHRqrL2q0oEFRThDAsZHHDn9XHa89Qw7gMYOeSicBTy+AHfvo0r6vwsZvqNJTQIQy1BLzA==",
+        "sha256": "07da83266e59c183b93efd9fb0ddf2610a366c37c6710feff009ac166b4a3524",
+        "bytes": 35400,
+        "license": "ISC",
+        "licenseInProductPolicy": true,
+        "licenseFiles": [
+          {
+            "file": "package/LICENSE",
+            "sha256": "25ba5c59dad3e0dd8f9540beaa0f0a86a10e3aec35af5fdc8e88c5f6a5c0d8c6",
+            "bytes": 728
+          }
+        ],
+        "repository": {
+          "type": "git",
+          "url": "git+https://github.com/Kilian/electron-to-chromium.git"
+        },
+        "engines": null,
+        "scripts": {
+          "build": "node build.mjs",
+          "update": "node automated-update.js",
+          "test": "nyc ava --verbose",
+          "report": "nyc report --reporter=text-lcov > coverage.lcov"
+        }
+      },
+      {
+        "name": "escalade",
+        "version": "3.2.0",
+        "positions": ["node_modules/escalade"],
+        "url": "https://registry.npmjs.org/escalade/-/escalade-3.2.0.tgz",
+        "integrity": "sha512-WUj2qlxaQtO4g6Pq5c29GTcWGDyd8itL8zTlipgECz3JesAiiOKotd8JU6otB3PACgG6xkJUyVhboMS+bje/jA==",
+        "sha256": "ba2755afc0e6c6705326711fd218ebe107a527eccbd6485155fde98ed000bee7",
+        "bytes": 4483,
+        "license": "MIT",
+        "licenseInProductPolicy": true,
+        "licenseFiles": [
+          {
+            "file": "package/license",
+            "sha256": "9a9edad7baae52622bddf3c15b2ef8a33d2c89f2d25408ad13e8a7481c6b0c97",
+            "bytes": 1104
+          }
+        ],
+        "repository": "lukeed/escalade",
+        "engines": {
+          "node": ">=6"
+        },
+        "scripts": {
+          "build": "bundt",
+          "pretest": "npm run build",
+          "test": "uvu -r esm test -i fixtures"
+        }
+      },
+      {
+        "name": "gensync",
+        "version": "1.0.0-beta.2",
+        "positions": ["node_modules/gensync"],
+        "url": "https://registry.npmjs.org/gensync/-/gensync-1.0.0-beta.2.tgz",
+        "integrity": "sha512-3hN7NaskYvMDLQY55gnW3NQ+mesEAepTqlg+VEbj7zzqEMBVNhzcGYYeqFo/TlYz6eQiFcp1HcsCZO+nGgS8zg==",
+        "sha256": "df9f92ef26a35d4f92cb8a73415dfea8dadaf294a03e60e4d176df82f38d17c9",
+        "bytes": 7442,
+        "license": "MIT",
+        "licenseInProductPolicy": true,
+        "licenseFiles": [
+          {
+            "file": "package/LICENSE",
+            "sha256": "e3a956681ee067f971ac413994171b3d90ca801ec6324e76c9c55366cfe31cb0",
+            "bytes": 1075
+          }
+        ],
+        "repository": {
+          "type": "git",
+          "url": "https://github.com/loganfsmyth/gensync.git"
+        },
+        "engines": {
+          "node": ">=6.9.0"
+        },
+        "scripts": {
+          "test": "jest"
+        }
+      },
+      {
+        "name": "istanbul-lib-coverage",
+        "version": "3.2.2",
+        "positions": ["node_modules/istanbul-lib-coverage"],
+        "url": "https://registry.npmjs.org/istanbul-lib-coverage/-/istanbul-lib-coverage-3.2.2.tgz",
+        "integrity": "sha512-O8dpsF+r0WV/8MNRKfnmrtCWhuKjxrq2w+jpzBL5UZKTi2LeVWnWOmWRxFlesJONmc+wLAGvKQZEOanko0LFTg==",
+        "sha256": "55807e4747867e8a34d54d0900fab3a5bba7d44230f796fcc7dc62be2efecc8e",
+        "bytes": 9351,
+        "license": "BSD-3-Clause",
+        "licenseInProductPolicy": true,
+        "licenseFiles": [
+          {
+            "file": "package/LICENSE",
+            "sha256": "e09f9b52c6ce5c17ba8103cd0cbf446c33b5448b0c1d01d711b36a1f15a501ba",
+            "bytes": 1488
+          }
+        ],
+        "repository": {
+          "type": "git",
+          "url": "git+ssh://git@github.com/istanbuljs/istanbuljs.git",
+          "directory": "packages/istanbul-lib-coverage"
+        },
+        "engines": {
+          "node": ">=8"
+        },
+        "scripts": {
+          "test": "nyc mocha"
+        }
+      },
+      {
+        "name": "istanbul-lib-instrument",
+        "version": "6.0.3",
+        "positions": ["node_modules/istanbul-lib-instrument"],
+        "url": "https://registry.npmjs.org/istanbul-lib-instrument/-/istanbul-lib-instrument-6.0.3.tgz",
+        "integrity": "sha512-Vtgk7L/R2JHyyGW07spoFlB8/lpjiOLTjMdms6AFMraYt3BaJauod/NGrfnVG/y4Ix1JEuMRPDPEj2ua+zz1/Q==",
+        "sha256": "96345674f0bc81bdab6cc34da20d891e870dc460aea06cf6d6af1d955bf1d20d",
+        "bytes": 16798,
+        "license": "BSD-3-Clause",
+        "licenseInProductPolicy": true,
+        "licenseFiles": [
+          {
+            "file": "package/LICENSE",
+            "sha256": "e09f9b52c6ce5c17ba8103cd0cbf446c33b5448b0c1d01d711b36a1f15a501ba",
+            "bytes": 1488
+          }
+        ],
+        "repository": {
+          "type": "git",
+          "url": "git+ssh://git@github.com/istanbuljs/istanbuljs.git",
+          "directory": "packages/istanbul-lib-instrument"
+        },
+        "engines": {
+          "node": ">=10"
+        },
+        "scripts": {
+          "test": "nyc mocha"
+        }
+      },
+      {
+        "name": "istanbul-lib-source-maps",
+        "version": "5.0.6",
+        "positions": ["node_modules/istanbul-lib-source-maps"],
+        "url": "https://registry.npmjs.org/istanbul-lib-source-maps/-/istanbul-lib-source-maps-5.0.6.tgz",
+        "integrity": "sha512-yg2d+Em4KizZC5niWhQaIomgf5WlL4vOOjZ5xGCmF8SnPE/mDWWXgvRExdcpCgh9lLRRa1/fSYp2ymmbJ1pI+A==",
+        "sha256": "edd298e71ebf12ef7dded4826ba2cb0cbb58c911db0bb7c50efaf27dc80e04b4",
+        "bytes": 9710,
+        "license": "BSD-3-Clause",
+        "licenseInProductPolicy": true,
+        "licenseFiles": [
+          {
+            "file": "package/LICENSE",
+            "sha256": "b661867c1d66a1b71ee3a6109159874334cd5c182a80d1bcc7353b5a4c6823c6",
+            "bytes": 1483
+          }
+        ],
+        "repository": {
+          "type": "git",
+          "url": "git+ssh://git@github.com/istanbuljs/istanbuljs.git",
+          "directory": "packages/istanbul-lib-source-maps"
+        },
+        "engines": {
+          "node": ">=10"
+        },
+        "scripts": {
+          "test": "nyc mocha"
+        }
+      },
+      {
+        "name": "js-tokens",
+        "version": "4.0.0",
+        "positions": ["node_modules/js-tokens"],
+        "url": "https://registry.npmjs.org/js-tokens/-/js-tokens-4.0.0.tgz",
+        "integrity": "sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ==",
+        "sha256": "d884c7a2d8adb5568c1272d92b4f9c62707f4226cf9e7b22e7b957c7361e3c53",
+        "bytes": 6542,
+        "license": "MIT",
+        "licenseInProductPolicy": true,
+        "licenseFiles": [
+          {
+            "file": "package/LICENSE",
+            "sha256": "2213d91c606205c71eb051a199478cdc2adde945893404d7f1421436dd6d5cc1",
+            "bytes": 1103
+          }
+        ],
+        "repository": "lydell/js-tokens",
+        "engines": null,
+        "scripts": {
+          "test": "mocha --ui tdd",
+          "esprima-compare": "node esprima-compare ./index.js everything.js/es5.js",
+          "build": "node generate-index.js",
+          "dev": "npm run build && npm test"
+        }
+      },
+      {
+        "name": "jsesc",
+        "version": "3.1.0",
+        "positions": ["node_modules/jsesc"],
+        "url": "https://registry.npmjs.org/jsesc/-/jsesc-3.1.0.tgz",
+        "integrity": "sha512-/sM3dO2FOzXjKQhJuo0Q173wf2KOo8t4I8vHy6lF9poUp7bKT0/NHE8fPX23PwfhnykfqnC2xRxOnVw5XuGIaA==",
+        "sha256": "0c712225ccca9a70bf83f2ac2f52a268c858c7df3b3df196f1623239d80d3c09",
+        "bytes": 10038,
+        "license": "MIT",
+        "licenseInProductPolicy": true,
+        "licenseFiles": [
+          {
+            "file": "package/LICENSE-MIT.txt",
+            "sha256": "483acb265f182907d1caf6cff9c16c96f31325ed23792832cc5d8b12d5f88c8a",
+            "bytes": 1077
+          }
+        ],
+        "repository": {
+          "type": "git",
+          "url": "https://github.com/mathiasbynens/jsesc.git"
+        },
+        "engines": {
+          "node": ">=6"
+        },
+        "scripts": {
+          "build": "grunt template",
+          "coveralls": "istanbul cover --verbose --dir 'coverage' 'tests/tests.js' && coveralls < coverage/lcov.info'",
+          "cover": "istanbul cover --report 'html' --verbose --dir 'coverage' 'tests/tests.js'",
+          "test": "mocha tests"
+        }
+      },
+      {
+        "name": "json5",
+        "version": "2.2.3",
+        "positions": ["node_modules/json5"],
+        "url": "https://registry.npmjs.org/json5/-/json5-2.2.3.tgz",
+        "integrity": "sha512-XmOWe7eyHYH14cLdVPoyg+GOH3rYX++KpzrylJwSW98t3Nk+U8XOl8FWKOgwtzdb8lXGf6zYwDUzeHMWfxasyg==",
+        "sha256": "08afb33db600d11fc89b98fac4054f19d5d3e0fe527063116150e1ecc2d2377b",
+        "bytes": 50318,
+        "license": "MIT",
+        "licenseInProductPolicy": true,
+        "licenseFiles": [
+          {
+            "file": "package/LICENSE.md",
+            "sha256": "53e59feb13058722d977c699eb0407c7bce2f93c949b681bbd2ff31698535927",
+            "bytes": 1145
+          }
+        ],
+        "repository": {
+          "type": "git",
+          "url": "git+https://github.com/json5/json5.git"
+        },
+        "engines": {
+          "node": ">=6"
+        },
+        "scripts": {
+          "build": "rollup -c",
+          "build-package": "node build/package.js",
+          "build-unicode": "node build/unicode.js",
+          "coverage": "tap --coverage-report html test",
+          "lint": "eslint --fix .",
+          "lint-report": "eslint .",
+          "prepublishOnly": "npm run production",
+          "preversion": "npm run production",
+          "production": "run-s test build",
+          "tap": "tap -Rspec --100 test",
+          "test": "run-s lint-report tap",
+          "version": "npm run build-package && git add package.json5"
+        }
+      },
+      {
+        "name": "lru-cache",
+        "version": "5.1.1",
+        "positions": ["node_modules/lru-cache"],
+        "url": "https://registry.npmjs.org/lru-cache/-/lru-cache-5.1.1.tgz",
+        "integrity": "sha512-KpNARQA3Iwv+jTA0utUVVbrh+Jlrr1Fv0e56GGzAFOXN7dk/FviaDW8LHmK52DlcH4WP2n6gI8vN1aesBFgo9w==",
+        "sha256": "b11e78819544a6606e3317647a5593c102ea38d3c5afae62cd63f9c2c369485a",
+        "bytes": 5824,
+        "license": "ISC",
+        "licenseInProductPolicy": true,
+        "licenseFiles": [
+          {
+            "file": "package/LICENSE",
+            "sha256": "4ec3d4c66cd87f5c8d8ad911b10f99bf27cb00cdfcff82621956e379186b016b",
+            "bytes": 765
+          }
+        ],
+        "repository": "git://github.com/isaacs/node-lru-cache.git",
+        "engines": null,
+        "scripts": {
+          "test": "tap test/*.js --100 -J",
+          "snap": "TAP_SNAPSHOT=1 tap test/*.js -J",
+          "coveragerport": "tap --coverage-report=html",
+          "preversion": "npm test",
+          "postversion": "npm publish",
+          "postpublish": "git push origin --all; git push origin --tags"
+        }
+      },
+      {
+        "name": "ms",
+        "version": "2.1.3",
+        "positions": ["node_modules/ms"],
+        "url": "https://registry.npmjs.org/ms/-/ms-2.1.3.tgz",
+        "integrity": "sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==",
+        "sha256": "f6616e15e530ed552f9daa2d3ce71963947c6bc7c98c9b64fd3e673fd02622c6",
+        "bytes": 2967,
+        "license": "MIT",
+        "licenseInProductPolicy": true,
+        "licenseFiles": [
+          {
+            "file": "package/license.md",
+            "sha256": "1662fae9b5314d11cf51284e2dcd1f006a354f7343f08712a730fcff9a359801",
+            "bytes": 1079
+          }
+        ],
+        "repository": "vercel/ms",
+        "engines": null,
+        "scripts": {
+          "precommit": "lint-staged",
+          "lint": "eslint lib/* bin/*",
+          "test": "mocha tests.js"
+        }
+      },
+      {
+        "name": "node-releases",
+        "version": "2.0.56",
+        "positions": ["node_modules/node-releases"],
+        "url": "https://registry.npmjs.org/node-releases/-/node-releases-2.0.56.tgz",
+        "integrity": "sha512-x0InOIyzgdk+eyaWaRJFH5snEtiImgBgblZ2CyPrLmqqcuMQkEvcDPHbzqbD8eDsSeJbVOjn+crzyzHaM4D+/A==",
+        "sha256": "354b15ce602307438eef33907bfa0645c76c7b994ce60bf4ee347cf420e3e748",
+        "bytes": 6080,
+        "license": "MIT",
+        "licenseInProductPolicy": true,
+        "licenseFiles": [
+          {
+            "file": "package/LICENSE",
+            "sha256": "3706296ed611888111ceccc1dff4712844dea4bde0b185c82d718c3b69895abe",
+            "bytes": 1107
+          }
+        ],
+        "repository": {
+          "type": "git",
+          "url": "https://github.com/chicoxyzzy/node-releases.git"
+        },
+        "engines": {
+          "node": ">=18"
+        },
+        "scripts": {
+          "build": "node scripts/build.js"
+        }
+      },
+      {
+        "name": "picocolors",
+        "version": "1.1.1",
+        "positions": ["node_modules/picocolors"],
+        "url": "https://registry.npmjs.org/picocolors/-/picocolors-1.1.1.tgz",
+        "integrity": "sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA==",
+        "sha256": "d3aedb2807967b7eb37fd11b03b7e3701e725af79c650d0812ff7213f8f882d9",
+        "bytes": 2625,
+        "license": "ISC",
+        "licenseInProductPolicy": true,
+        "licenseFiles": [
+          {
+            "file": "package/LICENSE",
+            "sha256": "6582629e2979466878f6014313dcc2f3756c9616148682227ce3063dde310750",
+            "bytes": 787
+          }
+        ],
+        "repository": "alexeyraspopov/picocolors",
+        "engines": null,
+        "scripts": {}
+      },
+      {
+        "name": "semver",
+        "version": "7.8.5",
+        "positions": ["node_modules/semver"],
+        "url": "https://registry.npmjs.org/semver/-/semver-7.8.5.tgz",
+        "integrity": "sha512-Y7/KDsb8LjooZpwaqGyulO6DQlksgCncchHGk+sZIY4SBvUocMBEFH5Ur1fI4dV+Jvl0w6cjvucaIi40puRioA==",
+        "sha256": "d85045d4300d7d57c891336b95df532e73f34c22ffcd222452b6d08b9d127d5d",
+        "bytes": 29399,
+        "license": "ISC",
+        "licenseInProductPolicy": true,
+        "licenseFiles": [
+          {
+            "file": "package/LICENSE",
+            "sha256": "4ec3d4c66cd87f5c8d8ad911b10f99bf27cb00cdfcff82621956e379186b016b",
+            "bytes": 765
+          }
+        ],
+        "repository": {
+          "type": "git",
+          "url": "git+https://github.com/npm/node-semver.git"
+        },
+        "engines": {
+          "node": ">=10"
+        },
+        "scripts": {
+          "test": "tap",
+          "snap": "tap",
+          "lint": "npm run eslint",
+          "postlint": "template-oss-check",
+          "lintfix": "npm run eslint -- --fix",
+          "posttest": "npm run lint",
+          "template-oss-apply": "template-oss-apply --force",
+          "eslint": "eslint \"**/*.{js,cjs,ts,mjs,jsx,tsx}\""
+        }
+      },
+      {
+        "name": "update-browserslist-db",
+        "version": "1.3.3",
+        "positions": ["node_modules/update-browserslist-db"],
+        "url": "https://registry.npmjs.org/update-browserslist-db/-/update-browserslist-db-1.3.3.tgz",
+        "integrity": "sha512-pJ2sYawQS0R/WI928Gj5GlPhTGzbMelq0+4INtSYNDV9ErKJcX6xjGWkoG/VnB3dpUm00zALaqkrUD77pO5TDQ==",
+        "sha256": "5e345675666e58e36e8c8385e442a18e7815e36ab6b6470835f12a61a80fec6b",
+        "bytes": 7349,
+        "license": "MIT",
+        "licenseInProductPolicy": true,
+        "licenseFiles": [
+          {
+            "file": "package/LICENSE",
+            "sha256": "9877e90da14aa8c931a1f9d07cc2a20ce119106e5dab1ebb41af865266d0cd2a",
+            "bytes": 1118
+          }
+        ],
+        "repository": "browserslist/update-db",
+        "engines": null,
+        "scripts": {}
+      },
+      {
+        "name": "yallist",
+        "version": "3.1.1",
+        "positions": ["node_modules/yallist"],
+        "url": "https://registry.npmjs.org/yallist/-/yallist-3.1.1.tgz",
+        "integrity": "sha512-a4UGQaWPH59mOXUYnAG2ewncQS4i4F43Tv3JoAM+s2VDAmS9NsK8GpDMLrCHPksFT7h3K6TOoUNn2pb7RoXx4g==",
+        "sha256": "50f14ae6cfe8360cb2259ba3e93305e069036f13251d69d3cbee9e1d4775ca04",
+        "bytes": 4496,
+        "license": "ISC",
+        "licenseInProductPolicy": true,
+        "licenseFiles": [
+          {
+            "file": "package/LICENSE",
+            "sha256": "4ec3d4c66cd87f5c8d8ad911b10f99bf27cb00cdfcff82621956e379186b016b",
+            "bytes": 765
+          }
+        ],
+        "repository": {
+          "type": "git",
+          "url": "git+https://github.com/isaacs/yallist.git"
+        },
+        "engines": null,
+        "scripts": {
+          "test": "tap test/*.js --100",
+          "preversion": "npm test",
+          "postversion": "npm publish",
+          "postpublish": "git push origin --all; git push origin --tags"
+        }
+      }
+    ],
+    "archiveFileComparisons": 2008,
+    "installedFileChunks": [
+      {
+        "path": "planning/coverage-instrumentation-files-01.json",
+        "sha256": "6125003dc661ff9e5d6b9d01962ad55a250014b47855a61fc9475e25fc0566f2",
+        "records": 700
+      },
+      {
+        "path": "planning/coverage-instrumentation-files-02.json",
+        "sha256": "952cc2d0a5acfb7ec3d2ec585aa1feb09cd012fe98cdd0d3495d36acee7c2514",
+        "records": 700
+      },
+      {
+        "path": "planning/coverage-instrumentation-files-03.json",
+        "sha256": "96d08ffedbab98f5ba99a1d1cb8e819e46931758d1ef6b2a3855b2ed5a9a9fe5",
+        "records": 618
+      }
+    ]
+  },
+  "browser": {
+    "package": {
+      "name": "playwright-core",
+      "version": "1.62.1",
+      "url": "https://registry.npmjs.org/playwright-core/-/playwright-core-1.62.1.tgz",
+      "integrity": "sha512-wPYSwEBJY9GHraISXqyqtx0na0LpO3XEX7jNDhntbex7tzUS7kLnZsOlFruFJB4Hi/rhDMjXGqHewDZ68nYZVw==",
+      "sha256": "954be1e183d0ddb9748fe0d2d08b0b66a9210c74dd75c397aeb70303b9f08a00",
+      "bytes": 3070300,
+      "license": "Apache-2.0",
+      "licenseFiles": [
+        {
+          "file": "package/LICENSE",
+          "sha256": "45873d00a0dd243596deb4aa23b2493b3d1f0671921bf2538ea431d7380220eb",
+          "bytes": 11601
+        },
+        {
+          "file": "package/NOTICE",
+          "sha256": "6d602191187b35b9b01d2cffa01c8469c2c8d9de8a96f1bf868e0f264f51c81d",
+          "bytes": 254
+        }
+      ],
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/microsoft/playwright.git"
+      },
+      "gitHead": "26a9e470a7b3c7822084b09fb7f13902c5f37b51",
+      "engines": {
+        "node": ">=20"
+      },
+      "scripts": {},
+      "lifecycle": {},
+      "dependencies": {}
+    },
+    "installedFiles": {
+      "LICENSE": {
+        "type": "file",
+        "sha256": "45873d00a0dd243596deb4aa23b2493b3d1f0671921bf2538ea431d7380220eb",
+        "bytes": 11601
+      },
+      "NOTICE": {
+        "type": "file",
+        "sha256": "6d602191187b35b9b01d2cffa01c8469c2c8d9de8a96f1bf868e0f264f51c81d",
+        "bytes": 254
+      },
+      "README.md": {
+        "type": "file",
+        "sha256": "d16ff7f8e38fa1fc954f695ad551cdc118d9c9bdd5f3d83203901f4c317d7d7e",
+        "bytes": 120
+      },
+      "ThirdPartyNotices.txt": {
+        "type": "file",
+        "sha256": "a549d329bad8806fe279f0ecae0fc0270dec7e7c2dc8ec10f90e394f7c32b144",
+        "bytes": 676
+      },
+      "bin/install_media_pack.ps1": {
+        "type": "file",
+        "sha256": "bc20f049badf021e3a53bdb4156603caa5ef482c9a9a251f927605e676a44171",
+        "bytes": 174
+      },
+      "bin/install_webkit_wsl.ps1": {
+        "type": "file",
+        "sha256": "bc61beda37a808eef27d39ce684baa792f6d17737a25a432b1a84d3b591ab815",
+        "bytes": 1464
+      },
+      "bin/reinstall_chrome_beta_linux.sh": {
+        "type": "file",
+        "sha256": "dc8c22b9dde76583cece2857575b88094299615f3136a3c598149710c45dee3a",
+        "bytes": 1217
+      },
+      "bin/reinstall_chrome_beta_mac.sh": {
+        "type": "file",
+        "sha256": "a92eaeb4ebcf5633a4e9c981481e14c80764fc81b6fcbc0565398e50ff319433",
+        "bytes": 563
+      },
+      "bin/reinstall_chrome_beta_win.ps1": {
+        "type": "file",
+        "sha256": "b6d9e44742feafb98d5edc56fa20042949973cf30d141a1c5b4fb384096967c5",
+        "bytes": 957
+      },
+      "bin/reinstall_chrome_stable_linux.sh": {
+        "type": "file",
+        "sha256": "dc72ab3567a4ce43bd8353d4ecf41f1d9c03e870169367cd3ed9043aabf67dd1",
+        "bytes": 1212
+      },
+      "bin/reinstall_chrome_stable_mac.sh": {
+        "type": "file",
+        "sha256": "bb43a96c192a6cc81524ade0264686fff7809c019a89f7db0a9849635879c3be",
+        "bytes": 519
+      },
+      "bin/reinstall_chrome_stable_win.ps1": {
+        "type": "file",
+        "sha256": "3d96c4e2f4ebbb3fad44cf3ba58d9cf90af1c9fb3073e3b27d45a74cf005515b",
+        "bytes": 923
+      },
+      "bin/reinstall_msedge_beta_linux.sh": {
+        "type": "file",
+        "sha256": "10b26f35dbc2000b94edf1172d803a29c5873a4eb8d523afbc687997b642767e",
+        "bytes": 1494
+      },
+      "bin/reinstall_msedge_beta_mac.sh": {
+        "type": "file",
+        "sha256": "0036d738bc90d686100d81f328ba0003bf07863f5500b792c8da391d149750fa",
+        "bytes": 377
+      },
+      "bin/reinstall_msedge_beta_win.ps1": {
+        "type": "file",
+        "sha256": "b173c378a59f0cc38033cee702de1f44f09276c9b2270d1a650ebe66ee312433",
+        "bytes": 874
+      },
+      "bin/reinstall_msedge_dev_linux.sh": {
+        "type": "file",
+        "sha256": "00e4947e7a4f8339c6db09c87976d808583c07f9179e4aa7694d88614b82fe95",
+        "bytes": 1489
+      },
+      "bin/reinstall_msedge_dev_mac.sh": {
+        "type": "file",
+        "sha256": "6f899e3b311f742c24ca37ff9e32298e8290514ffc14bf588cc51556a29da4c0",
+        "bytes": 372
+      },
+      "bin/reinstall_msedge_dev_win.ps1": {
+        "type": "file",
+        "sha256": "46f7f98c81cb0abe687d7f4a5afea9b897a38d2a6dd6f6662fbd847f7a22bd51",
+        "bytes": 869
+      },
+      "bin/reinstall_msedge_stable_linux.sh": {
+        "type": "file",
+        "sha256": "ec0a31a5f09c565e108473a1850895a4458ab00c713ac1de3aa2001912e4668f",
+        "bytes": 1507
+      },
+      "bin/reinstall_msedge_stable_mac.sh": {
+        "type": "file",
+        "sha256": "3af1e893527ff2257aa2dbc3b259a053b92f45c3eadb13e38eba46e87902655d",
+        "bytes": 371
+      },
+      "bin/reinstall_msedge_stable_win.ps1": {
+        "type": "file",
+        "sha256": "40bb5fcbfcebbbe2ce43c6e736e7c5deefc5be03b6e9c6914423c06ec1f591be",
+        "bytes": 856
+      },
+      "browsers.json": {
+        "type": "file",
+        "sha256": "f306eed529599b1eaf2f8a85db9de2b23e1a3fe36c2b66434b7c9434fb627a99",
+        "bytes": 1780
+      },
+      "cli.js": {
+        "type": "file",
+        "sha256": "f1c4075aef116c766092250d7f37b3249a7cee6465d953207fc38c8f6145becd",
+        "bytes": 839
+      },
+      "index.d.ts": {
+        "type": "file",
+        "sha256": "7a8ec10b0834eb7183e4bfcd929838ac77583828e343211bb73676d1e47f6f01",
+        "bytes": 634
+      },
+      "index.js": {
+        "type": "file",
+        "sha256": "a58fb2cec4293e7dcf73c58a179898a4f3986666451a19da4e731fa3af63265b",
+        "bytes": 697
+      },
+      "index.mjs": {
+        "type": "file",
+        "sha256": "3d36e2132d3c8b62397d23f0bb4177336aaee503203ae2a2c90fbeb5bf3317dd",
+        "bytes": 1063
+      },
+      "lib/bootstrap.js": {
+        "type": "file",
+        "sha256": "4637f4dbfef9cfc01baeb5f5d2cb63fa0901522c96915ea2227290558d27123e",
+        "bytes": 3481
+      },
+      "lib/coreBundle.js": {
+        "type": "file",
+        "sha256": "9393fa79e1c67c74edc26b610d65a4f7ed73d345a762465cc88340a33a2454ac",
+        "bytes": 3425603
+      },
+      "lib/entry/cliDaemon.js": {
+        "type": "file",
+        "sha256": "062f256fb29a7bf91793a014b9c3f1f9cf2dc6b12e40a8a2ebba88a630ae16a0",
+        "bytes": 197
+      },
+      "lib/entry/dashboardApp.js": {
+        "type": "file",
+        "sha256": "209962c6eaeef11629f226d6a2ab33ec7a2480754242b6e19590a9e6eb71d126",
+        "bytes": 108
+      },
+      "lib/entry/mcp.js": {
+        "type": "file",
+        "sha256": "cc87dc0020cb41caebbf04f50e42bc7835b033a6d80e9c3f0a3d0b3dbdf341c7",
+        "bytes": 442
+      },
+      "lib/entry/oopBrowserDownload.js": {
+        "type": "file",
+        "sha256": "87567cdbd67dd2f50bb232d47d3784701ece7c81e39c0287bb7d1b466b68cf06",
+        "bytes": 120
+      },
+      "lib/package.js": {
+        "type": "file",
+        "sha256": "9f938e1d44a0dd231b1660ca62f7dae964859b79cbdc370b8542c5d375ca3c05",
+        "bytes": 2112
+      },
+      "lib/server/chromium/appIcon.png": {
+        "type": "file",
+        "sha256": "6ba994f05c5cf18e22d9b6bef9898fbdec6ad4d4d77f5187d0609cb42d72d01e",
+        "bytes": 16565
+      },
+      "lib/server/electron/loader.js": {
+        "type": "file",
+        "sha256": "8f4f2c20933e7bef2bbed9a1b455278ad1461aa919b0386f360aee5b2580149d",
+        "bytes": 5100
+      },
+      "lib/serverRegistry.js": {
+        "type": "file",
+        "sha256": "e9db9d4eaa8c3690f700ea3047af7b0b6e0b16937a969589678c51db92272ae9",
+        "bytes": 247102
+      },
+      "lib/serverRegistry.js.LICENSE": {
+        "type": "file",
+        "sha256": "5cf540fe55a2ba9bcf0eb76e739b454faa8581e2f1a0f777602ef0855534302e",
+        "bytes": 18617
+      },
+      "lib/tools/cli-client/channelSessions.js": {
+        "type": "file",
+        "sha256": "6b9c613e87340f48ad7182addd7495a8ff3fbe55feb1bbd0ce04f59f1552e126",
+        "bytes": 7087
+      },
+      "lib/tools/cli-client/cli.js": {
+        "type": "file",
+        "sha256": "dfde8e9dfde30c4b3914eb25ba1c5a8524ec64651d866171d75cd7b41a827180",
+        "bytes": 153
+      },
+      "lib/tools/cli-client/help.json": {
+        "type": "file",
+        "sha256": "d63f1c7e006b1bdfbe656e6bea2b4dca9e1b6c17f8c806fdaca656fef71d234d",
+        "bytes": 38111
+      },
+      "lib/tools/cli-client/minimist.js": {
+        "type": "file",
+        "sha256": "1d200627373a367e0097f1abeaaa4d67cde2c33f2e5efca5cb55222c7667adc3",
+        "bytes": 4106
+      },
+      "lib/tools/cli-client/output.js": {
+        "type": "file",
+        "sha256": "2eace914547a487b2aa1dc34af787fe92168f0b7b3dde24f2b127e817cc9b2b4",
+        "bytes": 11703
+      },
+      "lib/tools/cli-client/program.js": {
+        "type": "file",
+        "sha256": "4a3ece6f75a707e6af71c1dde8650080e7819421594f251b9397e2e45e89cbb8",
+        "bytes": 16059
+      },
+      "lib/tools/cli-client/registry.js": {
+        "type": "file",
+        "sha256": "c11d278e05542808ba37bdb032018eccf9dc78377f8025bd74fa906ae009ca30",
+        "bytes": 6662
+      },
+      "lib/tools/cli-client/session.js": {
+        "type": "file",
+        "sha256": "716e87fc77251129adf8c66374cccc6788f76a02b4b33692c7e63a01a659cb5c",
+        "bytes": 9519
+      },
+      "lib/tools/dashboard/appIcon.png": {
+        "type": "file",
+        "sha256": "38037bcf18c7f9b950da2e1a2d8800d38fb27637ccda293d38368a3704b67f18",
+        "bytes": 18945
+      },
+      "lib/tools/skills/playwright-cli/SKILL.md": {
+        "type": "file",
+        "sha256": "29c0b669a524d42b51934d7db9144c1c07a566d0549ae6fb6ccd810e5a3cf61b",
+        "bytes": 12587
+      },
+      "lib/tools/skills/playwright-cli/references/element-attributes.md": {
+        "type": "file",
+        "sha256": "bf19aa4671e0a50a0fefa9c790f39124e803060eefe395042b723c29fcb7faa2",
+        "bytes": 665
+      },
+      "lib/tools/skills/playwright-cli/references/playwright-tests.md": {
+        "type": "file",
+        "sha256": "c5b0719fef2cfdff50bd744051b2f9afc119775db4b48e9b2882c1cf3886797c",
+        "bytes": 1690
+      },
+      "lib/tools/skills/playwright-cli/references/request-mocking.md": {
+        "type": "file",
+        "sha256": "54e801c9663fc2b6d68ceb058cb1c360724c2499f42acc7852a68e83e5b5f37c",
+        "bytes": 2182
+      },
+      "lib/tools/skills/playwright-cli/references/running-code.md": {
+        "type": "file",
+        "sha256": "d95c539a5990b71d02d8bdf1d9414df16191eb6cff95b0063820518b7a13dcb2",
+        "bytes": 5642
+      },
+      "lib/tools/skills/playwright-cli/references/session-management.md": {
+        "type": "file",
+        "sha256": "cd3e261b8763bf952f1e371b876cb78d054379afec85482f9250633e1b7e6c44",
+        "bytes": 5671
+      },
+      "lib/tools/skills/playwright-cli/references/storage-state.md": {
+        "type": "file",
+        "sha256": "9ac47f9ae4a1aedcd2077f8ac9ab1ba6bee1962cb83ff51adcd36fb6d83b5ec6",
+        "bytes": 5198
+      },
+      "lib/tools/skills/playwright-cli/references/test-generation.md": {
+        "type": "file",
+        "sha256": "12f54cfa718d9e559bad918120a4ca4f11c933167713d1b9c5f99872eddaf749",
+        "bytes": 16114
+      },
+      "lib/tools/skills/playwright-cli/references/tracing.md": {
+        "type": "file",
+        "sha256": "792e0ac7705e56ac48df84c0f5400221ce86107897c671590a64a4ea6a82508e",
+        "bytes": 3440
+      },
+      "lib/tools/skills/playwright-cli/references/video-recording.md": {
+        "type": "file",
+        "sha256": "8555ab5400df0d90e66318aacc0a8a4418fbf872e7463824d55d5c41615abd83",
+        "bytes": 5387
+      },
+      "lib/tools/skills/playwright-component-testing/SKILL.md": {
+        "type": "file",
+        "sha256": "77bc6f8d1de57ac8f8996ae860c1cfc446f18f48e78cc643b43389e5a97d5c66",
+        "bytes": 10027
+      },
+      "lib/tools/skills/playwright-component-testing/references/gallery-spec.md": {
+        "type": "file",
+        "sha256": "0ca25dde6112eb379f56eb618585b64dc2dfd13c2f7f956ac7eabbd76a68912b",
+        "bytes": 6199
+      },
+      "lib/tools/skills/playwright-component-testing/references/migration.md": {
+        "type": "file",
+        "sha256": "0afda2e933235ad5c538c914e75c2469c160cd3be7650bd4ec86bef9efae8d63",
+        "bytes": 4758
+      },
+      "lib/tools/skills/playwright-component-testing/references/react.md": {
+        "type": "file",
+        "sha256": "2a9661c3bff8d12064d50aa71c4e0fe120bcf6e9f243f2506a1ad90b0edf2f90",
+        "bytes": 2921
+      },
+      "lib/tools/skills/playwright-component-testing/references/vue.md": {
+        "type": "file",
+        "sha256": "5a01334a5521d6728f7d0e87751efb0723d6a7e3f715f994fdf96b88853966c1",
+        "bytes": 3180
+      },
+      "lib/tools/skills/playwright-trace/SKILL.md": {
+        "type": "file",
+        "sha256": "df85506bfa8a445c961efa1ac244cca733667b717711bcc99c1f93994c29d5dc",
+        "bytes": 4712
+      },
+      "lib/tools/utils/extension.js": {
+        "type": "file",
+        "sha256": "ed1a56cb9a6b4643a6a1dea604c541a4e3a4be8d8971edcfe53c7dc9cceefe98",
+        "bytes": 4260
+      },
+      "lib/tools/utils/socketConnection.js": {
+        "type": "file",
+        "sha256": "973c2bea70a1f1445f4673f99e9fa351e50a2ec9fd93d7381b2c41bb4de764dd",
+        "bytes": 3317
+      },
+      "lib/utilsBundle.js": {
+        "type": "file",
+        "sha256": "580f571bf063e2256b51b3946a035bc452fc0e22808d5547b198baea39923a32",
+        "bytes": 3239355
+      },
+      "lib/utilsBundle.js.LICENSE": {
+        "type": "file",
+        "sha256": "57945338cba4878e373646733528017fbe3db1503ec2b431fd30d2a390c70c33",
+        "bytes": 122225
+      },
+      "lib/vite/dashboard/assets/codicon-DCmgc-ay.ttf": {
+        "type": "file",
+        "sha256": "0f1d5219934e96e83b8db162d60b4d8c09b5de1e7d38031cbafe4a3c0f2889c9",
+        "bytes": 80340
+      },
+      "lib/vite/dashboard/assets/firefox-1bWoP6pv.svg": {
+        "type": "file",
+        "sha256": "3f3742d1e78c0db6c2d3531250f70c30675ee5310de32fa89befaf738c54efd0",
+        "bytes": 7488
+      },
+      "lib/vite/dashboard/assets/firefox-beta-k3eOH_eK.svg": {
+        "type": "file",
+        "sha256": "7eab5ffdc25903ba33a7202f7fffa1999f119c7be45a39e9e703c118904f917a",
+        "bytes": 9280
+      },
+      "lib/vite/dashboard/assets/firefox-nightly-Cp5nfeDT.svg": {
+        "type": "file",
+        "sha256": "f311c074b0fa999fcd6b73441301fb54ee87a48ff3bf05f318647928110476da",
+        "bytes": 9143
+      },
+      "lib/vite/dashboard/assets/index-CyWAfh-p.js": {
+        "type": "file",
+        "sha256": "33abc7596e49d241e5b397141073e73bb2fb7eec9880bb1e0e2e6d0f673a150e",
+        "bytes": 324278
+      },
+      "lib/vite/dashboard/assets/index-DhC616m4.css": {
+        "type": "file",
+        "sha256": "b4adaf3c09a3a3a4d17d0268255113d0bbacd2045cfab47ed69a78e0b9bdbd78",
+        "bytes": 131922
+      },
+      "lib/vite/dashboard/assets/safari-na3_-uQk.svg": {
+        "type": "file",
+        "sha256": "80fd72ca5eb8545f1981277b31f4f92951d469d4efebd078e4086b676fe517dc",
+        "bytes": 5254
+      },
+      "lib/vite/dashboard/index.html": {
+        "type": "file",
+        "sha256": "3c127919b93d9a2a621ec5aa5be8565680edc6e961e62d028914549d22bcb218",
+        "bytes": 1078
+      },
+      "lib/vite/dashboard/playwright-logo.svg": {
+        "type": "file",
+        "sha256": "511524a1c145819303a18fb71870a4307c3e740f9e9722f7686a2b42b0995b6c",
+        "bytes": 5645
+      },
+      "lib/vite/htmlReport/index.html": {
+        "type": "file",
+        "sha256": "ce7c098020a0eb9ce10edd416245ea6da50dfeaab18dfd0a2176979d22643be6",
+        "bytes": 464
+      },
+      "lib/vite/htmlReport/report.css": {
+        "type": "file",
+        "sha256": "afa5c8f204098c79eb093e9354d82488a2ccaa771b45453cd4d1e9a075779cb8",
+        "bytes": 99364
+      },
+      "lib/vite/htmlReport/report.js": {
+        "type": "file",
+        "sha256": "f0941744b2ef35b91eafb3d6099f5d4acb342ddbb3000ff293b6e3abf80d29ac",
+        "bytes": 415216
+      },
+      "lib/vite/recorder/assets/codeMirrorModule--QdMvsKi.css": {
+        "type": "file",
+        "sha256": "20be824a82832b62cc04642d31da3c609fd280b23f1cdcb1e622c4f40aac5ab8",
+        "bytes": 6251
+      },
+      "lib/vite/recorder/assets/codeMirrorModule-CwYYHbcZ.js": {
+        "type": "file",
+        "sha256": "b673acf747a1667bbd90b96d9de583d69905b0bd78a196b2a7979a573f5171fd",
+        "bytes": 307374
+      },
+      "lib/vite/recorder/assets/codicon-DCmgc-ay.ttf": {
+        "type": "file",
+        "sha256": "0f1d5219934e96e83b8db162d60b4d8c09b5de1e7d38031cbafe4a3c0f2889c9",
+        "bytes": 80340
+      },
+      "lib/vite/recorder/assets/index-DYjdXIbE.js": {
+        "type": "file",
+        "sha256": "f3c0288840bedb5739649f7fe938a30f57469d46d6ca1e56ee885a0860b98df9",
+        "bytes": 358249
+      },
+      "lib/vite/recorder/assets/index-l_lX622x.css": {
+        "type": "file",
+        "sha256": "01eecbef954379cb99bf36502849ff6e503887bd8a131a5d02dd5d8c23b6106f",
+        "bytes": 85451
+      },
+      "lib/vite/recorder/index.html": {
+        "type": "file",
+        "sha256": "d8a974540383c01c031dd7f317d4276675ecc562747986e6d70234751127e891",
+        "bytes": 1078
+      },
+      "lib/vite/recorder/playwright-logo.svg": {
+        "type": "file",
+        "sha256": "6b0a4367bdeab10995bc239278f04c68c10e48adbec15e799e01909a0d66dcb9",
+        "bytes": 5033
+      },
+      "lib/vite/traceViewer/assets/codeMirrorModule-rXmQmLUY.js": {
+        "type": "file",
+        "sha256": "bb0f7c41f9889e4195c2504878e38061288881f426498434c9955479828f7e66",
+        "bytes": 307393
+      },
+      "lib/vite/traceViewer/assets/defaultSettingsView-B-dXF5JN.js": {
+        "type": "file",
+        "sha256": "2ce8be133fe21a4abd7d8330d9b443092dc2ce28826f191442c14989f9d55b15",
+        "bytes": 643184
+      },
+      "lib/vite/traceViewer/assets/urlMatch-L3liM589.js": {
+        "type": "file",
+        "sha256": "1bc6321e32d11c31a452bc75896f0b344e6153321854d9f1658818be7f845c16",
+        "bytes": 2510
+      },
+      "lib/vite/traceViewer/assets/xtermModule-BuZfJS5v.js": {
+        "type": "file",
+        "sha256": "17584c22ad7d49f3c3c9e07e8b2655203cd33e60c1cb527356eabfda6a59c830",
+        "bytes": 288730
+      },
+      "lib/vite/traceViewer/codeMirrorModule.-QdMvsKi.css": {
+        "type": "file",
+        "sha256": "20be824a82832b62cc04642d31da3c609fd280b23f1cdcb1e622c4f40aac5ab8",
+        "bytes": 6251
+      },
+      "lib/vite/traceViewer/codicon.DCmgc-ay.ttf": {
+        "type": "file",
+        "sha256": "0f1d5219934e96e83b8db162d60b4d8c09b5de1e7d38031cbafe4a3c0f2889c9",
+        "bytes": 80340
+      },
+      "lib/vite/traceViewer/defaultSettingsView.BLFoOugd.css": {
+        "type": "file",
+        "sha256": "72241b3112ab609ca0e06195e85e02cb373799217cd5f24a07d61d9273c4ad3e",
+        "bytes": 105310
+      },
+      "lib/vite/traceViewer/index.B_TqY17P.css": {
+        "type": "file",
+        "sha256": "08a212fcacae1866f44f065654afcc4c7d03409c68c74b3315c5bda17a0ca003",
+        "bytes": 2055
+      },
+      "lib/vite/traceViewer/index.KZ4wOW1K.js": {
+        "type": "file",
+        "sha256": "53e2227532161670bc601e241a7a9af00ac54826a9dd2ef9c15b8c1f77e92e63",
+        "bytes": 6566
+      },
+      "lib/vite/traceViewer/index.html": {
+        "type": "file",
+        "sha256": "e2218af9284b6e1c2ec3b547320857778a323fd1473d90620153e967223c5721",
+        "bytes": 2363
+      },
+      "lib/vite/traceViewer/manifest.webmanifest": {
+        "type": "file",
+        "sha256": "d8540500603a32a39fe7e5a0375dc0f9ebafd11118e06a846db7efc608223ab9",
+        "bytes": 429
+      },
+      "lib/vite/traceViewer/playwright-logo.svg": {
+        "type": "file",
+        "sha256": "6b0a4367bdeab10995bc239278f04c68c10e48adbec15e799e01909a0d66dcb9",
+        "bytes": 5033
+      },
+      "lib/vite/traceViewer/snapshot.B_Jk1wbt.js": {
+        "type": "file",
+        "sha256": "d4d09e05451d107d8e1a6bbd041405fe518b9fd2833890e4ebaaad83b7f554f5",
+        "bytes": 650
+      },
+      "lib/vite/traceViewer/snapshot.html": {
+        "type": "file",
+        "sha256": "c608c8899c95c5a74d3f556e20146c3d852b9df85ae2854c659a7cc773c9b727",
+        "bytes": 389
+      },
+      "lib/vite/traceViewer/sw.bundle.js": {
+        "type": "file",
+        "sha256": "cfd6662a71914516efe90a5a6f3da2bbe5db6e442939b868ca465f765d33723f",
+        "bytes": 93459
+      },
+      "lib/vite/traceViewer/uiMode.C7UW1sC9.css": {
+        "type": "file",
+        "sha256": "c194e703ad4697e31c5e9b8d1e4f75f201a1fbe9940620fa6319dfa5543707b4",
+        "bytes": 54341
+      },
+      "lib/vite/traceViewer/uiMode.Dzuouizj.js": {
+        "type": "file",
+        "sha256": "a584f96f0797144552430d7a04f7e3b84b1baaa0b781a664b1512339ec1c760b",
+        "bytes": 37932
+      },
+      "lib/vite/traceViewer/uiMode.html": {
+        "type": "file",
+        "sha256": "32b260f173708fe088834efe8eff0f9d92af0c7e2e6c987cd8e197f0a066742f",
+        "bytes": 727
+      },
+      "lib/vite/traceViewer/xtermModule.kHJ-D0s7.css": {
+        "type": "file",
+        "sha256": "0dd60056134e6a2994a86b59a1e9789b9f04e92924da109aef8c923acaf08ce5",
+        "bytes": 2853
+      },
+      "lib/webp_codec.LICENSE": {
+        "type": "file",
+        "sha256": "995c7ee35aceb7666829b7a501ca89c0864e12b493c1174b155774ab1e03d831",
+        "bytes": 8841
+      },
+      "lib/webp_codec.wasm": {
+        "type": "file",
+        "sha256": "164cd9583a3e4d081f767d3b41ff0a730443dc7535fcc5caff83561463384b79",
+        "bytes": 565369
+      },
+      "lib/xdg-open": {
+        "type": "file",
+        "sha256": "7d759d54f0d4ce1beeb34ee62c587985b5042374e8de237b0dcb8cd47aa698cf",
+        "bytes": 32416
+      },
+      "package.json": {
+        "type": "file",
+        "sha256": "07c47543631fef9508760365dee9fbe958c562093ec8d122543949ed231f233f",
+        "bytes": 876
+      },
+      "types/protocol.d.ts": {
+        "type": "file",
+        "sha256": "b836eed98b79fabb54f1df73252a0ce178b8df4a89794251ade2fa0c5e52b678",
+        "bytes": 823302
+      },
+      "types/structs.d.ts": {
+        "type": "file",
+        "sha256": "c9b9179b7291c8562eb0fb781219ddbdcf36149ebd7bd355e5b4a553d6b60b81",
+        "bytes": 2455
+      },
+      "types/types.d.ts": {
+        "type": "file",
+        "sha256": "6c688250f2b7061cec3a17ab8797671137b653f8c4e81a6df3190cb112a7579a",
+        "bytes": 1110840
+      }
+    },
+    "archiveFileComparisons": 111
+  },
+  "semantics": {
+    "logical": "operand-evaluation",
+    "optionalChain": "no-dedicated-counter",
+    "defaultArgument": "fallback-evaluation",
+    "switch": "consequent-including-fallthrough",
+    "implicitNoMatch": "no-dedicated-counter",
+    "criticalBusinessCases": "separate-complete-semantic-obligations"
+  },
+  "licenseDisposition": "Unmodified isolated measurement tools retain licenses/attribution; CC-BY-4.0 caniuse-lite follows standalone-tool qualification, not product dependency admission.",
+  "lifecycleScriptsExecuted": false,
+  "advisoryRecord": "qualification graph audit retained; zero advisories at qualification observation, not an enduring absence claim"
+}

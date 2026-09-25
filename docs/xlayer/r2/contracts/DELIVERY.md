@@ -1,0 +1,37 @@
+# XLayer R2 contract preparation
+
+Base: b2ed61311df8d1c97a48f623d1b4872798f5e888. Implementation: Temp-A, AF-XLAYER-R2-CONTRACTS. Independent clone and branch codex/xlayer-r2-contracts. This assignment replaces the unavailable 02 handoff; no previous XLayer implementation was reused.
+
+The strict NOT_DEPLOYED / PRE_RELEASE preparation record is `contracts/deployment/m3-xlayer-testnet.template.json`. `validateXLayerDeploymentTemplate(value)` in `tools/check-xlayer-deployment-template.mjs` accepts exactly that preparation schema (with bounded configurable readiness/reorg thresholds) and rejects unknown/missing fields, foreign chains, filled evidence, constructor drift, additional deployments and standalone Locker creation. It is intentionally not a validator for an actual deployed record.
+
+Five direct deployments are ordered afUsdc, afEth, afBtc, strategyPass and vault. PassLocker is recorded separately as VAULT_CONSTRUCTOR and never appears in the direct deployment order. No Venue or SwapAdapter is required. Every address, constructor value, receipt/hash and source/evidence ref remains null. PM owns conversion into a separately validated deployed record; local rehearsal addresses must never populate the template.
+
+`AlphaForgeTestUSDT` is a new fixed-supply asset with name AlphaForge Test USDT, symbol USDT and six decimals. It is a test asset, not issuer-backed USDT. It occupies the existing afUsdc role. The original AlphaForgeTestUSDC, Vault ABI/selectors, afUsdc constructor/getter, accounting scale, storage and authorization remain unchanged. No permit, mint function or additional owner authority is added. All new prose is English.
+
+## Local verification
+
+Approved Node 24.21.0/npm 11.19.1; independent npm ci --ignore-scripts --offline. Pinned Forge 1.5.1, commit b0a9dd9ceda36f63e2326ce530c10e6916f4b8a2; solc 0.8.31+commit.fd3a2265. Tool and OpenZeppelin archives were copied from the existing local cache only after verifying the repository lock digests; binaries and dependency directories were independently materialized in this checkout. The pinned pragma derivation check passed.
+
+- Baseline legacy template: 10/10. Baseline original Phase One rehearsal: 2/2.
+- Template RED: six expected missing-implementation failures retained. New plus legacy template GREEN: 16/16.
+- USDT RED: existing settlement asset compiled and failed the required USDT-name assertion; the other three new tests passed. No compiler-error RED was substituted for this behavior.
+- Full Forge suite after the new asset: 164/164, including XLayer lifecycle and preview-domain regressions. Chain ID changes exist only in the in-memory Forge VM.
+- Changed JavaScript ESLint passed; Prettier and Forge formatting applied to new files only.
+
+Offline lifecycle coverage: one-wei Pass transfer, exact finite USDT/Pass allowances, deposit/withdraw/close accounting and returned assets, Vault-created Locker identity, owner isolation, token/native rescue. Digest-preview domains are separated across 1952, 195, 196, 46630 and verifying contracts. The preview is not business-signature authorization.
+
+Raw RED/GREEN logs remain in ignored `.checks/xlayer-r2-contracts/`. Local test results are self-verification; Macbeth03's independent review is pending. Root test/management registration for `test/xlayer-deployment-template.test.mjs` is manager-owned. Forge discovers `contracts/test/XLayerPhase1.t.sol` through the existing all-tests gate.
+
+No RPC, key use, signing, broadcast, chain deployment or mainnet. Hosted verification and actual deployment remain NOT_RUN. No historical manager checks or generated PASS evidence were edited.
+
+## Simulation-only follow-up — 2026-09-26
+
+The manager reported Macbeth05's independent review of b839291: template/asset design accepted, with one P2 in the Node test's use of URL.pathname on Windows. Commit cde0587900130c3d9780185fcf946a7c2936daf6 uses fileURLToPath instead. The original copied test failed in a path with spaces; corrected path-fixture plus current/legacy tests passed 22/22. Native Windows execution remains NOT_RUN.
+
+`tools/prepare-xlayer-deployment.mjs` now prepares only an offline simulation, accepting exactly `--output <new path>` plus the public constructor variables documented in RUNBOOK.md. Every broadcast, RPC, wallet and arbitrary extra flag is rejected. The child receives only explicit parameters, fixed profile and a bounded PATH. The script uses local VM impersonation and never collects transactions for broadcast.
+
+The output has six simulated addresses and exact constructor strings. It remains NOT_DEPLOYED / PRE_RELEASE / SIMULATION_ONLY / LOCAL_SIMULATION_ONLY. Receipt blocks/transactions, creation/runtime hashes and evidence refs remain null. It cannot be used as a verified frontend/backend deployment configuration. The script's real in-memory execution confirms five direct creations and an internally created Locker; wrong chain and missing/zero parameters fail before creation.
+
+Verification: 23 focused Node tests including the real CLI/Forge integration; full Forge 165/165; both TypeScript projects; changed-file ESLint; Prettier and Forge format checks; original compiled Phase One manifest and frozen Vault ABI checks. Test fixture corrections (payable cast, environment mutation ordering and chain restoration) are retained in ignored logs, separate from valid RED failures. A single Solidity test sequences environment mutations to avoid parallel test-process environment races.
+
+The attempted broadcast-capable patch was rejected by automatic approval review and was not applied. Specific authorization remains pending; this batch implements the explicitly assigned simulation-only alternative. It adds no npm/CI entry or broadcast command. Manager registration requested for `test/xlayer-deployment-command.test.mjs`; `test/xlayer-simulation-native.qualified.test.mjs` is an explicit native qualification requiring installed pinned Forge tools. Independent review of this follow-up is pending.

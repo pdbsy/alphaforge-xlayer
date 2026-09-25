@@ -1,3 +1,5 @@
+> Current phase-one assignment (2026-09-20): see [fixed-base task registry](../phase1/ASSIGNMENTS.md). Master is `18f5352070910a867b9729b031aa2e3951785e01`; earlier candidates, task tables and no-assignment states below are historical. No merge/deployment authority or independent approval is implied.
+
 > Current M3 assignments and verified task receipts are recorded in [M3-ASSIGNMENTS.md](M3-ASSIGNMENTS.md). They supersede historical migration/setup defaults only within the user-assigned scope.
 
 # AlphaForge persistent worker protocol

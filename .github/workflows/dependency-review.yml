@@ -1,14 +1,16 @@
 name: Dependency review
 
-# Optional legacy integration; automatic gates are Semgrep CE, OSV and Gitleaks.
+# Public-repository dependency review complements the existing scanner gates.
 on:
+  pull_request:
+    branches: [master]
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: dependency-review-${{ github.workflow }}-${{ github.event.pull_request.number }}
+  group: dependency-review-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -21,8 +23,8 @@ jobs:
           persist-credentials: false
       - uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
         with:
-          base-ref: master
-          head-ref: ${{ github.sha }}
+          base-ref: ${{ github.event.pull_request.base.sha || 'master' }}
+          head-ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fail-on-severity: high
           allow-licenses: >-
             MIT, Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC,

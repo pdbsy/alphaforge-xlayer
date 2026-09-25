@@ -99,8 +99,7 @@ export function gitIdentity(git, event) {
     if (git(['rev-parse', '--is-shallow-repository']) !== 'false') return identity;
     if (![identity.head, identity.tree, identity.base].every((s) => sha.test(s))) return identity;
     if (event.event) {
-      if (event.repository !== 'pdbsy/quantpass-arbitrum-hackathon' || event.sha !== identity.head)
-        return identity;
+      if (event.repository !== 'pdbsy/alphaforge-xlayer' || event.sha !== identity.head) return identity;
       if (event.event === 'pull_request' || event.event === 'merge_group') {
         if (!sha.test(event.head) || !sha.test(event.base)) return identity;
         const parents = git(['show', '--no-patch', '--format=%P', 'HEAD']).split(' ');
@@ -320,7 +319,10 @@ export function inspectEnvironment({ root = ROOT, mode = 'dev', environment = pr
       o.overrides.push('git-history');
       return evaluate(inputs, o, mode);
     }
-    o.rootValid = realpathSync(git(['rev-parse', '--show-toplevel'])) === root;
+    // Windows short and long names can survive the JavaScript realpath resolver.
+    // Compare both roots through the native filesystem resolver, without case
+    // folding or accepting a merely contained directory.
+    o.rootValid = realpathSync.native(git(['rev-parse', '--show-toplevel'])) === realpathSync.native(root);
     const origin = git(['remote', 'get-url', 'origin']);
     const expected = inputs.supply.repository;
     o.originValid = [
