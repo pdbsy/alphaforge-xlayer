@@ -1,8 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { asAddress, asBlockHash } from '../packages/chain-adapter/src/types.ts';
 import { buildXLayerPublicApp } from '../apps/server/src/xlayer-public-app.ts';
 import { deploymentManifestDigest } from '../packages/chain-adapter/src/manifest.ts';
-import { validateXLayerPublicDeployment, type XLayerPublicDeployment } from '../apps/server/src/xlayer-public-config.ts';
+import {
+  validateXLayerPublicDeployment,
+  type XLayerPublicDeployment,
+} from '../apps/server/src/xlayer-public-config.ts';
 
 const origin = 'https://alphaforge.example';
 const headers = { host: 'alphaforge.example' };
@@ -87,23 +91,36 @@ test('public origin validation requires HTTPS except explicit loopback rehearsal
 });
 
 const manifest = {
-  schemaVersion: 1, environment: 'xlayer-testnet', chainId: 1952,
-  contractName: 'AlphaForgeVault', contractType: 'vault',
-  contractAddress: '0x1111111111111111111111111111111111111111', deploymentBlock: '25',
+  schemaVersion: 1,
+  environment: 'xlayer-testnet',
+  chainId: 1952,
+  contractName: 'AlphaForgeVault',
+  contractType: 'vault',
+  contractAddress: asAddress('0x1111111111111111111111111111111111111111'),
+  deploymentBlock: '25',
   abiVersion: 'm3-vault-db620d6',
-  abiHash: '0x264b4498cf396008e4619664c59bf8d8eac0a04f04b80e760df3cfbc00846977',
-  runtimeBytecodeHash: `0x${'2'.repeat(64)}`,
-  strategyPassAddress: '0x3333333333333333333333333333333333333333', strategyPassDeploymentBlock: '24',
-  strategyPassAbiHash: '0xdd989644feeb7798baca69f7391ba75b6f9d09f47fb05bd90184f6072912923f',
-  strategyPassRuntimeBytecodeHash: `0x${'4'.repeat(64)}`,
+  abiHash: asBlockHash('0x264b4498cf396008e4619664c59bf8d8eac0a04f04b80e760df3cfbc00846977'),
+  runtimeBytecodeHash: asBlockHash(`0x${'2'.repeat(64)}`),
+  strategyPassAddress: asAddress('0x3333333333333333333333333333333333333333'),
+  strategyPassDeploymentBlock: '24',
+  strategyPassAbiHash: asBlockHash('0xdd989644feeb7798baca69f7391ba75b6f9d09f47fb05bd90184f6072912923f'),
+  strategyPassRuntimeBytecodeHash: asBlockHash(`0x${'4'.repeat(64)}`),
 } as const;
 function publicDeployment(): XLayerPublicDeployment {
-  return { source: 'reviewed-deployment-manifest', chainId: 1952,
-    vaultAddress: manifest.contractAddress, deploymentBlock: manifest.deploymentBlock,
-    abiVersion: manifest.abiVersion, abiHash: manifest.abiHash, runtimeBytecodeHash: manifest.runtimeBytecodeHash,
-    strategyPassAddress: manifest.strategyPassAddress, strategyPassDeploymentBlock: manifest.strategyPassDeploymentBlock,
-    strategyPassAbiHash: manifest.strategyPassAbiHash, strategyPassRuntimeBytecodeHash: manifest.strategyPassRuntimeBytecodeHash,
-    manifestDigest: deploymentManifestDigest(manifest) };
+  return {
+    source: 'reviewed-deployment-manifest',
+    chainId: 1952,
+    vaultAddress: manifest.contractAddress,
+    deploymentBlock: manifest.deploymentBlock,
+    abiVersion: manifest.abiVersion,
+    abiHash: manifest.abiHash,
+    runtimeBytecodeHash: manifest.runtimeBytecodeHash,
+    strategyPassAddress: manifest.strategyPassAddress,
+    strategyPassDeploymentBlock: manifest.strategyPassDeploymentBlock,
+    strategyPassAbiHash: manifest.strategyPassAbiHash,
+    strategyPassRuntimeBytecodeHash: manifest.strategyPassRuntimeBytecodeHash,
+    manifestDigest: deploymentManifestDigest(manifest),
+  };
 }
 
 test('configured website exposes only manifest-bound public fields without claiming an absent indexer is ready', async () => {
@@ -117,21 +134,34 @@ test('configured website exposes only manifest-bound public fields without claim
     const health = await app.inject({ url: '/api/health', headers });
     assert.equal(health.statusCode, 503);
     assert.equal(health.json().ready, false);
-  } finally { await app.close(); }
+  } finally {
+    await app.close();
+  }
 });
 
 test('public deployment rejects cross-chain configuration, mismatched evidence, zero code and unknown fields', () => {
   const deployment = publicDeployment();
   for (const change of [
-    { chainId: 196 }, { chainId: 46630 }, { source: 'fixture' }, { deploymentBlock: '26' },
+    { chainId: 196 },
+    { chainId: 46630 },
+    { source: 'fixture' },
+    { deploymentBlock: '26' },
     { vaultAddress: '0x5555555555555555555555555555555555555555' },
-    { runtimeBytecodeHash: `0x${'0'.repeat(64)}` }, { manifestDigest: `0x${'6'.repeat(64)}` },
-    { dbPath: '/private/data.sqlite' }, { passInitialSupplyBaseUnits: '1' },
+    { runtimeBytecodeHash: `0x${'0'.repeat(64)}` },
+    { manifestDigest: `0x${'6'.repeat(64)}` },
+    { dbPath: '/private/data.sqlite' },
+    { passInitialSupplyBaseUnits: '1' },
     { passInitialSupplyBaseUnits: '1', passInitialRecipient: '0x0000000000000000000000000000000000000000' },
-  ]) assert.throws(() => validateXLayerPublicDeployment({ ...deployment, ...change } as XLayerPublicDeployment));
+  ])
+    assert.throws(() =>
+      validateXLayerPublicDeployment({ ...deployment, ...change } as XLayerPublicDeployment),
+    );
 });
 
 test('duplicate public Vault records fail before constructing a server', async () => {
   const deployment = publicDeployment();
-  await assert.rejects(buildXLayerPublicApp({origin,deployments:[deployment,deployment]}), /INVALID_PUBLIC_DEPLOYMENT_SET/);
+  await assert.rejects(
+    buildXLayerPublicApp({ origin, deployments: [deployment, deployment] }),
+    /INVALID_PUBLIC_DEPLOYMENT_SET/,
+  );
 });
