@@ -1,9 +1,23 @@
 import assert from 'node:assert/strict';
+import { verifyManagementBoundaries } from '../test/helpers/management-browser-boundaries.mjs';
 import { execFileSync } from 'node:child_process';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, rename, writeFile } from 'node:fs/promises';
+import { randomUUID } from 'node:crypto';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { createDashboardServer } from './serve-management-dashboard.mjs';
+
+// The fixed receipt denotes the current invocation. Preserve earlier bytes in
+// history before tool loading can fail, so stale PASS cannot represent this run.
+await mkdir('.checks/pr11/history', { recursive: true });
+try {
+  await rename(
+    '.checks/pr11/management-browser.json',
+    `.checks/pr11/history/management-browser-${randomUUID()}.json`,
+  );
+} catch (error) {
+  if (error.code !== 'ENOENT') throw error;
+}
 
 if (!process.env.AF_PLAYWRIGHT_PATH) throw new Error('AF_PLAYWRIGHT_PATH is required');
 const { chromium } = await import(pathToFileURL(resolve(process.env.AF_PLAYWRIGHT_PATH)));
@@ -12,13 +26,19 @@ const server = await createDashboardServer({
   host: '127.0.0.1',
   port: 0,
 });
-await new Promise((done) => server.listen(0, '127.0.0.1', done));
-const browser = await chromium.launch({
-  executablePath:
-    process.env.AF_CHROME_PATH ?? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-  headless: true,
-});
+let browser;
+let result;
+const failures = [];
 try {
+  await new Promise((done, reject) => {
+    server.once('error', reject);
+    server.listen(0, '127.0.0.1', done);
+  });
+  browser = await chromium.launch({
+    executablePath:
+      process.env.AF_CHROME_PATH ?? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+    headless: true,
+  });
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
   const requests = [];
   page.on('request', (request) => requests.push({ method: request.method(), url: request.url() }));
@@ -104,12 +124,15 @@ try {
   await page.reload();
   await page.waitForLoadState('networkidle');
   assert.ok((await page.locator('#worker-reports article').count()) > 0);
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  const boundaryChecks = await verifyManagementBoundaries(page, origin);
   assert.deepEqual(errors, []);
-  const result = {
+  result = {
     status: 'PASS',
     head: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
     workingTreeClean: execFileSync('git', ['status', '--porcelain'], { encoding: 'utf8' }).trim() === '',
     checks: [
+      ...boundaryChecks,
       'Canonical Forum messages and literal search',
       'Worker reports preserve sources and support literal search',
       'Desktop/mobile no horizontal overflow',
@@ -120,10 +143,22 @@ try {
       'Refresh failure preserves snapshot and later refresh recovers',
     ],
   };
-  await mkdir('.checks/pr11', { recursive: true });
-  await writeFile('.checks/pr11/management-browser.json', JSON.stringify(result, null, 2) + '\n');
-  console.log(JSON.stringify(result));
+} catch (error) {
+  failures.push(error);
 } finally {
-  await browser.close();
-  await new Promise((done) => server.close(done));
+  try {
+    await browser?.close();
+  } catch (error) {
+    failures.push(error);
+  }
+  try {
+    if (server.listening)
+      await new Promise((done, reject) => server.close((error) => (error ? reject(error) : done())));
+  } catch (error) {
+    failures.push(error);
+  }
 }
+if (failures.length) throw failures[0];
+await mkdir('.checks/pr11', { recursive: true });
+await writeFile('.checks/pr11/management-browser.json', JSON.stringify(result, null, 2) + '\n');
+console.log(JSON.stringify(result));

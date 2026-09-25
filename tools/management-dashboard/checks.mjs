@@ -1,13 +1,42 @@
 import { spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { lstat, mkdir, realpath, rename, unlink, writeFile } from 'node:fs/promises';
-import { dirname, resolve, sep } from 'node:path';
+import { delimiter, dirname, resolve, sep } from 'node:path';
+import { npmCli } from '../environment/observe.mjs';
 
 import { sanitizeLog } from './redact.mjs';
 import { validateCheckReport } from './schema.mjs';
 import { collectGitState as collectRepositoryGitState } from './sources.mjs';
 
 const unitTests = [
+  'test/xlayer-release-build.test.mjs',
+  'test/xlayer-network.test.ts',
+  'test/management-public-entry-boundaries.test.mjs',
+  'test/environment-public-entry-boundaries.test.mjs',
+  'test/html-source-ranges.test.mjs',
+  'test/management-browser-inputs.qualified.test.mjs',
+  'test/forum-sync-boundaries.test.mjs',
+  'test/management-transport-boundaries.test.mjs',
+  'test/management-dashboard-git-boundaries.test.mjs',
+  'test/security-reachable-closeout.test.mjs',
+  'test/coverage-cli-boundaries.test.mjs',
+  'test/coverage-lifecycle-boundaries.test.mjs',
+  'test/management-cli-boundaries.test.mjs',
+
+  'test/coverage-evidence.test.mjs',
+  'test/coverage-prototype-map.test.mjs',
+  'test/coverage-toolchain.test.mjs',
+  'test/coverage-inventory.test.mjs',
+  'test/coverage-artifacts.test.mjs',
+  'test/coverage-browser-runtime.test.mjs',
+  'test/coverage-browser-child.test.mjs',
+  'test/m3-browser-journeys.test.mjs',
+  'test/local-ci.test.mjs',
+  'test/local-ci-runner-closeout.test.mjs',
+  'test/local-agent-integration.test.mjs',
+
+  'test/m3-browser-runtime-set.test.ts',
+  'test/ui-evm-keccak.test.ts',
   'test/ci-gates.test.mjs',
   'test/security-scanners.test.mjs',
   'test/chain-startup.test.ts',
@@ -23,6 +52,7 @@ const unitTests = [
   'test/m3-chain-action-flow.test.ts',
   'test/m3-injected-runtime.test.ts',
   'test/m3-browser-runtime.test.ts',
+  'test/m3-submission-journal.test.ts',
   'test/m3-product-dialog.test.ts',
 
   'test/chain-api.test.ts',
@@ -39,6 +69,7 @@ const unitTests = [
   'test/robinhood-chain.test.ts',
   'test/governance.test.mjs',
   'test/supply-chain.test.mjs',
+  'test/supply-chain-workflow-boundaries.test.mjs',
   'test/threat-model.test.mjs',
   'test/planning.test.mjs',
   'test/domain.test.ts',
@@ -53,6 +84,7 @@ const unitTests = [
   'test/environment.test.mjs',
   'test/environment-git.test.mjs',
   'test/environment-ci.test.mjs',
+  'test/environment-observation.test.mjs',
   'test/product-api.test.ts',
   'test/ui-product-client.test.ts',
   'test/ui-product-adapter.test.ts',
@@ -110,9 +142,10 @@ function safeEnvironment() {
   const env = {
     CI: '1',
     LC_ALL: 'C',
-    PATH: process.env.PATH,
+    PATH: [dirname(process.execPath), process.env.PATH ?? ''].join(delimiter),
   };
   if (process.env.TMPDIR) env.TMPDIR = process.env.TMPDIR;
+  if (process.platform === 'win32' && process.env.SystemRoot) env.SystemRoot = process.env.SystemRoot;
   return env;
 }
 
@@ -123,16 +156,35 @@ function appendBounded(current, chunk, maximum) {
   return sanitizeLog(combined, { maxBytes: maximum });
 }
 
+const delay = (ms) => new Promise((resolveDelay) => setTimeout(resolveDelay, ms));
+
+async function groupDisappeared(groupExists) {
+  for (let attempt = 0; attempt < 40 && groupExists(); attempt++) await delay(25);
+  return !groupExists();
+}
+
+// Trusted local command supervision, not OS isolation: detached descendants can escape this group.
 async function spawnProcess({ file, args, cwd, timeoutMs, maxOutputBytes }) {
+  // npm.cmd cannot be executed without a shell on Windows. Keep shell:false and
+  // bind both npm and node to the approved current Node installation.
+  const executable = ['node', 'npm'].includes(file) ? process.execPath : file;
+  const executableArgs = file === 'npm' ? [npmCli(), ...args] : args;
   return new Promise((resolveProcess) => {
     let stdout = '';
     let stderr = '';
     let settled = false;
     let timedOut = false;
-    const child = spawn(file, args, {
+    let closed = false;
+    let signalFailed = false;
+    let groupRetired = false;
+    let escalation;
+    let hardDeadline;
+    const nativeGroup = process.platform !== 'win32';
+    const child = spawn(executable, executableArgs, {
       cwd,
       env: safeEnvironment(),
       shell: false,
+      detached: nativeGroup,
       stdio: ['ignore', 'pipe', 'pipe'],
       windowsHide: true,
     });
@@ -140,12 +192,52 @@ async function spawnProcess({ file, args, cwd, timeoutMs, maxOutputBytes }) {
       if (settled) return;
       settled = true;
       clearTimeout(timer);
+      clearTimeout(escalation);
+      clearTimeout(hardDeadline);
+      if (!closed) {
+        child.stdout?.destroy();
+        child.stderr?.destroy();
+        child.unref();
+      }
       resolveProcess(result);
+    };
+    const groupExists = () => {
+      if (!child.pid || groupRetired) return false;
+      try {
+        process.kill(-child.pid, 0);
+        return true;
+      } catch (error) {
+        if (error.code === 'ESRCH') {
+          // Never signal a numeric process-group ID after its first observed disappearance.
+          groupRetired = true;
+          return false;
+        }
+        // EPERM or an unexpected OS error leaves cleanup unconfirmed.
+        return true;
+      }
+    };
+    const signalProcess = (signal) => {
+      if (!child.pid) return;
+      try {
+        if (nativeGroup) {
+          if (groupExists()) process.kill(-child.pid, signal);
+        } else if (child.exitCode === null && child.signalCode === null && !child.kill(signal))
+          signalFailed = true;
+      } catch (error) {
+        if (error.code === 'ESRCH') groupRetired = true;
+        else signalFailed = true;
+      }
     };
     const timer = setTimeout(() => {
       timedOut = true;
-      child.kill('SIGTERM');
-      setTimeout(() => child.kill('SIGKILL'), 1000).unref();
+      signalProcess('SIGTERM');
+      // kill() may synchronously emit an error that settles the check.
+      if (settled) return;
+      escalation = setTimeout(() => signalProcess('SIGKILL'), 1000);
+      hardDeadline = setTimeout(() => {
+        signalProcess('SIGKILL');
+        finish({ exitCode: 124, stdout, stderr, timedOut: true, cleanupConfirmed: false });
+      }, 2000);
     }, timeoutMs);
     child.stdout.on('data', (chunk) => {
       stdout = appendBounded(stdout, chunk.toString('utf8'), maxOutputBytes);
@@ -153,12 +245,44 @@ async function spawnProcess({ file, args, cwd, timeoutMs, maxOutputBytes }) {
     child.stderr.on('data', (chunk) => {
       stderr = appendBounded(stderr, chunk.toString('utf8'), maxOutputBytes);
     });
-    child.once('error', () =>
-      finish({ exitCode: 127, stdout, stderr: `${stderr}PROCESS_ERROR`, timedOut: false }),
-    );
-    child.once('close', (code) =>
-      finish({ exitCode: timedOut ? 124 : (code ?? 127), stdout, stderr, timedOut }),
-    );
+    child.on('error', () => {
+      if (settled) return;
+      finish({
+        exitCode: timedOut ? 124 : 127,
+        stdout,
+        stderr: `${stderr}PROCESS_ERROR`,
+        timedOut,
+        cleanupConfirmed: !child.pid && !timedOut,
+      });
+      // Settle before cleanup: a synchronous kill error must not reenter this handler.
+      if (child.pid) signalProcess('SIGKILL');
+    });
+    child.once('exit', () => {
+      if (nativeGroup) groupExists();
+    });
+    child.once('close', (code) => {
+      closed = true;
+      if (settled) return;
+      void (async () => {
+        let cleanupConfirmed = !signalFailed;
+        if (nativeGroup && child.pid) {
+          if (!(await groupDisappeared(groupExists))) {
+            if (settled) return;
+            signalProcess('SIGKILL');
+            await groupDisappeared(groupExists);
+            cleanupConfirmed = false;
+          }
+        } else if (timedOut) cleanupConfirmed = false;
+        if (settled) return;
+        finish({
+          exitCode: timedOut ? 124 : (code ?? 127),
+          stdout,
+          stderr,
+          timedOut,
+          cleanupConfirmed: cleanupConfirmed && !signalFailed,
+        });
+      })().catch(() => finish({ exitCode: 127, stdout, stderr, timedOut, cleanupConfirmed: false }));
+    });
   });
 }
 
@@ -173,6 +297,7 @@ function duration(startedAt, finishedAt) {
 function normalizedLog(result, maximum) {
   const parts = [];
   if (result.timedOut) parts.push('TIMEOUT');
+  if (result.cleanupConfirmed === false) parts.push('CLEANUP_UNCONFIRMED');
   if (result.stdout) parts.push(result.stdout.trimEnd());
   if (result.stderr) parts.push(result.stderr.trimEnd());
   const text = parts.filter(Boolean).join('\n') || '(no output)';
@@ -227,20 +352,29 @@ export async function runCheck(id, context) {
       maxOutputBytes: context.maxLogBytes ?? 65_536,
     });
   } catch {
-    result = { exitCode: 127, stdout: '', stderr: 'PROCESS_ERROR', timedOut: false };
+    result = {
+      exitCode: 127,
+      stdout: '',
+      stderr: 'PROCESS_ERROR',
+      timedOut: false,
+      cleanupConfirmed: false,
+    };
   }
   const finishedAt = iso(clock);
+  const cleanupConfirmed = result.cleanupConfirmed !== false;
+  const exitCode = result.timedOut ? 124 : !cleanupConfirmed && result.exitCode === 0 ? 127 : result.exitCode;
   return {
     record: {
       id: check.id,
-      status: result.exitCode === 0 && !result.timedOut ? 'PASS' : 'FAIL',
+      status: exitCode === 0 && cleanupConfirmed ? 'PASS' : 'FAIL',
       startedAt,
       finishedAt,
       durationMs: duration(startedAt, finishedAt),
-      exitCode: result.timedOut ? 124 : result.exitCode,
+      exitCode,
       evidence,
     },
     log: normalizedLog(result, context.maxLogBytes ?? 65_536),
+    cleanupConfirmed,
   };
 }
 
@@ -347,6 +481,10 @@ export async function runChecks(context) {
   const logs = [];
   for (const check of selected) {
     const result = await runCheck(check.id, { ...context, commit: initialGit.commit, clock, runId });
+    if (result.cleanupConfirmed === false) {
+      await atomicWrite(evidenceDirectory.root, evidenceDirectory.directory, `${check.id}.log`, result.log);
+      throw new Error('CHECK_PROCESS_CLEANUP_UNCONFIRMED');
+    }
     records.push(result.record);
     logs.push({ id: check.id, text: result.log });
     requireUnchangedGitState(initialGit, await collectGit(context.root, 'master'));

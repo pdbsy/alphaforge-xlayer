@@ -446,6 +446,7 @@ test('Git provenance rejects forged review baselines and constrains the first ac
     'planning/security-boundary.json',
     'test/governance.test.mjs',
     'tools/check-governance-v2.mjs',
+    'tools/build-planning.mjs',
   ];
   const baselineFiles = new Map(
     await Promise.all(
@@ -672,6 +673,30 @@ test('Git provenance rejects forged review baselines and constrains the first ac
     now,
   });
   assert.match(committedVerification.acceptanceCommit, /^[0-9a-f]{40}$/);
+  // Execute the byte-identical CLI in the private, complete Git fixture. These
+  // native processes verify the accepted lifecycle; relocated modules do not
+  // contribute counters to the repository source coverage report.
+  const nativeRead = execFileSync(process.execPath, ['tools/check-governance-v2.mjs'], {
+    cwd: repository,
+    encoding: 'utf8',
+    timeout: 30_000,
+  });
+  const acceptedReport = JSON.parse(nativeRead);
+  assert.equal(acceptedReport.status, 'accepted');
+  assert.equal(acceptedReport.deploymentWritesEnabled, false);
+  assert.equal(acceptedReport.applicationWritesEnabled, false);
+  const beforeGenerated = await readFile(resolve(repository, 'docs/reviews/GOV-001.md'));
+  const nativeWrite = execFileSync(process.execPath, ['tools/check-governance-v2.mjs', '--write'], {
+    cwd: repository,
+    encoding: 'utf8',
+    timeout: 30_000,
+  });
+  assert.match(nativeWrite, /Governance artifacts generated and validated/);
+  assert.deepEqual(await readFile(resolve(repository, 'docs/reviews/GOV-001.md')), beforeGenerated);
+  assert.equal(git(repository, ['status', '--porcelain']).trim(), '');
+  assert.doesNotThrow(() =>
+    validateGovernanceReviewProvenance(review, current, { repositoryRoot: repository }),
+  );
 
   await writeRepositoryFile(repository, 'src/feature.ts', 'export const feature = true;\n');
   git(repository, ['add', '--all']);
@@ -945,4 +970,124 @@ test('human-facing governance status must match the machine decision', () => {
     semanticReadmeDigest(reviewReadme),
     semanticReadmeDigest('Governance decision status: **accepted**.\n'),
   );
+});
+
+test('governance normalization rejects missing markers and keeps section boundaries exact', () => {
+  for (const document of ['# fixture', 'Governance decision status: **unknown**.'])
+    assert.throws(() => semanticReadmeDigest(document), /exactly one recognized governance status/);
+  for (const document of ['# fixture', '- 状态：未审阅'])
+    assert.throws(() => semanticAdrDigest(document), /exactly one recognized decision status/);
+  const section = '## Current work\n\nGovernance decision status: **independent review (not accepted)**.\n';
+  assert.equal(semanticReadmeGovernanceDigest(section), semanticReadmeDigest(section));
+  assert.equal(
+    semanticReadmeGovernanceDigest(`${section}\n## Historical notes\nUnrelated text`),
+    semanticReadmeDigest(section),
+  );
+});
+
+test('review dates reject invalid evidence clocks and preserve civil-date boundary rules', () => {
+  assert.throws(
+    () => validateReviewDateWindow('2026-09-08', 'invalid', new Date('2026-09-09T00:00:00Z')),
+    /commit timestamp is invalid/,
+  );
+  assert.throws(
+    () => validateReviewDateWindow('2026-09-08', '2026-09-08T00:00:00Z', new Date(NaN)),
+    /current time is invalid/,
+  );
+  assert.throws(
+    () => validateReviewDateWindow('2026-09-08', '2026-09-09T12:00:00Z', new Date('2026-09-10T00:00:00Z')),
+    /predates/,
+  );
+  assert.doesNotThrow(() =>
+    validateReviewDateWindow('2026-09-08', '2026-09-09T11:59:59.999Z', new Date('2026-09-10T00:00:00Z')),
+  );
+});
+
+test('governance review rendering retains each nonblocking qualification verbatim', () => {
+  const review = makeValidReview();
+  review.reviewers[0].nonBlockingNotes = ['fixture reviewer limitation'];
+  review.nonBlockingRecommendations = ['fixture recommendation'];
+  review.limitations = ['fixture scope limitation'];
+  validateGovernanceReview(review, boundary);
+  const html = renderGovernanceReview(review);
+  for (const expected of [
+    'fixture reviewer limitation',
+    'fixture recommendation',
+    'fixture scope limitation',
+  ])
+    assert.equal(html.split(expected).length - 1, 1);
+});
+
+test('governance review rejects noncanonical dates before their provenance can be trusted', () => {
+  for (const reviewedAt of ['2026/09/06', '2026-9-06', '', '2026-02-29']) {
+    const review = makeValidReview();
+    review.reviewedAt = reviewedAt;
+    assert.throws(() => validateGovernanceReview(review, boundary), /real YYYY-MM-DD calendar date/);
+  }
+  const leapDay = makeValidReview();
+  leapDay.reviewedAt = '2028-02-29';
+  assert.equal(validateGovernanceReview(leapDay, boundary), leapDay);
+});
+
+test('roadmap rejects prematurely enabled write planes even when referenced task IDs exist', () => {
+  const changed = structuredClone(boundary);
+  changed.environment.writePlanes.deployment.enabled = true;
+  assert.throws(() => validateRoadmapAlignment(changed, roadmap), /deployment write plane enabled before/);
+  const completed = structuredClone(roadmap);
+  const requiredTasks = changed.environment.writePlanes.deployment.requiresCompletedTasks;
+  for (const task of completed.tasks) if (requiredTasks.includes(task.id)) task.status = 'done';
+  assert.throws(() => validateRoadmapAlignment(changed, completed), /deployment write plane enabled before/);
+  assert.equal(boundary.environment.writePlanes.deployment.enabled, false);
+});
+
+test('review date admission uses the current clock when no override is supplied', () => {
+  const now = new Date();
+  assert.doesNotThrow(() => validateReviewDateWindow(now.toISOString().slice(0, 10), now.toISOString()));
+  const tomorrow = new Date(now.valueOf() + 86_400_000);
+  assert.throws(
+    () => validateReviewDateWindow(now.toISOString().slice(0, 10), tomorrow.toISOString()),
+    /commit timestamp is in the future/,
+  );
+});
+
+test('governance rendering faithfully exposes disallowed switches without granting validation', () => {
+  const changed = structuredClone(boundary);
+  for (const plane of Object.values(changed.environment.writePlanes)) plane.enabled = true;
+  changed.operatingModel.unattendedExecution = true;
+  changed.roleLifecycle.crossRoleKeyMaterialReuseAllowed = true;
+  changed.trustBootstrap.runtimeOrRequestSelectionAllowed = true;
+  changed.trustBootstrap.currentManifestDigest = 'a'.repeat(64);
+  const rendered = renderSecurityBoundaryAppendix(changed);
+  for (const expected of [
+    '开启',
+    '无人值守执行：允许',
+    '跨角色复用密钥材料：允许',
+    '运行时/请求选择：允许',
+    'a'.repeat(64),
+  ])
+    assert.ok(rendered.includes(expected), expected);
+  assert.throws(() => validateSecurityBoundary(changed), /Invalid governance boundary/);
+  assert.notEqual(semanticBoundaryDigest({}), semanticBoundaryDigest(boundary));
+  assert.throws(
+    () => validateGovernanceReviewProvenance(makeValidReview(), { boundary }),
+    /does not exist as a Git commit/,
+  );
+});
+
+test('Git governance lookup rejects a genuinely missing repository root before reading evidence', async (t) => {
+  const directory = await mkdtemp(resolve(tmpdir(), 'alphaforge-governance-missing-root-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const absent = resolve(directory, 'absent');
+  assert.throws(
+    () => readOptionalCommitBlob(absent, '1'.repeat(40), 'README.md'),
+    (error) => {
+      assert.equal(
+        error.message,
+        'Invalid governance boundary: Git provenance repository root cannot be verified',
+      );
+      assert.equal(error.cause.code, 'ENOENT');
+      return true;
+    },
+  );
+  await assert.rejects(() => readFile(absent), { code: 'ENOENT' });
 });

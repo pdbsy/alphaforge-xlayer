@@ -1,8 +1,26 @@
 import { readFile } from 'node:fs/promises';
 import { defineConfig } from 'vite';
-export default defineConfig({
-  publicDir: '../../docs',
+export default defineConfig(({ mode }) => ({
+  publicDir: mode === 'xlayer' ? false : '../../docs',
   plugins: [
+    {
+      name: 'alphaforge-xlayer-release-mode',
+      transformIndexHtml(html) {
+        if (mode !== 'xlayer') return html;
+        return html.replace(
+          '<script src="/user-ui.js"></script>',
+          '<script src="/xlayer-mode.js"></script>\n<script src="/user-ui.js"></script>',
+        );
+      },
+      generateBundle() {
+        if (mode === 'xlayer')
+          this.emitFile({
+            type: 'asset',
+            fileName: 'xlayer-mode.js',
+            source: 'window.AF_PUBLIC_MODE = true;\n',
+          });
+      },
+    },
     {
       name: 'alphaforge-user-ui-assets',
       configureServer(server) {
@@ -37,6 +55,10 @@ export default defineConfig({
       },
     },
   ],
-  build: { outDir: 'dist', sourcemap: false },
+  build: {
+    outDir: mode === 'xlayer' ? '../../dist/xlayer/web' : 'dist',
+    sourcemap: false,
+    emptyOutDir: true,
+  },
   server: { host: '127.0.0.1' },
-});
+}));

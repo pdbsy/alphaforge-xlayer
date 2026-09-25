@@ -12,8 +12,10 @@
       "session_status": "SELF_CONFIRMED",
       "self_confirmation": "VERIFIED",
       "communication_status": "UNVERIFIED",
-      "current_task": "M3-01-PARTIAL-ONCHAIN-INTEGRATION",
-      "runtime_status": "ACTIVE"
+      "current_task": "M3-01-PHASE1-CLOSEOUT",
+      "runtime_status": "ACTIVE",
+      "canonical_baseline": "18f5352070910a867b9729b031aa2e3951785e01",
+      "implementation_branch": "macbeth01/m3-phase1-closeout"
     },
     {
       "agent_id": "Macbeth02",
@@ -21,9 +23,11 @@
       "workspace_status": "WORKSPACE_PREPARED",
       "session_status": "SELF_CONFIRMED",
       "self_confirmation": "VERIFIED",
-      "communication_status": "UNVERIFIED",
-      "current_task": "M3-02-PROTOCOL",
-      "runtime_status": "BLOCKED"
+      "communication_status": "COMMUNICATION_VERIFIED",
+      "current_task": "M3-02-PHASE1-CONTRACTS",
+      "runtime_status": "ACTIVE",
+      "canonical_baseline": "18f5352070910a867b9729b031aa2e3951785e01",
+      "implementation_branch": "macbeth02/m3-phase1-contracts"
     },
     {
       "agent_id": "Macbeth03",
@@ -31,9 +35,11 @@
       "workspace_status": "WORKSPACE_PREPARED",
       "session_status": "SELF_CONFIRMED",
       "self_confirmation": "VERIFIED",
-      "communication_status": "UNVERIFIED",
-      "current_task": "M3-03-ADAPTER",
-      "runtime_status": "BLOCKED"
+      "communication_status": "COMMUNICATION_VERIFIED",
+      "current_task": "M3-03-PHASE1-RECOVERY",
+      "runtime_status": "ACTIVE",
+      "canonical_baseline": "18f5352070910a867b9729b031aa2e3951785e01",
+      "implementation_branch": "macbeth03/m3-phase1-recovery-final"
     },
     {
       "agent_id": "Macbeth04",
@@ -42,10 +48,10 @@
       "session_status": "SELF_CONFIRMED",
       "self_confirmation": "VERIFIED",
       "communication_status": "UNVERIFIED",
-      "current_task": "M3-04-PRODUCT-UI",
+      "current_task": "M3-04-PHASE1-PRODUCT",
       "runtime_status": "ACTIVE",
-      "canonical_baseline": "7ecba357d5a19f387e86f578822af04a6261fed2",
-      "implementation_branch": "macbeth04/M3-product-ui"
+      "canonical_baseline": "18f5352070910a867b9729b031aa2e3951785e01",
+      "implementation_branch": "macbeth04/m3-phase1-product"
     },
     {
       "agent_id": "Macbeth05",
@@ -53,24 +59,28 @@
       "workspace_status": "WORKSPACE_PREPARED",
       "session_status": "SELF_CONFIRMED",
       "self_confirmation": "VERIFIED",
-      "communication_status": "UNVERIFIED",
-      "current_task": "AF-M3-05-INTEGRATION-ACCEPTANCE",
-      "runtime_status": "BLOCKED",
+      "communication_status": "COMMUNICATION_VERIFIED",
+      "current_task": "M3-05-PHASE1-ACCEPTANCE",
+      "runtime_status": "ACTIVE",
       "registration_base": "7ecba357d5a19f387e86f578822af04a6261fed2",
       "acceptance_candidate": null,
-      "implementation_branch": "macbeth05/AF-M3-05-INTEGRATION-ACCEPTANCE"
+      "implementation_branch": "macbeth05/m3-phase1-acceptance",
+      "canonical_baseline": "18f5352070910a867b9729b031aa2e3951785e01"
     },
     {
       "agent_id": "Macbeth06",
       "branch_prefix": "macbeth06/",
       "workspace_status": "WORKSPACE_PREPARED",
-      "session_status": "SELF_CONFIRMED",
-      "self_confirmation": "VERIFIED",
+      "session_status": "SESSION_CREATED",
+      "self_confirmation": "UNVERIFIED",
       "communication_status": "UNVERIFIED",
       "current_task": "M3-06-CI-GATES",
       "runtime_status": "ACTIVE",
-      "registration_base": "ca43c9684fbf34c34d5dd81382df158e2a9ebc0b"
+      "registration_base": "ca43c9684fbf34c34d5dd81382df158e2a9ebc0b",
+      "canonical_baseline": "18f5352070910a867b9729b031aa2e3951785e01",
+      "implementation_branch": "macbeth06/m3-phase1-gates"
     }
   ],
-  "canonical_repository": "pdbsy/quantpass-arbitrum-hackathon"
+  "canonical_repository": "pdbsy/quantpass-arbitrum-hackathon",
+  "phase1_assignment": "docs/management/phase1/ASSIGNMENTS.md"
 }

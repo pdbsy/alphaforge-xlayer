@@ -1,5 +1,6 @@
 // Explicit manager integration assignments; never infer privilege from a prefix.
 export const MANAGER_INTEGRATIONS = Object.freeze([
+  Object.freeze({ branch: 'macbeth01/m3-phase1-closeout', task: 'M3-01-PHASE1-CLOSEOUT' }),
   Object.freeze({ branch: 'macbeth01/AF-M3-CLOSEOUT', task: 'AF-M3-CLOSEOUT' }),
   Object.freeze({
     branch: 'macbeth01/m3-partial-onchain-integration',

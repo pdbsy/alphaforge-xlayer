@@ -1,6 +1,12 @@
 import { sameAddress, type Address } from '../../../packages/chain-adapter/src/types.ts';
-import type { BrowserWalletPort, PreparedAction, WalletSession, WalletSubmission } from './chain-wallet.ts';
-import type { SimulatingRobinhoodTestnetStrategyAdapter } from './strategy-adapter.ts';
+import type {
+  BeforeWalletSend,
+  BrowserWalletPort,
+  PreparedAction,
+  WalletSession,
+  WalletSubmission,
+} from './chain-wallet.ts';
+import type { SimulatingTestnetStrategyAdapter } from './strategy-adapter.ts';
 
 export interface M3ActionReview {
   readonly operationId: string;
@@ -18,23 +24,27 @@ export class M3ActionSimulationFailure extends Error {
 }
 
 export class M3ChainActionFlow<Snapshot, Action, Observation> {
-  readonly #adapter: SimulatingRobinhoodTestnetStrategyAdapter<Snapshot, Action, Observation>;
+  readonly #adapter: SimulatingTestnetStrategyAdapter<Snapshot, Action, Observation>;
   readonly #wallet: BrowserWalletPort;
   readonly #reviews = new WeakMap<M3ActionReview, PreparedAction>();
   #session: WalletSession | null = null;
 
   constructor(
-    adapter: SimulatingRobinhoodTestnetStrategyAdapter<Snapshot, Action, Observation>,
+    adapter: SimulatingTestnetStrategyAdapter<Snapshot, Action, Observation>,
     wallet: BrowserWalletPort,
   ) {
     this.#adapter = adapter;
     this.#wallet = wallet;
   }
 
-  async connect(): Promise<{ readonly session: WalletSession; readonly snapshot: Snapshot }> {
+  async connect(
+    assertCurrent: () => void = () => {},
+  ): Promise<{ readonly session: WalletSession; readonly snapshot: Snapshot }> {
     this.#session = null;
     const session = await this.#wallet.connect();
+    assertCurrent();
     const snapshot = await this.#adapter.readSnapshot({ wallet: session.account });
+    assertCurrent();
     this.#session = session;
     return Object.freeze({ session, snapshot });
   }
@@ -70,11 +80,17 @@ export class M3ChainActionFlow<Snapshot, Action, Observation> {
     return review;
   }
 
-  async confirm(review: M3ActionReview): Promise<WalletSubmission> {
+  async confirm(review: M3ActionReview, beforeSend?: BeforeWalletSend): Promise<WalletSubmission> {
     const prepared = this.#reviews.get(review);
     if (!prepared) throw new Error('INVALID_ACTION_REVIEW');
     this.#reviews.delete(review);
     await this.#readAndSimulate(prepared);
-    return this.#adapter.submitAction(prepared, this.#wallet);
+    const wallet = beforeSend
+      ? Object.freeze({
+          connect: () => this.#wallet.connect(),
+          submit: (action: PreparedAction) => this.#wallet.submit(action, beforeSend),
+        })
+      : this.#wallet;
+    return this.#adapter.submitAction(prepared, wallet);
   }
 }

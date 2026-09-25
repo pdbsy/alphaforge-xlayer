@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
+import fsPromises from 'node:fs/promises';
+import { spawnSync } from 'node:child_process';
+import { syncBuiltinESMExports } from 'node:module';
 import { fixtureExec as execFileSync } from './helpers/git-fixture.mjs';
 import { unlinkSync } from 'node:fs';
-import { mkdir, mkdtemp, readFile, readdir, rename, rm, symlink, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, mkdtemp, readFile, readdir, rename, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
@@ -456,6 +459,120 @@ test('artifact writes are deterministic, checkable, atomic, and retain the last 
   assert.equal(await readFile(dashboardPath, 'utf8'), original);
 });
 
+test('artifact writer records READY when a fully populated snapshot has no diagnostics', async (t) => {
+  const root = await mkdtemp(join(tmpdir(), 'quantpass-dashboard-ready-artifacts-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const sources = fixtureSources();
+  sources.workers.workerA = source('docs/management/workers/worker-a.md', {
+    current: { status: 'READY' },
+    activities: [],
+  });
+  for (const [name, collected] of Object.entries(sources.management)) {
+    collected.status = 'READY';
+    collected.data = { text: `${name} is available` };
+  }
+  const snapshot = buildDashboardSnapshot({
+    sources,
+    git: { ...gitState(), dirtyFiles: 0 },
+    checkReport: completeCheckReport(currentCommit),
+    observedAt,
+    linkStates: {
+      'docs/adr/0001.md': true,
+      'docs/security/report.md': true,
+      'docs/management/host/HOST-SETUP.md': true,
+      'docs/ROBINHOOD-CHAIN.md': true,
+    },
+  });
+  assert.deepEqual(snapshot.dashboardLog, []);
+  await writeDashboardArtifacts(root, snapshot);
+  const buildLog = JSON.parse(
+    await readFile(join(root, 'docs/management/dashboard/data/build-log.json'), 'utf8'),
+  );
+  assert.equal(buildLog.status, 'READY');
+  assert.deepEqual(buildLog.diagnostics, []);
+});
+
+test('artifact directory creation tolerates an actual competing process mkdir', async (t) => {
+  const root = await mkdtemp(join(tmpdir(), 'alphaforge-dashboard-mkdir-race-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const snapshot = buildDashboardSnapshot({ sources: fixtureSources(), git: gitState(), observedAt });
+  const original = fsPromises.mkdir;
+  const target = join(await fsPromises.realpath(root), 'docs');
+  let raced = false;
+  let nativeError;
+  try {
+    fsPromises.mkdir = async (path, options) => {
+      if (path !== target || raced) return original(path, options);
+      raced = true;
+      // A separate real process wins creation after the public writer observed
+      // ENOENT. The original syscall below supplies EEXIST; no error is forged.
+      const actor = spawnSync(
+        process.execPath,
+        [
+          '--input-type=module',
+          '-e',
+          "import {mkdirSync} from 'node:fs'; mkdirSync(process.argv[1]);",
+          target,
+        ],
+        { encoding: 'utf8', timeout: 15000 },
+      );
+      assert.equal(actor.error, undefined);
+      assert.equal(actor.status, 0, actor.stderr);
+      try {
+        return await original(path, options);
+      } catch (error) {
+        nativeError = error.code;
+        throw error;
+      }
+    };
+    syncBuiltinESMExports();
+    await writeDashboardArtifacts(root, snapshot);
+  } finally {
+    fsPromises.mkdir = original;
+    syncBuiltinESMExports();
+  }
+  assert.equal(raced, true);
+  assert.equal(nativeError, 'EEXIST');
+  assert.equal(await checkDashboardArtifacts(root, snapshot), true);
+  assert.deepEqual((await readdir(join(root, 'docs/management/dashboard/data'))).sort(), [
+    'build-log.json',
+    'dashboard.json',
+  ]);
+  assert.deepEqual(await readdir(join(root, 'docs/management/dashboard')), ['data']);
+});
+
+test('artifact comparison rejects a missing output directory without creating it', async (t) => {
+  const root = await mkdtemp(join(tmpdir(), 'alphaforge-dashboard-absent-output-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const snapshot = buildDashboardSnapshot({ sources: fixtureSources(), git: gitState(), observedAt });
+  assert.equal(await checkDashboardArtifacts(root, snapshot), false);
+  assert.deepEqual(await readdir(root), []);
+});
+
+test(
+  'artifact writes preserve an unwritable parent and recover after permissions return',
+  {
+    skip: process.platform === 'win32' || process.getuid?.() === 0,
+  },
+  async (t) => {
+    const root = await mkdtemp(join(tmpdir(), 'alphaforge-dashboard-parent-permission-'));
+    t.after(async () => {
+      await chmod(root, 0o700);
+      await rm(root, { recursive: true, force: true });
+    });
+    const snapshot = buildDashboardSnapshot({ sources: fixtureSources(), git: gitState(), observedAt });
+    await chmod(root, 0o500);
+    await assert.rejects(
+      () => writeDashboardArtifacts(root, snapshot),
+      (error) => ['EACCES', 'EPERM'].includes(error.code),
+    );
+    assert.deepEqual(await readdir(root), []);
+    await chmod(root, 0o700);
+    await writeDashboardArtifacts(root, snapshot);
+    assert.equal(await checkDashboardArtifacts(root, snapshot), true);
+  },
+);
+
 test('artifact writer rejects a symlinked output directory without touching external files', async (t) => {
   const root = await mkdtemp(join(tmpdir(), 'quantpass-dashboard-build-symlink-'));
   const outside = await mkdtemp(join(tmpdir(), 'quantpass-dashboard-build-target-'));
@@ -573,6 +690,13 @@ test('builder CLI accepts only deterministic documented modes', () => {
     mode: 'write',
     observedAt,
   });
+  assert.deepEqual(parseBuildArgs(['--observed-at=2026-09-08T15:30:00Z']), {
+    mode: 'write',
+    observedAt: '2026-09-08T15:30:00Z',
+  });
+  for (const timestamp of ['2026-13-01T12:00:00.000Z', '2026-09-08T15:30:60Z']) {
+    assert.throws(() => parseBuildArgs([`--observed-at=${timestamp}`]), /Invalid observed-at/);
+  }
   assert.throws(() => parseBuildArgs(['--output=/tmp/file']), /Unknown argument/);
   assert.throws(() => parseBuildArgs(['--observed-at=not-a-date']), /Invalid observed-at/);
   assert.throws(() => parseBuildArgs(['--observed-at=2026-02-30T12:00:00.000Z']), /Invalid observed-at/);
@@ -648,6 +772,8 @@ test('Dashboard operations guide documents only implemented package commands', a
 test('check mode remains reproducible after the generated snapshot is committed', async (t) => {
   const root = await mkdtemp(join(tmpdir(), 'quantpass-dashboard-check-mode-'));
   t.after(() => rm(root, { recursive: true, force: true }));
+  await mkdir(join(root, 'docs/adr'), { recursive: true });
+  await writeFile(join(root, 'docs/adr/valid.md'), '# Reviewed architecture fixture\n');
   await mkdir(join(root, 'planning'), { recursive: true });
   await writeFile(
     join(root, 'planning/roadmap.json'),
@@ -700,7 +826,8 @@ test('check mode remains reproducible after the generated snapshot is committed'
     { cwd: root },
   );
 
-  await main([`--observed-at=${observedAt}`], { root });
+  const generated = await main([`--observed-at=${observedAt}`], { root });
+  assert.equal(generated.links.find((item) => item.path === 'docs/adr/valid.md')?.status, 'READY');
   execFileSync('git', ['add', '--all'], { cwd: root });
   execFileSync(
     'git',
@@ -718,6 +845,76 @@ test('check mode remains reproducible after the generated snapshot is committed'
   );
 
   await assert.doesNotReject(() => main(['--check'], { root, environment: {} }));
+  const environment = Object.fromEntries(
+    Object.entries(process.env).filter(([key]) => !key.startsWith('GITHUB_')),
+  );
+  execFileSync(
+    process.execPath,
+    [
+      '--input-type=module',
+      '--eval',
+      `
+    import assert from 'node:assert/strict';
+    const {main} = await import(${JSON.stringify(new URL('../tools/build-management-dashboard.mjs', import.meta.url).href)});
+    await assert.doesNotReject(() => main(['--check'], {root: ${JSON.stringify(root)}}));
+  `,
+    ],
+    { env: environment, encoding: 'utf8', timeout: 30000 },
+  );
+});
+
+test('check mode reports a missing versioned check report after a clean artifact commit', async (t) => {
+  const root = await mkdtemp(join(tmpdir(), 'quantpass-dashboard-missing-report-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  await mkdir(join(root, 'planning'), { recursive: true });
+  await writeFile(join(root, '.gitignore'), '.checks/\n');
+  await writeFile(
+    join(root, 'planning/roadmap.json'),
+    `${JSON.stringify({
+      project: { name: 'QuantPass', network: 'Robinhood Chain Testnet', chainId: 46630 },
+      tasks: [],
+      releaseGates: [],
+    })}\n`,
+  );
+  execFileSync('git', ['init', '--quiet', '-b', 'master'], { cwd: root });
+  execFileSync('git', ['add', '--all'], { cwd: root });
+  execFileSync(
+    'git',
+    [
+      '-c',
+      'user.name=Macbeth',
+      '-c',
+      'user.email=pdbsy@users.noreply.github.com',
+      'commit',
+      '--quiet',
+      '-m',
+      'baseline',
+    ],
+    { cwd: root },
+  );
+  execFileSync('git', ['switch', '--quiet', '-c', 'macbeth/dashboard'], { cwd: root });
+
+  await main([`--observed-at=${observedAt}`], { root, environment: {} });
+  execFileSync('git', ['add', '--all'], { cwd: root });
+  execFileSync(
+    'git',
+    [
+      '-c',
+      'user.name=Macbeth',
+      '-c',
+      'user.email=pdbsy@users.noreply.github.com',
+      'commit',
+      '--quiet',
+      '-m',
+      'generated dashboard without check report',
+    ],
+    { cwd: root },
+  );
+
+  await assert.rejects(
+    () => main(['--check'], { root, environment: {} }),
+    /^Error: CHECK_REPORT_NOT_AVAILABLE$/,
+  );
 });
 
 test('check mode uses a versioned report in local, push, PR, queue, and integration layouts', async (t) => {
@@ -1124,4 +1321,189 @@ test('check mode uses a versioned report in local, push, PR, queue, and integrat
   );
   const afterCiLayouts = await Promise.all([readFile(dashboardPath, 'utf8'), readFile(buildLogPath, 'utf8')]);
   assert.deepEqual(afterCiLayouts, before);
+});
+
+test('sparse roadmap metadata remains unavailable and never invents completion or ownership', () => {
+  const sources = fixtureSources();
+  sources.roadmap.data.project = { name: 'AlphaForge' };
+  sources.roadmap.data.phases = [];
+  sources.roadmap.data.tasks = [
+    { id: 'MINIMAL', title: 'Pending work', phase: 'PHASE-UNKNOWN', status: 'in_progress' },
+  ];
+  sources.roadmap.data.releaseGates = [{ id: 'G4', name: 'Delivery', status: 'blocked', checks: [] }];
+  sources.workers.workerB.data = { current: { ...sources.workers.workerB.data.current } };
+  for (const risk of sources.riskRegister.data.risks) delete risk.owner;
+  const snapshot = buildDashboardSnapshot({
+    sources,
+    git: { ...gitState(), aheadBehind: { ahead: 0, behind: 0 } },
+  });
+  const task = snapshot.tasks.find((item) => item.id === 'MINIMAL');
+  assert.equal(task.status, 'IN_PROGRESS');
+  assert.equal(task.owner, 'NOT_AVAILABLE');
+  assert.equal(task.priority, 'NOT_AVAILABLE');
+  assert.equal(task.risk, 'NOT_AVAILABLE');
+  assert.equal(task.lastUpdate, 'NOT_AVAILABLE');
+  assert.deepEqual(task.dependsOn, []);
+  assert.deepEqual(task.acceptance, []);
+  assert.deepEqual(task.evidence, []);
+  assert.equal(snapshot.project.chainId, 'NOT_AVAILABLE');
+  assert.equal(snapshot.project.network, 'NOT_AVAILABLE');
+  assert.equal(snapshot.project.currentWave, 'PHASE-UNKNOWN');
+  assert.equal(snapshot.hackathon.status, 'BLOCKED');
+  assert.equal(snapshot.integration.status, 'READY');
+  assert.deepEqual(snapshot.workers.find((worker) => worker.id === 'worker-b').activities, []);
+  assert.equal(snapshot.security.findings[0].owner, 'NOT_AVAILABLE');
+});
+
+test('missing Git and malformed worker records cannot render a ready integration', () => {
+  const sources = fixtureSources();
+  sources.workers.workerB.data = {};
+  sources.management.currentStatus = source(
+    'docs/management/CURRENT-STATUS.md',
+    undefined,
+    'DATA_SOURCE_ERROR',
+  );
+  const snapshot = buildDashboardSnapshot({
+    sources,
+    git: { status: 'DATA_SOURCE_ERROR', source: '.git', observedAt },
+  });
+  assert.equal(snapshot.project.branch, '[UNAVAILABLE]');
+  assert.equal(snapshot.integration.status, 'DATA_SOURCE_ERROR');
+  assert.equal(snapshot.integration.error, 'GIT_QUERY_FAILED');
+  assert.equal(snapshot.workers.find((worker) => worker.id === 'worker-b').status, 'DATA_SOURCE_ERROR');
+  assert.ok(snapshot.dashboardLog.some((item) => item.detail === 'UNKNOWN_SOURCE_ERROR'));
+  assert.notEqual(snapshot.tests.status, 'PASS');
+});
+
+test('accepted risk records do not override an unsafe network boundary', () => {
+  const sources = fixtureSources();
+  sources.riskRegister.data.risks.forEach((risk) => {
+    risk.status = 'accepted';
+  });
+  sources.securityBoundary.data.environment.mainnetSupported = true;
+  sources.roadmap.data.releaseGates = [{ id: 'G4', name: 'Delivery', status: 'passed', checks: [] }];
+  const snapshot = buildDashboardSnapshot({ sources, git: gitState(), checkReport: checkReport() });
+  assert.equal(snapshot.security.status, 'READY');
+  assert.equal(snapshot.network.status, 'BLOCKED');
+  assert.equal(snapshot.hackathon.status, 'DONE');
+});
+
+test('a recorded failed check keeps the aggregate and build failed', () => {
+  const report = checkReport();
+  const build = report.checks.find((check) => check.id === 'build');
+  build.status = 'FAIL';
+  build.exitCode = 1;
+  const snapshot = buildDashboardSnapshot({
+    sources: fixtureSources(),
+    git: gitState(),
+    checkReport: report,
+  });
+  assert.equal(snapshot.tests.status, 'FAIL');
+  assert.equal(snapshot.build.status, 'FAIL');
+});
+
+test('missing source times are rejected and absent document items cannot create evidence links', () => {
+  const sources = fixtureSources();
+  delete sources.management.workQueue.observedAt;
+  assert.throws(
+    () => buildDashboardSnapshot({ sources, git: gitState(), observedAt }),
+    /management.workQueue.observedAt/,
+  );
+  sources.management.workQueue.observedAt = observedAt;
+  delete sources.documents.architecture.data;
+  const snapshot = buildDashboardSnapshot({ sources, git: gitState(), observedAt });
+  assert.equal(
+    snapshot.links.some((item) => item.kind === 'architecture'),
+    false,
+  );
+  assert.equal(
+    snapshot.sourceHealth.find((item) => item.source === 'docs/management/WORK-QUEUE.md').observedAt,
+    observedAt,
+  );
+  assert.notEqual(snapshot.tests.status, 'PASS');
+});
+
+test('reachable dashboard branches preserve explicit statuses and defensive section handling', () => {
+  const make = () => fixtureSources();
+  const snapshotFor = (sources) =>
+    buildDashboardSnapshot({
+      sources,
+      git: gitState(),
+      checkReport: checkReport(),
+      observedAt,
+      linkStates: {
+        'docs/adr/0001.md': true,
+        'docs/security/report.md': true,
+        'docs/management/host/HOST-SETUP.md': true,
+        'docs/ROBINHOOD-CHAIN.md': true,
+      },
+    });
+
+  const unknownGate = make();
+  unknownGate.roadmap.data.releaseGates[1].status = 'unknown';
+  assert.equal(snapshotFor(unknownGate).hackathon.status, 'DATA_SOURCE_ERROR');
+
+  const emptySections = make();
+  emptySections.taskRecords[0].data.sections = {};
+  const emptySnapshot = snapshotFor(emptySections);
+  assert.equal(
+    emptySnapshot.knownIssues.some((item) => item.category === 'Known limitations'),
+    false,
+  );
+
+  const plainSections = make();
+  plainSections.taskRecords[0].data.sections['Known limitations'] = 'single documented limitation';
+  assert.equal(
+    snapshotFor(plainSections).knownIssues.some((item) => item.title === 'single documented limitation'),
+    true,
+  );
+
+  const decision = make();
+  decision.management.decisions = source('docs/management/DECISIONS.md', { text: 'reviewer decision' });
+  assert.deepEqual(snapshotFor(decision).decisions.items, [
+    { id: 'decision-log', text: 'reviewer decision' },
+  ]);
+
+  const risk = make();
+  delete risk.riskRegister.data.risks[0].boundaries;
+  assert.deepEqual(snapshotFor(risk).security.findings[0].component, []);
+  risk.riskRegister.data.risks[0].boundaries = ['runtime', 'wallet'];
+  assert.deepEqual(snapshotFor(risk).security.findings[0].component, ['runtime', 'wallet']);
+
+  const links = make();
+  const linked = snapshotFor(links);
+  assert.equal(linked.links.filter((item) => item.status === 'READY').length, 4);
+
+  const unavailableCheck = buildDashboardSnapshot({
+    sources: make(),
+    git: gitState(),
+    checkReport: { status: 'NOT_AVAILABLE', source: '.checks/management/latest.json', observedAt },
+    observedAt,
+    linkStates: {},
+  });
+  assert.equal(unavailableCheck.tests.status, 'NOT_RUN');
+  assert.ok(unavailableCheck.tests.items.every((item) => item.status === 'NOT_RUN'));
+
+  const missingReadyDocumentData = make();
+  missingReadyDocumentData.documents.architecture = source('docs/adr', undefined);
+  const defensiveSnapshot = snapshotFor(missingReadyDocumentData);
+  assert.equal(
+    defensiveSnapshot.links.some((item) => item.kind === 'architecture'),
+    false,
+  );
+  assert.notEqual(defensiveSnapshot.integration.status, 'DATA_SOURCE_ERROR');
+});
+
+test('raw reports missing completion time cannot borrow the observation time as passing evidence', () => {
+  const valid = completeCheckReport(currentCommit);
+  const context = { sources: fixtureSources(), git: gitState(), observedAt };
+  for (const value of [undefined, null, '']) {
+    const malformed = structuredClone(valid);
+    if (value === undefined) delete malformed.finishedAt;
+    else malformed.finishedAt = value;
+    const before = structuredClone(malformed);
+    assert.throws(() => buildDashboardSnapshot({ ...context, checkReport: malformed }), /finishedAt/);
+    assert.deepEqual(malformed, before);
+  }
+  assert.equal(buildDashboardSnapshot({ ...context, checkReport: valid }).tests.status, 'PASS');
 });

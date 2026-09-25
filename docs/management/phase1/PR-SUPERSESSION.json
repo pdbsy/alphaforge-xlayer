@@ -1,0 +1,1872 @@
+{
+  "master": "18f5352070910a867b9729b031aa2e3951785e01",
+  "preserved_candidate": "a712685c1645d9a924dcb0931c98d917da919ced",
+  "shared_tree": "a4b1cf782f6e5f2aaa90c955cfffb629ee5231ba",
+  "records": [
+    {
+      "pr": 20,
+      "head": "919505b45572916a3868ecf355691fb09fa1e2c3",
+      "head_is_ancestor_of_preserved_S": true,
+      "S_tree_equals_master": true,
+      "comparison_base": "7ecba357d5a19f387e86f578822af04a6261fed2",
+      "path_count": 81,
+      "paths": [
+        {
+          "path": ".checks/management/latest.json",
+          "source_blob": "82463f128b9e77a985e8ca14feddbd8cdfe04808",
+          "master_blob": "cb4bf8832f090ed130c27d1582f5bc54a1d10260",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "055abba1116d798479a7c8f0ea480b56a745a121 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Record scanner source validation manifest",
+            "70435bd069e41188e4339be56db8b204b5b7ba3d [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Record supplementary CI gate validation",
+            "a1f01dd20de297466651b32ae6583d6c92dc4953 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Record CI owner registration checks",
+            "c1eed94ebfb1eb992e28a14bffc92bda4beab3a5 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Record closed Vault regression checks",
+            "a6c2be4144b19166447f69b3ab6c4e176fbfe360 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Record unified source checks",
+            "63b7f36dce0265ad7e043247675adb9e08031c2d [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Record clean manager setup validation"
+          ]
+        },
+        {
+          "path": "README.md",
+          "source_blob": "ba1b000017d3d270a17278d060961cdee1a74e27",
+          "master_blob": "ba1b000017d3d270a17278d060961cdee1a74e27",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "apps/server/chain-migrations/001-chain-projection.sql",
+          "source_blob": "37dd7449bfe766dc1c91b54a61d3a176b3238d6b",
+          "master_blob": "37dd7449bfe766dc1c91b54a61d3a176b3238d6b",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "apps/server/chain-migrations/002-projection-checkpoint.sql",
+          "source_blob": "f8c1d411374b6ff57d9ed7f35e7f63e7aacfea66",
+          "master_blob": "f8c1d411374b6ff57d9ed7f35e7f63e7aacfea66",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "apps/server/chain-migrations/003-sync-target.sql",
+          "source_blob": "d0e0f7552ac9a5458b0bd05bfa05fc0a30b13ab1",
+          "master_blob": "d0e0f7552ac9a5458b0bd05bfa05fc0a30b13ab1",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "apps/server/chain-migrations/004-sync-lease.sql",
+          "source_blob": "021b52cad66441c82d84e00bdd2bd70830b0a7ac",
+          "master_blob": "021b52cad66441c82d84e00bdd2bd70830b0a7ac",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "apps/server/src/chain-store.ts",
+          "source_blob": "ff64c5949b883ded7333f73afdea5fe6cf1d564e",
+          "master_blob": "e3655c90fca854a47e9c7af147e6cff984c63e09",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "2e2ccc1591da0141e0514d5b4ce785599add591b [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate configured product runtime",
+            "d9bf7ffc8d049c0980665ce0eacb028ea299fa75 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate server lifecycle without gating owner exit",
+            "997be3f45e3943a3aea52213e0847a6c780056e5 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate exact Vault ABI and canonical runtime",
+            "1be95d1a1bb445b47ece1c3a8cc392a10d73229b [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate canonical policy and server evidence flow"
+          ]
+        },
+        {
+          "path": "apps/server/src/chain-sync.ts",
+          "source_blob": "2f3b4cb2f36326079d3df65bf44895491ce83698",
+          "master_blob": "5f1c3b5b3e8de2d03c2d7059ead96e3b3f5e515c",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "d9bf7ffc8d049c0980665ce0eacb028ea299fa75 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate server lifecycle without gating owner exit",
+            "997be3f45e3943a3aea52213e0847a6c780056e5 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate exact Vault ABI and canonical runtime",
+            "1be95d1a1bb445b47ece1c3a8cc392a10d73229b [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate canonical policy and server evidence flow"
+          ]
+        },
+        {
+          "path": "apps/web/src/chain-wallet.ts",
+          "source_blob": "2091341b8ea642abfad1b109704aca6e7703d305",
+          "master_blob": "2047f333c820f5d198e928da0154ee56f5e7deee",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "97bc11ee595be8b9d17ebae13aea0276b76e5c43 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate recoverable wallet review and connection runtime",
+            "1be95d1a1bb445b47ece1c3a8cc392a10d73229b [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate canonical policy and server evidence flow"
+          ]
+        },
+        {
+          "path": "apps/web/src/m3-product-shell.ts",
+          "source_blob": "915ef44bbe248233565cf2f1ccda35536069d07d",
+          "master_blob": "69adddb5aa5be8911670aa6eab5fc05c8149f39d",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "4db2d96bfc6559ae939abb5a455490274c900936 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Close Vault UI actions and prepare private readiness path",
+            "2e2ccc1591da0141e0514d5b4ce785599add591b [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate configured product runtime",
+            "97bc11ee595be8b9d17ebae13aea0276b76e5c43 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate recoverable wallet review and connection runtime",
+            "10b807dc0a3d2990af748414afc8d32da0006dab [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate wallet product flow and provider scenarios"
+          ]
+        },
+        {
+          "path": "apps/web/src/product-ui.ts",
+          "source_blob": "6f9e06e32733a6fed5132170987c1be8098dd3a8",
+          "master_blob": "ef4e58feb14a2c55b7422c4cbc1d875527248fb6",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "2e2ccc1591da0141e0514d5b4ce785599add591b [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate configured product runtime",
+            "97bc11ee595be8b9d17ebae13aea0276b76e5c43 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate recoverable wallet review and connection runtime",
+            "10b807dc0a3d2990af748414afc8d32da0006dab [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate wallet product flow and provider scenarios"
+          ]
+        },
+        {
+          "path": "apps/web/src/strategy-adapter.ts",
+          "source_blob": "cfbe1015cde46a5f823d519b2122cf0b8df5396c",
+          "master_blob": "53939321ff0fad02ca4200ca5c3475c05092f8c3",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "10b807dc0a3d2990af748414afc8d32da0006dab [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate wallet product flow and provider scenarios"
+          ]
+        },
+        {
+          "path": "contracts/deployment/m3-robinhood-testnet.template.json",
+          "source_blob": "b24fb3bb066f5ee0065389773cd0f558cf284502",
+          "master_blob": "bba3a47b0d6a873480c4e5782156ea7f12571b1b",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "586600a886eaf1c961d04e2184a56958583c16ed [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate immutable-owner Vault custody and compiled ABI gate"
+          ]
+        },
+        {
+          "path": "contracts/openzeppelin-pragma-pins.json",
+          "source_blob": "b7465bb23d3706c9b212ab8770335f2ab9bbbbdb",
+          "master_blob": "197c8bfb0916aa7a44365795d9247461357390b9",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "586600a886eaf1c961d04e2184a56958583c16ed [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate immutable-owner Vault custody and compiled ABI gate"
+          ]
+        },
+        {
+          "path": "contracts/script/pinned_dependency.py",
+          "source_blob": "2b38559f07a34df2eeec01f0099cf49d39546010",
+          "master_blob": "2b38559f07a34df2eeec01f0099cf49d39546010",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "contracts/script/tests/test_pinned_dependency.py",
+          "source_blob": "cdf56482475b5df1d031edead80685f3059fd93a",
+          "master_blob": "cdf56482475b5df1d031edead80685f3059fd93a",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "contracts/src/AlphaForgeSwapAdapter.sol",
+          "source_blob": "32e1a0be8f6313920bd0097c8a82f4c15dfa1dec",
+          "master_blob": "32e1a0be8f6313920bd0097c8a82f4c15dfa1dec",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "contracts/src/AlphaForgeTestAsset.sol",
+          "source_blob": "4fa43c23bfb5614da39bd8b44dac82f46f634eb7",
+          "master_blob": "4fa43c23bfb5614da39bd8b44dac82f46f634eb7",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "contracts/src/AlphaForgeTestVenue.sol",
+          "source_blob": "74962a0012e6834485a19c51b8dab0b6647947d8",
+          "master_blob": "74962a0012e6834485a19c51b8dab0b6647947d8",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "contracts/src/PassLocker.sol",
+          "source_blob": "7cce466bbaa8c49ed9c7dc3a04bef851ece82130",
+          "master_blob": "f3266b216a951792393677352541499d7944d349",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "586600a886eaf1c961d04e2184a56958583c16ed [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate immutable-owner Vault custody and compiled ABI gate"
+          ]
+        },
+        {
+          "path": "contracts/src/ProtocolTypes.sol",
+          "source_blob": "267713bc6182f7fc1e5ada34a1a4a98fbdb27d9c",
+          "master_blob": "267713bc6182f7fc1e5ada34a1a4a98fbdb27d9c",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "contracts/src/StrategyPass.sol",
+          "source_blob": "3fa673b2d8370554faf96d5b6a350b6294cf192c",
+          "master_blob": "ea1332ef568319f9c6eb57097eda4c4520876e38",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "586600a886eaf1c961d04e2184a56958583c16ed [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate immutable-owner Vault custody and compiled ABI gate"
+          ]
+        },
+        {
+          "path": "contracts/src/interfaces/ISwapAdapter.sol",
+          "source_blob": "da220d5b65a6934a040fa6b7aab69c72c2c8a90d",
+          "master_blob": "da220d5b65a6934a040fa6b7aab69c72c2c8a90d",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "contracts/src/interfaces/ITestVenue.sol",
+          "source_blob": "2c2a9392d91b6d262ca22c36cf0cf0aadaee3a0e",
+          "master_blob": "2c2a9392d91b6d262ca22c36cf0cf0aadaee3a0e",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "contracts/test/AlphaForgeSwapAdapter.t.sol",
+          "source_blob": "fc7e5f5db8ce7d9ed66748a8a5a978783f76328a",
+          "master_blob": "fc7e5f5db8ce7d9ed66748a8a5a978783f76328a",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "contracts/test/AlphaForgeTestAsset.t.sol",
+          "source_blob": "053359132081f4867a8a6eb0032f62ff1ce42652",
+          "master_blob": "053359132081f4867a8a6eb0032f62ff1ce42652",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "contracts/test/AlphaForgeTestVenue.invariant.t.sol",
+          "source_blob": "7301fdb2b10a3b7becb190de064a1a784f11f868",
+          "master_blob": "7301fdb2b10a3b7becb190de064a1a784f11f868",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "contracts/test/AlphaForgeTestVenue.t.sol",
+          "source_blob": "8f59eecff889830b7ce4258d5446002b76b751c7",
+          "master_blob": "8f59eecff889830b7ce4258d5446002b76b751c7",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "contracts/test/PassLocker.t.sol",
+          "source_blob": "02111be65d8ee51c4cf7bd92c205117a6628884a",
+          "master_blob": "9660fdd08424a16b8220fd3728bc5c1dbfb6e4b1",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "586600a886eaf1c961d04e2184a56958583c16ed [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate immutable-owner Vault custody and compiled ABI gate"
+          ]
+        },
+        {
+          "path": "contracts/test/StrategyPass.invariant.t.sol",
+          "source_blob": "16dd0c011d1a4acab38aabc9735db38e0f10640c",
+          "master_blob": "9f07c678b9a20fbe410416f1eb9b16cf402b481a",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "586600a886eaf1c961d04e2184a56958583c16ed [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate immutable-owner Vault custody and compiled ABI gate"
+          ]
+        },
+        {
+          "path": "contracts/test/StrategyPass.t.sol",
+          "source_blob": "acd4f09d22289ff84656f469e2416226e6ecb76c",
+          "master_blob": "d52115343342eb06956c844fcf9098224c20254d",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "586600a886eaf1c961d04e2184a56958583c16ed [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate immutable-owner Vault custody and compiled ABI gate"
+          ]
+        },
+        {
+          "path": "contracts/test/mocks/MaliciousVenue.sol",
+          "source_blob": "30b20361318398b844f9e6ec1c804fa6a691ba84",
+          "master_blob": "30b20361318398b844f9e6ec1c804fa6a691ba84",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "contracts/test/mocks/ReentrantPass.sol",
+          "source_blob": "ed4ddb22d694594e7a799f0aee4ec97190a31e73",
+          "master_blob": "ed4ddb22d694594e7a799f0aee4ec97190a31e73",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "docs/M3-CHAIN-ADAPTER.md",
+          "source_blob": "74a2dccfd541e95232019f114f6465585bac3324",
+          "master_blob": "d1393914a643f2626845b1f31e3e3e7d46ac3444",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "d9bf7ffc8d049c0980665ce0eacb028ea299fa75 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate server lifecycle without gating owner exit",
+            "997be3f45e3943a3aea52213e0847a6c780056e5 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate exact Vault ABI and canonical runtime",
+            "1be95d1a1bb445b47ece1c3a8cc392a10d73229b [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate canonical policy and server evidence flow"
+          ]
+        },
+        {
+          "path": "docs/management/CURRENT-STATUS.md",
+          "source_blob": "78010fe37b9808369c882a07b47eeb7c64c6ac3e",
+          "master_blob": "78010fe37b9808369c882a07b47eeb7c64c6ac3e",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "docs/management/WORK-QUEUE.md",
+          "source_blob": "af7874d5f3518e0056b0e00f622dca778f5cf6b7",
+          "master_blob": "af7874d5f3518e0056b0e00f622dca778f5cf6b7",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "docs/management/agents/AF-M3-05-INTEGRATION-ACCEPTANCE.md",
+          "source_blob": "69305ff8192e1051b4c60dca4ca470b5c98df8e4",
+          "master_blob": "69305ff8192e1051b4c60dca4ca470b5c98df8e4",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "docs/management/agents/COMMON-PROTOCOL.md",
+          "source_blob": "5cd3f436090850a847a768aad0220d953c22b59f",
+          "master_blob": "552c9be6e0c572eb611d7da6baa552651a0eaa6b",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "ba6b8c2f94808a071691367103bff077e698d2d7 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Register Macbeth06 CI gate owner"
+          ]
+        },
+        {
+          "path": "docs/management/agents/M3-04-PRODUCT-UI.md",
+          "source_blob": "5dcb5364f6896388c3d04b7bda2b79649c83a2a8",
+          "master_blob": "5dcb5364f6896388c3d04b7bda2b79649c83a2a8",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "docs/management/agents/M3-ASSIGNMENTS.md",
+          "source_blob": "3725d0c767ba050d84b7405e620e217731ddd782",
+          "master_blob": "b8282590a213dee73b95e63f94bb283e6a3998e7",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "ba6b8c2f94808a071691367103bff077e698d2d7 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Register Macbeth06 CI gate owner",
+            "a63b2a94b3026005c7b0403bde237d75b2e8c915 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Align active worker metadata and pin published QA evidence"
+          ]
+        },
+        {
+          "path": "docs/management/agents/bootstrap/Macbeth04.md",
+          "source_blob": "df889c201fa674c35aa9f690b2f6537023ce324c",
+          "master_blob": "df889c201fa674c35aa9f690b2f6537023ce324c",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "docs/management/agents/bootstrap/Macbeth05.md",
+          "source_blob": "d106ca00bab1a99ba7f76e7d8e44bd4695db0610",
+          "master_blob": "d106ca00bab1a99ba7f76e7d8e44bd4695db0610",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "docs/management/agents/integrations/AF-M3-CLOSEOUT.json",
+          "source_blob": "e3e62832ac54fe28fc279b295c0afb394453baac",
+          "master_blob": "e3e62832ac54fe28fc279b295c0afb394453baac",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "docs/management/agents/logs/M3-04-PRODUCT-UI.md",
+          "source_blob": "8c02107f9a02182b374a08cd2062b59bd44bbe75",
+          "master_blob": "4ea7f9011ccfc843ec9d82417aee8cc63b247812",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "2e2ccc1591da0141e0514d5b4ce785599add591b [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate configured product runtime",
+            "97bc11ee595be8b9d17ebae13aea0276b76e5c43 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate recoverable wallet review and connection runtime",
+            "10b807dc0a3d2990af748414afc8d32da0006dab [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate wallet product flow and provider scenarios"
+          ]
+        },
+        {
+          "path": "docs/management/agents/qa/AF-M3-05-INTEGRATION-ACCEPTANCE/ACCEPTANCE-MATRIX.md",
+          "source_blob": "f3932ab9fff62fdbbd9d0e0704ee82e27e9a5bb6",
+          "master_blob": "f8dc3a917131e75bc4600572ebbf479404660ea6",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "3915c48dc25c4763f8b47b4b93834ae20113a9dd [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Preserve independent foundation acceptance evidence"
+          ]
+        },
+        {
+          "path": "docs/management/agents/qa/AF-M3-05-INTEGRATION-ACCEPTANCE/CLOSEOUT-HANDOFF.md",
+          "source_blob": "fe4548b9406f9316b7629cdb4f0103dc32c35801",
+          "master_blob": "e3e0e3987d387dd6fae138201fd5bd016e6bb29d",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "3915c48dc25c4763f8b47b4b93834ae20113a9dd [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Preserve independent foundation acceptance evidence"
+          ]
+        },
+        {
+          "path": "docs/management/agents/qa/AF-M3-05-INTEGRATION-ACCEPTANCE/EXECUTION-LOG.md",
+          "source_blob": "96470b2f8c4596bba8da5091fb799be9d8964159",
+          "master_blob": "29c7367ac3e50067574da0dfc538ee67d90f38c4",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "3915c48dc25c4763f8b47b4b93834ae20113a9dd [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Preserve independent foundation acceptance evidence"
+          ]
+        },
+        {
+          "path": "docs/management/agents/qa/AF-M3-05-INTEGRATION-ACCEPTANCE/FINDINGS.md",
+          "source_blob": "e2448150ce4e202502285b2dee63606d2990ce59",
+          "master_blob": "e4d1cdc084fe2dacf3f0c023bca26dcd10fa1871",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "3915c48dc25c4763f8b47b4b93834ae20113a9dd [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Preserve independent foundation acceptance evidence"
+          ]
+        },
+        {
+          "path": "docs/management/agents/qa/AF-M3-05-INTEGRATION-ACCEPTANCE/INTERIM-ACCEPTANCE.md",
+          "source_blob": "cf9a04d8876d420c0210e6143f163c306675e4c2",
+          "master_blob": "a2aa92263318b847f943553c932c695c254c1ddc",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "3915c48dc25c4763f8b47b4b93834ae20113a9dd [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Preserve independent foundation acceptance evidence"
+          ]
+        },
+        {
+          "path": "docs/management/agents/qa/AF-M3-05-INTEGRATION-ACCEPTANCE/README.md",
+          "source_blob": "ee9eecdf1a2c5acc9f8ece8ad36b89c89ddc083d",
+          "master_blob": "d8baf5ae763a781edce49ced79c2e31066b30761",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "72731626052d94acffec6cc0a702ca554fdfbc7a [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate independent frozen-requirement acceptance matrix",
+            "3915c48dc25c4763f8b47b4b93834ae20113a9dd [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Preserve independent foundation acceptance evidence"
+          ]
+        },
+        {
+          "path": "docs/management/agents/qa/AF-M3-05-INTEGRATION-ACCEPTANCE/RESTART-INTAKE.md",
+          "source_blob": "2f89cd90d2ac95376c7c7d2af6402f0dae9e2ad7",
+          "master_blob": "8158e6e6030c2a4e481e12282c5d5486634e3523",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "3915c48dc25c4763f8b47b4b93834ae20113a9dd [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Preserve independent foundation acceptance evidence"
+          ]
+        },
+        {
+          "path": "docs/management/agents/registry.json",
+          "source_blob": "88e54a4af1088e93e1d497d928942c8ef0c75c1b",
+          "master_blob": "b614ee67dab09fb7a7aadf1cb0f4d161d9233547",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "ba6b8c2f94808a071691367103bff077e698d2d7 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Register Macbeth06 CI gate owner",
+            "a63b2a94b3026005c7b0403bde237d75b2e8c915 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Align active worker metadata and pin published QA evidence",
+            "6eb10d47f3fed4ed70c45b8f9a84f03ab0566c0c [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Register frozen implementation scope and least-privilege CI repair"
+          ]
+        },
+        {
+          "path": "docs/management/dashboard/data/build-log.json",
+          "source_blob": "bffac8cc179c1c1312897441a6a345e5c028dd6d",
+          "master_blob": "864dfd1b9269392f4543d71d878c09aac249d48d",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "a712685c1645d9a924dcb0931c98d917da919ced [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Refresh dashboard for qualified scanner source",
+            "cdc6af829d86a9e79af115893470a7f5a83ab804 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Refresh CI gate evidence dashboard",
+            "c0b05e9fde0df08f0e000a4deabfd2f564856bac [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Refresh dashboard for CI gate owner",
+            "ca43c9684fbf34c34d5dd81382df158e2a9ebc0b [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Refresh readiness continuation dashboard",
+            "6643fea04a15925239f290010d043adcd6255d57 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Refresh unified management dashboard",
+            "8fcb14bd8f34bdbd56565344cb4f65158c725614 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Generate manager setup snapshot"
+          ]
+        },
+        {
+          "path": "docs/management/dashboard/data/dashboard.json",
+          "source_blob": "b56f7ea3a5b6e73394ebf783ae717aff9eff0cc5",
+          "master_blob": "7d285bad5ea33ab698729d333808eb3dd2f6f9a7",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "a712685c1645d9a924dcb0931c98d917da919ced [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Refresh dashboard for qualified scanner source",
+            "cdc6af829d86a9e79af115893470a7f5a83ab804 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Refresh CI gate evidence dashboard",
+            "c0b05e9fde0df08f0e000a4deabfd2f564856bac [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Refresh dashboard for CI gate owner",
+            "ca43c9684fbf34c34d5dd81382df158e2a9ebc0b [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Refresh readiness continuation dashboard",
+            "6643fea04a15925239f290010d043adcd6255d57 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Refresh unified management dashboard",
+            "8fcb14bd8f34bdbd56565344cb4f65158c725614 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Generate manager setup snapshot"
+          ]
+        },
+        {
+          "path": "docs/management/tasks/AF-M3-CLOSEOUT.md",
+          "source_blob": "e0fef498a9c32fe9893898c604bc51152f56cfc7",
+          "master_blob": "e0fef498a9c32fe9893898c604bc51152f56cfc7",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "docs/migration/artifact-provenance.json",
+          "source_blob": "5ff880e3e2eb4dedf07ecc350d7ed708bed7d828",
+          "master_blob": "0139123a8a71945f2c48fa566096c6489d768b5a",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "ba6b8c2f94808a071691367103bff077e698d2d7 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Register Macbeth06 CI gate owner",
+            "2e2ccc1591da0141e0514d5b4ce785599add591b [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate configured product runtime",
+            "d9bf7ffc8d049c0980665ce0eacb028ea299fa75 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate server lifecycle without gating owner exit",
+            "997be3f45e3943a3aea52213e0847a6c780056e5 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate exact Vault ABI and canonical runtime",
+            "97bc11ee595be8b9d17ebae13aea0276b76e5c43 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate recoverable wallet review and connection runtime",
+            "10b807dc0a3d2990af748414afc8d32da0006dab [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate wallet product flow and provider scenarios"
+          ]
+        },
+        {
+          "path": "docs/protocol/M3-CURRENT-ABI-DRAFT.md",
+          "source_blob": "dcbc8a0287732b9ceb0ae05d1b0616d069f49f40",
+          "master_blob": "ce94bf82f95610de7d1e4cc740ada37922c11272",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "586600a886eaf1c961d04e2184a56958583c16ed [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate immutable-owner Vault custody and compiled ABI gate"
+          ]
+        },
+        {
+          "path": "docs/superpowers/plans/2026-09-14-m3-chain-adapter.md",
+          "source_blob": "1aa3ee4995597bdbb49087031d9b0e577fcb1307",
+          "master_blob": "1aa3ee4995597bdbb49087031d9b0e577fcb1307",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "docs/superpowers/plans/2026-09-14-m3-product-ui.md",
+          "source_blob": "23430bedd87dd02869404e39ae53684c7d6b0d09",
+          "master_blob": "5ab9184323cd2b4185ae3b1578ea4a4e02b5856d",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "2e2ccc1591da0141e0514d5b4ce785599add591b [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate configured product runtime",
+            "97bc11ee595be8b9d17ebae13aea0276b76e5c43 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate recoverable wallet review and connection runtime",
+            "10b807dc0a3d2990af748414afc8d32da0006dab [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate wallet product flow and provider scenarios"
+          ]
+        },
+        {
+          "path": "docs/superpowers/plans/2026-09-14-m3-protocol.md",
+          "source_blob": "be8b1398f839fc6ba7c21f21c9ee0e9243427b8f",
+          "master_blob": "be8b1398f839fc6ba7c21f21c9ee0e9243427b8f",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "docs/superpowers/plans/2026-09-19-m3-closeout.md",
+          "source_blob": "b71714795f77d5b355f68c9f9e8023ddf32d4e4b",
+          "master_blob": "b71714795f77d5b355f68c9f9e8023ddf32d4e4b",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "package.json",
+          "source_blob": "181076feb340c4f4f2f84fa92764cbc58ff7442e",
+          "master_blob": "2c3cf183edb9d07b330fb6854b4d9b3d26f92e98",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "f9da25ec76133178cd4478ef769e086c64e5189e [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Add pinned Semgrep OSV and Gitleaks gates",
+            "327bd006854e76bfa92d12bf4f86eed861a101f0 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Add executable contract and supplementary CI gates",
+            "d9bf7ffc8d049c0980665ce0eacb028ea299fa75 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate server lifecycle without gating owner exit",
+            "46d0a27e5b3bac5fde904033b377f2091e4020cd [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Read current Vault rights without indexer dependency",
+            "997be3f45e3943a3aea52213e0847a6c780056e5 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate exact Vault ABI and canonical runtime",
+            "97bc11ee595be8b9d17ebae13aea0276b76e5c43 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate recoverable wallet review and connection runtime"
+          ]
+        },
+        {
+          "path": "packages/chain-adapter/src/index.ts",
+          "source_blob": "4cd658de8b470492120b2a433e0d9f8973e843df",
+          "master_blob": "44da68fb8d08a95fde31d5e88d8163ecb2325521",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "997be3f45e3943a3aea52213e0847a6c780056e5 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate exact Vault ABI and canonical runtime",
+            "1be95d1a1bb445b47ece1c3a8cc392a10d73229b [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate canonical policy and server evidence flow"
+          ]
+        },
+        {
+          "path": "packages/chain-adapter/src/lifecycle.ts",
+          "source_blob": "7cfec2769d2793b22f0e2078b6c4172c58e03e0b",
+          "master_blob": "6a22b9b18ce84e0bc47d3937b87ddf5311c34ce2",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "997be3f45e3943a3aea52213e0847a6c780056e5 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate exact Vault ABI and canonical runtime",
+            "1be95d1a1bb445b47ece1c3a8cc392a10d73229b [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate canonical policy and server evidence flow"
+          ]
+        },
+        {
+          "path": "packages/chain-adapter/src/manifest.ts",
+          "source_blob": "04a0e2d5cb138f97a3cf3fdeff972686512e465e",
+          "master_blob": "04a0e2d5cb138f97a3cf3fdeff972686512e465e",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "packages/chain-adapter/src/reconciliation.ts",
+          "source_blob": "2aedb00a8b82b64f4d001816d8d5dc5123b80663",
+          "master_blob": "b433787367e4e80c777745b5e989ccba6887b24b",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "1be95d1a1bb445b47ece1c3a8cc392a10d73229b [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate canonical policy and server evidence flow"
+          ]
+        },
+        {
+          "path": "packages/chain-adapter/src/rpc.ts",
+          "source_blob": "79b73d965567a8157d10dcecbdbe23b75e87a09b",
+          "master_blob": "cd803022f9381f8f74cdd5d22b8c28da13e7e46d",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "997be3f45e3943a3aea52213e0847a6c780056e5 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate exact Vault ABI and canonical runtime"
+          ]
+        },
+        {
+          "path": "packages/chain-adapter/src/types.ts",
+          "source_blob": "b781686e176cc29487727f24d7510cc299f6b2bf",
+          "master_blob": "b781686e176cc29487727f24d7510cc299f6b2bf",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "test/agent-integration-identity.test.mjs",
+          "source_blob": "a7671ed3b341a1ef101fd594080a3ade08435e41",
+          "master_blob": "c10d12faac78b0a29a6bab4e93a9fa46ed1d53a3",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "6eb10d47f3fed4ed70c45b8f9a84f03ab0566c0c [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Register frozen implementation scope and least-privilege CI repair"
+          ]
+        },
+        {
+          "path": "test/agent-management.test.mjs",
+          "source_blob": "de53ade8e2e7b401f3aeaaa4928fa669fb866c3c",
+          "master_blob": "a3ef437ae066178a0c9bd835188b5c2ac3b1dc26",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "ba6b8c2f94808a071691367103bff077e698d2d7 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Register Macbeth06 CI gate owner",
+            "a63b2a94b3026005c7b0403bde237d75b2e8c915 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Align active worker metadata and pin published QA evidence"
+          ]
+        },
+        {
+          "path": "test/chain-lifecycle.test.ts",
+          "source_blob": "c6137f72f9690963c665fb45ab9a1a79e2b9aff3",
+          "master_blob": "41b5308d5f2c8179ec1ba3bc30fefef6c09f3218",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "1be95d1a1bb445b47ece1c3a8cc392a10d73229b [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate canonical policy and server evidence flow"
+          ]
+        },
+        {
+          "path": "test/chain-rpc-manifest.test.ts",
+          "source_blob": "c1c93abe3f0cb1ca489c2a9df4dd39c140c7fcc3",
+          "master_blob": "2ccbb9a2ca86e2d4c4fff26b24ca661ebd1e48b8",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "997be3f45e3943a3aea52213e0847a6c780056e5 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate exact Vault ABI and canonical runtime"
+          ]
+        },
+        {
+          "path": "test/chain-store.test.ts",
+          "source_blob": "91636009699ecb3685cd31935620964f1e3fee61",
+          "master_blob": "faf53208ec7f3dd8b1c84dc3e93ff189c79a4155",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "d9bf7ffc8d049c0980665ce0eacb028ea299fa75 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate server lifecycle without gating owner exit",
+            "997be3f45e3943a3aea52213e0847a6c780056e5 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate exact Vault ABI and canonical runtime",
+            "1be95d1a1bb445b47ece1c3a8cc392a10d73229b [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate canonical policy and server evidence flow"
+          ]
+        },
+        {
+          "path": "test/chain-sync.test.ts",
+          "source_blob": "6f877d0beed62f80b345d708895613dea66347d3",
+          "master_blob": "6d94d1520b5ccf3106f29036435603cb01b3133a",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "1be95d1a1bb445b47ece1c3a8cc392a10d73229b [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate canonical policy and server evidence flow"
+          ]
+        },
+        {
+          "path": "test/m3-deployment-template.test.mjs",
+          "source_blob": "7339e191aad0207cc4008b868ae97e4d83f58194",
+          "master_blob": "01a271ef1fc8f98b52852e3e4a026e5061a79577",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "586600a886eaf1c961d04e2184a56958583c16ed [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate immutable-owner Vault custody and compiled ABI gate"
+          ]
+        },
+        {
+          "path": "test/m3-product-ui.test.ts",
+          "source_blob": "5900882605432b7b072fecc1ea650bf8eb2850a7",
+          "master_blob": "64427fcd3d763d23abeafb7f70cb18874e7d416a",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "2e2ccc1591da0141e0514d5b4ce785599add591b [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate configured product runtime",
+            "97bc11ee595be8b9d17ebae13aea0276b76e5c43 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate recoverable wallet review and connection runtime",
+            "10b807dc0a3d2990af748414afc8d32da0006dab [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate wallet product flow and provider scenarios",
+            "1be95d1a1bb445b47ece1c3a8cc392a10d73229b [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate canonical policy and server evidence flow"
+          ]
+        },
+        {
+          "path": "test/ui-chain-wallet.test.ts",
+          "source_blob": "d25901ede19ddebbeb764c11fa7aa80f23c5c643",
+          "master_blob": "ed2d5f39cb9956248d6b7f31685f1e78e4f1ed78",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "1be95d1a1bb445b47ece1c3a8cc392a10d73229b [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate canonical policy and server evidence flow"
+          ]
+        },
+        {
+          "path": "tools/agent-integration-identity.mjs",
+          "source_blob": "fec19c62718e6f9994bfa30f5fb1cd6b5d88af61",
+          "master_blob": "576553d8ec26c179fd1d8e7b1a05f79655a8e34a",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "6eb10d47f3fed4ed70c45b8f9a84f03ab0566c0c [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Register frozen implementation scope and least-privilege CI repair"
+          ]
+        },
+        {
+          "path": "tools/check-agent-identity.mjs",
+          "source_blob": "d927f0d75043aaf3bf15a91fda3ca7844af127ce",
+          "master_blob": "39be6b00ce510d80c78c8233700ff421c9194548",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "6eb10d47f3fed4ed70c45b8f9a84f03ab0566c0c [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Register frozen implementation scope and least-privilege CI repair"
+          ]
+        },
+        {
+          "path": "tools/check-m3-deployment-template.mjs",
+          "source_blob": "e256516048082adfd911f5747f19eb876988df26",
+          "master_blob": "0626766de474ee92d80e7ac926499015867f05ee",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "586600a886eaf1c961d04e2184a56958583c16ed [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate immutable-owner Vault custody and compiled ABI gate"
+          ]
+        },
+        {
+          "path": "tools/management-dashboard/checks.mjs",
+          "source_blob": "f3c6c30dc69903ab0d292b468b76e11bb4904699",
+          "master_blob": "ddba3cdaca2afb3c2c0bf49402bcb1f76b6d28d5",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "f9da25ec76133178cd4478ef769e086c64e5189e [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Add pinned Semgrep OSV and Gitleaks gates",
+            "327bd006854e76bfa92d12bf4f86eed861a101f0 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Add executable contract and supplementary CI gates",
+            "d9bf7ffc8d049c0980665ce0eacb028ea299fa75 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate server lifecycle without gating owner exit",
+            "46d0a27e5b3bac5fde904033b377f2091e4020cd [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Read current Vault rights without indexer dependency",
+            "997be3f45e3943a3aea52213e0847a6c780056e5 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate exact Vault ABI and canonical runtime",
+            "97bc11ee595be8b9d17ebae13aea0276b76e5c43 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate recoverable wallet review and connection runtime"
+          ]
+        }
+      ],
+      "disposition": "SUPERSEDED_BY_PR21_NOT_REMERGE"
+    },
+    {
+      "pr": 19,
+      "head": "b5d429c7a4a4dc05843d6233288d546596285879",
+      "head_is_ancestor_of_preserved_S": true,
+      "S_tree_equals_master": true,
+      "comparison_base": "7ecba357d5a19f387e86f578822af04a6261fed2",
+      "path_count": 9,
+      "paths": [
+        {
+          "path": ".checks/management/latest.json",
+          "source_blob": "f63a4a8c753e62858938236243e86a5440095aef",
+          "master_blob": "cb4bf8832f090ed130c27d1582f5bc54a1d10260",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "055abba1116d798479a7c8f0ea480b56a745a121 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Record scanner source validation manifest",
+            "70435bd069e41188e4339be56db8b204b5b7ba3d [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Record supplementary CI gate validation",
+            "a1f01dd20de297466651b32ae6583d6c92dc4953 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Record CI owner registration checks",
+            "c1eed94ebfb1eb992e28a14bffc92bda4beab3a5 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Record closed Vault regression checks",
+            "a6c2be4144b19166447f69b3ab6c4e176fbfe360 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Record unified source checks",
+            "63b7f36dce0265ad7e043247675adb9e08031c2d [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Record clean manager setup validation"
+          ]
+        },
+        {
+          "path": "docs/management/agents/AF-M3-05-INTEGRATION-ACCEPTANCE.md",
+          "source_blob": "69305ff8192e1051b4c60dca4ca470b5c98df8e4",
+          "master_blob": "69305ff8192e1051b4c60dca4ca470b5c98df8e4",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "docs/management/agents/M3-ASSIGNMENTS.md",
+          "source_blob": "074da267be37919b6dcd5289c8de09d8336218e2",
+          "master_blob": "b8282590a213dee73b95e63f94bb283e6a3998e7",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "ba6b8c2f94808a071691367103bff077e698d2d7 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Register Macbeth06 CI gate owner",
+            "a63b2a94b3026005c7b0403bde237d75b2e8c915 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Align active worker metadata and pin published QA evidence",
+            "47f4edf53b49c553e4b8004fc8712147e3e5e5e3 [Macbeth01][AF-M3-CLOSEOUT] Preserve QA registration history"
+          ]
+        },
+        {
+          "path": "docs/management/agents/bootstrap/Macbeth05.md",
+          "source_blob": "d106ca00bab1a99ba7f76e7d8e44bd4695db0610",
+          "master_blob": "d106ca00bab1a99ba7f76e7d8e44bd4695db0610",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "docs/management/agents/registry.json",
+          "source_blob": "b79e084e5001f814fb83367f3cdd3a49e110d20a",
+          "master_blob": "b614ee67dab09fb7a7aadf1cb0f4d161d9233547",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "ba6b8c2f94808a071691367103bff077e698d2d7 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Register Macbeth06 CI gate owner",
+            "a63b2a94b3026005c7b0403bde237d75b2e8c915 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Align active worker metadata and pin published QA evidence",
+            "6eb10d47f3fed4ed70c45b8f9a84f03ab0566c0c [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Register frozen implementation scope and least-privilege CI repair",
+            "47f4edf53b49c553e4b8004fc8712147e3e5e5e3 [Macbeth01][AF-M3-CLOSEOUT] Preserve QA registration history"
+          ]
+        },
+        {
+          "path": "docs/management/dashboard/data/build-log.json",
+          "source_blob": "dd89938fb502a52402cb043d358b488873d4d5c8",
+          "master_blob": "864dfd1b9269392f4543d71d878c09aac249d48d",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "a712685c1645d9a924dcb0931c98d917da919ced [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Refresh dashboard for qualified scanner source",
+            "cdc6af829d86a9e79af115893470a7f5a83ab804 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Refresh CI gate evidence dashboard",
+            "c0b05e9fde0df08f0e000a4deabfd2f564856bac [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Refresh dashboard for CI gate owner",
+            "ca43c9684fbf34c34d5dd81382df158e2a9ebc0b [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Refresh readiness continuation dashboard",
+            "6643fea04a15925239f290010d043adcd6255d57 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Refresh unified management dashboard",
+            "8fcb14bd8f34bdbd56565344cb4f65158c725614 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Generate manager setup snapshot"
+          ]
+        },
+        {
+          "path": "docs/management/dashboard/data/dashboard.json",
+          "source_blob": "aa46eda9dd045d00193b9ef6b2b364e1ed1d1888",
+          "master_blob": "7d285bad5ea33ab698729d333808eb3dd2f6f9a7",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "a712685c1645d9a924dcb0931c98d917da919ced [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Refresh dashboard for qualified scanner source",
+            "cdc6af829d86a9e79af115893470a7f5a83ab804 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Refresh CI gate evidence dashboard",
+            "c0b05e9fde0df08f0e000a4deabfd2f564856bac [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Refresh dashboard for CI gate owner",
+            "ca43c9684fbf34c34d5dd81382df158e2a9ebc0b [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Refresh readiness continuation dashboard",
+            "6643fea04a15925239f290010d043adcd6255d57 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Refresh unified management dashboard",
+            "8fcb14bd8f34bdbd56565344cb4f65158c725614 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Generate manager setup snapshot"
+          ]
+        },
+        {
+          "path": "docs/migration/artifact-provenance.json",
+          "source_blob": "e6991dcfdfc081e3c093ba27cfc3a60412d7dc85",
+          "master_blob": "0139123a8a71945f2c48fa566096c6489d768b5a",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "ba6b8c2f94808a071691367103bff077e698d2d7 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Register Macbeth06 CI gate owner",
+            "2e2ccc1591da0141e0514d5b4ce785599add591b [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate configured product runtime",
+            "d9bf7ffc8d049c0980665ce0eacb028ea299fa75 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate server lifecycle without gating owner exit",
+            "997be3f45e3943a3aea52213e0847a6c780056e5 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate exact Vault ABI and canonical runtime",
+            "97bc11ee595be8b9d17ebae13aea0276b76e5c43 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate recoverable wallet review and connection runtime",
+            "10b807dc0a3d2990af748414afc8d32da0006dab [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate wallet product flow and provider scenarios"
+          ]
+        },
+        {
+          "path": "test/agent-management.test.mjs",
+          "source_blob": "7034cf736e73d26fb635cbef65d34f551cbfd568",
+          "master_blob": "a3ef437ae066178a0c9bd835188b5c2ac3b1dc26",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "ba6b8c2f94808a071691367103bff077e698d2d7 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Register Macbeth06 CI gate owner",
+            "a63b2a94b3026005c7b0403bde237d75b2e8c915 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Align active worker metadata and pin published QA evidence",
+            "47f4edf53b49c553e4b8004fc8712147e3e5e5e3 [Macbeth01][AF-M3-CLOSEOUT] Preserve QA registration history"
+          ]
+        }
+      ],
+      "disposition": "SUPERSEDED_BY_PR21_NOT_REMERGE"
+    },
+    {
+      "pr": 18,
+      "head": "8afb96e4671b2ace5e59c99617c79b4bdca5b627",
+      "head_is_ancestor_of_preserved_S": true,
+      "S_tree_equals_master": true,
+      "comparison_base": "7ecba357d5a19f387e86f578822af04a6261fed2",
+      "path_count": 47,
+      "paths": [
+        {
+          "path": ".checks/management/latest.json",
+          "source_blob": "e626c09193fc0a687f814ce93e84ca24c728cbc9",
+          "master_blob": "cb4bf8832f090ed130c27d1582f5bc54a1d10260",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "055abba1116d798479a7c8f0ea480b56a745a121 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Record scanner source validation manifest",
+            "70435bd069e41188e4339be56db8b204b5b7ba3d [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Record supplementary CI gate validation",
+            "a1f01dd20de297466651b32ae6583d6c92dc4953 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Record CI owner registration checks",
+            "c1eed94ebfb1eb992e28a14bffc92bda4beab3a5 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Record closed Vault regression checks",
+            "a6c2be4144b19166447f69b3ab6c4e176fbfe360 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Record unified source checks",
+            "586600a886eaf1c961d04e2184a56958583c16ed [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate immutable-owner Vault custody and compiled ABI gate"
+          ]
+        },
+        {
+          "path": "contracts/deployment/abi/AlphaForgeVault.abi.json",
+          "source_blob": "e7cc1e0607f61f384c553260daf97a796083a0a0",
+          "master_blob": "e7cc1e0607f61f384c553260daf97a796083a0a0",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "contracts/deployment/m3-robinhood-testnet.template.json",
+          "source_blob": "b24fb3bb066f5ee0065389773cd0f558cf284502",
+          "master_blob": "bba3a47b0d6a873480c4e5782156ea7f12571b1b",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "586600a886eaf1c961d04e2184a56958583c16ed [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate immutable-owner Vault custody and compiled ABI gate"
+          ]
+        },
+        {
+          "path": "contracts/openzeppelin-pragma-pins.json",
+          "source_blob": "197c8bfb0916aa7a44365795d9247461357390b9",
+          "master_blob": "197c8bfb0916aa7a44365795d9247461357390b9",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "contracts/script/check-m3-vault.sh",
+          "source_blob": "9ba44f39c2da8bea8f7eefb6e57bcc8f2f9bbd35",
+          "master_blob": "9ba44f39c2da8bea8f7eefb6e57bcc8f2f9bbd35",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "contracts/script/check_vault_artifact.py",
+          "source_blob": "44da4df6648f8aff4acd9e09471f30198791d609",
+          "master_blob": "44da4df6648f8aff4acd9e09471f30198791d609",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "contracts/script/pinned_dependency.py",
+          "source_blob": "2b38559f07a34df2eeec01f0099cf49d39546010",
+          "master_blob": "2b38559f07a34df2eeec01f0099cf49d39546010",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "contracts/script/tests/test_pinned_dependency.py",
+          "source_blob": "cdf56482475b5df1d031edead80685f3059fd93a",
+          "master_blob": "cdf56482475b5df1d031edead80685f3059fd93a",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "contracts/script/tests/test_vault_artifact.py",
+          "source_blob": "9f61d64b6c9939bdb34e2a343b1d341dee9f58ce",
+          "master_blob": "9f61d64b6c9939bdb34e2a343b1d341dee9f58ce",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "contracts/src/AlphaForgeSwapAdapter.sol",
+          "source_blob": "32e1a0be8f6313920bd0097c8a82f4c15dfa1dec",
+          "master_blob": "32e1a0be8f6313920bd0097c8a82f4c15dfa1dec",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "contracts/src/AlphaForgeTestAsset.sol",
+          "source_blob": "4fa43c23bfb5614da39bd8b44dac82f46f634eb7",
+          "master_blob": "4fa43c23bfb5614da39bd8b44dac82f46f634eb7",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "contracts/src/AlphaForgeTestVenue.sol",
+          "source_blob": "74962a0012e6834485a19c51b8dab0b6647947d8",
+          "master_blob": "74962a0012e6834485a19c51b8dab0b6647947d8",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "contracts/src/AlphaForgeVault.sol",
+          "source_blob": "2f8074b8d70779eb499f8534d98c4f82e8e053f0",
+          "master_blob": "2f8074b8d70779eb499f8534d98c4f82e8e053f0",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "contracts/src/PassLocker.sol",
+          "source_blob": "f3266b216a951792393677352541499d7944d349",
+          "master_blob": "f3266b216a951792393677352541499d7944d349",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "contracts/src/ProtocolTypes.sol",
+          "source_blob": "267713bc6182f7fc1e5ada34a1a4a98fbdb27d9c",
+          "master_blob": "267713bc6182f7fc1e5ada34a1a4a98fbdb27d9c",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "contracts/src/StrategyPass.sol",
+          "source_blob": "ea1332ef568319f9c6eb57097eda4c4520876e38",
+          "master_blob": "ea1332ef568319f9c6eb57097eda4c4520876e38",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "contracts/src/interfaces/IAlphaForgeVault.sol",
+          "source_blob": "6282cd9ceddf013508e1ef12e681323100cad6e2",
+          "master_blob": "6282cd9ceddf013508e1ef12e681323100cad6e2",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "contracts/src/interfaces/ISwapAdapter.sol",
+          "source_blob": "da220d5b65a6934a040fa6b7aab69c72c2c8a90d",
+          "master_blob": "da220d5b65a6934a040fa6b7aab69c72c2c8a90d",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "contracts/src/interfaces/ITestVenue.sol",
+          "source_blob": "2c2a9392d91b6d262ca22c36cf0cf0aadaee3a0e",
+          "master_blob": "2c2a9392d91b6d262ca22c36cf0cf0aadaee3a0e",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "contracts/test/AlphaForgeSwapAdapter.t.sol",
+          "source_blob": "fc7e5f5db8ce7d9ed66748a8a5a978783f76328a",
+          "master_blob": "fc7e5f5db8ce7d9ed66748a8a5a978783f76328a",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "contracts/test/AlphaForgeTestAsset.t.sol",
+          "source_blob": "053359132081f4867a8a6eb0032f62ff1ce42652",
+          "master_blob": "053359132081f4867a8a6eb0032f62ff1ce42652",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "contracts/test/AlphaForgeTestVenue.invariant.t.sol",
+          "source_blob": "7301fdb2b10a3b7becb190de064a1a784f11f868",
+          "master_blob": "7301fdb2b10a3b7becb190de064a1a784f11f868",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "contracts/test/AlphaForgeTestVenue.t.sol",
+          "source_blob": "8f59eecff889830b7ce4258d5446002b76b751c7",
+          "master_blob": "8f59eecff889830b7ce4258d5446002b76b751c7",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "contracts/test/AlphaForgeVault.accounting.invariant.t.sol",
+          "source_blob": "8f5732f32ecdb8e3e9c10dbba45a195bd4dfa2f2",
+          "master_blob": "8f5732f32ecdb8e3e9c10dbba45a195bd4dfa2f2",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "contracts/test/AlphaForgeVault.accounting.t.sol",
+          "source_blob": "c663eee0ebd8c77b0d39ff0747e05d91fb076e01",
+          "master_blob": "c663eee0ebd8c77b0d39ff0747e05d91fb076e01",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "contracts/test/AlphaForgeVault.custody.t.sol",
+          "source_blob": "590681a3ea15ec69c91609137018209f089bb2c7",
+          "master_blob": "73799bc4c2a74faab82e1dcee40608ad42102768",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "3d2a102834a3d420ad242b13b84c7e88c707ac37 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Verify explicit owner through factory deployment"
+          ]
+        },
+        {
+          "path": "contracts/test/AlphaForgeVault.interface.t.sol",
+          "source_blob": "aebbc0febc9d5da04ca6face99906b3288ca62a8",
+          "master_blob": "aebbc0febc9d5da04ca6face99906b3288ca62a8",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "contracts/test/AlphaForgeVault.rescue.t.sol",
+          "source_blob": "807a1e8d6c53c189feba3e50b9b443ea3705e38d",
+          "master_blob": "807a1e8d6c53c189feba3e50b9b443ea3705e38d",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "contracts/test/PassLocker.t.sol",
+          "source_blob": "9660fdd08424a16b8220fd3728bc5c1dbfb6e4b1",
+          "master_blob": "9660fdd08424a16b8220fd3728bc5c1dbfb6e4b1",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "contracts/test/StrategyPass.invariant.t.sol",
+          "source_blob": "9f07c678b9a20fbe410416f1eb9b16cf402b481a",
+          "master_blob": "9f07c678b9a20fbe410416f1eb9b16cf402b481a",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "contracts/test/StrategyPass.t.sol",
+          "source_blob": "d52115343342eb06956c844fcf9098224c20254d",
+          "master_blob": "d52115343342eb06956c844fcf9098224c20254d",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "contracts/test/harness/AlphaForgeVaultHarness.sol",
+          "source_blob": "4f08ac36b411f7822592ce024640adf6965d2a26",
+          "master_blob": "4f08ac36b411f7822592ce024640adf6965d2a26",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "contracts/test/mocks/ConfigurableAsset.sol",
+          "source_blob": "08b4f8e105712c33ce48bcccefa0222076b00f52",
+          "master_blob": "08b4f8e105712c33ce48bcccefa0222076b00f52",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "contracts/test/mocks/MaliciousVenue.sol",
+          "source_blob": "30b20361318398b844f9e6ec1c804fa6a691ba84",
+          "master_blob": "30b20361318398b844f9e6ec1c804fa6a691ba84",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "contracts/test/mocks/ReentrantAsset.sol",
+          "source_blob": "0a4cd21088611bbca84f35ad548ae5e81b1637ba",
+          "master_blob": "0a4cd21088611bbca84f35ad548ae5e81b1637ba",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "contracts/test/mocks/ReentrantPass.sol",
+          "source_blob": "ed4ddb22d694594e7a799f0aee4ec97190a31e73",
+          "master_blob": "ed4ddb22d694594e7a799f0aee4ec97190a31e73",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "docs/management/dashboard/data/build-log.json",
+          "source_blob": "20eef4584d4647d0eb5fdcc0d50c42335e357df6",
+          "master_blob": "864dfd1b9269392f4543d71d878c09aac249d48d",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "a712685c1645d9a924dcb0931c98d917da919ced [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Refresh dashboard for qualified scanner source",
+            "cdc6af829d86a9e79af115893470a7f5a83ab804 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Refresh CI gate evidence dashboard",
+            "c0b05e9fde0df08f0e000a4deabfd2f564856bac [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Refresh dashboard for CI gate owner",
+            "ca43c9684fbf34c34d5dd81382df158e2a9ebc0b [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Refresh readiness continuation dashboard",
+            "6643fea04a15925239f290010d043adcd6255d57 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Refresh unified management dashboard",
+            "586600a886eaf1c961d04e2184a56958583c16ed [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate immutable-owner Vault custody and compiled ABI gate"
+          ]
+        },
+        {
+          "path": "docs/management/dashboard/data/dashboard.json",
+          "source_blob": "9dc00f59a9d2bf5582e633d7ac8b6a03be0f04c4",
+          "master_blob": "7d285bad5ea33ab698729d333808eb3dd2f6f9a7",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "a712685c1645d9a924dcb0931c98d917da919ced [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Refresh dashboard for qualified scanner source",
+            "cdc6af829d86a9e79af115893470a7f5a83ab804 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Refresh CI gate evidence dashboard",
+            "c0b05e9fde0df08f0e000a4deabfd2f564856bac [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Refresh dashboard for CI gate owner",
+            "ca43c9684fbf34c34d5dd81382df158e2a9ebc0b [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Refresh readiness continuation dashboard",
+            "6643fea04a15925239f290010d043adcd6255d57 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Refresh unified management dashboard",
+            "586600a886eaf1c961d04e2184a56958583c16ed [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate immutable-owner Vault custody and compiled ABI gate"
+          ]
+        },
+        {
+          "path": "docs/protocol/M3-CURRENT-ABI-DRAFT.md",
+          "source_blob": "ce94bf82f95610de7d1e4cc740ada37922c11272",
+          "master_blob": "ce94bf82f95610de7d1e4cc740ada37922c11272",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "docs/protocol/M3-PASS-VAULT-ACCOUNTING.md",
+          "source_blob": "b63f8d6f3fe8e1b6421f12b4e0316aab8a7f1f8a",
+          "master_blob": "b63f8d6f3fe8e1b6421f12b4e0316aab8a7f1f8a",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "docs/protocol/M3-PROTOCOL-WORKLOG.md",
+          "source_blob": "9e5146c6bea85f7f4cc49ad86fa1d11aa535ebbd",
+          "master_blob": "9e5146c6bea85f7f4cc49ad86fa1d11aa535ebbd",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "docs/protocol/M3-VAULT-ABI-HANDOFF.md",
+          "source_blob": "74d1549a7961abe42b5fa987d6ec045ddd0ae76a",
+          "master_blob": "74d1549a7961abe42b5fa987d6ec045ddd0ae76a",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "docs/superpowers/plans/2026-09-14-m3-protocol.md",
+          "source_blob": "be8b1398f839fc6ba7c21f21c9ee0e9243427b8f",
+          "master_blob": "be8b1398f839fc6ba7c21f21c9ee0e9243427b8f",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "docs/superpowers/plans/2026-09-19-m3-partial-onchain-vault.md",
+          "source_blob": "a04bfa41b54999b0612029a20b650c6233c837e0",
+          "master_blob": "a04bfa41b54999b0612029a20b650c6233c837e0",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "package.json",
+          "source_blob": "d08e2ce81d977475f4196d9ec6be25af84e92825",
+          "master_blob": "2c3cf183edb9d07b330fb6854b4d9b3d26f92e98",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "f9da25ec76133178cd4478ef769e086c64e5189e [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Add pinned Semgrep OSV and Gitleaks gates",
+            "327bd006854e76bfa92d12bf4f86eed861a101f0 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Add executable contract and supplementary CI gates",
+            "d9bf7ffc8d049c0980665ce0eacb028ea299fa75 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate server lifecycle without gating owner exit",
+            "46d0a27e5b3bac5fde904033b377f2091e4020cd [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Read current Vault rights without indexer dependency",
+            "997be3f45e3943a3aea52213e0847a6c780056e5 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate exact Vault ABI and canonical runtime",
+            "97bc11ee595be8b9d17ebae13aea0276b76e5c43 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate recoverable wallet review and connection runtime"
+          ]
+        },
+        {
+          "path": "test/m3-deployment-template.test.mjs",
+          "source_blob": "7339e191aad0207cc4008b868ae97e4d83f58194",
+          "master_blob": "01a271ef1fc8f98b52852e3e4a026e5061a79577",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "586600a886eaf1c961d04e2184a56958583c16ed [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate immutable-owner Vault custody and compiled ABI gate"
+          ]
+        },
+        {
+          "path": "tools/check-m3-deployment-template.mjs",
+          "source_blob": "e256516048082adfd911f5747f19eb876988df26",
+          "master_blob": "0626766de474ee92d80e7ac926499015867f05ee",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "586600a886eaf1c961d04e2184a56958583c16ed [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate immutable-owner Vault custody and compiled ABI gate"
+          ]
+        }
+      ],
+      "disposition": "SUPERSEDED_BY_PR21_NOT_REMERGE"
+    },
+    {
+      "pr": 17,
+      "head": "77e2fe623326314c62ebe331d6357e6444aa58b1",
+      "head_is_ancestor_of_preserved_S": true,
+      "S_tree_equals_master": true,
+      "comparison_base": "7ecba357d5a19f387e86f578822af04a6261fed2",
+      "path_count": 50,
+      "paths": [
+        {
+          "path": ".checks/management/latest.json",
+          "source_blob": "dfc35f1306693d81a190ecf17dfa9f8dac535ab5",
+          "master_blob": "cb4bf8832f090ed130c27d1582f5bc54a1d10260",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "055abba1116d798479a7c8f0ea480b56a745a121 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Record scanner source validation manifest",
+            "70435bd069e41188e4339be56db8b204b5b7ba3d [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Record supplementary CI gate validation",
+            "a1f01dd20de297466651b32ae6583d6c92dc4953 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Record CI owner registration checks",
+            "c1eed94ebfb1eb992e28a14bffc92bda4beab3a5 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Record closed Vault regression checks",
+            "a6c2be4144b19166447f69b3ab6c4e176fbfe360 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Record unified source checks",
+            "2e2ccc1591da0141e0514d5b4ce785599add591b [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate configured product runtime"
+          ]
+        },
+        {
+          "path": "README.md",
+          "source_blob": "ba1b000017d3d270a17278d060961cdee1a74e27",
+          "master_blob": "ba1b000017d3d270a17278d060961cdee1a74e27",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "apps/server/chain-migrations/001-chain-projection.sql",
+          "source_blob": "37dd7449bfe766dc1c91b54a61d3a176b3238d6b",
+          "master_blob": "37dd7449bfe766dc1c91b54a61d3a176b3238d6b",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "apps/server/chain-migrations/002-projection-checkpoint.sql",
+          "source_blob": "f8c1d411374b6ff57d9ed7f35e7f63e7aacfea66",
+          "master_blob": "f8c1d411374b6ff57d9ed7f35e7f63e7aacfea66",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "apps/server/chain-migrations/003-sync-target.sql",
+          "source_blob": "d0e0f7552ac9a5458b0bd05bfa05fc0a30b13ab1",
+          "master_blob": "d0e0f7552ac9a5458b0bd05bfa05fc0a30b13ab1",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "apps/server/chain-migrations/004-sync-lease.sql",
+          "source_blob": "021b52cad66441c82d84e00bdd2bd70830b0a7ac",
+          "master_blob": "021b52cad66441c82d84e00bdd2bd70830b0a7ac",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "apps/server/chain-migrations/005-transaction-index.sql",
+          "source_blob": "c03a0b84cdf11637b90266066fec7e84676c28a8",
+          "master_blob": "c03a0b84cdf11637b90266066fec7e84676c28a8",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "apps/server/chain-migrations/006-operation-calldata.sql",
+          "source_blob": "43270556e53416c322c35d13d7842cfe0a5e6909",
+          "master_blob": "43270556e53416c322c35d13d7842cfe0a5e6909",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "apps/server/src/api-errors.ts",
+          "source_blob": "42ad0c7eab19d7f8f1f111a8568163532ab4b9bb",
+          "master_blob": "42ad0c7eab19d7f8f1f111a8568163532ab4b9bb",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "apps/server/src/app.ts",
+          "source_blob": "9377f889ff5a533b077f7954805c0555d0b7f5c7",
+          "master_blob": "9377f889ff5a533b077f7954805c0555d0b7f5c7",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "apps/server/src/chain-routes.ts",
+          "source_blob": "399591c3fc0ad4dcb9a122f64573170b8281f233",
+          "master_blob": "ef3b23b59be6c1096b3a481f0eb87068c6a3369a",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "2e2ccc1591da0141e0514d5b4ce785599add591b [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate configured product runtime",
+            "d9bf7ffc8d049c0980665ce0eacb028ea299fa75 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate server lifecycle without gating owner exit"
+          ]
+        },
+        {
+          "path": "apps/server/src/chain-store.ts",
+          "source_blob": "fe59582851a8e88a8f48e04aa880960f8b91de09",
+          "master_blob": "e3655c90fca854a47e9c7af147e6cff984c63e09",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "2e2ccc1591da0141e0514d5b4ce785599add591b [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate configured product runtime",
+            "1645c590f3d5508338af03e83fee22bf6d263bd1 [Macbeth04][M3-04-PRODUCT-UI] Integrate final Vault startup"
+          ]
+        },
+        {
+          "path": "apps/server/src/chain-sync.ts",
+          "source_blob": "5f1c3b5b3e8de2d03c2d7059ead96e3b3f5e515c",
+          "master_blob": "5f1c3b5b3e8de2d03c2d7059ead96e3b3f5e515c",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "apps/server/src/m3-chain-runtime.ts",
+          "source_blob": "f6f23357aa40cb489f404865da960fcae2fa1bd2",
+          "master_blob": "cdd2444fb4568ebd69d190a0575831b3295a0b27",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "2e2ccc1591da0141e0514d5b4ce785599add591b [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate configured product runtime",
+            "d9bf7ffc8d049c0980665ce0eacb028ea299fa75 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate server lifecycle without gating owner exit"
+          ]
+        },
+        {
+          "path": "apps/server/src/m3-main.ts",
+          "source_blob": "d1b345cdf51c1c47d13b87d23f57fc701d2fa338",
+          "master_blob": "d1b345cdf51c1c47d13b87d23f57fc701d2fa338",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "apps/server/src/m3-startup.ts",
+          "source_blob": "42990c546a716325c2279e00f71af4295448bee8",
+          "master_blob": "fa73dfa1b99ace658c8d442919ceeb527812d522",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "2e2ccc1591da0141e0514d5b4ce785599add591b [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate configured product runtime",
+            "d9bf7ffc8d049c0980665ce0eacb028ea299fa75 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate server lifecycle without gating owner exit"
+          ]
+        },
+        {
+          "path": "apps/server/src/m3-vault-integration.ts",
+          "source_blob": "9a6d7e838eae2e8021163f3afb38a9ab346218b5",
+          "master_blob": "9a6d7e838eae2e8021163f3afb38a9ab346218b5",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "apps/web/src/chain-wallet.ts",
+          "source_blob": "8444e500067c1c00222f621d58b95501a59b7332",
+          "master_blob": "2047f333c820f5d198e928da0154ee56f5e7deee",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "2e2ccc1591da0141e0514d5b4ce785599add591b [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate configured product runtime",
+            "1645c590f3d5508338af03e83fee22bf6d263bd1 [Macbeth04][M3-04-PRODUCT-UI] Integrate final Vault startup",
+            "d9bf7ffc8d049c0980665ce0eacb028ea299fa75 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate server lifecycle without gating owner exit"
+          ]
+        },
+        {
+          "path": "apps/web/src/m3-vault-actions.ts",
+          "source_blob": "e1880e7a8888b9ad860f4267c6fbd480cd45b072",
+          "master_blob": "e1880e7a8888b9ad860f4267c6fbd480cd45b072",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "apps/web/src/m3-vault-allowance.ts",
+          "source_blob": "5c7e42162747eb96617c03a3f17905429c46caa6",
+          "master_blob": "5c7e42162747eb96617c03a3f17905429c46caa6",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "apps/web/src/m3-vault-client.ts",
+          "source_blob": "40424e664715e588ea2a3b81a443662fd02f3870",
+          "master_blob": "19f28fd51c7dc8ab2b7bac949167fcbf4ae01125",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "2e2ccc1591da0141e0514d5b4ce785599add591b [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate configured product runtime",
+            "1645c590f3d5508338af03e83fee22bf6d263bd1 [Macbeth04][M3-04-PRODUCT-UI] Integrate final Vault startup"
+          ]
+        },
+        {
+          "path": "apps/web/src/strategy-adapter.ts",
+          "source_blob": "cfbe1015cde46a5f823d519b2122cf0b8df5396c",
+          "master_blob": "53939321ff0fad02ca4200ca5c3475c05092f8c3",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "1645c590f3d5508338af03e83fee22bf6d263bd1 [Macbeth04][M3-04-PRODUCT-UI] Integrate final Vault startup",
+            "d9bf7ffc8d049c0980665ce0eacb028ea299fa75 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate server lifecycle without gating owner exit"
+          ]
+        },
+        {
+          "path": "docs/M3-CHAIN-ADAPTER.md",
+          "source_blob": "f4ec89262659e3a0b708695053299293c7a8de62",
+          "master_blob": "d1393914a643f2626845b1f31e3e3e7d46ac3444",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "2e2ccc1591da0141e0514d5b4ce785599add591b [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate configured product runtime",
+            "d9bf7ffc8d049c0980665ce0eacb028ea299fa75 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate server lifecycle without gating owner exit"
+          ]
+        },
+        {
+          "path": "docs/management/dashboard/data/build-log.json",
+          "source_blob": "50fc65e250e2c782cd44dbb982865354e3f960d0",
+          "master_blob": "864dfd1b9269392f4543d71d878c09aac249d48d",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "a712685c1645d9a924dcb0931c98d917da919ced [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Refresh dashboard for qualified scanner source",
+            "cdc6af829d86a9e79af115893470a7f5a83ab804 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Refresh CI gate evidence dashboard",
+            "c0b05e9fde0df08f0e000a4deabfd2f564856bac [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Refresh dashboard for CI gate owner",
+            "ca43c9684fbf34c34d5dd81382df158e2a9ebc0b [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Refresh readiness continuation dashboard",
+            "6643fea04a15925239f290010d043adcd6255d57 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Refresh unified management dashboard",
+            "2e2ccc1591da0141e0514d5b4ce785599add591b [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate configured product runtime"
+          ]
+        },
+        {
+          "path": "docs/management/dashboard/data/dashboard.json",
+          "source_blob": "46e172a47860073046359545b97f3ba9d47707dc",
+          "master_blob": "7d285bad5ea33ab698729d333808eb3dd2f6f9a7",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "a712685c1645d9a924dcb0931c98d917da919ced [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Refresh dashboard for qualified scanner source",
+            "cdc6af829d86a9e79af115893470a7f5a83ab804 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Refresh CI gate evidence dashboard",
+            "c0b05e9fde0df08f0e000a4deabfd2f564856bac [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Refresh dashboard for CI gate owner",
+            "ca43c9684fbf34c34d5dd81382df158e2a9ebc0b [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Refresh readiness continuation dashboard",
+            "6643fea04a15925239f290010d043adcd6255d57 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Refresh unified management dashboard",
+            "2e2ccc1591da0141e0514d5b4ce785599add591b [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate configured product runtime"
+          ]
+        },
+        {
+          "path": "docs/migration/artifact-provenance.json",
+          "source_blob": "b18e1f025949e652c727f7d64afe7d8aeb3f3667",
+          "master_blob": "0139123a8a71945f2c48fa566096c6489d768b5a",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "ba6b8c2f94808a071691367103bff077e698d2d7 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Register Macbeth06 CI gate owner",
+            "2e2ccc1591da0141e0514d5b4ce785599add591b [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate configured product runtime",
+            "1645c590f3d5508338af03e83fee22bf6d263bd1 [Macbeth04][M3-04-PRODUCT-UI] Integrate final Vault startup",
+            "d9bf7ffc8d049c0980665ce0eacb028ea299fa75 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate server lifecycle without gating owner exit"
+          ]
+        },
+        {
+          "path": "docs/superpowers/plans/2026-09-14-m3-chain-adapter.md",
+          "source_blob": "1aa3ee4995597bdbb49087031d9b0e577fcb1307",
+          "master_blob": "1aa3ee4995597bdbb49087031d9b0e577fcb1307",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "docs/superpowers/plans/2026-09-19-m3-partial-onchain-macbeth03.md",
+          "source_blob": "86b73b89e0abf8149e9331547774239ba6fd8810",
+          "master_blob": "86b73b89e0abf8149e9331547774239ba6fd8810",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "package.json",
+          "source_blob": "0c5846cefedabebf36184b94b1648a040e10d1e5",
+          "master_blob": "2c3cf183edb9d07b330fb6854b4d9b3d26f92e98",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "f9da25ec76133178cd4478ef769e086c64e5189e [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Add pinned Semgrep OSV and Gitleaks gates",
+            "327bd006854e76bfa92d12bf4f86eed861a101f0 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Add executable contract and supplementary CI gates",
+            "2e2ccc1591da0141e0514d5b4ce785599add591b [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate configured product runtime",
+            "1645c590f3d5508338af03e83fee22bf6d263bd1 [Macbeth04][M3-04-PRODUCT-UI] Integrate final Vault startup",
+            "d9bf7ffc8d049c0980665ce0eacb028ea299fa75 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate server lifecycle without gating owner exit"
+          ]
+        },
+        {
+          "path": "packages/chain-adapter/src/index.ts",
+          "source_blob": "44da68fb8d08a95fde31d5e88d8163ecb2325521",
+          "master_blob": "44da68fb8d08a95fde31d5e88d8163ecb2325521",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "packages/chain-adapter/src/lifecycle.ts",
+          "source_blob": "6a22b9b18ce84e0bc47d3937b87ddf5311c34ce2",
+          "master_blob": "6a22b9b18ce84e0bc47d3937b87ddf5311c34ce2",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "packages/chain-adapter/src/manifest.ts",
+          "source_blob": "04a0e2d5cb138f97a3cf3fdeff972686512e465e",
+          "master_blob": "04a0e2d5cb138f97a3cf3fdeff972686512e465e",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "packages/chain-adapter/src/policy.ts",
+          "source_blob": "1c80506b7206475951ddedd25362cc604619a323",
+          "master_blob": "1c80506b7206475951ddedd25362cc604619a323",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "packages/chain-adapter/src/reconciliation.ts",
+          "source_blob": "b433787367e4e80c777745b5e989ccba6887b24b",
+          "master_blob": "b433787367e4e80c777745b5e989ccba6887b24b",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "packages/chain-adapter/src/rpc.ts",
+          "source_blob": "cd803022f9381f8f74cdd5d22b8c28da13e7e46d",
+          "master_blob": "cd803022f9381f8f74cdd5d22b8c28da13e7e46d",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "packages/chain-adapter/src/types.ts",
+          "source_blob": "b781686e176cc29487727f24d7510cc299f6b2bf",
+          "master_blob": "b781686e176cc29487727f24d7510cc299f6b2bf",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "packages/chain-adapter/src/vault-abi.ts",
+          "source_blob": "d1a0da70f4023b42da7da2df08661ed351ef0152",
+          "master_blob": "d1a0da70f4023b42da7da2df08661ed351ef0152",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "test/chain-api.test.ts",
+          "source_blob": "9eb62145895d6f9140b707161e7fa2e552de0f45",
+          "master_blob": "9eb62145895d6f9140b707161e7fa2e552de0f45",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "test/chain-lifecycle.test.ts",
+          "source_blob": "41b5308d5f2c8179ec1ba3bc30fefef6c09f3218",
+          "master_blob": "41b5308d5f2c8179ec1ba3bc30fefef6c09f3218",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "test/chain-rpc-manifest.test.ts",
+          "source_blob": "2ccbb9a2ca86e2d4c4fff26b24ca661ebd1e48b8",
+          "master_blob": "2ccbb9a2ca86e2d4c4fff26b24ca661ebd1e48b8",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "test/chain-runtime.test.ts",
+          "source_blob": "4b81a85af5a73013f5e38e7baa80faaffb7ad69e",
+          "master_blob": "4b81a85af5a73013f5e38e7baa80faaffb7ad69e",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "test/chain-startup.test.ts",
+          "source_blob": "8e343323cd59d3f4882e0dea55603e87db84fe83",
+          "master_blob": "e30dd66ea4c05a29d3de36c328a599231dcb0f09",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "2e2ccc1591da0141e0514d5b4ce785599add591b [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate configured product runtime",
+            "d9bf7ffc8d049c0980665ce0eacb028ea299fa75 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate server lifecycle without gating owner exit"
+          ]
+        },
+        {
+          "path": "test/chain-store.test.ts",
+          "source_blob": "faf53208ec7f3dd8b1c84dc3e93ff189c79a4155",
+          "master_blob": "faf53208ec7f3dd8b1c84dc3e93ff189c79a4155",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "test/chain-sync.test.ts",
+          "source_blob": "6d94d1520b5ccf3106f29036435603cb01b3133a",
+          "master_blob": "6d94d1520b5ccf3106f29036435603cb01b3133a",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "test/chain-vault-abi.test.ts",
+          "source_blob": "869abf8e86b12ade3ced4a087b4a2a77438393a0",
+          "master_blob": "869abf8e86b12ade3ced4a087b4a2a77438393a0",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "test/chain-vault-integration.test.ts",
+          "source_blob": "855c3963358e598f3ee9c101e053b98551cce4bd",
+          "master_blob": "855c3963358e598f3ee9c101e053b98551cce4bd",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "test/ui-chain-wallet.test.ts",
+          "source_blob": "ed2d5f39cb9956248d6b7f31685f1e78e4f1ed78",
+          "master_blob": "ed2d5f39cb9956248d6b7f31685f1e78e4f1ed78",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "test/ui-m3-vault-actions.test.ts",
+          "source_blob": "3c1b5e82c56b712eedcdacb59ce8f621b4498357",
+          "master_blob": "3c1b5e82c56b712eedcdacb59ce8f621b4498357",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "test/ui-m3-vault-allowance.test.ts",
+          "source_blob": "5f04e0a453f1ceeb92ccda54efbb405b523ba8d5",
+          "master_blob": "5f04e0a453f1ceeb92ccda54efbb405b523ba8d5",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "test/ui-m3-vault-client.test.ts",
+          "source_blob": "71402706c89762872d2565a0e9493894d1c45c44",
+          "master_blob": "868a43ff228423e067628cb870b69b0baf209ebd",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "2e2ccc1591da0141e0514d5b4ce785599add591b [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate configured product runtime",
+            "1645c590f3d5508338af03e83fee22bf6d263bd1 [Macbeth04][M3-04-PRODUCT-UI] Integrate final Vault startup"
+          ]
+        }
+      ],
+      "disposition": "SUPERSEDED_BY_PR21_NOT_REMERGE"
+    },
+    {
+      "pr": 16,
+      "head": "1645c590f3d5508338af03e83fee22bf6d263bd1",
+      "head_is_ancestor_of_preserved_S": true,
+      "S_tree_equals_master": true,
+      "comparison_base": "77e2fe623326314c62ebe331d6357e6444aa58b1",
+      "path_count": 25,
+      "paths": [
+        {
+          "path": "apps/server/src/chain-store.ts",
+          "source_blob": "e3655c90fca854a47e9c7af147e6cff984c63e09",
+          "master_blob": "e3655c90fca854a47e9c7af147e6cff984c63e09",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "apps/web/src/chain-wallet.ts",
+          "source_blob": "77f27d96d67da82e5e612502ba4826e886a3bf33",
+          "master_blob": "2047f333c820f5d198e928da0154ee56f5e7deee",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "2e2ccc1591da0141e0514d5b4ce785599add591b [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate configured product runtime"
+          ]
+        },
+        {
+          "path": "apps/web/src/m3-browser-runtime.ts",
+          "source_blob": "868758c95c70d14328760aedb2a0daec317e8bd6",
+          "master_blob": "8d691cebc85a0f92273b68f549afe682b217c218",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "4db2d96bfc6559ae939abb5a455490274c900936 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Close Vault UI actions and prepare private readiness path"
+          ]
+        },
+        {
+          "path": "apps/web/src/m3-chain-action-flow.ts",
+          "source_blob": "da61a6918cbf8bbccfc0df8d2c300b86dccf243d",
+          "master_blob": "da61a6918cbf8bbccfc0df8d2c300b86dccf243d",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "apps/web/src/m3-injected-runtime-fixture.ts",
+          "source_blob": "6ebe4ca73a1372b6426858d4077bd6062e58258d",
+          "master_blob": "6ebe4ca73a1372b6426858d4077bd6062e58258d",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "apps/web/src/m3-product-dialog.ts",
+          "source_blob": "b3fd040f5927283253b239195bd1f81a5f70a66c",
+          "master_blob": "b3fd040f5927283253b239195bd1f81a5f70a66c",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "apps/web/src/m3-product-runtime.ts",
+          "source_blob": "ae376f6c6cc381d9384dc9b77a1aa624331d61a0",
+          "master_blob": "ae376f6c6cc381d9384dc9b77a1aa624331d61a0",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "apps/web/src/m3-product-shell.ts",
+          "source_blob": "c32434174865c66f17757dab51dc6203ab53177f",
+          "master_blob": "69adddb5aa5be8911670aa6eab5fc05c8149f39d",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "4db2d96bfc6559ae939abb5a455490274c900936 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Close Vault UI actions and prepare private readiness path"
+          ]
+        },
+        {
+          "path": "apps/web/src/m3-vault-client.ts",
+          "source_blob": "19f28fd51c7dc8ab2b7bac949167fcbf4ae01125",
+          "master_blob": "19f28fd51c7dc8ab2b7bac949167fcbf4ae01125",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "apps/web/src/m3-vault-live-reader.ts",
+          "source_blob": "8b0e9764ea2c13ed162c52930704aa9416b50313",
+          "master_blob": "8b0e9764ea2c13ed162c52930704aa9416b50313",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "apps/web/src/product-ui.ts",
+          "source_blob": "ef4e58feb14a2c55b7422c4cbc1d875527248fb6",
+          "master_blob": "ef4e58feb14a2c55b7422c4cbc1d875527248fb6",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "apps/web/src/strategy-adapter.ts",
+          "source_blob": "53939321ff0fad02ca4200ca5c3475c05092f8c3",
+          "master_blob": "53939321ff0fad02ca4200ca5c3475c05092f8c3",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "apps/web/vite.config.ts",
+          "source_blob": "5063802cbe43b07bca0797a53fc37ba38074f717",
+          "master_blob": "5063802cbe43b07bca0797a53fc37ba38074f717",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "docs/management/agents/logs/M3-04-PRODUCT-UI.md",
+          "source_blob": "4ea7f9011ccfc843ec9d82417aee8cc63b247812",
+          "master_blob": "4ea7f9011ccfc843ec9d82417aee8cc63b247812",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "docs/migration/artifact-provenance.json",
+          "source_blob": "7e95973d5243110f84dadb8072b27c580c844e03",
+          "master_blob": "0139123a8a71945f2c48fa566096c6489d768b5a",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "ba6b8c2f94808a071691367103bff077e698d2d7 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Register Macbeth06 CI gate owner",
+            "2e2ccc1591da0141e0514d5b4ce785599add591b [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate configured product runtime"
+          ]
+        },
+        {
+          "path": "docs/superpowers/plans/2026-09-14-m3-product-ui.md",
+          "source_blob": "5ab9184323cd2b4185ae3b1578ea4a4e02b5856d",
+          "master_blob": "5ab9184323cd2b4185ae3b1578ea4a4e02b5856d",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "package.json",
+          "source_blob": "7b2dd63b3f9ea592402a40097ed984b2c5360520",
+          "master_blob": "2c3cf183edb9d07b330fb6854b4d9b3d26f92e98",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "f9da25ec76133178cd4478ef769e086c64e5189e [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Add pinned Semgrep OSV and Gitleaks gates",
+            "327bd006854e76bfa92d12bf4f86eed861a101f0 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Add executable contract and supplementary CI gates",
+            "2e2ccc1591da0141e0514d5b4ce785599add591b [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate configured product runtime"
+          ]
+        },
+        {
+          "path": "test/m3-browser-runtime.test.ts",
+          "source_blob": "14f3ab97d35e693358e4bb188bdbce23bf75ea34",
+          "master_blob": "f4e3f881aac3220f61e15084ca3a7fb93a084ce8",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "4db2d96bfc6559ae939abb5a455490274c900936 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Close Vault UI actions and prepare private readiness path"
+          ]
+        },
+        {
+          "path": "test/m3-chain-action-flow.test.ts",
+          "source_blob": "13ba8cfb5f38ff4ae0316da8e63b8bb1fd724cb0",
+          "master_blob": "13ba8cfb5f38ff4ae0316da8e63b8bb1fd724cb0",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "test/m3-injected-runtime.test.ts",
+          "source_blob": "4c43c723591940cbc3b74dcfd7ddc7534d1d75c2",
+          "master_blob": "6d07cfa3b794c42f9ce579f526ce5c20d3b172c7",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "2e2ccc1591da0141e0514d5b4ce785599add591b [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate configured product runtime"
+          ]
+        },
+        {
+          "path": "test/m3-product-dialog.test.ts",
+          "source_blob": "18d3365498e6d371a22f90125dd8a3663560e9b2",
+          "master_blob": "18d3365498e6d371a22f90125dd8a3663560e9b2",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "test/m3-product-runtime.test.ts",
+          "source_blob": "0575d5e3b537f82b503b81daba5e5e7f9fd773a6",
+          "master_blob": "0575d5e3b537f82b503b81daba5e5e7f9fd773a6",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "test/m3-product-ui.test.ts",
+          "source_blob": "c9b548d481ebd4f37b8e1e733a8bb2754668cc58",
+          "master_blob": "64427fcd3d763d23abeafb7f70cb18874e7d416a",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "2e2ccc1591da0141e0514d5b4ce785599add591b [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate configured product runtime"
+          ]
+        },
+        {
+          "path": "test/ui-m3-vault-client.test.ts",
+          "source_blob": "868a43ff228423e067628cb870b69b0baf209ebd",
+          "master_blob": "868a43ff228423e067628cb870b69b0baf209ebd",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "test/ui-m3-vault-live-reader.test.ts",
+          "source_blob": "a68d3ca5f935ec3f002f6d1ed32af9c01daa95f2",
+          "master_blob": "a68d3ca5f935ec3f002f6d1ed32af9c01daa95f2",
+          "disposition": "EXACT_BLOB"
+        }
+      ],
+      "disposition": "SUPERSEDED_BY_PR21_NOT_REMERGE"
+    },
+    {
+      "pr": 15,
+      "head": "8be566b0c405ddf32ad7cd9886810b8dda23007e",
+      "head_is_ancestor_of_preserved_S": true,
+      "S_tree_equals_master": true,
+      "comparison_base": "7ecba357d5a19f387e86f578822af04a6261fed2",
+      "path_count": 12,
+      "paths": [
+        {
+          "path": ".checks/management/latest.json",
+          "source_blob": "3f138d10ae0d96da0cb1e7ad2f55654ce3a5fcd4",
+          "master_blob": "cb4bf8832f090ed130c27d1582f5bc54a1d10260",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "055abba1116d798479a7c8f0ea480b56a745a121 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Record scanner source validation manifest",
+            "70435bd069e41188e4339be56db8b204b5b7ba3d [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Record supplementary CI gate validation",
+            "a1f01dd20de297466651b32ae6583d6c92dc4953 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Record CI owner registration checks",
+            "c1eed94ebfb1eb992e28a14bffc92bda4beab3a5 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Record closed Vault regression checks",
+            "a6c2be4144b19166447f69b3ab6c4e176fbfe360 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Record unified source checks",
+            "63b7f36dce0265ad7e043247675adb9e08031c2d [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Record clean manager setup validation"
+          ]
+        },
+        {
+          "path": "docs/management/CURRENT-STATUS.md",
+          "source_blob": "78010fe37b9808369c882a07b47eeb7c64c6ac3e",
+          "master_blob": "78010fe37b9808369c882a07b47eeb7c64c6ac3e",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "docs/management/WORK-QUEUE.md",
+          "source_blob": "af7874d5f3518e0056b0e00f622dca778f5cf6b7",
+          "master_blob": "af7874d5f3518e0056b0e00f622dca778f5cf6b7",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "docs/management/agents/COMMON-PROTOCOL.md",
+          "source_blob": "5cd3f436090850a847a768aad0220d953c22b59f",
+          "master_blob": "552c9be6e0c572eb611d7da6baa552651a0eaa6b",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "ba6b8c2f94808a071691367103bff077e698d2d7 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Register Macbeth06 CI gate owner"
+          ]
+        },
+        {
+          "path": "docs/management/agents/M3-04-PRODUCT-UI.md",
+          "source_blob": "5dcb5364f6896388c3d04b7bda2b79649c83a2a8",
+          "master_blob": "5dcb5364f6896388c3d04b7bda2b79649c83a2a8",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "docs/management/agents/M3-ASSIGNMENTS.md",
+          "source_blob": "4de01b57d4dcbf00ae77fcbc4586e2012972358e",
+          "master_blob": "b8282590a213dee73b95e63f94bb283e6a3998e7",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "ba6b8c2f94808a071691367103bff077e698d2d7 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Register Macbeth06 CI gate owner",
+            "a63b2a94b3026005c7b0403bde237d75b2e8c915 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Align active worker metadata and pin published QA evidence",
+            "47f4edf53b49c553e4b8004fc8712147e3e5e5e3 [Macbeth01][AF-M3-CLOSEOUT] Preserve QA registration history"
+          ]
+        },
+        {
+          "path": "docs/management/agents/bootstrap/Macbeth04.md",
+          "source_blob": "df889c201fa674c35aa9f690b2f6537023ce324c",
+          "master_blob": "df889c201fa674c35aa9f690b2f6537023ce324c",
+          "disposition": "EXACT_BLOB"
+        },
+        {
+          "path": "docs/management/agents/registry.json",
+          "source_blob": "36e9c0667730ca51133b98bd80241fb4f4d66cf9",
+          "master_blob": "b614ee67dab09fb7a7aadf1cb0f4d161d9233547",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "ba6b8c2f94808a071691367103bff077e698d2d7 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Register Macbeth06 CI gate owner",
+            "a63b2a94b3026005c7b0403bde237d75b2e8c915 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Align active worker metadata and pin published QA evidence",
+            "6eb10d47f3fed4ed70c45b8f9a84f03ab0566c0c [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Register frozen implementation scope and least-privilege CI repair",
+            "47f4edf53b49c553e4b8004fc8712147e3e5e5e3 [Macbeth01][AF-M3-CLOSEOUT] Preserve QA registration history",
+            "5efd4c628386d50c41615c83714ccfbc451f67d3 [Macbeth01][AF-M3-CLOSEOUT] Preserve worker 04 registration history"
+          ]
+        },
+        {
+          "path": "docs/management/dashboard/data/build-log.json",
+          "source_blob": "2efaa4e3e925796efa24532253499d14b3484b63",
+          "master_blob": "864dfd1b9269392f4543d71d878c09aac249d48d",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "a712685c1645d9a924dcb0931c98d917da919ced [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Refresh dashboard for qualified scanner source",
+            "cdc6af829d86a9e79af115893470a7f5a83ab804 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Refresh CI gate evidence dashboard",
+            "c0b05e9fde0df08f0e000a4deabfd2f564856bac [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Refresh dashboard for CI gate owner",
+            "ca43c9684fbf34c34d5dd81382df158e2a9ebc0b [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Refresh readiness continuation dashboard",
+            "6643fea04a15925239f290010d043adcd6255d57 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Refresh unified management dashboard",
+            "8fcb14bd8f34bdbd56565344cb4f65158c725614 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Generate manager setup snapshot"
+          ]
+        },
+        {
+          "path": "docs/management/dashboard/data/dashboard.json",
+          "source_blob": "ee6314100d4e7152dfb10e8f242121187462c228",
+          "master_blob": "7d285bad5ea33ab698729d333808eb3dd2f6f9a7",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "a712685c1645d9a924dcb0931c98d917da919ced [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Refresh dashboard for qualified scanner source",
+            "cdc6af829d86a9e79af115893470a7f5a83ab804 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Refresh CI gate evidence dashboard",
+            "c0b05e9fde0df08f0e000a4deabfd2f564856bac [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Refresh dashboard for CI gate owner",
+            "ca43c9684fbf34c34d5dd81382df158e2a9ebc0b [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Refresh readiness continuation dashboard",
+            "6643fea04a15925239f290010d043adcd6255d57 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Refresh unified management dashboard",
+            "8fcb14bd8f34bdbd56565344cb4f65158c725614 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Generate manager setup snapshot"
+          ]
+        },
+        {
+          "path": "docs/migration/artifact-provenance.json",
+          "source_blob": "90d4c45c84b65e4241230f6d4e9ebba778d536ed",
+          "master_blob": "0139123a8a71945f2c48fa566096c6489d768b5a",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "ba6b8c2f94808a071691367103bff077e698d2d7 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Register Macbeth06 CI gate owner",
+            "2e2ccc1591da0141e0514d5b4ce785599add591b [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate configured product runtime",
+            "d9bf7ffc8d049c0980665ce0eacb028ea299fa75 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate server lifecycle without gating owner exit",
+            "997be3f45e3943a3aea52213e0847a6c780056e5 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate exact Vault ABI and canonical runtime",
+            "97bc11ee595be8b9d17ebae13aea0276b76e5c43 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate recoverable wallet review and connection runtime",
+            "10b807dc0a3d2990af748414afc8d32da0006dab [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Integrate wallet product flow and provider scenarios"
+          ]
+        },
+        {
+          "path": "test/agent-management.test.mjs",
+          "source_blob": "d38b6ee1ce0c3d4a977be66c74be0c563ab3a012",
+          "master_blob": "a3ef437ae066178a0c9bd835188b5c2ac3b1dc26",
+          "disposition": "SUPERSEDED_WITH_PRESERVED_SOURCE_AND_LATER_INTEGRATION_CHANGES",
+          "later_commits": [
+            "ba6b8c2f94808a071691367103bff077e698d2d7 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Register Macbeth06 CI gate owner",
+            "a63b2a94b3026005c7b0403bde237d75b2e8c915 [Macbeth01][M3-01-PARTIAL-ONCHAIN-INTEGRATION] Align active worker metadata and pin published QA evidence",
+            "47f4edf53b49c553e4b8004fc8712147e3e5e5e3 [Macbeth01][AF-M3-CLOSEOUT] Preserve QA registration history"
+          ]
+        }
+      ],
+      "disposition": "SUPERSEDED_BY_PR21_NOT_REMERGE"
+    }
+  ]
+}

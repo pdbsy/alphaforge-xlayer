@@ -653,14 +653,45 @@ function redactStaticBracketAssignments(value) {
   return value;
 }
 
-function containsAuthorizationCredential(payload) {
+function containsAuthorizationCredential(payload, scheme) {
+  // Logs may quote just the credential. Unwrap only a single token with a
+  // matching quote, leaving multiword explanations to the ordinary checks.
+  const quoted = /^[ \t]*(["'`])([-A-Za-z0-9._~+/]+=*)\1/.exec(payload);
+  if (quoted) {
+    // A quoted Bearer token is opaque even when its diagnostic suffix is
+    // adjacent. Basic still requires a canonical user:password payload.
+    if (/^bearer$/i.test(scheme)) return true;
+    if (/^basic$/i.test(scheme)) {
+      const bytes = Buffer.from(quoted[2], 'base64');
+      if (bytes.includes(58) && bytes.toString('base64').replace(/=+$/, '') === quoted[2].replace(/=+$/, ''))
+        return true;
+    }
+    payload = `${quoted[2]}${payload.slice(quoted[0].length)}`;
+  }
+  // Basic has a verifiable user:password encoding; do not rely on entropy or
+  // length. Bearer values are opaque, so an isolated or punctuation-delimited
+  // token is treated conservatively, including quoted responses/status suffixes.
+  if (/^basic$/i.test(scheme)) {
+    const token = /^[ \t]*([A-Za-z0-9+/]+={0,2})(?=$|[^A-Za-z0-9+/=])/.exec(payload)?.[1];
+    if (token) {
+      const bytes = Buffer.from(token, 'base64');
+      if (bytes.includes(58) && bytes.toString('base64').replace(/=+$/, '') === token.replace(/=+$/, ''))
+        return true;
+    }
+  }
+  if (/^bearer$/i.test(scheme)) {
+    const token = /^[ \t]*[-A-Za-z0-9._~+/]+={0,}/.exec(payload);
+    if (token) {
+      const tail = payload.slice(token[0].length);
+      if (/^[ \t]*["'),;([]/.test(tail) || isStructuredAssignmentTail(tail)) return true;
+    }
+  }
   if (authorizationChallengeAssignmentPattern.test(payload)) return true;
   authorizationOpaqueTokenPattern.lastIndex = 0;
   let match;
   while ((match = authorizationOpaqueTokenPattern.exec(payload)) !== null) {
     const token = match[1];
-    if (token.length >= 24 || (token.length >= 12 && /\d/.test(token) && /[-._~+/=]/.test(token)))
-      return true;
+    if (token.length >= 24 || (token.length >= 12 && /\d/.test(token))) return true;
   }
   return false;
 }
@@ -674,7 +705,7 @@ function redactStandaloneAuthorizationSchemes(value) {
       isStructuredAssignmentTail(match.slice(scheme.length))
     )
       return match;
-    if (!containsAuthorizationCredential(match.slice(scheme.length))) return match;
+    if (!containsAuthorizationCredential(match.slice(scheme.length), scheme)) return match;
     return `${scheme} [REDACTED]`;
   });
 }
@@ -684,6 +715,17 @@ function redactScalarAssignments(value) {
     .split(/(\r\n|\r|\n)/)
     .map((line, index) => {
       if (index % 2 === 1) return line;
+      // Each grammar scans left to right, but their matches can overlap in the same line.
+      // Keep the earliest sensitive assignment so a later CLI flag cannot preserve an
+      // earlier credential in its prefix. Each candidate already redacts the whole tail.
+      let redactionStart = line.length;
+      let redactedLine = line;
+      const retainEarliest = (start, candidate) => {
+        if (start < redactionStart) {
+          redactionStart = start;
+          redactedLine = candidate;
+        }
+      };
       let confirmedStructuredCliTail = false;
       const hasStructuredCliTail = (tail) => {
         if (confirmedStructuredCliTail) return true;
@@ -702,7 +744,11 @@ function redactScalarAssignments(value) {
           isSafeSecurityMetadataValue(key, argumentValue) && hasStructuredCliTail(cliTail);
         if ((!isSecretKey(key) || safeMetadataTail) && !schemeCredential) continue;
         const outputKey = safeSensitiveObjectKeyPattern.test(key) ? key : '[REDACTED KEY]';
-        return `${line.slice(0, cliEqualsMatch.index)}${prefix}--${outputKey}${separator}[REDACTED]`;
+        retainEarliest(
+          cliEqualsMatch.index,
+          `${line.slice(0, cliEqualsMatch.index)}${prefix}--${outputKey}${separator}[REDACTED]`,
+        );
+        break;
       }
       // The whitespace-form matcher restarts at the beginning of the line, so it cannot share
       // a suffix proof established by the equals-form matcher at a later offset.
@@ -719,7 +765,11 @@ function redactScalarAssignments(value) {
           isSafeSecurityMetadataValue(key, argumentValue) && hasStructuredCliTail(cliTail);
         if ((!isSecretKey(key) || safeMetadataTail) && !schemeCredential) continue;
         const outputKey = safeSensitiveObjectKeyPattern.test(key) ? key : '[REDACTED KEY]';
-        return `${line.slice(0, cliMatch.index)}${prefix}--${outputKey}${spacing}[REDACTED]`;
+        retainEarliest(
+          cliMatch.index,
+          `${line.slice(0, cliMatch.index)}${prefix}--${outputKey}${spacing}[REDACTED]`,
+        );
+        break;
       }
       let multiwordCursor = 0;
       while (multiwordCursor < line.length) {
@@ -732,7 +782,11 @@ function redactScalarAssignments(value) {
             safeSensitiveObjectKeyPattern.test(key.slice(word.index).replace(/[ \t]+/g, '_')),
           );
           const outputKey = recognizedSuffix ? key : '[REDACTED KEY]';
-          return `${line.slice(0, multiwordCursor + match.index)}${match[1]}${outputKey}${match[3]} [REDACTED]`;
+          retainEarliest(
+            multiwordCursor + match.index,
+            `${line.slice(0, multiwordCursor + match.index)}${match[1]}${outputKey}${match[3]} [REDACTED]`,
+          );
+          break;
         }
         multiwordCursor += match.index + match[0].length;
       }
@@ -776,11 +830,15 @@ function redactScalarAssignments(value) {
         if (metadataCredential || schemeCredential) {
           const prefix = match[1] ?? '';
           const outputKey = safeSensitiveObjectKeyPattern.test(key) ? key : '[REDACTED KEY]';
-          return `${line.slice(0, cursor + match.index)}${prefix}${outputKey}${match[6]} [REDACTED]`;
+          retainEarliest(
+            cursor + match.index,
+            `${line.slice(0, cursor + match.index)}${prefix}${outputKey}${match[6]} [REDACTED]`,
+          );
+          break;
         }
         cursor += match.index + match[0].length;
       }
-      return line;
+      return redactedLine;
     })
     .join('');
 }

@@ -26,6 +26,29 @@ function awaiting() {
   });
 }
 
+test('negative reverted block evidence is rejected without changing the submitted operation', () => {
+  const submitted = transitionOperation(awaiting(), {
+    state: 'SUBMITTED',
+    txHash: HASH,
+    submittedAt: SUBMITTED_AT,
+  });
+  const before = structuredClone(submitted);
+  const update = {
+    state: 'REVERTED',
+    blockNumber: -1n,
+    blockHash: BLOCK,
+    receiptStatus: 'REVERTED',
+    errorCode: 'TRANSACTION_REVERTED',
+  } as const;
+  assert.throws(() => transitionOperation(submitted, update), /INVALID_BLOCK_NUMBER/);
+  assert.deepEqual(submitted, before);
+  const reverted = transitionOperation(submitted, { ...update, blockNumber: 0n });
+  assert.equal(reverted.state, 'REVERTED');
+  assert.equal(reverted.blockNumber, 0n);
+  assert.equal(reverted.confirmations, 0);
+  assert.equal(reverted.reconciled, false);
+});
+
 test('chain values reject malformed data and compare addresses without changing identity', () => {
   assert.equal(asAddress(OWNER), OWNER);
   assert.equal(sameAddress(OWNER, asAddress(OWNER.toUpperCase().replace('0X', '0x'))), true);
@@ -34,6 +57,124 @@ test('chain values reject malformed data and compare addresses without changing 
   }
   assert.throws(() => asTransactionHash(`0x${'11'.repeat(31)}`), /INVALID_TRANSACTION_HASH/);
   assert.throws(() => asBlockHash(`0x${'11'.repeat(33)}`), /INVALID_BLOCK_HASH/);
+});
+
+test('lifecycle rejects malformed identity, timestamps, evidence and replacement data', () => {
+  for (const operationId of ['', '../unsafe', 'x'.repeat(129)])
+    assert.throws(
+      () =>
+        createOperation({
+          operationId,
+          chainId: 46_630,
+          owner: OWNER,
+          target: TARGET,
+          state: 'AWAITING_SIGNATURE',
+        }),
+      /INVALID_OPERATION_ID/,
+    );
+  for (const chainId of [0, -1, Number.MAX_SAFE_INTEGER + 1, 1.5])
+    assert.throws(
+      () =>
+        createOperation({
+          operationId: 'invalid-chain',
+          chainId,
+          owner: OWNER,
+          target: TARGET,
+          state: 'AWAITING_SIGNATURE',
+        }),
+      /INVALID_CHAIN_ID/,
+    );
+
+  const current = awaiting();
+  assert.throws(
+    () => transitionOperation(current, { state: 'SUBMITTED', txHash: HASH, submittedAt: 'not-a-time' }),
+    /INVALID_SUBMITTED_AT/,
+  );
+  const submitted = transitionOperation(current, {
+    state: 'SUBMITTED',
+    txHash: HASH,
+    submittedAt: SUBMITTED_AT,
+  });
+  for (const blockNumber of [-1n])
+    assert.throws(
+      () =>
+        transitionOperation(submitted, {
+          state: 'MINED',
+          blockNumber,
+          blockHash: BLOCK,
+          receiptStatus: 'SUCCESS',
+        }),
+      /INVALID_BLOCK_NUMBER/,
+    );
+  for (const transactionIndex of [-1, Number.MAX_SAFE_INTEGER + 1, 1.5])
+    assert.throws(
+      () =>
+        transitionOperation(submitted, {
+          state: 'MINED',
+          blockNumber: 1n,
+          blockHash: BLOCK,
+          transactionIndex,
+          receiptStatus: 'SUCCESS',
+        }),
+      /INVALID_TRANSACTION_INDEX/,
+    );
+  assert.throws(
+    () =>
+      transitionOperation(submitted, {
+        state: 'REVERTED',
+        blockNumber: 1n,
+        blockHash: BLOCK,
+        transactionIndex: -1,
+        receiptStatus: 'REVERTED',
+        errorCode: 'TRANSACTION_REVERTED',
+      }),
+    /INVALID_TRANSACTION_INDEX/,
+  );
+
+  const mined = transitionOperation(submitted, {
+    state: 'MINED',
+    blockNumber: 1n,
+    blockHash: BLOCK,
+    receiptStatus: 'SUCCESS',
+  });
+  assert.throws(
+    () => transitionOperation(mined, { state: 'CONFIRMING', confirmations: -1 }),
+    /INVALID_CONFIRMATION_COUNT/,
+  );
+  const confirming = transitionOperation(mined, { state: 'CONFIRMING', confirmations: 2 });
+  assert.throws(
+    () =>
+      transitionOperation(confirming, {
+        state: 'CONFIRMED',
+        confirmations: 1,
+        confirmedAt: CONFIRMED_AT,
+        reconciled: true,
+      }),
+    /INVALID_CONFIRMATION_COUNT/,
+  );
+  assert.throws(
+    () =>
+      transitionOperation(confirming, {
+        state: 'CONFIRMED',
+        confirmations: 2,
+        confirmedAt: 'not-a-time',
+        reconciled: true,
+      }),
+    /INVALID_CONFIRMED_AT/,
+  );
+  assert.throws(
+    () => transitionOperation(submitted, { state: 'REPLACED', errorCode: 'TRANSACTION_REPLACED' }),
+    /REPLACEMENT_HASH_REQUIRED/,
+  );
+  assert.throws(
+    () =>
+      transitionOperation(submitted, {
+        state: 'REPLACED',
+        replacementTxHash: HASH,
+        errorCode: 'TRANSACTION_REPLACED',
+      }),
+    /REPLACEMENT_HASH_MUST_DIFFER/,
+  );
 });
 
 test('a transaction hash advances only to submitted and cannot skip canonical reconciliation', () => {

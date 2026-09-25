@@ -20,11 +20,11 @@ export interface LocalStrategyAdapter<Snapshot, Action, Result, Observation> ext
   executeLocalAction(action: Action): Promise<Result>;
 }
 
-export interface RobinhoodTestnetStrategyAdapter<Snapshot, Action, Observation> extends StrategyReadAdapter<
+export interface TestnetStrategyAdapter<Snapshot, Action, Observation> extends StrategyReadAdapter<
   Snapshot,
   Observation
 > {
-  readonly mode: 'robinhood-testnet';
+  readonly mode: 'robinhood-testnet' | 'xlayer-testnet';
   prepareAction(action: Action, context: { readonly owner: Address }): Promise<PreparedAction>;
   submitAction(prepared: PreparedAction, wallet: BrowserWalletPort): Promise<WalletSubmission>;
 }
@@ -32,11 +32,11 @@ export interface RobinhoodTestnetStrategyAdapter<Snapshot, Action, Observation> 
 export type LiveActionSimulation =
   { readonly ok: true } | { readonly ok: false; readonly errorCode: string; readonly errorMessage?: string };
 
-export interface SimulatingRobinhoodTestnetStrategyAdapter<
+export interface SimulatingTestnetStrategyAdapter<
   Snapshot,
   Action,
   Observation,
-> extends RobinhoodTestnetStrategyAdapter<Snapshot, Action, Observation> {
+> extends TestnetStrategyAdapter<Snapshot, Action, Observation> {
   simulateAction(
     prepared: PreparedAction,
     context: { readonly owner: Address; readonly snapshot: Snapshot },
@@ -45,4 +45,16 @@ export interface SimulatingRobinhoodTestnetStrategyAdapter<
 
 export type StrategyAdapter<Snapshot, Action, LocalResult, Observation> =
   | LocalStrategyAdapter<Snapshot, Action, LocalResult, Observation>
-  | RobinhoodTestnetStrategyAdapter<Snapshot, Action, Observation>;
+  | TestnetStrategyAdapter<Snapshot, Action, Observation>;
+
+// Compatibility types retain the original Robinhood-only discriminant.
+export interface RobinhoodTestnetStrategyAdapter<S, A, O> extends TestnetStrategyAdapter<S, A, O> {
+  readonly mode: 'robinhood-testnet';
+}
+export interface SimulatingRobinhoodTestnetStrategyAdapter<S, A, O> extends SimulatingTestnetStrategyAdapter<
+  S,
+  A,
+  O
+> {
+  readonly mode: 'robinhood-testnet';
+}

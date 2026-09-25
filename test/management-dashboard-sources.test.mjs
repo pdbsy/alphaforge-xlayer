@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import { fixtureExec as execFileSync } from './helpers/git-fixture.mjs';
 import { chmod, mkdtemp, mkdir, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, parse, resolve } from 'node:path';
 import test from 'node:test';
 
 import { parseTaskRecord, parseWorkerLog } from '../tools/management-dashboard/markdown.mjs';
@@ -10,10 +11,38 @@ import {
   collectGitState,
   collectRecordedGitState,
   collectRepositorySources,
+  isGitCommitAncestor,
+  isGitCommitTree,
+  isManagementReportCommitFresh,
 } from '../tools/management-dashboard/sources.mjs';
 
 const fixtureRoot = new URL('./fixtures/management-dashboard/', import.meta.url);
 const observedAt = '2026-09-08T22:35:18.000Z';
+
+test('repository collector reports path errors for filesystem roots', { timeout: 5000 }, async () => {
+  const root = parse(resolve('.')).root;
+  const sources = await collectRepositorySources(root, { observedAt });
+  assert.deepEqual(sources.roadmap, {
+    status: 'DATA_SOURCE_ERROR',
+    source: 'planning/roadmap.json',
+    observedAt,
+    error: 'PATH_OUTSIDE_REPOSITORY',
+  });
+  assert.deepEqual(sources.taskRecords, [
+    {
+      status: 'DATA_SOURCE_ERROR',
+      source: 'docs/management/tasks',
+      observedAt,
+      error: 'PATH_OUTSIDE_REPOSITORY',
+    },
+  ]);
+  assert.deepEqual(sources.documents.architecture, {
+    status: 'DATA_SOURCE_ERROR',
+    source: 'docs/adr',
+    observedAt,
+    error: 'PATH_OUTSIDE_REPOSITORY',
+  });
+});
 
 test('worker parser returns documented current state and activity records', async () => {
   const text = await readFile(new URL('worker-valid.md', fixtureRoot), 'utf8');
@@ -966,4 +995,460 @@ test('recorded Git fixture preserves repository text bytes with autocrlf enabled
   git(root, ['checkout', '--', 'recorded.txt']);
   assert.equal(await readFile(join(root, 'recorded.txt'), 'utf8'), 'recorded\n');
   assert.equal(git(root, ['-c', 'core.autocrlf=false', 'status', '--porcelain']), '');
+});
+
+test('public source-binding helpers verify real ancestry, trees and manifest-only freshness', async (t) => {
+  const root = await mkdtemp(join(tmpdir(), 'alphaforge-evidence-binding-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  git(root, ['init', '-b', 'master']);
+  await writeFile(join(root, 'runtime.txt'), 'original runtime\n');
+  git(root, ['add', '.']);
+  commit(root, 'fixture source');
+  const source = git(root, ['rev-parse', 'HEAD']);
+  const tree = git(root, ['rev-parse', 'HEAD^{tree}']);
+  assert.equal(await isGitCommitAncestor(root, source, source), true);
+  assert.equal(await isGitCommitTree(root, source, tree), true);
+  assert.equal(await isGitCommitTree(root, source, source), false, 'commit is not its tree object');
+  assert.equal(await isManagementReportCommitFresh(root, source, source), true);
+  await mkdir(join(root, '.checks/management'), { recursive: true });
+  await writeFile(join(root, '.checks/management/latest.json'), '{"fixture":true}\n');
+  git(root, ['add', '.']);
+  commit(root, 'fixture manifest only');
+  const manifest = git(root, ['rev-parse', 'HEAD']);
+  assert.equal(await isGitCommitAncestor(root, source, manifest), true);
+  assert.equal(await isGitCommitAncestor(root, manifest, source), false);
+  assert.equal(await isManagementReportCommitFresh(root, source, manifest), true);
+  assert.equal(await isManagementReportCommitFresh(root, manifest, source), false);
+  await writeFile(join(root, 'runtime.txt'), 'changed runtime\n');
+  git(root, ['add', '.']);
+  commit(root, 'fixture runtime changed');
+  const changed = git(root, ['rev-parse', 'HEAD']);
+  assert.equal(
+    await isManagementReportCommitFresh(root, source, changed),
+    false,
+    'runtime mutation cannot be a report-only descendant',
+  );
+  for (const bad of [undefined, null, 'invalid', 'f'.repeat(40)]) {
+    assert.equal(await isGitCommitAncestor(root, bad, source), false);
+    assert.equal(await isGitCommitAncestor(root, source, bad), false);
+    assert.equal(await isGitCommitTree(root, bad, tree), false);
+    assert.equal(await isGitCommitTree(root, source, bad), false);
+    assert.equal(await isManagementReportCommitFresh(root, bad, source), false);
+    assert.equal(await isManagementReportCommitFresh(root, manifest, bad), false);
+  }
+});
+
+test('source collection distinguishes malformed Markdown and non-file or non-directory sources', async (t) => {
+  const root = await createSourceFixture();
+  t.after(() => rm(root, { recursive: true, force: true }));
+  await writeFile(join(root, 'docs/management/workers/worker-a.md'), '# Incomplete worker record\n');
+  await mkdir(join(root, 'docs/management/CURRENT-STATUS.md'));
+  await rm(join(root, 'docs/management/tasks'), { recursive: true });
+  await writeFile(join(root, 'docs/management/tasks'), 'not a directory\n');
+  const sources = await collectRepositorySources(root, { observedAt });
+  assert.equal(sources.workers.workerA.error, 'MALFORMED_MARKDOWN');
+  assert.equal(sources.management.currentStatus.error, 'NOT_A_FILE');
+  assert.equal(sources.taskRecords[0].error, 'NOT_A_DIRECTORY');
+});
+
+test('recorded CI identity rejects malformed and contradictory context before trusting Git', async () => {
+  const recorded = {
+    branch: 'macbeth/closeout',
+    commit: '1'.repeat(40),
+    tree: '2'.repeat(40),
+    dirtyFiles: 0,
+  };
+  const valid = {
+    GITHUB_ACTIONS: 'true',
+    GITHUB_SHA: '1'.repeat(40),
+    GITHUB_EVENT_NAME: 'push',
+    GITHUB_REF: 'refs/heads/macbeth/closeout',
+  };
+  const environments = [
+    null,
+    [],
+    'push',
+    { GITHUB_SHA: '1'.repeat(40) },
+    { ...valid, GITHUB_ACTIONS: 'false' },
+    { ...valid, GITHUB_SHA: 42 },
+    { ...valid, GITHUB_REF: 'x'.repeat(513) },
+    { ...valid, GITHUB_REF: 'refs/tags/release' },
+    { ...valid, GITHUB_REF: 'refs/heads/../wrong' },
+    { ...valid, GITHUB_BASE_REF: 'master' },
+    { ...valid, GITHUB_HEAD_REF: 'other' },
+    { ...valid, GITHUB_EVENT_NAME: 'pull_request', GITHUB_REF: undefined },
+    { ...valid, GITHUB_EVENT_NAME: 'merge_group', GITHUB_REF: 'refs/heads/macbeth/closeout' },
+    {
+      ...valid,
+      GITHUB_EVENT_NAME: 'merge_group',
+      GITHUB_REF: 'refs/heads/gh-readonly-queue/master/pr22',
+      GITHUB_HEAD_REF: 'other',
+    },
+  ];
+  for (const environment of environments) {
+    const result = await collectRecordedGitState('/nonexistent-fixture', 'master', recorded, { environment });
+    assert.equal(result.status, 'DATA_SOURCE_ERROR');
+    assert.equal(result.error, 'RECORDED_GIT_CI_CONTEXT_INVALID');
+    assert.equal(result.commit, undefined);
+  }
+  for (const [field, error] of [
+    ['commit', 'RECORDED_GIT_COMMIT_INVALID'],
+    ['tree', 'RECORDED_GIT_TREE_INVALID'],
+  ]) {
+    const input = { ...recorded };
+    delete input[field];
+    assert.equal((await collectRecordedGitState('/nonexistent-fixture', 'master', input)).error, error);
+  }
+});
+
+test('source reader rejects per-file overflow and marks absent optional records honestly', async (t) => {
+  const root = await createSourceFixture();
+  t.after(() => rm(root, { recursive: true, force: true }));
+  await writeFile(join(root, 'docs/management/CURRENT-STATUS.md'), 'x'.repeat(1024 * 1024 + 1));
+  await rm(join(root, 'docs/management/tasks'), { recursive: true });
+  const result = await collectRepositorySources(root);
+  assert.equal(result.management.currentStatus.error, 'SOURCE_TOO_LARGE');
+  assert.deepEqual(result.taskRecords, []);
+  assert.equal(result.documents.architecture.status, 'NOT_AVAILABLE');
+  assert.ok(Number.isFinite(Date.parse(result.observedAt)));
+});
+
+test('dirty exclusion validation rejects invalid containers and accounts for both rename endpoints', async (t) => {
+  const fixture = await createRecordedGitFixture(t);
+  for (const excludeDirtyPaths of [null, {}, Array(17).fill('safe.txt')])
+    await assert.rejects(
+      () => collectGitState(fixture.root, 'master', { excludeDirtyPaths }),
+      /Invalid dirty-path exclusion list/,
+    );
+  git(fixture.root, ['mv', 'recorded.txt', 'renamed.txt']);
+  const partial = await collectGitState(fixture.root, 'master', { excludeDirtyPaths: ['renamed.txt'] });
+  assert.equal(partial.status, 'READY');
+  assert.equal(partial.dirtyFiles, 1);
+  const all = await collectGitState(fixture.root, 'master', {
+    excludeDirtyPaths: ['recorded.txt', 'renamed.txt'],
+  });
+  assert.equal(all.status, 'READY');
+  assert.equal(all.dirtyFiles, 0);
+});
+
+test('recorded source refuses branch-mode SHA drift and a renamed checkout', async (t) => {
+  const f = await createRecordedGitFixture(t);
+  git(f.root, ['update-ref', 'refs/remotes/origin/master', f.baseCommit]);
+  const recorded = recordedGit('macbeth/dashboard', f.recordedCommit, f.recordedTree);
+  const wrongSha = await collectRecordedGitState(f.root, 'master', recorded, {
+    environment: pushEnvironment(f.recordedCommit),
+  });
+  assert.equal(wrongSha.error, 'RECORDED_GIT_HEAD_MISMATCH');
+  git(f.root, ['switch', '--quiet', '-c', 'unexpected-checkout']);
+  const wrongBranch = await collectRecordedGitState(f.root, 'master', recorded);
+  assert.equal(wrongBranch.error, 'RECORDED_GIT_BRANCH_MISMATCH');
+});
+
+test('pull-request evidence requires the real detached merge checkout', async (t) => {
+  const f = await createRecordedGitFixture(t);
+  const merge = createPullRequestLayout(f);
+  git(f.root, ['switch', '--quiet', '-c', 'named-merge-checkout']);
+  const actual = await collectRecordedGitState(
+    f.root,
+    'master',
+    recordedGit('macbeth/dashboard', f.recordedCommit, f.recordedTree),
+    { environment: pullRequestEnvironment(merge) },
+  );
+  assert.equal(actual.error, 'RECORDED_GIT_BRANCH_MISMATCH');
+});
+
+test('merge queue evidence rejects checkout, declared SHA and remote queue drift separately', async (t) => {
+  const f = await createRecordedGitFixture(t);
+  const { mergeCommit, queueBranch } = createMergeGroupLayout(f);
+  const recorded = recordedGit('macbeth/dashboard', f.recordedCommit, f.recordedTree);
+  const environment = {
+    GITHUB_ACTIONS: 'true',
+    GITHUB_EVENT_NAME: 'merge_group',
+    GITHUB_REF: `refs/heads/${queueBranch}`,
+    GITHUB_SHA: mergeCommit,
+  };
+  const check = (env = environment) =>
+    collectRecordedGitState(f.root, 'master', recorded, { environment: env });
+  assert.equal((await check()).status, 'READY');
+  assert.equal(
+    (await check({ ...environment, GITHUB_SHA: f.headCommit })).error,
+    'RECORDED_GIT_HEAD_MISMATCH',
+  );
+  git(f.root, ['update-ref', `refs/remotes/origin/${queueBranch}`, f.headCommit]);
+  assert.equal((await check()).error, 'RECORDED_GIT_GRAPH_MISMATCH');
+  git(f.root, ['update-ref', `refs/remotes/origin/${queueBranch}`, mergeCommit]);
+  git(f.root, ['switch', '--quiet', '-c', 'unexpected-queue-checkout']);
+  assert.equal((await check()).error, 'RECORDED_GIT_BRANCH_MISMATCH');
+});
+
+test('integration evidence refuses a matching tree on a falsely named branch or mismatched head', async (t) => {
+  const f = await createRecordedGitFixture(t);
+  const integrated = createIntegratedPushLayout(f);
+  const recorded = recordedGit('macbeth/dashboard', f.recordedCommit, f.recordedTree);
+  assert.equal(
+    (
+      await collectRecordedGitState(f.root, 'master', recorded, {
+        environment: integratedPushEnvironment(f.headCommit),
+      })
+    ).error,
+    'RECORDED_GIT_HEAD_MISMATCH',
+  );
+  git(f.root, ['switch', '--quiet', '-c', 'unexpected-integration-checkout']);
+  assert.equal(
+    (
+      await collectRecordedGitState(f.root, 'master', recorded, {
+        environment: integratedPushEnvironment(integrated),
+      })
+    ).error,
+    'RECORDED_GIT_BRANCH_MISMATCH',
+  );
+});
+
+test('snapshot closure rejects a merge even when all descendant files are otherwise allowlisted', async (t) => {
+  const f = await createRecordedGitFixture(t);
+  git(f.root, ['switch', '--quiet', '-c', 'parallel-snapshot', f.recordedCommit]);
+  await mkdir(join(f.root, 'docs/management/dashboard/data'), { recursive: true });
+  await writeFile(join(f.root, 'docs/management/dashboard/data/build-log.json'), '{}\n');
+  git(f.root, ['add', '.']);
+  commit(f.root, 'parallel snapshot');
+  git(f.root, ['switch', '--quiet', 'macbeth/dashboard']);
+  git(f.root, [
+    '-c',
+    'user.name=Macbeth',
+    '-c',
+    'user.email=fixture@example.test',
+    'merge',
+    '--no-ff',
+    '--quiet',
+    '-m',
+    'nonlinear closure',
+    'parallel-snapshot',
+  ]);
+  const actual = await collectRecordedGitState(
+    f.root,
+    'master',
+    recordedGit('macbeth/dashboard', f.recordedCommit, f.recordedTree),
+  );
+  assert.equal(actual.error, 'RECORDED_GIT_GRAPH_MISMATCH');
+});
+
+test('snapshot provenance accepts bounded closure but rejects excessive descendant history', async (t) => {
+  const fixture = await createRecordedGitFixture(t);
+  const path = 'docs/management/dashboard/data/dashboard.json';
+  for (let revision = 2; revision <= 16; revision++) {
+    await writeFile(join(fixture.root, path), JSON.stringify({ revision }) + '\n');
+    git(fixture.root, ['add', path]);
+    commit(fixture.root, `snapshot revision ${revision}`);
+  }
+  const recorded = recordedGit('macbeth/dashboard', fixture.recordedCommit, fixture.recordedTree);
+  const bounded = await collectRecordedGitState(fixture.root, 'master', recorded);
+  assert.equal(bounded.status, 'READY');
+  assert.equal(bounded.commit, fixture.recordedCommit);
+  assert.equal(bounded.tree, fixture.recordedTree);
+  await writeFile(join(fixture.root, path), '{"revision":17}\n');
+  git(fixture.root, ['add', path]);
+  commit(fixture.root, 'excessive snapshot closure');
+  const rejected = await collectRecordedGitState(fixture.root, 'master', recorded);
+  assert.equal(rejected.status, 'DATA_SOURCE_ERROR');
+  assert.equal(rejected.error, 'RECORDED_GIT_GRAPH_MISMATCH');
+  assert.equal('commit' in rejected, false);
+  assert.equal(git(fixture.root, ['status', '--porcelain']), '');
+});
+
+test('unsupported Git object identities never produce READY provenance', async (t) => {
+  const root = await mkdtemp(join(tmpdir(), 'alphaforge-sha256-evidence-'));
+  t.after(() => rm(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }));
+  git(root, ['init', '--quiet', '--object-format=sha256', '-b', 'master']);
+  await writeFile(join(root, 'README.md'), 'isolated unsupported object format\n');
+  git(root, ['add', '.gitattributes', 'README.md']);
+  commit(root, 'fixture');
+  assert.equal(git(root, ['rev-parse', '--show-object-format']), 'sha256');
+  const actual = await collectGitState(root);
+  assert.equal(actual.status, 'DATA_SOURCE_ERROR');
+  assert.equal(actual.error, 'GIT_QUERY_FAILED');
+  const recorded = await collectRecordedGitState(
+    root,
+    'master',
+    recordedGit('master', '1'.repeat(40), '2'.repeat(40)),
+  );
+  assert.equal(recorded.status, 'DATA_SOURCE_ERROR');
+  assert.equal(recorded.error, 'RECORDED_GIT_QUERY_FAILED');
+  assert.equal('commit' in recorded, false);
+});
+
+test('source collection rejects a real symlink replacement between canonicalization and open', async (t) => {
+  const root = await createSourceFixture();
+  const outside = await mkdtemp(join(tmpdir(), 'alphaforge-source-race-outside-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  t.after(() => rm(outside, { recursive: true, force: true }));
+  const target = join(root, 'planning/roadmap.json');
+  const external = join(outside, 'source.json');
+  await writeFile(external, JSON.stringify({ marker: 'outside-source-must-never-be-published' }));
+  // Isolated child interposes only the filesystem scheduling boundary. The production
+  // collector still performs every path/handle check and actual read itself.
+  const program = `
+    import assert from 'node:assert/strict';
+    import fs from 'node:fs/promises';
+    import { syncBuiltinESMExports } from 'node:module';
+    const [root, target, external, moduleUrl] = process.argv.slice(1);
+    const canonicalTarget = await fs.realpath(target);
+    const originalOpen = fs.open;
+    let replaced = false;
+    fs.open = async function(path, ...args) {
+      if (path === canonicalTarget && !replaced) {
+        replaced = true;
+        await fs.rename(canonicalTarget, canonicalTarget + '.original');
+        await fs.symlink(external, canonicalTarget);
+      }
+      return originalOpen.call(this, path, ...args);
+    };
+    syncBuiltinESMExports();
+    const { collectRepositorySources } = await import(moduleUrl);
+    const result = await collectRepositorySources(root, { observedAt: '2026-09-23T00:00:00.000Z' });
+    assert.equal(replaced, true);
+    assert.equal(result.roadmap.status, 'DATA_SOURCE_ERROR');
+    assert.doesNotMatch(JSON.stringify(result), /outside-source-must-never-be-published/);
+    console.log('PASS real source replacement rejected');
+  `;
+  const run = spawnSync(
+    process.execPath,
+    [
+      '--input-type=module',
+      '--eval',
+      program,
+      root,
+      target,
+      external,
+      new URL('../tools/management-dashboard/sources.mjs', import.meta.url).href,
+    ],
+    { encoding: 'utf8', timeout: 30000 },
+  );
+  assert.equal(run.status, 0, run.stderr || run.stdout);
+  assert.match(run.stdout, /PASS real source replacement rejected/);
+});
+
+test('source collection rejects real file and directory replacement, growth, truncation and same-size writes', async (t) => {
+  for (const scenario of ['replace', 'directory', 'grow', 'truncate', 'same-size']) {
+    const root = await createSourceFixture();
+    t.after(() => rm(root, { recursive: true, force: true }));
+    const program = `
+      import assert from 'node:assert/strict';
+      import fs from 'node:fs/promises';
+      import { syncBuiltinESMExports } from 'node:module';
+      import { join } from 'node:path';
+      const [root, scenario, moduleUrl] = process.argv.slice(1);
+      const target = await fs.realpath(join(root, 'planning/roadmap.json'));
+      const original = await fs.readFile(target, 'utf8');
+      const originalOpen = fs.open;
+      let changed = false;
+      fs.open = async function(path, ...args) {
+        if (path !== target || changed) return originalOpen.call(this, path, ...args);
+        changed = true;
+        if (scenario === 'replace' || scenario === 'directory') {
+          await fs.rename(target, target + '.original');
+          if (scenario === 'directory') await fs.mkdir(target);
+          else await fs.writeFile(target, original);
+        }
+        const handle = await originalOpen.call(this, path, ...args);
+        if (scenario !== 'replace' && scenario !== 'directory') {
+          const originalStat = handle.stat.bind(handle);
+          let sampled = false;
+          handle.stat = async (...statArgs) => {
+            const metadata = await originalStat(...statArgs);
+            if (!sampled) {
+              sampled = true;
+              if (scenario === 'grow') await fs.appendFile(target, ' ');
+              if (scenario === 'truncate') await fs.writeFile(target, '{}');
+              if (scenario === 'same-size') {
+                await fs.writeFile(target, original.replace('QuantPass', 'OtherName'));
+                await fs.utimes(target, metadata.atime, new Date(metadata.mtimeMs + 2000));
+              }
+            }
+            return metadata;
+          };
+        }
+        return handle;
+      };
+      syncBuiltinESMExports();
+      const { collectRepositorySources } = await import(moduleUrl);
+      const result = await collectRepositorySources(root, { observedAt: '2026-09-23T00:00:00.000Z' });
+      assert.equal(changed, true);
+      assert.equal(result.roadmap.status, 'DATA_SOURCE_ERROR');
+      if (scenario === 'directory') {
+        // Windows may reject opening a directory before handle.stat is reached.
+        if (process.platform === 'win32') assert.ok(['NOT_A_FILE', 'READ_FAILED'].includes(result.roadmap.error));
+        else assert.equal(result.roadmap.error, 'NOT_A_FILE');
+      } else assert.equal(result.roadmap.error, 'SOURCE_CHANGED_DURING_READ');
+      assert.equal('data' in result.roadmap, false);
+      console.log('PASS actual source race rejected: ' + scenario);
+    `;
+    const run = spawnSync(
+      process.execPath,
+      [
+        '--input-type=module',
+        '--eval',
+        program,
+        root,
+        scenario,
+        new URL('../tools/management-dashboard/sources.mjs', import.meta.url).href,
+      ],
+      { encoding: 'utf8', timeout: 30000 },
+    );
+    assert.equal(run.status, 0, `${scenario}: ${run.stderr || run.stdout}`);
+    assert.match(run.stdout, /PASS actual source race rejected/);
+  }
+});
+
+test('real source and directory symlink loops fail closed with bounded generic diagnostics', async (t) => {
+  const root = await createSourceFixture();
+  t.after(() => rm(root, { recursive: true, force: true }));
+  for (const relative of ['planning/roadmap.json', 'docs/management/tasks', 'docs/security']) {
+    const path = join(root, relative);
+    await rm(path, { recursive: true });
+    await symlink(path, path);
+  }
+  const sources = await collectRepositorySources(root, { observedAt });
+  for (const item of [sources.roadmap, sources.taskRecords[0], sources.documents.security]) {
+    assert.equal(item.status, 'DATA_SOURCE_ERROR');
+    assert.equal(item.error, 'READ_FAILED');
+    assert.equal('data' in item, false);
+  }
+  assert.equal(JSON.stringify(sources).includes(root), false);
+});
+
+test('worker current status without an activity section remains explicitly empty', async () => {
+  const original = await readFile(new URL('worker-valid.md', fixtureRoot), 'utf8');
+  const currentOnly = original.slice(0, original.indexOf('## Activity log')).trim();
+  const parsed = parseWorkerLog(currentOnly);
+  assert.deepEqual(parsed.activities, []);
+  assert.deepEqual(parsed.current, parseWorkerLog(original).current);
+});
+
+test('document collection keeps only regular Markdown entries and records ignored file kinds', async (t) => {
+  const root = await createSourceFixture();
+  t.after(() => rm(root, { recursive: true, force: true }));
+  await writeFile(join(root, 'docs/adr/valid.md'), '# valid\n');
+  await writeFile(join(root, 'docs/adr/ignored.txt'), 'ignored\n');
+  await mkdir(join(root, 'docs/adr/nested.md'));
+  const sources = await collectRepositorySources(root, { observedAt });
+  assert.equal(sources.documents.architecture.status, 'READY');
+  assert.deepEqual(sources.documents.architecture.data, ['docs/adr/valid.md']);
+});
+
+test('task collection ignores ordinary non-Markdown files and Markdown-named directories', async (t) => {
+  const root = await createSourceFixture();
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const directory = join(root, 'docs/management/tasks');
+  await writeFile(join(directory, 'ignored.txt'), 'not a task record\n');
+  await mkdir(join(directory, 'nested.md'));
+  await writeFile(
+    join(directory, 'valid.md'),
+    '# Task record\n\nTask ID: `T1`\n\nTitle: `Fixture`\n\nWorker: `Macbeth01`\n\nStart: `2026-09-08T22:00:00Z`\n\nFinish: `NOT_FINISHED`\n\nStatus: `IN_PROGRESS`\n',
+  );
+  const sources = await collectRepositorySources(root, { observedAt });
+  assert.equal(sources.taskRecords.length, 1);
+  assert.equal(sources.taskRecords[0].source, 'docs/management/tasks/valid.md');
+  assert.equal(sources.taskRecords[0].status, 'READY');
+  assert.equal(sources.taskRecords[0].data.id, 'T1');
+  assert.equal(sources.taskRecords[0].data.status, 'IN_PROGRESS');
 });

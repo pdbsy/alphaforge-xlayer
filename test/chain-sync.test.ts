@@ -31,6 +31,7 @@ import {
   validateDeploymentManifest,
 } from '../packages/chain-adapter/src/manifest.ts';
 import { m3ChainSyncPolicy } from '../packages/chain-adapter/src/policy.ts';
+import { M3_STRATEGY_PASS_ABI_HASH } from '../packages/chain-adapter/src/pass-abi.ts';
 
 const CHAIN_ID = 46_630;
 const CONTRACT = asAddress('0x2222222222222222222222222222222222222222');
@@ -45,6 +46,8 @@ const HASH_100_ALT = asBlockHash(`0x${'15'.repeat(32)}`);
 const HASH_101 = asBlockHash(`0x${'11'.repeat(32)}`);
 const HASH_101_ALT = asBlockHash(`0x${'12'.repeat(32)}`);
 const HASH_102 = asBlockHash(`0x${'13'.repeat(32)}`);
+const ABI_HASH = asBlockHash(`0x${'66'.repeat(32)}`);
+const PASS = asAddress('0x8888888888888888888888888888888888888888');
 
 const manifestBody = {
   schemaVersion: 1,
@@ -55,7 +58,12 @@ const manifestBody = {
   contractAddress: CONTRACT,
   deploymentBlock: '100',
   abiVersion: 'm3-owner-v1',
+  abiHash: ABI_HASH,
   runtimeBytecodeHash: asBlockHash(`0x${'77'.repeat(32)}`),
+  strategyPassAddress: PASS,
+  strategyPassDeploymentBlock: '90',
+  strategyPassAbiHash: M3_STRATEGY_PASS_ABI_HASH,
+  strategyPassRuntimeBytecodeHash: asBlockHash(`0x${'88'.repeat(32)}`),
 } as const;
 const manifestDigest = deploymentManifestDigest(manifestBody);
 const manifest = validateDeploymentManifest(
@@ -122,6 +130,9 @@ class FixtureRpc implements ReadonlyRpc {
 
   async chainId() {
     return this.networkChainId;
+  }
+  async code() {
+    return asHexData('0x6000');
   }
   async block(number: bigint | 'latest') {
     return this.blocks.get(number === 'latest' ? this.head : number) ?? null;
@@ -225,6 +236,229 @@ test('indexer requires an explicit validated chain policy', async () => {
       } as unknown as ChainSynchronizerOptions),
     /INVALID_CHAIN_SYNC_POLICY/,
   );
+  store.close();
+});
+
+test('indexer rejects invalid ranges, unavailable heads and untrackable operation identities', async () => {
+  const invalidPolicyStore = new ChainStore(await databasePath());
+  assert.throws(
+    () =>
+      createSynchronizer({
+        rpc: new FixtureRpc(),
+        store: invalidPolicyStore,
+        manifest,
+        integration,
+        maxBlocksPerSync: 0,
+      }),
+    /INVALID_CHAIN_SYNC_POLICY/,
+  );
+  invalidPolicyStore.close();
+
+  const unavailableStore = new ChainStore(await databasePath());
+  const unavailable = createSynchronizer({
+    rpc: new FixtureRpc(),
+    store: unavailableStore,
+    manifest,
+    integration,
+  });
+  await assert.rejects(() => unavailable.head(), { code: 'CHAIN_HEAD_UNAVAILABLE' });
+  await assert.rejects(() => unavailable.syncTo(99n), { code: 'CHAIN_HEAD_BEFORE_DEPLOYMENT' });
+  await assert.rejects(() => unavailable.syncTo(101n, 100n), { code: 'CHAIN_SYNC_TARGET_BEHIND' });
+  await assert.rejects(() => unavailable.syncTo(100n), { code: 'CHAIN_HEAD_UNAVAILABLE' });
+  await assert.rejects(() => unavailable.trackOperation('absent'), { code: 'OPERATION_NOT_FOUND' });
+  unavailableStore.saveOperation(
+    createOperation({
+      operationId: 'unsigned',
+      chainId: CHAIN_ID,
+      owner: OWNER,
+      target: CONTRACT,
+      state: 'AWAITING_SIGNATURE',
+    }),
+  );
+  await assert.rejects(() => unavailable.trackOperation('unsigned'), { code: 'OPERATION_NOT_TRACKABLE' });
+  unavailableStore.saveOperation(submitted('receipt-pending', TX_A));
+  await assert.rejects(() => unavailable.trackOperation('receipt-pending'), {
+    code: 'CHAIN_HEAD_UNAVAILABLE',
+  });
+  assert.throws(() => unavailable.recordReplacement('absent', TX_B), { code: 'OPERATION_NOT_FOUND' });
+  assert.throws(() => unavailable.recordDropped('absent'), { code: 'OPERATION_NOT_FOUND' });
+  unavailableStore.close();
+
+  const rangeRpc = new FixtureRpc();
+  rangeRpc.blocks.set(100n, block(100n, HASH_100, HASH_99));
+  rangeRpc.blocks.set(101n, block(101n, HASH_101, HASH_100));
+  const rangeStore = new ChainStore(await databasePath());
+  const range = createSynchronizer({
+    rpc: rangeRpc,
+    store: rangeStore,
+    manifest,
+    integration,
+    maxBlocksPerSync: 1,
+  });
+  await assert.rejects(() => range.syncTo(101n), { code: 'CHAIN_SYNC_RANGE_EXCEEDED' });
+  rangeStore.close();
+
+  const maximumHead = BigInt(Number.MAX_SAFE_INTEGER);
+  const overflowRpc = new FixtureRpc();
+  overflowRpc.blocks.set(maximumHead, block(maximumHead, HASH_100, HASH_99));
+  const overflowStore = new ChainStore(await databasePath());
+  const overflow = createSynchronizer({
+    rpc: overflowRpc,
+    store: overflowStore,
+    manifest: Object.freeze({ ...manifest, deploymentBlock: 0n }),
+    integration,
+    maxBlocksPerSync: 100_000,
+  });
+  await assert.rejects(() => overflow.syncTo(maximumHead), { code: 'CHAIN_SYNC_RANGE_EXCEEDED' });
+  assert.equal(overflowStore.checkpoint(CHAIN_ID, CONTRACT), null);
+  overflowStore.close();
+
+  const mismatchRpc = new FixtureRpc();
+  mismatchRpc.blocks.set(100n, block(101n, HASH_100, HASH_99));
+  const mismatchStore = new ChainStore(await databasePath());
+  const mismatch = createSynchronizer({ rpc: mismatchRpc, store: mismatchStore, manifest, integration });
+  await assert.rejects(() => mismatch.syncTo(100n), { code: 'CHAIN_BLOCK_MISMATCH' });
+  mismatchStore.close();
+});
+
+test('a refused healthy checkpoint update stays unavailable until a successful retry', async (t) => {
+  const rpc = new FixtureRpc();
+  rpc.blocks.set(100n, block(100n, HASH_100, HASH_99));
+  rpc.receipts.set(TX_A, receipt(TX_A, 100n, HASH_100));
+  const store = new ChainStore(await databasePath());
+  t.after(() => store.close());
+  const sync = createSynchronizer({ rpc, store, manifest, integration });
+  await sync.syncTo(100n);
+  const events = store.canonicalEvents(CHAIN_ID, CONTRACT);
+  store.db.exec(`CREATE TEMP TRIGGER refuse_healthy BEFORE UPDATE ON chain_checkpoints
+    WHEN NEW.sync_healthy = 1 BEGIN SELECT RAISE(IGNORE); END`);
+  await assert.rejects(sync.syncTo(100n), { code: 'CHAIN_SYNC_SUPERSEDED' });
+  assert.equal(store.syncHealth(CHAIN_ID, CONTRACT).healthy, false);
+  assert.throws(() => store.projection(CHAIN_ID, OWNER, CONTRACT, 'trend-vault'), /CHAIN_SYNC_UNHEALTHY/);
+  assert.deepEqual(store.canonicalEvents(CHAIN_ID, CONTRACT), events);
+  assert.equal(store.db.isTransaction, false);
+  store.db.exec('DROP TRIGGER refuse_healthy');
+  assert.equal((await sync.syncTo(100n)).scannedBlocks, 0);
+  assert.equal(store.syncHealth(CHAIN_ID, CONTRACT).healthy, true);
+  assert.equal(store.projection(CHAIN_ID, OWNER, CONTRACT, 'trend-vault')?.state.principal, '1000000');
+});
+
+test('projection failure cannot rewind blocks after another connection takes the lease', async (t) => {
+  const path = await databasePath();
+  const store = new ChainStore(path);
+  const competitor = new ChainStore(path);
+  t.after(() => {
+    competitor.close();
+    store.close();
+  });
+  const rpc = new FixtureRpc();
+  rpc.blocks.set(100n, block(100n, HASH_100, HASH_99));
+  rpc.receipts.set(TX_A, receipt(TX_A, 100n, HASH_100));
+  const token = '00000000-0000-4000-8000-000000000002';
+  const sync = createSynchronizer({
+    rpc,
+    store,
+    manifest,
+    integration: {
+      ...integration,
+      async rebuildProjections() {
+        competitor.claimSync(CHAIN_ID, CONTRACT, 101n, token);
+        throw new Error('fixture projection failure after lease takeover');
+      },
+    },
+  });
+  await assert.rejects(sync.syncTo(100n), { code: 'CHAIN_SYNC_SUPERSEDED' });
+  assert.equal(competitor.checkpoint(CHAIN_ID, CONTRACT)?.blockNumber, 100n);
+  assert.equal(competitor.canonicalEvents(CHAIN_ID, CONTRACT).length, 1);
+  assert.equal(competitor.projectionCheckpoint(CHAIN_ID, CONTRACT), null);
+  assert.equal(competitor.syncHealth(CHAIN_ID, CONTRACT).healthy, false);
+  assert.equal(competitor.db.prepare('SELECT owner_token FROM chain_sync_leases').get()?.owner_token, token);
+  const recovery = createSynchronizer({ rpc, store: competitor, manifest, integration });
+  rpc.blocks.set(101n, block(101n, HASH_101, HASH_100));
+  await recovery.syncTo(101n);
+  assert.equal(competitor.projection(CHAIN_ID, OWNER, CONTRACT, 'trend-vault')?.state.principal, '1000000');
+  assert.equal(competitor.canonicalEvents(CHAIN_ID, CONTRACT).length, 1);
+});
+
+test('a superseded projection error survives a successful rollback and can be retried', async (t) => {
+  const store = new ChainStore(await databasePath());
+  t.after(() => store.close());
+  const rpc = new FixtureRpc();
+  rpc.blocks.set(100n, block(100n, HASH_100, HASH_99));
+  rpc.receipts.set(TX_A, receipt(TX_A, 100n, HASH_100));
+  const sync = createSynchronizer({
+    rpc,
+    store,
+    manifest,
+    integration: {
+      ...integration,
+      async rebuildProjections() {
+        throw new Error('CHAIN_SYNC_SUPERSEDED');
+      },
+    },
+  });
+  await assert.rejects(sync.syncTo(100n), { code: 'CHAIN_SYNC_SUPERSEDED' });
+  assert.equal(store.checkpoint(CHAIN_ID, CONTRACT), null);
+  assert.deepEqual(store.canonicalEvents(CHAIN_ID, CONTRACT), []);
+  assert.equal(store.projectionCheckpoint(CHAIN_ID, CONTRACT), null);
+  assert.equal(store.db.isTransaction, false);
+  await createSynchronizer({ rpc, store, manifest, integration }).syncTo(100n);
+  assert.equal(store.canonicalEvents(CHAIN_ID, CONTRACT).length, 1);
+  assert.equal(store.syncHealth(CHAIN_ID, CONTRACT).healthy, true);
+});
+
+test('repeated reconciliation mismatch preserves evidence without rewriting the failed operation', async (t) => {
+  const store = new ChainStore(await databasePath());
+  t.after(() => store.close());
+  const rpc = new FixtureRpc();
+  rpc.blocks.set(100n, block(100n, HASH_100, HASH_99));
+  rpc.receipts.set(TX_A, receipt(TX_A, 100n, HASH_100));
+  let matches = false;
+  let reconciliations = 0;
+  const sync = createSynchronizer({
+    rpc,
+    store,
+    manifest,
+    softReadyDepth: 1,
+    integration: {
+      ...integration,
+      async reconcileOperation(context) {
+        reconciliations++;
+        return matches
+          ? integration.reconcileOperation(context)
+          : { status: 'MISMATCH', errorCode: 'CONTRACT_STATE_MISMATCH' };
+      },
+    },
+  });
+  store.saveOperation(submitted('retry-mismatch', TX_A));
+  const failed = await sync.trackOperation('retry-mismatch');
+  assert.equal(failed.state, 'RECONCILIATION_FAILED');
+  store.db.exec(`CREATE TEMP TRIGGER no_operation_rewrite BEFORE UPDATE ON chain_transactions
+    BEGIN SELECT RAISE(ABORT, 'unexpected operation rewrite'); END`);
+  assert.deepEqual(await sync.trackOperation('retry-mismatch'), failed);
+  assert.deepEqual(store.operation('retry-mismatch'), failed);
+  assert.equal(reconciliations, 2);
+  store.db.exec('DROP TRIGGER no_operation_rewrite');
+  matches = true;
+  const recovered = await sync.trackOperation('retry-mismatch');
+  assert.equal(recovered.state, 'CONFIRMED');
+  assert.equal(recovered.errorCode, null);
+  assert.equal(recovered.txHash, failed.txHash);
+  assert.equal(store.canonicalEvents(CHAIN_ID, CONTRACT).length, 1);
+});
+
+test('indexer ignores unknown logs without granting a projection', async () => {
+  const rpc = new FixtureRpc();
+  rpc.blocks.set(100n, block(100n, HASH_100, HASH_99));
+  rpc.receipts.set(
+    TX_A,
+    receipt(TX_A, 100n, HASH_100, 'SUCCESS', [{ ...log(TX_A, 100n, HASH_100), topics: [] }]),
+  );
+  const store = new ChainStore(await databasePath());
+  const sync = createSynchronizer({ rpc, store, manifest, integration });
+  assert.deepEqual(await sync.syncTo(100n), { scannedBlocks: 1, insertedEvents: 0, reorgedBlocks: 0 });
+  assert.equal(store.canonicalEvents(CHAIN_ID, CONTRACT).length, 0);
+  assert.equal(store.projection(CHAIN_ID, OWNER, CONTRACT, 'trend-vault'), null);
   store.close();
 });
 
@@ -436,6 +670,100 @@ test('replacement and dropped outcomes require explicit backend evidence', async
   store.close();
 });
 
+test('tracking rejects a replaced checkpoint and preserves non-canonical receipt state', async () => {
+  const rpc = new FixtureRpc();
+  const block100 = block(100n, HASH_100, HASH_99);
+  rpc.blocks.set(100n, block100);
+  const supersededStore = new ChainStore(await databasePath());
+  supersededStore.saveOperation(submitted('operation-checkpoint-race', TX_A));
+  const superseded = createSynchronizer({
+    rpc,
+    store: supersededStore,
+    manifest,
+    integration,
+  });
+  await assert.rejects(() => superseded.trackOperation('operation-checkpoint-race', block100), {
+    code: 'CHAIN_SYNC_SUPERSEDED',
+  });
+  assert.equal(supersededStore.operation('operation-checkpoint-race')?.state, 'SUBMITTED');
+  supersededStore.close();
+
+  const nonCanonicalStore = new ChainStore(await databasePath());
+  const nonCanonical = createSynchronizer({ rpc, store: nonCanonicalStore, manifest, integration });
+  await nonCanonical.syncTo(100n);
+  nonCanonicalStore.saveOperation(submitted('operation-noncanonical-receipt', TX_A));
+  rpc.receipts.set(TX_A, receipt(TX_A, 99n, HASH_99));
+  const unchanged = await nonCanonical.trackOperation('operation-noncanonical-receipt', block100);
+  assert.equal(unchanged.state, 'SUBMITTED');
+  assert.equal(unchanged.blockNumber, null);
+  assert.equal(unchanged.receiptStatus, null);
+  nonCanonicalStore.close();
+});
+
+test('tracking does not reconcile operations already confirmed or in a non-trackable terminal state', async () => {
+  const rpc = new FixtureRpc();
+  const block100 = block(100n, HASH_100, HASH_99);
+  rpc.blocks.set(100n, block100);
+  rpc.receipts.set(TX_A, receipt(TX_A, 100n, HASH_100, 'SUCCESS', []));
+  const noReconciliation: ContractIntegration = {
+    ...integration,
+    async reconcileOperation() {
+      throw new Error('reconciliation must not run for terminal state');
+    },
+  };
+
+  const confirmedStore = new ChainStore(await databasePath());
+  const confirmedSync = createSynchronizer({
+    rpc,
+    store: confirmedStore,
+    manifest,
+    integration: noReconciliation,
+  });
+  await confirmedSync.syncTo(100n);
+  const mined = transitionOperation(submitted('operation-already-confirmed', TX_A), {
+    state: 'MINED',
+    blockNumber: 100n,
+    blockHash: HASH_100,
+    receiptStatus: 'SUCCESS',
+  });
+  const confirming = transitionOperation(mined, {
+    state: 'CONFIRMING',
+    confirmations: 1,
+    reconciled: true,
+  });
+  confirmedStore.saveOperation(
+    transitionOperation(confirming, {
+      state: 'CONFIRMED',
+      confirmations: 3,
+      reconciled: true,
+      confirmedAt: '2026-09-20T00:01:00.000Z',
+    }),
+  );
+  assert.equal(
+    (await confirmedSync.trackOperation('operation-already-confirmed', block100)).state,
+    'CONFIRMED',
+  );
+  confirmedStore.close();
+
+  const replacedStore = new ChainStore(await databasePath());
+  const replacedSync = createSynchronizer({
+    rpc,
+    store: replacedStore,
+    manifest,
+    integration: noReconciliation,
+  });
+  await replacedSync.syncTo(100n);
+  replacedStore.saveOperation(
+    transitionOperation(submitted('operation-already-replaced', TX_A), {
+      state: 'REPLACED',
+      replacementTxHash: TX_B,
+      errorCode: 'TRANSACTION_REPLACED',
+    }),
+  );
+  assert.equal((await replacedSync.trackOperation('operation-already-replaced', block100)).state, 'REPLACED');
+  replacedStore.close();
+});
+
 test('wrong-chain RPC fails before any checkpoint or projection is persisted', async () => {
   const rpc = new FixtureRpc();
   rpc.networkChainId = 1;
@@ -483,6 +811,100 @@ test('projection rebuild failure removes the partially indexed canonical block',
   await assert.rejects(() => sync.syncTo(100n), { code: 'PROJECTION_REBUILD_FAILED' });
   assert.equal(store.checkpoint(CHAIN_ID, CONTRACT), null);
   assert.equal(store.canonicalEvents(CHAIN_ID, CONTRACT).length, 0);
+  store.close();
+});
+
+test('projection recovery fails closed for a missing checkpoint block and for rebuild exceptions', async () => {
+  const block100 = block(100n, HASH_100, HASH_99);
+
+  const missingRpc = new FixtureRpc();
+  missingRpc.blocks.set(100n, block100);
+  const missingStore = new ChainStore(await databasePath());
+  missingStore.recordCanonicalBlock(CHAIN_ID, CONTRACT, block100, []);
+  missingStore.db
+    .prepare('DELETE FROM chain_blocks WHERE chain_id = ? AND contract_address = ? AND block_number = ?')
+    .run(CHAIN_ID, CONTRACT.toLowerCase(), 100);
+  const missingSync = createSynchronizer({
+    rpc: missingRpc,
+    store: missingStore,
+    manifest,
+    integration,
+  });
+  await assert.rejects(() => missingSync.syncTo(100n), { code: 'PROJECTION_REBUILD_FAILED' });
+  assert.equal(missingStore.projectionCheckpoint(CHAIN_ID, CONTRACT), null);
+  missingStore.close();
+
+  const failingRpc = new FixtureRpc();
+  failingRpc.blocks.set(100n, block100);
+  const failingStore = new ChainStore(await databasePath());
+  failingStore.recordCanonicalBlock(CHAIN_ID, CONTRACT, block100, []);
+  const failingSync = createSynchronizer({
+    rpc: failingRpc,
+    store: failingStore,
+    manifest,
+    integration: {
+      ...integration,
+      async rebuildProjections() {
+        throw new Error('fixture projection recovery failure');
+      },
+    },
+  });
+  await assert.rejects(() => failingSync.syncTo(100n), { code: 'PROJECTION_REBUILD_FAILED' });
+  assert.equal(failingStore.projectionCheckpoint(CHAIN_ID, CONTRACT), null);
+  failingStore.close();
+
+  const supersededRpc = new FixtureRpc();
+  supersededRpc.blocks.set(100n, block100);
+  const supersededStore = new ChainStore(await databasePath());
+  supersededStore.recordCanonicalBlock(CHAIN_ID, CONTRACT, block100, []);
+  const supersededSync = createSynchronizer({
+    rpc: supersededRpc,
+    store: supersededStore,
+    manifest,
+    integration: {
+      ...integration,
+      async rebuildProjections() {
+        throw new Error('CHAIN_SYNC_SUPERSEDED');
+      },
+    },
+  });
+  await assert.rejects(() => supersededSync.syncTo(100n), { code: 'CHAIN_SYNC_SUPERSEDED' });
+  assert.equal(supersededStore.projectionCheckpoint(CHAIN_ID, CONTRACT), null);
+  supersededStore.close();
+});
+
+test('a scan rejects a provider block whose reported number differs from the requested height', async () => {
+  const rpc = new FixtureRpc();
+  const canonical = block(100n, HASH_100, HASH_99);
+  rpc.blocks.set(100n, canonical);
+  const originalBlock = rpc.block.bind(rpc);
+  let reads = 0;
+  rpc.block = async (number) => {
+    const value = await originalBlock(number);
+    if (number === 100n && ++reads === 2 && value) return { ...value, number: 101n };
+    return value;
+  };
+  const store = new ChainStore(await databasePath());
+  const sync = createSynchronizer({ rpc, store, manifest, integration });
+  await assert.rejects(() => sync.syncTo(100n), { code: 'CHAIN_BLOCK_MISMATCH' });
+  assert.equal(store.checkpoint(CHAIN_ID, CONTRACT), null);
+  store.close();
+});
+
+test('a stale sync completion cannot mark the index healthy', async () => {
+  const rpc = new FixtureRpc();
+  rpc.blocks.set(100n, block(100n, HASH_100, HASH_99));
+  const store = new ChainStore(await databasePath());
+  Object.defineProperty(store, 'markSyncHealthy', {
+    configurable: true,
+    value: () => false,
+  });
+  const sync = createSynchronizer({ rpc, store, manifest, integration });
+  await assert.rejects(() => sync.syncTo(100n), { code: 'CHAIN_SYNC_SUPERSEDED' });
+  assert.deepEqual(store.syncHealth(CHAIN_ID, CONTRACT), {
+    healthy: false,
+    error: 'CHAIN_SYNC_INCOMPLETE',
+  });
   store.close();
 });
 
@@ -734,6 +1156,29 @@ test('temporarily unavailable checkpoint block blocks reads without destructive 
   store.close();
 });
 
+test('an unavailable common-ancestor candidate aborts reorg search without rollback', async () => {
+  const rpc = new FixtureRpc();
+  rpc.blocks.set(100n, block(100n, HASH_100, HASH_99));
+  rpc.blocks.set(101n, block(101n, HASH_101, HASH_100));
+  const store = new ChainStore(await databasePath());
+  const sync = createSynchronizer({ rpc, store, manifest, integration });
+  await sync.syncTo(101n);
+
+  rpc.blocks.set(101n, block(101n, HASH_101_ALT, HASH_100_ALT));
+  rpc.blocks.delete(100n);
+  await assert.rejects(() => sync.syncTo(101n), { code: 'CHAIN_BLOCK_UNAVAILABLE' });
+  assert.deepEqual(store.checkpoint(CHAIN_ID, CONTRACT), {
+    blockNumber: 101n,
+    blockHash: HASH_101,
+  });
+  assert.equal(store.canonicalBlock(CHAIN_ID, CONTRACT, 101n)?.hash, HASH_101);
+  assert.deepEqual(store.syncHealth(CHAIN_ID, CONTRACT), {
+    healthy: false,
+    error: 'CHAIN_SYNC_INCOMPLETE',
+  });
+  store.close();
+});
+
 test('reorg beyond the configured search bound marks projections unhealthy', async () => {
   const rpc = new FixtureRpc();
   rpc.blocks.set(100n, block(100n, HASH_100, HASH_99));
@@ -806,4 +1251,101 @@ test('reorg without a verified common ancestor degrades without erasing indexed 
   assert.equal(store.canonicalBlock(CHAIN_ID, CONTRACT, 102n)?.hash, HASH_102);
   assert.throws(() => store.projection(CHAIN_ID, OWNER, CONTRACT, 'trend-vault'), /CHAIN_SYNC_UNHEALTHY/);
   store.close();
+});
+
+test('a head below the required target remains explicitly incomplete until catch-up', async () => {
+  const rpc = new FixtureRpc();
+  rpc.blocks.set(100n, block(100n, HASH_100, HASH_99));
+  const store = new ChainStore(await databasePath());
+  const sync = createSynchronizer({ rpc, store, manifest, integration, softReadyDepth: 1 });
+
+  await sync.syncTo(100n);
+  assert.deepEqual(await sync.syncTo(100n, 101n), {
+    scannedBlocks: 0,
+    insertedEvents: 0,
+    reorgedBlocks: 0,
+  });
+  assert.deepEqual(store.syncHealth(CHAIN_ID, CONTRACT), {
+    healthy: false,
+    error: 'CHAIN_SYNC_INCOMPLETE',
+  });
+  assert.equal(store.syncTarget(CHAIN_ID, CONTRACT), 101n);
+  assert.throws(() => store.projection(CHAIN_ID, OWNER, CONTRACT, 'trend-vault'), /CHAIN_SYNC_UNHEALTHY/);
+  store.close();
+});
+
+test('projection persistence failures and rollback failures remain observable to callers', async () => {
+  const rpc = new FixtureRpc();
+  rpc.blocks.set(100n, block(100n, HASH_100, HASH_99));
+  rpc.receipts.set(TX_A, receipt(TX_A, 100n, HASH_100));
+  const rollbackStore = new ChainStore(await databasePath());
+  const rollbackFailure = new Error('ROLLBACK_FAILED');
+  Object.defineProperty(rollbackStore, 'rollbackFromBlock', {
+    configurable: true,
+    value: () => {
+      throw rollbackFailure;
+    },
+  });
+  const rollbackSync = createSynchronizer({
+    rpc,
+    store: rollbackStore,
+    manifest,
+    integration: {
+      ...integration,
+      async rebuildProjections() {
+        throw new Error('PROJECTION_FIXTURE_FAILED');
+      },
+    },
+    softReadyDepth: 1,
+  });
+  await assert.rejects(() => rollbackSync.syncTo(100n), { message: 'ROLLBACK_FAILED' });
+  assert.equal(rollbackStore.checkpoint(CHAIN_ID, CONTRACT)?.blockNumber, 100n);
+  rollbackStore.close();
+
+  const saveStore = new ChainStore(await databasePath());
+  const saveSync = createSynchronizer({ rpc, store: saveStore, manifest, integration, softReadyDepth: 1 });
+  await saveSync.syncTo(100n);
+  saveStore.saveOperation(submitted('operation-save-failure', TX_A));
+  Object.defineProperty(saveStore, 'saveOperationAtCheckpoint', {
+    configurable: true,
+    value: () => {
+      throw new Error('SAVE_CHECKPOINT_FAILED');
+    },
+  });
+  await assert.rejects(
+    () => saveSync.trackOperation('operation-save-failure', block(100n, HASH_100, HASH_99)),
+    { message: 'SAVE_CHECKPOINT_FAILED' },
+  );
+  assert.equal(saveStore.operation('operation-save-failure')?.state, 'SUBMITTED');
+  saveStore.close();
+});
+
+test('a wrong-owner observation cannot block canonical tracking of a later correct report', async () => {
+  const rpc = new FixtureRpc();
+  rpc.blocks.set(100n, block(100n, HASH_100, HASH_99));
+  rpc.receipts.set(TX_A, receipt(TX_A, 100n, HASH_100));
+  const store = new ChainStore(await databasePath());
+  try {
+    store.saveOperation({ ...submitted('wrong-owner-first', TX_A), owner: PASS });
+    store.saveOperation(submitted('correct-owner-later', TX_A));
+    const sync = createSynchronizer({ rpc, store, manifest, integration, softReadyDepth: 1 });
+    await assert.rejects(() => sync.trackOperation('wrong-owner-first'), {
+      code: 'RECEIPT_EVIDENCE_MISMATCH',
+    });
+    assert.equal(store.operationByTransaction(CHAIN_ID, TX_A), null);
+    const confirmed = await sync.trackOperation('correct-owner-later');
+    assert.equal(confirmed.state, 'CONFIRMED');
+    assert.equal(confirmed.owner, OWNER);
+    assert.equal(confirmed.reconciled, true);
+    assert.equal(store.operation('wrong-owner-first')?.owner, PASS);
+    assert.equal(store.operation('wrong-owner-first')?.state, 'SUBMITTED');
+    assert.equal(store.operationByTransaction(CHAIN_ID, TX_A)?.operationId, 'correct-owner-later');
+    assert.equal(store.canonicalEvents(CHAIN_ID, CONTRACT).length, 1);
+    assert.deepEqual(store.projection(CHAIN_ID, OWNER, CONTRACT, 'trend-vault')?.state, {
+      principal: '1000000',
+      strategyId: 'trend',
+    });
+  } finally {
+    store.close();
+  }
 });
