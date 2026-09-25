@@ -44,12 +44,10 @@ test('Hackathon build ships the original UI and keeps the existing Chinese task 
 
 test('actual development middleware serves imported CSS and JavaScript and passes other requests to Vite', async (t) => {
   const { createServer } = await import('vite');
-  const { default: config } = await import('../apps/web/vite.config.ts');
   const { resolve } = await import('node:path');
   execFileSync(process.execPath, ['tools/import-user-ui.mjs'], { stdio: 'pipe' });
   const server = await createServer({
-    ...config,
-    configFile: false,
+    configFile: resolve('apps/web/vite.config.ts'),
     root: resolve('apps/web'),
     logLevel: 'silent',
     server: { host: '127.0.0.1', port: 0, strictPort: true },

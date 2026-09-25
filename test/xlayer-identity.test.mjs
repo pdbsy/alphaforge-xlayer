@@ -117,6 +117,20 @@ test('XLayer manager verifies retained original objects and unchanged cherry-pic
   fail(f.run(), /retained source/);
 });
 
+test('XLayer corrected UI source requires its exact retained branch and declared worker identity', (t) => {
+  const f = fixture(t);
+  f.git('checkout', '-qb', 'macbeth04/xlayer-r2-ui-corrected', base);
+  const source = f.commit('Macbeth04', 'AF-XLAYER-R2-04-UI', 'reviewed UI source\n', 'ui-fixture.txt');
+  const sourceRef = 'refs/remotes/origin/macbeth04/xlayer-r2-ui-corrected';
+  f.git('update-ref', sourceRef, source);
+  f.git('checkout', '--quiet', 'codex/xlayer-r2');
+  f.git('cherry-pick', '-x', source);
+  pass(f.run());
+  f.git('update-ref', '-d', sourceRef);
+  f.git('update-ref', `${sourceRef}-unassigned`, source);
+  fail(f.run(), /retained source/);
+});
+
 test('XLayer source attribution rejects a forged cherry-pick that changes the reviewed patch', (t) => {
   const f = fixture(t);
   f.git('checkout', '--quiet', f.shared);

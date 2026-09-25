@@ -203,7 +203,7 @@ test('all deployment, network, RPC, listen and storage inputs fail before resour
       ],
     },
     { ...options, origin: 'http://public.example' },
-    { ...options, listen: { host: '192.168.1.5', port: 4180 } as never },
+    { ...options, listen: { host: '203.0.113.5', port: 4180 } as never },
     { ...options, listen: { host: '127.0.0.1', port: -1 } },
     { ...options, syncIntervalMs: 1 },
     { ...options, webRoot: directory },

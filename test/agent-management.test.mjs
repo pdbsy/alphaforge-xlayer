@@ -633,6 +633,7 @@ test('XLayer assignments require the exact branch, agent and task without granti
     ['macbeth03/xlayer-r2-adapter', 'Macbeth03', 'AF-XLAYER-R2-03-ADAPTER', 'Macbeth03', 'Agent-ID'],
     ['macbeth03/xlayer-r2-public-startup', 'Macbeth03', 'AF-XLAYER-R2-03', 'XLayer', 'Agent-ID'],
     ['macbeth04/xlayer-r2-ui', 'Macbeth04', 'AF-XLAYER-R2-04-UI', 'Macbeth04', 'Agent-ID'],
+    ['macbeth04/xlayer-r2-ui-corrected', 'Macbeth04', 'AF-XLAYER-R2-04-UI', 'Macbeth04', 'Agent-ID'],
     ['codex/xlayer-r2-contracts', 'Temp-A', 'AF-XLAYER-R2-CONTRACTS', 'Temp-A', 'Agent-ID'],
     ['codex/xlayer-r2-ci', 'TempB', 'AF-XLAYER-R2-TEMPB', 'TempB', 'Agent-ID'],
     ['macbeth06/xlayer-r2-ci', 'Macbeth06', 'AF-XLAYER-R2-06-CI', 'Macbeth06', 'Agent-ID'],
@@ -647,6 +648,7 @@ test('XLayer assignments require the exact branch, agent and task without granti
     assert.deepEqual(validateCommitIdentity(valid), { agentId: agent, taskId: task });
     for (const patch of [
       { branch: `${branch}-unassigned` },
+      { body: '' },
       { body: `${trailer}: ${agent}\nTask-ID: AF-XLAYER-R2-OTHER` },
       { body: `${trailer}: ${agent}\nTask-ID: ${task}\n${trailer}: ${agent}` },
       { body: `Agent-ID: Macbeth01\nTask-ID: ${task}` },
