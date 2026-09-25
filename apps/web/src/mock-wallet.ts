@@ -3,7 +3,12 @@ import { formatUnits } from '../../../packages/domain/src/money.ts';
 export interface MockWalletSnapshot {
   readonly address: string;
   readonly ethBalance?: string;
-  readonly holdings?: readonly { readonly id: string; readonly name: string; readonly quantity: number }[];
+  readonly holdings?: readonly {
+    readonly id: string;
+    readonly name: string;
+    readonly quantity: number;
+    readonly allocatedEth?: string;
+  }[];
 }
 const storageKey = 'alphaforge.mock-wallet.v1';
 // A display identifier only. There is no private key, provider or chain authority.
@@ -47,13 +52,20 @@ export function createMockWalletSession(
       try {
         const ledger = readExchange();
         if (!record(ledger) || !amount(ledger.cash) || !record(ledger.positions)) return { address };
-        const holdings: { id: string; name: string; quantity: number }[] = [];
+        const holdings: { id: string; name: string; quantity: number; allocatedEth?: string }[] = [];
         for (const strategy of strategies) {
           const position = ledger.positions[strategy.id];
           if (!Object.hasOwn(ledger.positions, strategy.id) || !record(position) || !amount(position.qty))
             return { address };
+          const allocated = record(ledger.allocations) ? ledger.allocations[strategy.id] : undefined;
+          if (ledger.allocations !== undefined && !amount(allocated)) return { address };
           if (position.qty > 0)
-            holdings.push({ id: strategy.id, name: strategy.name, quantity: position.qty });
+            holdings.push({
+              id: strategy.id,
+              name: strategy.name,
+              quantity: position.qty,
+              ...(allocated === undefined ? {} : { allocatedEth: formatUnits(String(allocated), 2) }),
+            });
         }
         return { address, ethBalance: formatUnits(String(ledger.cash), 2), holdings };
       } catch {
