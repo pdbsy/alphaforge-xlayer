@@ -1803,7 +1803,16 @@
       "target_path": "apps/server/src/app.ts",
       "method": "selective source integration; shared-file resolution recorded in CONFLICTS.md; M3 optionally composes the concrete same-process chain runtime and its read routes",
       "original_sha256": "1e190fd90786c8eac9dff5fa89acc461c1d8f8359bef5aa92c964d76d91cce55",
-      "migrated_sha256": "135d5c4364f58dabd9533d54f21b9bc55d12ec69ee88c791f68e97dcac4eb5f9"
+      "migrated_sha256": "d2e2b5c4509c115fe389103a865c51012893c32231bbe852ffc5883b6556b260",
+      "subsequent_revisions": [
+        {
+          "task": "AF-XLAYER-R2-03-ADAPTER",
+          "commit": "60a3b334f3b23995a3d78020ed7b0c5a88a0bd32",
+          "previous_sha256": "135d5c4364f58dabd9533d54f21b9bc55d12ec69ee88c791f68e97dcac4eb5f9",
+          "current_sha256": "d2e2b5c4509c115fe389103a865c51012893c32231bbe852ffc5883b6556b260",
+          "reason": "Explicit XLayer local configuration validation, independently reviewed by Temp-A; original migration evidence retained."
+        }
+      ]
     },
     {
       "source_repository": "pdbsy/quantpass",
@@ -2036,7 +2045,16 @@
       "target_path": "apps/web/vite.config.ts",
       "method": "selective source integration; shared-file resolution recorded in CONFLICTS.md",
       "original_sha256": "89412b0489e5ccb3d9d86ff20375eaeb9bdca5daad2e5a472057087d9858810f",
-      "migrated_sha256": "848464b255416f8de8afbbf4dd44f5dfe5dfe68e19c031a040d6e922dab00edb"
+      "migrated_sha256": "9f3b29e5a1f803e406934d19bbb364a4326c4565076e703d4cb9edcd167c81aa",
+      "subsequent_revisions": [
+        {
+          "task": "AF-XLAYER-R2",
+          "commit": "50a6fce3722ae050869d06e83c0b596634485cd4",
+          "previous_sha256": "848464b255416f8de8afbbf4dd44f5dfe5dfe68e19c031a040d6e922dab00edb",
+          "current_sha256": "9f3b29e5a1f803e406934d19bbb364a4326c4565076e703d4cb9edcd167c81aa",
+          "reason": "XLayer website-only release output and explicit public startup mode; original migration hashes retained."
+        }
+      ]
     },
     {
       "source_repository": "pdbsy/quantpass",
@@ -2046,7 +2064,7 @@
       "target_path": "test/ui-import.test.mjs",
       "method": "selective source integration; shared-file resolution recorded in CONFLICTS.md",
       "original_sha256": "91771696fc348750f34c55e49a181a95f8c1994e1f55de3f1fb62c20549e0c69",
-      "migrated_sha256": "fb8fb483bad510bc196c096335d7ec298b0025e5a08cb27662df8748fb5d0bc5",
+      "migrated_sha256": "e05e81f9e3babaae874929ca1baae97de72dba1a8a6cf1142eb2d7bbab9a90a5",
       "subsequent_revisions": [
         {
           "task": "M3-04-PHASE1-PRODUCT",
@@ -2098,6 +2116,13 @@
           "previous_sha256": "a1a80857376331bf987bad023be31a87b6bf12e3d914c7546ee3102b98ebb438",
           "sha256": "fb8fb483bad510bc196c096335d7ec298b0025e5a08cb27662df8748fb5d0bc5",
           "reason": "Bind current repaired artifact byte count while retaining exact importer output, historical source and whole-tree ancestry assertions."
+        },
+        {
+          "task": "AF-XLAYER-R2",
+          "commit": "50306f08b4a0f21ce961c8a401d1bebbfc3c505f",
+          "previous_sha256": "fb8fb483bad510bc196c096335d7ec298b0025e5a08cb27662df8748fb5d0bc5",
+          "current_sha256": "e05e81f9e3babaae874929ca1baae97de72dba1a8a6cf1142eb2d7bbab9a90a5",
+          "reason": "Preserve source-history negative regressions while using the exact upstream retained source for the XLayer import."
         }
       ]
     },
