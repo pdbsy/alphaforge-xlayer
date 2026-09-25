@@ -6,7 +6,7 @@ import type {
   WalletSession,
   WalletSubmission,
 } from './chain-wallet.ts';
-import type { SimulatingRobinhoodTestnetStrategyAdapter } from './strategy-adapter.ts';
+import type { SimulatingTestnetStrategyAdapter } from './strategy-adapter.ts';
 
 export interface M3ActionReview {
   readonly operationId: string;
@@ -24,13 +24,13 @@ export class M3ActionSimulationFailure extends Error {
 }
 
 export class M3ChainActionFlow<Snapshot, Action, Observation> {
-  readonly #adapter: SimulatingRobinhoodTestnetStrategyAdapter<Snapshot, Action, Observation>;
+  readonly #adapter: SimulatingTestnetStrategyAdapter<Snapshot, Action, Observation>;
   readonly #wallet: BrowserWalletPort;
   readonly #reviews = new WeakMap<M3ActionReview, PreparedAction>();
   #session: WalletSession | null = null;
 
   constructor(
-    adapter: SimulatingRobinhoodTestnetStrategyAdapter<Snapshot, Action, Observation>,
+    adapter: SimulatingTestnetStrategyAdapter<Snapshot, Action, Observation>,
     wallet: BrowserWalletPort,
   ) {
     this.#adapter = adapter;
