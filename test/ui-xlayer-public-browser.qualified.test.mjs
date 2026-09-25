@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
+import { runXLayerPublicWalletBrowser } from './helpers/xlayer-public-wallet-browser.mjs';
 import { readFile, mkdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { resolve, extname } from 'node:path';
@@ -51,7 +52,10 @@ test(
       }
     });
     await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
-    t.after(() => new Promise((resolve) => server.close(resolve)));
+    t.after(() => {
+      server.closeAllConnections();
+      return new Promise((resolve) => server.close(resolve));
+    });
     const origin = `http://127.0.0.1:${server.address().port}`;
     const browser = await chromium.launch({
       executablePath:
@@ -176,6 +180,7 @@ test(
     await page.reload();
     await page.getByRole('alert').filter({ hasText: 'INVALID_XLAYER_PUBLIC_CONFIG' }).waitFor();
     assert.equal(await page.locator('[data-chain-action]:not([disabled])').count(), 0);
+    t.diagnostic(JSON.stringify(await runXLayerPublicWalletBrowser(browser, origin)));
     t.diagnostic(
       `Chromium ${browser.version()}; no external requests or wallet broadcast; injection ignored; invalid config failed closed.`,
     );
