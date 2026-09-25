@@ -608,7 +608,7 @@ function renderMockWalletAccount(mock: MockWalletSnapshot): string {
   const holdings = mock.holdings
     ?.map(
       (holding) =>
-        `<article class="wallet-pass-row sketch-box"><span class="wallet-pass-icon" aria-hidden="true">α</span><div><h3>${escapeHtml(holding.name)}</h3><span class="small muted">Mock Pass</span></div><div class="wallet-pass-quantity"><strong>${escapeHtml(holding.quantity)}</strong> <span>Pass</span></div></article>`,
+        `<details class="wallet-holding" name="wallet-holdings" data-wallet-position="${escapeHtml(holding.id)}"><summary class="wallet-pass-row sketch-box"><span class="wallet-pass-icon" aria-hidden="true">α</span><div><h3>${escapeHtml(holding.name)}</h3><span class="small muted">Mock Pass · Buy or sell Pass</span></div><div class="wallet-pass-quantity"><strong>${escapeHtml(holding.quantity)}</strong> <span>Pass</span></div></summary><div data-wallet-trade-slot></div></details>`,
     )
     .join('');
   return `<section class="wrap wallet-account" data-wallet-account aria-label="Wallet account">

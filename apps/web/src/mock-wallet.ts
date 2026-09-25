@@ -3,7 +3,7 @@ import { formatUnits } from '../../../packages/domain/src/money.ts';
 export interface MockWalletSnapshot {
   readonly address: string;
   readonly ethBalance?: string;
-  readonly holdings?: readonly { readonly name: string; readonly quantity: number }[];
+  readonly holdings?: readonly { readonly id: string; readonly name: string; readonly quantity: number }[];
 }
 const storageKey = 'alphaforge.mock-wallet.v1';
 // A display identifier only. There is no private key, provider or chain authority.
@@ -47,12 +47,13 @@ export function createMockWalletSession(
       try {
         const ledger = readExchange();
         if (!record(ledger) || !amount(ledger.cash) || !record(ledger.positions)) return { address };
-        const holdings: { name: string; quantity: number }[] = [];
+        const holdings: { id: string; name: string; quantity: number }[] = [];
         for (const strategy of strategies) {
           const position = ledger.positions[strategy.id];
           if (!Object.hasOwn(ledger.positions, strategy.id) || !record(position) || !amount(position.qty))
             return { address };
-          if (position.qty > 0) holdings.push({ name: strategy.name, quantity: position.qty });
+          if (position.qty > 0)
+            holdings.push({ id: strategy.id, name: strategy.name, quantity: position.qty });
         }
         return { address, ethBalance: formatUnits(String(ledger.cash), 2), holdings };
       } catch {

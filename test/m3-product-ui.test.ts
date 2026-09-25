@@ -936,7 +936,7 @@ test('account connects a visibly mock wallet backed by the demo trading ledger',
       mockWallet: () => ({
         address: '0x000000000000000000000000000000000000de00',
         ethBalance: '9965.68',
-        holdings: [{ name: 'Ridgeline · Trend Following', quantity: 10 }],
+        holdings: [{ id: 'trend', name: 'Ridgeline · Trend Following', quantity: 10 }],
       }),
     },
   );
@@ -947,6 +947,10 @@ test('account connects a visibly mock wallet backed by the demo trading ledger',
   assert.match(html, /Ridgeline · Trend Following/);
   assert.match(html, />10<\/strong>/);
   assert.match(html, /Simulated balances/);
+  assert.match(html, /<details[^>]*data-wallet-position="trend"/);
+  assert.match(html, /<summary[^>]*wallet-pass-row/);
+  assert.match(html, /data-wallet-trade-slot/);
+  assert.match(html, /Buy or sell Pass/);
   assert.equal((html.match(/<button\b/g) ?? []).length, 1);
   assert.doesNotMatch(pages.trade('trend'), /9965\.68|Mock wallet/);
 });
@@ -973,7 +977,7 @@ test('mock session persists only its connection and always reads fresh simulated
   assert.equal(session.snapshot(), undefined);
   session.connect();
   assert.equal(session.snapshot()?.ethBalance, '9965.68');
-  assert.deepEqual(session.snapshot()?.holdings, [{ name: 'Trend', quantity: 10 }]);
+  assert.deepEqual(session.snapshot()?.holdings, [{ id: 'trend', name: 'Trend', quantity: 10 }]);
   assert.equal(create().snapshot()?.ethBalance, '9965.68', 'reload keeps the explicit choice');
   assert.deepEqual([...stored.values()], ['connected'], 'no wallet key or private key is persisted');
   ledger = { cash: 123, positions: { trend: { qty: 2 }, factor: { qty: 3 } } };

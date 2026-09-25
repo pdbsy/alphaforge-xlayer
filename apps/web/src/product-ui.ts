@@ -26,6 +26,8 @@ import {
 } from './m3-product-runtime.ts';
 import { formatUnits, parseUnits } from '../../../packages/domain/src/money.ts';
 interface Prototype extends CandleChartHost {
+  view: { priceRange: string; tradePane: string; passSide: 'buy' | 'sell'; passQty: string };
+  trade: { actionPanel: (strategy: { id: string; name: string }) => string };
   strategies: { id: string; name: string }[];
   exchange: { read: () => unknown };
   pages: { market: () => string; account: (tab: string) => string; trade: (id: string) => string };
@@ -624,6 +626,43 @@ document.addEventListener('click', (event) => {
     error(err);
   }
 });
+// Only one live order form is mounted, so the existing exchange controller
+// always reads the clicked holding and retains its quote/confirmation safeguards.
+document.addEventListener(
+  'toggle',
+  (event) => {
+    const holding = event.target;
+    if (!(holding instanceof HTMLDetailsElement) || !holding.hasAttribute('data-wallet-position')) return;
+    const slot = holding.querySelector<HTMLElement>('[data-wallet-trade-slot]');
+    if (!slot) return;
+    if (!holding.open) {
+      slot.replaceChildren();
+      slot.removeAttribute('id');
+      return;
+    }
+    const id = holding.dataset.walletPosition;
+    const position = mockWallet.snapshot()?.holdings?.find((item) => item.id === id);
+    const strategy = AF.strategies.find((item) => item.id === id);
+    if (!position || !strategy) {
+      holding.open = false;
+      return;
+    }
+    for (const other of document.querySelectorAll<HTMLDetailsElement>('[data-wallet-position]')) {
+      if (other === holding) continue;
+      other.open = false;
+      const otherSlot = other.querySelector('[data-wallet-trade-slot]');
+      otherSlot?.replaceChildren();
+      otherSlot?.removeAttribute('id');
+    }
+    AF.view.tradePane = 'market';
+    AF.view.passSide = 'buy';
+    AF.view.passQty = '1';
+    slot.id = 'trade-panel';
+    slot.innerHTML = AF.trade.actionPanel(strategy);
+  },
+  true,
+);
+
 document.addEventListener('input', (event) => {
   const input = event.target as HTMLInputElement;
   if (input.hasAttribute('data-product-search')) {
