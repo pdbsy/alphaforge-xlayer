@@ -1,4 +1,4 @@
-/** Prices and quoteVolume are DEMO cents; volume is whole/fractional Pass units. */
+/** Prices and quoteVolume are USDT cents; volume is whole/fractional Pass units. */
 export interface Candle {
   time: number;
   open: number;
@@ -19,7 +19,7 @@ const number = (value: number, digits: number) =>
   new Intl.NumberFormat('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits }).format(
     value,
   );
-const money = (value: number | undefined) => (finite(value) ? `${number(value / 100, 2)} DEMO` : '—');
+const money = (value: number | undefined) => (finite(value) ? `${number(value / 100, 2)} USDT` : '—');
 const sign = (value: number) => (value > 0 ? '+' : value < 0 ? '−' : '');
 
 export function candleDetails(row: Candle) {
@@ -68,16 +68,16 @@ export function installCandleInspection(host: CandleChartHost, doc: Document = d
   let selected: SVGSVGElement | undefined;
   const originalHover = host.charts.hover;
   const labels = {
-    time: '时间',
-    open: '开盘',
-    close: '收盘',
-    high: '最高',
-    low: '最低',
-    changePercent: '涨跌幅',
-    change: '涨跌额',
-    amplitude: '振幅',
-    volume: '成交量',
-    turnover: '成交额',
+    time: 'Time',
+    open: 'Open',
+    close: 'Close',
+    high: 'High',
+    low: 'Low',
+    changePercent: 'Change (%)',
+    change: 'Change',
+    amplitude: 'Range',
+    volume: 'Volume',
+    turnover: 'Turnover',
   };
   function clear() {
     panel?.remove();
@@ -106,11 +106,11 @@ export function installCandleInspection(host: CandleChartHost, doc: Document = d
       panel.className = 'candle-detail-tooltip';
       panel.setAttribute('role', 'tooltip');
       const heading = doc.createElement('strong');
-      heading.textContent = 'K 线详情';
+      heading.textContent = 'Candle details';
       panel.append(heading);
       const tag = doc.createElement('span');
       tag.className = 'candle-detail-fixture';
-      tag.textContent = 'MOCK · 合成行情';
+      tag.textContent = 'USDT / Pass';
       panel.append(tag);
       const list = doc.createElement('dl');
       for (const [key, label] of Object.entries(labels)) {
@@ -122,7 +122,8 @@ export function installCandleInspection(host: CandleChartHost, doc: Document = d
       }
       panel.append(list);
       const note = doc.createElement('p');
-      note.textContent = '涨跌 = 收盘 − 开盘；涨跌幅、振幅均以本根开盘价为基准。价格单位：DEMO / Pass。';
+      note.textContent =
+        'Change = Close − Open. Percentage change and range use the opening price of this candle.';
       panel.append(note);
       svg.after(panel);
     }

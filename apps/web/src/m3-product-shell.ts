@@ -467,7 +467,7 @@ function onchainCard(
       ? `${escapeHtml(formatUnits(onchain.passInitialSupplyBaseUnits!, 18))} Pass to ${escapeHtml(onchain.passInitialRecipient)}`
       : 'Unavailable until reviewed deployment constructor values are configured.';
   const depositAuthorization = authorization
-    ? `<div class="receipt"><div class="receipt-lines"><div><span>AF-USDC allowance</span><span>${escapeHtml(
+    ? `<div class="receipt"><div class="receipt-lines"><div><span>USDT allowance</span><span>${escapeHtml(
         authorization.afUsdcAllowanceBaseUnits,
       )} base units</span></div><div><span>Pass allowance</span><span>${escapeHtml(
         authorization.passAllowanceBaseUnits,
@@ -478,7 +478,7 @@ function onchainCard(
           ? 'The approval flow is available from Deposit review.'
           : 'Approval flow is not implemented.'
       } Infinite approval and arbitrary spenders are never used.</p>`
-    : '<p>Deposit allowances are unavailable. Deposit remains disabled until both AF-USDC and Pass allowances are read for the configured Vault.</p>';
+    : '<p>Deposit allowances are unavailable. Deposit remains disabled until both USDT and Pass allowances are read for the configured Vault.</p>';
   return `<article class="sketch-box"><span class="section-label">PASS + VAULT / TESTNET</span><h3>${escapeHtml(
     onchain.readiness.replaceAll('_', ' '),
   )}</h3><p><strong>Deployment</strong> · ${escapeHtml(deploymentMessage)}</p>${vaultSelector(selection, networkConfig)}<p><strong>Selected Vault</strong> · ${escapeHtml(onchain.vaultAddress ?? 'Unavailable')}</p><p><strong>Initial Pass allocation</strong> · ${initialAllocation}</p><p>${escapeHtml(
@@ -610,4 +610,8 @@ export function extendM3ProductPages(pages: M3ProductPages, options: M3PageExten
       );
     },
   };
+}
+
+export function renderM3PublicShell(chain: M3ProductChainPresentation, networkConfig: M3Network): string {
+  return `<section class="wrap section" aria-label="Wallet and Vault"><span class="section-label">ONCHAIN ACCOUNT</span><h2>Your wallet &amp; Vault.</h2><div class="strategy-grid">${walletCard(chain.wallet)}${networkCard(chain.network, networkConfig)}${transactionCard(chain.transaction, networkConfig)}</div>${onchainCard(chain.onchain, chain.vaultSelection, networkConfig)}<div class="inline-actions"><button class="outline-btn" data-chain-connect>Connect wallet</button><button class="text-link" data-chain-refresh>Refresh</button></div></section>`;
 }

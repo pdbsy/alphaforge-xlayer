@@ -98,3 +98,14 @@ test('XLayer Vault selection is scoped to the configured network on account and 
     assert.doesNotMatch(html, /data-chain-vault-select/);
   }
 });
+
+test('public wallet panel uses English USDT labels without local identities or fabricated holdings', async () => {
+  const { renderM3PublicShell } = await import('../apps/web/src/m3-product-shell.ts');
+  const { createM3BrowserRuntime } = await import('../apps/web/src/m3-browser-runtime.ts');
+  const runtime = createM3BrowserRuntime({ networkConfig: xlayer() });
+  const html = renderM3PublicShell(runtime.snapshot, xlayer());
+  assert.match(html, /X Layer Testnet/);
+  assert.match(html, /USDT/);
+  assert.match(html, /NOT DEPLOYED/);
+  assert.doesNotMatch(html, /Alice|Bob|LOCAL SIMULATION|AF-USDC|DEMO|FIXTURE|[\p{Script=Han}]/u);
+});

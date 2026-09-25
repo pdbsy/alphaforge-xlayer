@@ -448,6 +448,7 @@ SOFTWARE.
 <dialog id="app-dialog" aria-labelledby="dialog-title"><button id="close-dialog" class="icon-close" aria-label="Close dialog">×</button><div id="dialog-body"></div></dialog>
 <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 <script>window.AF = window.AF || {};
+Object.defineProperty(window.AF, "publicMode", { value: window.AF_PUBLIC_MODE === true, writable: false });
 AF.art = {"trend": "<svg aria-hidden=\"true\" class=\"cover-art\" fill=\"none\" viewbox=\"0 0 360 115\"><path d=\"M30 100h300M40 99V12\" stroke=\"#6b786650\" stroke-width=\"1\"></path><path d=\"m45 87 35-9 25 7 27-25 30 4 35-28 28 10 23-19 26 4 42-20\" stroke=\"#596b4b\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\"></path><path d=\"m46 95 34-10 26 9 26-24 30 4 34-25 27 8 26-20 27 5 40-17\" opacity=\".7\" stroke=\"#596b4b\" stroke-linecap=\"round\" stroke-width=\".8\"></path><path d=\"m278 12 38-1-18 24\" stroke=\"#596b4b\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\"></path><circle cx=\"132\" cy=\"60\" fill=\"#e0e3d4\" r=\"4\" stroke=\"#596b4b\" stroke-width=\"1.5\"></circle><circle cx=\"225\" cy=\"46\" fill=\"#e0e3d4\" r=\"4\" stroke=\"#596b4b\" stroke-width=\"1.5\"></circle><text fill=\"#596b4b\" font-family=\"monospace\" font-size=\"9\" x=\"218\" y=\"100\">FOLLOW THE SIGNAL.</text></svg>", "factor": "<svg aria-hidden=\"true\" class=\"cover-art\" fill=\"none\" viewbox=\"0 0 360 115\"><g stroke=\"#af6847\" stroke-width=\"1.4\"><circle cx=\"147\" cy=\"59\" r=\"45\"></circle><circle cx=\"205\" cy=\"59\" r=\"45\"></circle><circle cx=\"176\" cy=\"44\" r=\"29\" stroke-dasharray=\"3 4\"></circle><path d=\"M58 59h44m148 0h43M176 4v89\" stroke-dasharray=\"2 5\"></path></g><circle cx=\"176\" cy=\"59\" fill=\"#af6847\" r=\"5\"></circle><path d=\"m69 52-10 7 10 7M283 52l11 7-11 7\" stroke=\"#af6847\" stroke-linecap=\"round\" stroke-width=\"1.4\"></path><text fill=\"#965b40\" font-family=\"monospace\" font-size=\"9\" x=\"105\" y=\"108\">LESS NOISE. MORE REASON.</text></svg>", "mean": "<svg aria-hidden=\"true\" class=\"cover-art\" fill=\"none\" viewbox=\"0 0 360 115\"><path d=\"M38 62h284\" stroke=\"#8f742a\" stroke-dasharray=\"4 5\" stroke-width=\"1\"></path><path d=\"M39 56c17-74 35-50 55 3s29 43 45-1 29-32 45 2 23 31 36 0 18-17 28 0 19 21 29 0 16-12 33 0\" stroke=\"#8f742a\" stroke-linecap=\"round\" stroke-width=\"1.8\"></path><path d=\"m299 48 11 12 11-12\" stroke=\"#8f742a\" stroke-linecap=\"round\" stroke-width=\"1.4\"></path><circle cx=\"311\" cy=\"61\" fill=\"#efe4c7\" r=\"4\" stroke=\"#8f742a\" stroke-width=\"1.3\"></circle><text fill=\"#8f742a\" font-family=\"monospace\" font-size=\"9\" x=\"184\" y=\"107\">BACK TO THE MEAN.</text></svg>"};
 
 /* All people, strategies, discussions and chart series below are design fixtures.
@@ -557,7 +558,7 @@ AF.strategy=id=>AF.strategies.find(s=>s.id===id);
  const ids=xs=>Array.isArray(xs)?[...new Set(xs.filter(known))]:[];
  let available=true;
  const fresh=()=>({version:2,revision:0,profile:{name:'Workshop Guest',bio:'Stay curious. Research carefully.'},favorites:[],likes:[],bookmarks:[],samplePass:false,
-  passes:{trend:{at:'Initial demo sample',quota:CAP}},idle:1000000,allocated:Object.fromEntries(AF.strategies.map(x=>[x.id,0])),pending:[],netFunding:1000000,
+  passes:AF.publicMode?{}:{trend:{at:'Initial demo sample',quota:CAP}},idle:AF.publicMode?0:1000000,allocated:Object.fromEntries(AF.strategies.map(x=>[x.id,0])),pending:[],netFunding:AF.publicMode?0:1000000,
   history:[],posts:[],comments:[],draft:{title:'',body:'',category:'Research Notes'},lastStrategy:'trend'});
  const integer=n=>Number.isSafeInteger(n)&&n>=0&&n<=MAX;
  function validate(s){
@@ -583,20 +584,21 @@ AF.strategy=id=>AF.strategies.find(s=>s.id===id);
  }
  let state=fresh(), recovery='';
  try{
-  const raw=localStorage.getItem(KEY)||localStorage.getItem('alphaforge.prototype.v2');
+  const raw=AF.publicMode?null:localStorage.getItem(KEY)||localStorage.getItem('alphaforge.prototype.v2');
   if(raw) state=normalize(JSON.parse(raw));
-  else {const old=JSON.parse(localStorage.getItem('alphaforge.home-concept.v1')||'{}');state.favorites=ids(old.favorites);state.samplePass=old.samplePass===true;}
+  else if(!AF.publicMode) {const old=JSON.parse(localStorage.getItem('alphaforge.home-concept.v1')||'{}');state.favorites=ids(old.favorites);state.samplePass=old.samplePass===true;}
  }catch(e){if(e.name==='SecurityError'){available=false;}else{recovery='Local records could not be read. Fresh demo data is being used.';}}
- function persist(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch{available=false;}}
+ function persist(){if(AF.publicMode)return;try{localStorage.setItem(KEY,JSON.stringify(state));}catch{available=false;}}
  const uid=()=>globalThis.crypto?.randomUUID?.()||('local'+Date.now().toString(36)+Math.random().toString(36).slice(2));
  const stamp=()=>new Date().toISOString();
  const log=(s,type,amount=0,strategy='',extra={})=>s.history.unshift({id:uid(),type,amount,strategy,at:stamp(),...extra});
  const amount=v=>{if(!integer(v)||v===0)throw Error('Enter a valid amount greater than 0.');return v;};
  const flip=(a,id)=>a.includes(id)?a.filter(x=>x!==id):[...a,id];
  function dispatch(action){
+  if(AF.publicMode&&["claim","allocate","release","deposit","withdraw","confirmWithdrawal","cancelWithdrawal","reset"].includes(action.type))throw Error("LOCAL_FINANCE_DISABLED");
   // Check a fresher saved revision before applying a reviewed local command.
   // This is best-effort browser coordination, not a server transaction/lock.
-  try{const raw=localStorage.getItem(KEY);if(raw){const s=normalize(JSON.parse(raw));if(s.revision>state.revision)state=s;}}catch{}
+  try{const raw=AF.publicMode?null:localStorage.getItem(KEY);if(raw){const s=normalize(JSON.parse(raw));if(s.revision>state.revision)state=s;}}catch{}
   if(action.expectedRevision!==undefined&&action.expectedRevision!==state.revision)throw Error('Records have changed. Please review this action again.');
   let s=structuredClone(state); const id=action.strategy;
   if(id&&!known(id))throw Error('Strategy not found.');
@@ -704,7 +706,7 @@ AF.strategy=id=>AF.strategies.find(s=>s.id===id);
  const money=AF.marketData.fmt,copy=x=>structuredClone(x),known=id=>!!AF.strategy(id);
  const safe=n=>Number.isSafeInteger(n)&&n>=0&&n<=Number.MAX_SAFE_INTEGER;
  const uid=()=>globalThis.crypto?.randomUUID?.()||'demo-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2);
- const fresh=()=>({version:1,revision:0,cash:1000000,initialCapital:1000000,realized:0,fees:0,positions:Object.fromEntries(AF.strategies.map(s=>[s.id,{qty:0,cost:0}])),orders:[],executed:[]});
+ const fresh=()=>({version:1,revision:0,cash:AF.publicMode?0:1000000,initialCapital:AF.publicMode?0:1000000,realized:0,fees:0,positions:Object.fromEntries(AF.strategies.map(s=>[s.id,{qty:0,cost:0}])),orders:[],executed:[]});
  function validate(s){
   if(!s||s.version!==1||!safe(s.revision)||!safe(s.cash)||s.cash>MAX||!safe(s.initialCapital)||!Number.isSafeInteger(s.realized)||!safe(s.fees)||!s.positions||!Array.isArray(s.orders)||!Array.isArray(s.executed)||s.orders.length>300||s.executed.length>300)throw Error('Demo trading records are corrupted.');
   let cost=0;
@@ -716,11 +718,12 @@ AF.strategy=id=>AF.strategies.find(s=>s.id===id);
   return s;
  }
  let state=fresh(),available=true,recovery='';
- try{const raw=localStorage.getItem(KEY);if(raw)state=validate(JSON.parse(raw));}catch(e){if(e.name==='SecurityError')available=false;else recovery='Pass trading records could not be read. A fresh demo was restored; the unreadable data was not used for any trade.';}
- function persist(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch{available=false;}}
- function sync(){try{const raw=localStorage.getItem(KEY);if(raw){const saved=validate(JSON.parse(raw));if(saved.revision>state.revision)state=saved;}}catch{}}
+ try{const raw=AF.publicMode?null:localStorage.getItem(KEY);if(raw)state=validate(JSON.parse(raw));}catch(e){if(e.name==='SecurityError')available=false;else recovery='Pass trading records could not be read. A fresh demo was restored; the unreadable data was not used for any trade.';}
+ function persist(){if(AF.publicMode)return;try{localStorage.setItem(KEY,JSON.stringify(state));}catch{available=false;}}
+ function sync(){try{const raw=AF.publicMode?null:localStorage.getItem(KEY);if(raw){const saved=validate(JSON.parse(raw));if(saved.revision>state.revision)state=saved;}}catch{}}
  function parseQty(value){const t=String(value).trim();if(!/^[1-9]\d{0,6}$/.test(t)||Number(t)>MAX_QTY)throw Error('Enter a whole number of Passes from 1 to 1,000,000.');return Number(t);}
  function quote({strategy,side,qty,slippage=50}){
+  if(AF.publicMode)throw Error("LOCAL_FINANCE_DISABLED");
   if(!known(strategy)||!['buy','sell'].includes(side))throw Error('Invalid trading target.');
   if(!Number.isSafeInteger(qty)||qty<=0||qty>MAX_QTY)throw Error('Invalid Pass quantity.');
   if(![50,100,300].includes(slippage))throw Error('Invalid slippage setting.');
@@ -736,6 +739,7 @@ AF.strategy=id=>AF.strategies.find(s=>s.id===id);
  function check(q,s=state){if(q.side==='buy'&&q.bound>s.cash)throw Error('Insufficient Pass trading balance, including the slippage reserve.');if(q.side==='sell'&&q.qty>s.positions[q.strategy].qty)throw Error('Not enough tradable Passes. Trial Passes cannot be sold on the market.');if(q.side==='buy'&&s.positions[q.strategy].qty+q.qty>MAX_QTY)throw Error('This exceeds the demo position limit.');}
  function review(args,now=Date.now()){sync();const q=quote(args);check(q);return {...q,id:uid(),expectedRevision:state.revision,createdAt:now,expiresAt:now+30000};}
  function execute(q,now=Date.now()){
+  if(AF.publicMode)throw Error("LOCAL_FINANCE_DISABLED");
   sync();if(!q||typeof q.id!=='string')throw Error('Review the order first.');
   if(state.executed.includes(q.id))throw Error('This demo order has already been executed. It cannot be submitted again.');
   if(q.expectedRevision!==state.revision)throw Error('The trading account has changed. Request a new quote.');
@@ -750,7 +754,7 @@ AF.strategy=id=>AF.strategies.find(s=>s.id===id);
  }
  function maxBuy(id,slippage=50){let lo=0,hi=Math.min(MAX_QTY,Math.floor(state.cash/AF.marketData.metrics(id).price));while(lo<hi){const m=Math.ceil((lo+hi)/2);try{const q=quote({strategy:id,side:'buy',qty:m,slippage});check(q);lo=m;}catch{hi=m-1;}}return lo;}
  function totals(){const value=AF.strategies.reduce((n,s)=>n+state.positions[s.id].qty*AF.marketData.metrics(s.id).price,0);return {value,equity:state.cash+value,pnl:state.cash+value-state.initialCapital};}
- AF.exchange={read:()=>copy(state),validate,quote,review,execute,parseQty,maxBuy,totals,available:()=>available,recovery,money,reset:()=>{state={...fresh(),revision:state.revision+1};persist();}};
+ AF.exchange={read:()=>copy(state),validate,quote,review,execute,parseQty,maxBuy,totals,available:()=>available,recovery,money,reset:()=>{if(AF.publicMode)throw Error("LOCAL_FINANCE_DISABLED");state={...fresh(),revision:state.revision+1};persist();}};
 })();
 
 (() => {
@@ -910,6 +914,7 @@ AF.homeHtml = "<section aria-labelledby=\"hero-title\" class=\"hero wrap\"><div 
  function refreshSaved(){const favorites=store.read().favorites;$$('[data-save]').forEach(b=>{const id=b.dataset.save,yes=favorites.includes(id);b.setAttribute('aria-pressed',String(yes));b.setAttribute('aria-label',(yes?'Remove bookmark: ':'Bookmark: ')+(AF.strategy(id)?.name||''));const label=b.querySelector('span');if(label)label.textContent=yes?'Bookmarked':'Save this idea';});}
  function parseRoute(){let hash=location.hash.replace(/^#\/?/,'');if(!hash)hash='home';let parts;try{parts=hash.split('/').map(decodeURIComponent);}catch{parts=['not-found'];}if(parts[0]==='forum'&&parts[1]==='post')return {name:'post',id:parts[2]||''};return {name:parts[0],id:parts[1]||''};}
  function render(options={}){
+  if(AF.publicMode&&!AF.publicReady)return;
   if(rendering)return;rendering=true;
   try{
   const y=scrollY,active=document.activeElement,focusKey=active?.getAttribute('data-save');
