@@ -1316,7 +1316,7 @@
       "target_path": "tools/agent-identity.mjs",
       "method": "selective import; canonical repository allowlist and dashboard link adapted; reviewed PR11 closeout adaptation (see PR11-CLOSEOUT.md); PR11 review remediation: atomic product snapshot, identity lifecycle or bounded logical-message Forum as applicable; user-authorized Macbeth06 CI/gate role registration (2026-09-20), historical source identity unchanged",
       "original_sha256": "f1b67a9cdb2ce0fa25c95d7927dbffda16cd5320d636891a9b60b721491395a6",
-      "migrated_sha256": "4efb52a044fd93fcf49aa693064d45941cadf308508c0edccf1c08e983fdcec2",
+      "migrated_sha256": "dc79b6cecc55dc45c38e8e95720c14d42994d5d469809ec4b70fcbd176bf6bd7",
       "subsequent_adaptations": [
         {
           "task": "AF-M3-IDENTITY",
@@ -1351,6 +1351,13 @@
           "previous_sha256": "84c7df54e57afcb196fd2704a4a3e8c2bb7aa611e6a7efa2c8cd9d2bd2c31410",
           "sha256": "4efb52a044fd93fcf49aa693064d45941cadf308508c0edccf1c08e983fdcec2",
           "reason": "Bind public startup to its original Macbeth03 task identity; preserve adapter ownership and prior source revisions."
+        },
+        {
+          "task": "AF-XLAYER-R2",
+          "commit": "7f6539ffaf2c9975373179eea513d411b56790b0",
+          "previous_sha256": "4efb52a044fd93fcf49aa693064d45941cadf308508c0edccf1c08e983fdcec2",
+          "sha256": "dc79b6cecc55dc45c38e8e95720c14d42994d5d469809ec4b70fcbd176bf6bd7",
+          "reason": "Register the user-approved corrected Macbeth04 source branch with its unchanged owner and task. Preserve original source history and strict metadata and retained-source checks."
         }
       ]
     },
@@ -1771,7 +1778,7 @@
       "target_path": "test/agent-management.test.mjs",
       "method": "selective source integration; shared-file resolution recorded in CONFLICTS.md; reviewed PR11 closeout adaptation (see PR11-CLOSEOUT.md); PR11 review remediation: atomic product snapshot, identity lifecycle or bounded logical-message Forum as applicable; user-authorized Macbeth06 CI/gate role registration (2026-09-20), historical source identity unchanged",
       "original_sha256": "f5c916f2f10f3fbc2e31e89bce0cf041bf091cae876b20490eac7f87140ebc42",
-      "migrated_sha256": "fb492ac7b7da3d28639fd801db386c9a2fe568af04f3f61208081bca9999628f",
+      "migrated_sha256": "de3f8547372d089cb78d742905edfeaa2988f70ae34302f0c1109886a63bf749",
       "subsequent_adaptations": [
         {
           "task": "AF-M3-IDENTITY",
@@ -1832,6 +1839,13 @@
           "previous_sha256": "c1ad79a6498eb28dedc662dd7464b23171426465cf0b54e8d9f5fcd0d0c0898b",
           "sha256": "fb492ac7b7da3d28639fd801db386c9a2fe568af04f3f61208081bca9999628f",
           "reason": "Bind public startup to its original Macbeth03 task identity; preserve adapter ownership and prior source revisions."
+        },
+        {
+          "task": "AF-XLAYER-R2",
+          "commit": "7f6539ffaf2c9975373179eea513d411b56790b0",
+          "previous_sha256": "fb492ac7b7da3d28639fd801db386c9a2fe568af04f3f61208081bca9999628f",
+          "sha256": "de3f8547372d089cb78d742905edfeaa2988f70ae34302f0c1109886a63bf749",
+          "reason": "Register the user-approved corrected Macbeth04 source branch with its unchanged owner and task. Preserve original source history and strict metadata and retained-source checks."
         }
       ]
     },
