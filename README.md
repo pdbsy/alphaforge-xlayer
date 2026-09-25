@@ -29,6 +29,8 @@ The [X Layer deployment template](contracts/deployment/m3-xlayer-testnet.templat
 
 The [deployment preparation runbook](docs/xlayer/r2/contracts/RUNBOOK.md) covers explicit constructor inputs and the local simulation command. The [contract delivery notes](docs/xlayer/r2/contracts/DELIVERY.md) describe the test assets, Strategy Pass, Vault and Vault-created Locker. The USDT asset uses the existing `afUsdc` contract role to preserve ABI and storage compatibility. Testnet deployment, signing and broadcasting require a separate authorized operation; ordinary builds and tests stay local/mock.
 
+After an independently reviewed deployment, convert its manifest offline with `npm run xlayer:deployment:public-record -- --manifest <reviewed-manifest.json> --output <new-public-record.json>`. The command validates the X Layer identity and manifest digest, writes a new record, and rejects preparation or simulation records. It performs no chain calls; the public runtime separately verifies on-chain code and indexer readiness.
+
 ## Development checks
 
 ```bash

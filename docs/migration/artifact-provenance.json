@@ -1316,7 +1316,7 @@
       "target_path": "tools/agent-identity.mjs",
       "method": "selective import; canonical repository allowlist and dashboard link adapted; reviewed PR11 closeout adaptation (see PR11-CLOSEOUT.md); PR11 review remediation: atomic product snapshot, identity lifecycle or bounded logical-message Forum as applicable; user-authorized Macbeth06 CI/gate role registration (2026-09-20), historical source identity unchanged",
       "original_sha256": "f1b67a9cdb2ce0fa25c95d7927dbffda16cd5320d636891a9b60b721491395a6",
-      "migrated_sha256": "84c7df54e57afcb196fd2704a4a3e8c2bb7aa611e6a7efa2c8cd9d2bd2c31410",
+      "migrated_sha256": "4efb52a044fd93fcf49aa693064d45941cadf308508c0edccf1c08e983fdcec2",
       "subsequent_adaptations": [
         {
           "task": "AF-M3-IDENTITY",
@@ -1344,6 +1344,13 @@
           "previous_sha256": "b88730d1350a71a13c7fbbbb2bd13a1a9c4b3c5c402b90d17376949ac3f17527",
           "sha256": "84c7df54e57afcb196fd2704a4a3e8c2bb7aa611e6a7efa2c8cd9d2bd2c31410",
           "reason": "Reviewed XLayer integration; retain the original artifact and every prior revision."
+        },
+        {
+          "task": "AF-XLAYER-R2-TEMPB",
+          "commit": "ed61a885eedb9bfe8d33017765fd31cd533e7bb1",
+          "previous_sha256": "84c7df54e57afcb196fd2704a4a3e8c2bb7aa611e6a7efa2c8cd9d2bd2c31410",
+          "sha256": "4efb52a044fd93fcf49aa693064d45941cadf308508c0edccf1c08e983fdcec2",
+          "reason": "Bind public startup to its original Macbeth03 task identity; preserve adapter ownership and prior source revisions."
         }
       ]
     },
@@ -1764,7 +1771,7 @@
       "target_path": "test/agent-management.test.mjs",
       "method": "selective source integration; shared-file resolution recorded in CONFLICTS.md; reviewed PR11 closeout adaptation (see PR11-CLOSEOUT.md); PR11 review remediation: atomic product snapshot, identity lifecycle or bounded logical-message Forum as applicable; user-authorized Macbeth06 CI/gate role registration (2026-09-20), historical source identity unchanged",
       "original_sha256": "f5c916f2f10f3fbc2e31e89bce0cf041bf091cae876b20490eac7f87140ebc42",
-      "migrated_sha256": "c1ad79a6498eb28dedc662dd7464b23171426465cf0b54e8d9f5fcd0d0c0898b",
+      "migrated_sha256": "fb492ac7b7da3d28639fd801db386c9a2fe568af04f3f61208081bca9999628f",
       "subsequent_adaptations": [
         {
           "task": "AF-M3-IDENTITY",
@@ -1818,6 +1825,13 @@
           "previous_sha256": "b1a9eeb4478ce3812c5c55c96ddb8e17846f82999a1d2b51e69fd3f6c6f0b5df",
           "sha256": "c1ad79a6498eb28dedc662dd7464b23171426465cf0b54e8d9f5fcd0d0c0898b",
           "reason": "Reviewed XLayer integration; retain the original artifact and every prior revision."
+        },
+        {
+          "task": "AF-XLAYER-R2-TEMPB",
+          "commit": "ed61a885eedb9bfe8d33017765fd31cd533e7bb1",
+          "previous_sha256": "c1ad79a6498eb28dedc662dd7464b23171426465cf0b54e8d9f5fcd0d0c0898b",
+          "sha256": "fb492ac7b7da3d28639fd801db386c9a2fe568af04f3f61208081bca9999628f",
+          "reason": "Bind public startup to its original Macbeth03 task identity; preserve adapter ownership and prior source revisions."
         }
       ]
     },
