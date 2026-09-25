@@ -22,7 +22,7 @@ function localVerify(root, options) {
 
 const branch = 'macbeth01/m3-phase1-closeout';
 const task = 'M3-01-PHASE1-CLOSEOUT';
-const repository = 'pdbsy/quantpass-arbitrum-hackathon';
+const repository = 'pdbsy/alphaforge-xlayer';
 test('explicit local integration provider exists separately from hosted verification', () => {
   assert.equal(typeof identity.verifyLocalManagerIntegration, 'function');
 });

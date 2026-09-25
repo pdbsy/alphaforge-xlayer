@@ -36,7 +36,7 @@ export function validateSupplyChainPolicy(policy) {
   requireCondition(policy?.schemaVersion === 1, 'policy.schemaVersion must be 1');
   requireCondition(/^\d{4}-\d{2}-\d{2}$/.test(policy.updatedAt), 'policy.updatedAt must be YYYY-MM-DD');
   requireCondition(
-    policy.repository === 'pdbsy/quantpass-arbitrum-hackathon',
+    policy.repository === 'pdbsy/alphaforge-xlayer',
     'policy.repository must identify this public competition repository',
   );
   requireCondition(policy.defaultBranch === 'master', 'policy.defaultBranch must be master');
@@ -99,7 +99,7 @@ export function validateSupplyChainPolicy(policy) {
     'SBOM createdAt must be a stable UTC instant',
   );
   requireCondition(
-    policy.sbom?.documentNamespaceBase === 'https://github.com/pdbsy/quantpass-arbitrum-hackathon/sbom',
+    policy.sbom?.documentNamespaceBase === 'https://github.com/pdbsy/alphaforge-xlayer/sbom',
     'SBOM namespace must belong to this repository',
   );
   return policy;

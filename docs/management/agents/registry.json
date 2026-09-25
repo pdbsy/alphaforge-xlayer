@@ -81,6 +81,6 @@
       "implementation_branch": "macbeth06/m3-phase1-gates"
     }
   ],
-  "canonical_repository": "pdbsy/quantpass-arbitrum-hackathon",
+  "canonical_repository": "pdbsy/alphaforge-xlayer",
   "phase1_assignment": "docs/management/phase1/ASSIGNMENTS.md"
 }

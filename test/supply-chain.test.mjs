@@ -342,3 +342,17 @@ test('private CodeQL job has only read access to Actions metadata', async () => 
     /Invalid supply-chain state/,
   );
 });
+
+test('XLayer supply policy binds generated SPDX to the destination repository', () => {
+  const candidate = structuredClone(policy);
+  candidate.repository = 'pdbsy/alphaforge-xlayer';
+  candidate.sbom.documentNamespaceBase = 'https://github.com/pdbsy/alphaforge-xlayer/sbom';
+  assert.doesNotThrow(() => validateSupplyChainPolicy(candidate));
+  const sbom = JSON.parse(renderNpmSbom(lockfile, packageJson, candidate));
+  assert.ok(sbom.documentNamespace.startsWith('https://github.com/pdbsy/alphaforge-xlayer/sbom/'));
+  for (const repository of ['pdbsy/quantpass-arbitrum-hackathon', 'other/alphaforge-xlayer']) {
+    assert.throws(() => validateSupplyChainPolicy({ ...candidate, repository }), /policy.repository/);
+  }
+  candidate.sbom.documentNamespaceBase = 'https://github.com/pdbsy/quantpass-arbitrum-hackathon/sbom';
+  assert.throws(() => validateSupplyChainPolicy(candidate), /SBOM namespace/);
+});

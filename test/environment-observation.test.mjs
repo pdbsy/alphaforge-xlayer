@@ -63,7 +63,7 @@ function fixture(t) {
   git('init', '-b', 'fixture');
   git('config', 'user.name', 'Environment Fixture');
   git('config', 'user.email', 'fixture@example.test');
-  git('remote', 'add', 'origin', 'https://github.com/pdbsy/quantpass-arbitrum-hackathon.git');
+  git('remote', 'add', 'origin', 'https://github.com/pdbsy/alphaforge-xlayer.git');
   git('add', '.');
   git('commit', '-m', 'isolated environment source');
   git('update-ref', 'refs/remotes/origin/master', git('rev-parse', 'HEAD'));
@@ -202,8 +202,7 @@ test('real environment probes bind a clean fixture to exact source and local npm
     gitRootHasShortName: /~\d/.test(gitRoot),
     nodeRootPrintableAscii: /^[\x20-\x7e]*$/.test(nodeRoot),
     gitRootPrintableAscii: /^[\x20-\x7e]*$/.test(gitRoot),
-    originMatches:
-      f.git('remote', 'get-url', 'origin') === 'https://github.com/pdbsy/quantpass-arbitrum-hackathon.git',
+    originMatches: f.git('remote', 'get-url', 'origin') === 'https://github.com/pdbsy/alphaforge-xlayer.git',
     failedCommands: report.commands.filter((command) => command.exitCode !== 0),
   };
   for (const id of [
@@ -421,7 +420,7 @@ test('real inspection decodes PR and merge-queue event fixtures without treating
   f.git('merge', '--no-ff', 'event-source', '-m', 'event merge');
   const merge = f.git('rev-parse', 'HEAD');
   const eventFile = join(f.parent, 'event.json');
-  const repositoryName = 'pdbsy/quantpass-arbitrum-hackathon';
+  const repositoryName = 'pdbsy/alphaforge-xlayer';
   const payload = {
     pull_request: {
       base: { repo: { full_name: repositoryName }, ref: 'master', sha: base },

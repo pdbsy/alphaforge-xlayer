@@ -27,7 +27,7 @@
       parsed.username ||
       parsed.password ||
       parsed.search ||
-      !/^\/pdbsy\/quantpass-arbitrum-hackathon\/pull\/\d+$/.test(parsed.pathname)
+      !/^\/pdbsy\/alphaforge-xlayer\/pull\/\d+$/.test(parsed.pathname)
     )
       return el('span', '', '来源链接无效');
     const link = el('a', 'source-link', text);

@@ -23,7 +23,7 @@ for (const scenario of ['complete', 'partial', 'invalid-page', 'missing-previous
     Object.assign(gitEnvironment, { GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_NOSYSTEM: '1' });
     for (const args of [
       ['init', '-q'],
-      ['remote', 'add', 'origin', 'https://github.com/pdbsy/quantpass-arbitrum-hackathon'],
+      ['remote', 'add', 'origin', 'https://github.com/pdbsy/alphaforge-xlayer'],
     ]) {
       const git = spawnSync('git', args, { cwd: temporary, env: gitEnvironment, encoding: 'utf8' });
       assert.equal(git.status, 0, git.stderr);
@@ -54,11 +54,11 @@ for (const scenario of ['complete', 'partial', 'invalid-page', 'missing-previous
         console.log(JSON.stringify(Array.from({ length: 100 }, (_, index) => {
           const number = (page - 1) * 100 + index + 1;
           return {
-            number, html_url: 'https://github.com/pdbsy/quantpass-arbitrum-hackathon/pull/' + number,
+            number, html_url: 'https://github.com/pdbsy/alphaforge-xlayer/pull/' + number,
             title: '[Macbeth01][M3-01-PHASE1-CLOSEOUT] Local fixture', body: '',
             created_at: '2026-09-12T10:00:00.000Z', updated_at: '2026-09-12T10:00:00.000Z',
             user: { login: 'fixture' },
-            head: { ref: 'macbeth01/m3-phase1-closeout', repo: { full_name: 'pdbsy/quantpass-arbitrum-hackathon' } },
+            head: { ref: 'macbeth01/m3-phase1-closeout', repo: { full_name: 'pdbsy/alphaforge-xlayer' } },
           };
         })));
       } else console.log('[]');
@@ -92,7 +92,7 @@ for (const scenario of ['complete', 'partial', 'invalid-page', 'missing-previous
         }
         assert.equal(args[0], 'api');
         assert.equal(args[2], '--jq');
-        assert.match(args[1], /^repos\\/pdbsy\\/quantpass-arbitrum-hackathon\\//);
+        assert.match(args[1], /^repos\\/pdbsy\\/alphaforge-xlayer\\//);
         appendFileSync(${JSON.stringify(callsPath)}, JSON.stringify(args[1]) + '\\n');
         return originalExec(process.execPath, [${JSON.stringify(fakeApiPath)}, args[1]], {
           ...options, env: { ...process.env, NODE_OPTIONS: '' },

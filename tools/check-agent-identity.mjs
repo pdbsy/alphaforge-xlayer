@@ -84,8 +84,8 @@ export function check() {
       pull &&
       (pull.head.ref !== branch ||
         pull.base.ref !== 'master' ||
-        pull.head.repo?.full_name !== 'pdbsy/quantpass-arbitrum-hackathon' ||
-        pull.base.repo?.full_name !== 'pdbsy/quantpass-arbitrum-hackathon')
+        pull.head.repo?.full_name !== 'pdbsy/alphaforge-xlayer' ||
+        pull.base.repo?.full_name !== 'pdbsy/alphaforge-xlayer')
     )
       throw new Error('Integration requires canonical head/base repository and refs');
     const exactHead = git('rev-parse', '--verify', `${head}^{commit}`);

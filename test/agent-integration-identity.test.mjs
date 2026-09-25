@@ -7,7 +7,7 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const branch = 'macbeth01/AF-M3-CLOSEOUT';
-const repository = 'pdbsy/quantpass-arbitrum-hackathon';
+const repository = 'pdbsy/alphaforge-xlayer';
 const repo = { full_name: repository };
 const title = '[Macbeth01][AF-M3-CLOSEOUT] Integrate reviewed sources';
 function fixture(t, profile = { branch, task: 'AF-M3-CLOSEOUT', title }) {
@@ -20,7 +20,7 @@ function fixture(t, profile = { branch, task: 'AF-M3-CLOSEOUT', title }) {
   git('init', '-q', '-b', 'master');
   git('config', 'user.name', 'Identity fixture');
   git('config', 'user.email', 'fixture@example.invalid');
-  git('remote', 'add', 'origin', 'https://github.com/pdbsy/quantpass-arbitrum-hackathon.git');
+  git('remote', 'add', 'origin', 'https://github.com/pdbsy/alphaforge-xlayer.git');
   git('commit', '--allow-empty', '-qm', 'Initial fixture');
   const base = git('rev-parse', 'HEAD');
   git('update-ref', 'refs/remotes/origin/master', base);
@@ -52,7 +52,7 @@ function fixture(t, profile = { branch, task: 'AF-M3-CLOSEOUT', title }) {
   for (const source of sources) git('merge', '--no-ff', ...manager(), source.head);
   const manifest = {
     schema_version: 1,
-    repository: 'pdbsy/quantpass-arbitrum-hackathon',
+    repository: 'pdbsy/alphaforge-xlayer',
     branch: integrationBranch,
     task: integrationTask,
     base,
@@ -384,7 +384,7 @@ test('worker source cannot launder foreign unregistered task provenance', (t) =>
 });
 
 for (const side of ['head', 'base']) {
-  for (const badRepo of [undefined, { full_name: 'foreign/quantpass-arbitrum-hackathon' }]) {
+  for (const badRepo of [undefined, { full_name: 'foreign/alphaforge-xlayer' }]) {
     test(`integration rejects ${side} ${badRepo ? 'foreign' : 'missing'} repository identity`, (t) => {
       const s = fixture(t);
       const pull = {

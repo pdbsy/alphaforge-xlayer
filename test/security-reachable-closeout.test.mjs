@@ -413,7 +413,7 @@ test('hosted npm bootstrap refuses synthetic invalid contexts before touching th
           ...process.env,
           GITHUB_ACTIONS: 'true',
           RUNNER_ENVIRONMENT: 'github-hosted',
-          GITHUB_REPOSITORY: 'pdbsy/quantpass-arbitrum-hackathon',
+          GITHUB_REPOSITORY: 'pdbsy/alphaforge-xlayer',
           ...invalid,
         },
         encoding: 'utf8',

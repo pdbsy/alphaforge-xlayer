@@ -10,7 +10,7 @@ import {
 } from './agent-identity.mjs';
 
 export const MANAGER_INTEGRATION_BRANCH = 'macbeth01/AF-M3-CLOSEOUT';
-const repository = 'pdbsy/quantpass-arbitrum-hackathon';
+const repository = 'pdbsy/alphaforge-xlayer';
 const shaPattern = /^[a-f0-9]{40}$/;
 function requireValue(condition, label) {
   if (!condition) throw new Error(`Integration identity rejected: ${label}`);

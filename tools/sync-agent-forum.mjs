@@ -11,13 +11,12 @@ const snapshotPath = resolve(root, 'docs/management/agents/forum-snapshot.json')
 const MAX_RECORDS = 500;
 
 export function parseGithubRemote(remote) {
-  if (remote === 'git@github.com:pdbsy/quantpass-arbitrum-hackathon.git')
-    return 'pdbsy/quantpass-arbitrum-hackathon';
+  if (remote === 'git@github.com:pdbsy/alphaforge-xlayer.git') return 'pdbsy/alphaforge-xlayer';
   if (
-    remote === 'https://github.com/pdbsy/quantpass-arbitrum-hackathon.git' ||
-    remote === 'https://github.com/pdbsy/quantpass-arbitrum-hackathon'
+    remote === 'https://github.com/pdbsy/alphaforge-xlayer.git' ||
+    remote === 'https://github.com/pdbsy/alphaforge-xlayer'
   )
-    return 'pdbsy/quantpass-arbitrum-hackathon';
+    return 'pdbsy/alphaforge-xlayer';
   throw new Error('origin is not the configured AlphaForge GitHub repository');
 }
 

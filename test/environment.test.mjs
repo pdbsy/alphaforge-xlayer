@@ -431,3 +431,13 @@ test('environment writer refuses hard-linked or symlinked report destinations an
   assert.deepEqual(JSON.parse(readFileSync(destination, 'utf8')), next);
   assert.equal(readFileSync(linked, 'utf8'), original);
 });
+
+test('XLayer admission accepts only the assigned repository policy', () => {
+  const candidate = inputs();
+  candidate.supply.repository = 'pdbsy/alphaforge-xlayer';
+  assert.doesNotThrow(() => validateInputs(candidate));
+  for (const repository of ['pdbsy/quantpass-arbitrum-hackathon', 'other/alphaforge-xlayer']) {
+    candidate.supply.repository = repository;
+    assert.throws(() => validateInputs(candidate), /environment inputs/);
+  }
+});

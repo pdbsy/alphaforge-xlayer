@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { fixtureExec } from './helpers/git-fixture.mjs';
 import { gitIdentity } from '../tools/environment/observe.mjs';
 
-const repository = 'pdbsy/quantpass-arbitrum-hackathon';
+const repository = 'pdbsy/alphaforge-xlayer';
 test('real Git fixtures isolate configuration, normalize CRLF and bind detached PR parents', () => {
   const root = mkdtempSync(join(tmpdir(), 'environment 中文 space '));
   const git = (...args) => fixtureExec('git', args, { cwd: root, encoding: 'utf8' }).trim();
@@ -89,6 +89,7 @@ test('real Git event identities reject unsupported, stale and wrongly bound refs
       { ref: 'refs/heads/master' },
       { ref: 'refs/heads/missing' },
       { repository: 'other/repo' },
+      { repository: 'pdbsy/quantpass-arbitrum-hackathon' },
       { sha: base },
     ])
       assert.equal(
