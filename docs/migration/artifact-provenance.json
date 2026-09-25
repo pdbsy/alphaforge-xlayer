@@ -1986,7 +1986,7 @@
       "target_path": "apps/web/src/product-ui.ts",
       "method": "selective source integration; shared-file resolution recorded in CONFLICTS.md; M3-04-PRODUCT-UI adds the manifest-bound Vault runtime, finite approval review and canonical evidence readback",
       "original_sha256": "c094739b2c8308526a0d1470f72c32ac74de6c2157a3dcc0b0972584da755d38",
-      "migrated_sha256": "32f77c124c3853cec8bbf172717c944ae3f2058841e3b8859286d1044564baa7",
+      "migrated_sha256": "3ab439895f5d43ed6c0ac42070d56864271a76cba701fe00c38b046cdb16f5e1",
       "subsequent_adaptations": [
         {
           "task": "M3-01-PHASE1-CLOSEOUT",
@@ -2041,6 +2041,14 @@
           "previous_sha256": "0ce282ef2015abbddf18d15c51ab090c6d0bae737eac16befede23d92b226a51",
           "current_sha256": "32f77c124c3853cec8bbf172717c944ae3f2058841e3b8859286d1044564baa7",
           "reason": "User-requested compact wallet account and ETH display denomination. Preserve original migration identity, immutable source artifacts and prior revisions; local trading stays explicitly simulated. Verification is local self-review, not independent approval."
+        },
+        {
+          "commit": "1029a3fbd05ffb53fb5208850fe051c7b990feaa",
+          "agent": "Macbeth01",
+          "task": "AF-ACCOUNT-WALLET-ETH",
+          "previous_sha256": "32f77c124c3853cec8bbf172717c944ae3f2058841e3b8859286d1044564baa7",
+          "current_sha256": "3ab439895f5d43ed6c0ac42070d56864271a76cba701fe00c38b046cdb16f5e1",
+          "reason": "Restore the user-requested Mock wallet as an explicit account connection choice, backed by the existing simulated exchange ledger and isolated from real provider authority. Preserve prior migration records. Local tests and browser checks are self-verification, not independent approval."
         }
       ]
     },
