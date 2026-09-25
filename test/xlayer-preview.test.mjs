@@ -221,3 +221,95 @@ test('old preview OKB trade state upgrades without losing holdings or treating O
   assert.equal(upgraded.funding.cash, 10_000_000_000);
   assert.equal(upgraded.funding.allocations.trend, 0);
 });
+
+test('preview chart, ranking and executable Pass prices stay within 0.1 OKB including quote bound', () => {
+  const { AF } = prototype({ preview: true, connected: true });
+  for (const strategy of AF.strategies) {
+    for (const range of ['24h', '7d', '30d', '90d']) {
+      const bars = AF.marketData.candles(strategy.id, range);
+      assert.ok(bars.length > 0);
+      for (const bar of bars) {
+        assert.ok(bar.low >= 0 && bar.high <= 10, `${strategy.id} chart exceeds 0.1 OKB`);
+        assert.ok(bar.open <= 10 && bar.close <= 10);
+      }
+      const metric = AF.marketData.metrics(strategy.id, range);
+      assert.ok(metric.price >= 3 && metric.price <= 10, `${strategy.id} metric exceeds 0.1 OKB`);
+      assert.ok(metric.high <= 10);
+    }
+    for (const qty of [1, 2, 10, 1_000, 10_000]) {
+      for (const side of ['buy', 'sell']) {
+        const q = AF.exchange.quote({ strategy: strategy.id, side, qty, slippage: 300 });
+        assert.ok(q.price <= 10);
+        assert.ok(q.total > 0);
+        assert.ok(q.bound <= qty * 10, `${strategy.id} ${side} bound exceeds 0.1 OKB per Pass`);
+      }
+    }
+    assert.throws(
+      () => AF.exchange.quote({ strategy: strategy.id, side: 'buy', qty: 1_000_000, slippage: 300 }),
+      /price impact/,
+    );
+  }
+  const ranking = AF.marketData.ranking({ mode: 'price' });
+  assert.ok(ranking.every((row) => row.market.price <= 10));
+});
+
+test('preview buy and sell at capped prices preserve an older recorded cost basis', () => {
+  const saved = new Map();
+  const first = prototype({ preview: true, connected: true, saved }).AF;
+  const old = first.exchange.read();
+  old.positions.trend.cost = 500;
+  old.initialCapital =
+    old.cash + Object.values(old.positions).reduce((sum, position) => sum + position.cost, 0);
+  saved.set('alphaforge.passmarket.xlayer-preview.v1', JSON.stringify(old));
+  const { AF } = prototype({ preview: true, connected: true, saved });
+  assert.equal(AF.exchange.read().positions.trend.cost, 500);
+  const bought = AF.exchange.execute(AF.exchange.review({ strategy: 'factor', side: 'buy', qty: 1 }));
+  assert.ok(bought.price <= 10);
+  const sold = AF.exchange.execute(AF.exchange.review({ strategy: 'factor', side: 'sell', qty: 1 }));
+  assert.ok(sold.price <= 10);
+  const state = AF.exchange.read();
+  assert.equal(state.positions.trend.cost, 500);
+  assert.equal(
+    state.cash + Object.values(state.positions).reduce((sum, position) => sum + position.cost, 0),
+    state.initialCapital + state.realized,
+  );
+});
+
+test('public and legacy fixture prices keep their existing economics', () => {
+  const preview = prototype({ preview: true }).AF.marketData.metrics('trend').price;
+  const legacy = prototype().AF.marketData.metrics('trend').price;
+  const publicPrice = prototype({ publicMode: true, preview: true }).AF.marketData.metrics('trend').price;
+  assert.ok(legacy > 10);
+  assert.equal(publicPrice, legacy);
+  assert.ok(preview <= 10);
+});
+
+test('preview prices retain strategy and candle variation after formatting', () => {
+  const { AF } = prototype({ preview: true });
+  const currentPrices = AF.strategies.map((strategy) => AF.marketData.metrics(strategy.id).price);
+  assert.ok(new Set(currentPrices).size >= 3, 'strategies need distinguishable current prices');
+  const rows = AF.marketData.candles('trend', '24h');
+  const formatted = rows.flatMap((row) =>
+    [row.open, row.high, row.low, row.close].map((value) => AF.marketData.fmt(value)),
+  );
+  assert.ok(new Set(formatted).size >= 4, 'OHLC labels need visible variation');
+  assert.ok(
+    formatted.some((value) => /^0\.\d{6}$/.test(value)),
+    'small prices need six decimals',
+  );
+  const values = AF.marketData.candles('trend', '24h').map((row) => row.close);
+  assert.ok(new Set(values.map((value) => AF.marketData.fmt(value))).size >= 4);
+  assert.ok(AF.strategies.some((strategy) => Math.abs(AF.marketData.metrics(strategy.id).change) > 0.0001));
+  assert.equal(AF.marketData.fmt(100000), '1,000.00');
+});
+
+test('preview executable close does not introduce a terminal candle jump', () => {
+  const { AF } = prototype({ preview: true });
+  for (const strategy of AF.strategies) {
+    const rows = AF.marketData.candles(strategy.id, '90d');
+    const last = rows.at(-1);
+    assert.equal(last.close, Math.round(last.close), `${strategy.id} quote needs cent precision`);
+    assert.ok(Math.abs(last.close - last.open) < 0.1, `${strategy.id} terminal body was distorted`);
+    assert.ok(rows.every((row) => row.low > 0 && row.high <= 10), `${strategy.id} shifted path exceeds cap`);
+  }
+});

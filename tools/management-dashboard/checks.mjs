@@ -10,6 +10,7 @@ import { collectGitState as collectRepositoryGitState } from './sources.mjs';
 
 const unitTests = [
   'test/ui-wallet-account.test.ts',
+  'test/ui-kline-hover.test.ts',
   'test/xlayer-preview.test.mjs',
   'test/xlayer-preview-build.test.mjs',
   'test/xlayer-gitleaks-disposition.test.mjs',

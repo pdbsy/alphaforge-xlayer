@@ -54,6 +54,14 @@
 - [x] Preserve existing public/preview boundaries, unknown balance handling, original prototype CSS and all HTML outside its script. Record the exact source and adaptation in the synchronization receipt.
 - [x] Independently review the delta and verify desktop/mobile account, funding, buy/sell and real-wallet boundaries.
 
+## Task 2c: Cap simulated Pass unit prices
+
+**User correction:** Mock Pass unit prices must not exceed 0.1 OKB. Apply this only to the explicit preview, retaining real/public and historical local behavior.
+
+- [ ] Keep catalogue, chart and execution unit prices positive and at or below 0.1 OKB, including quantity-dependent price impact. Keep fees separately itemized. Preserve visible candle movement with six-decimal small-price labels and consistent chart/readout/tooltip precision; strategy price differences must remain visible. Use range-relative preview price-axis padding so natural candle bodies and wicks occupy the plot, matching the user reference; use the same transform for the cursor.
+- [ ] Preserve existing cash, holdings, cost basis, trade records and the separate USDT funding state without rescaling old amounts. Reject outstanding quotes that no longer match the pricing policy.
+- [ ] Add boundary coverage for all strategies/ranges and actual buy/sell confirmation. Review the bounded delta, then refresh exact source provenance and C/R/S evidence.
+
 ## Task 3: Integrate, review and merge
 
 **Files:** Manager-owned script registration/provenance and generated C/R/S artifacts only where required, plus the two reviewed task patches.

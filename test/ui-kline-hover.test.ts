@@ -2,6 +2,22 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { candleDetails, candleIndex } from '../apps/web/src/kline-hover.ts';
 
+test('preview candle tooltip opts into tiny-price precision without changing defaults', () => {
+  const row = {
+    time: Date.parse('2026-09-12T00:00:00Z'),
+    open: 4.01234,
+    high: 4.08765,
+    low: 3.99876,
+    close: 4.06543,
+    volume: 10,
+    quoteVolume: 40,
+  };
+  assert.equal(candleDetails(row, 'OKB', 6).open, '0.040123 OKB');
+  assert.equal(candleDetails(row, 'OKB', 6).close, '0.040654 OKB');
+  assert.notEqual(candleDetails(row, 'OKB', 6).change, '0.000000 OKB');
+  assert.equal(candleDetails(row, 'OKB').open, '0.04 OKB');
+});
+
 const candle = {
   time: Date.UTC(2026, 8, 12, 0),
   open: 10000,

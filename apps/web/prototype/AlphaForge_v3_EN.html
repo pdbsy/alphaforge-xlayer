@@ -636,6 +636,7 @@ AF.strategy=id=>AF.strategies.find(s=>s.id===id);
 (() => {
  'use strict';
  const END=Date.parse('2026-09-12T00:00:00Z'), HOUR=3600000;
+ const PREVIEW=window.AF_PREVIEW_MODE===true&&!AF.publicMode;
  const profiles={
   trend:{ticker:'YUAN',base:248,drift:.00017,vol:.012,seed:17,supply:84000,holders:328,liquidity:18400000,return90:21.8,assets:[['BTC','Bitcoin','Trend observation',40],['ETH','Ethereum','Trend observation',30],['SOL','Solana','Observation sample',20],['CASH','Cash reference','Research buffer',10]]},
   factor:{ticker:'PRISM',base:426,drift:.00008,vol:.009,seed:51,supply:62000,holders:217,liquidity:24600000,return90:14.2,assets:[['SPY','S&P 500 reference','Equity sample',40],['QQQ','Nasdaq 100 reference','Growth sample',30],['GLD','Gold reference','Diversification research',20],['CASH','Cash reference','Research buffer',10]]},
@@ -655,8 +656,8 @@ AF.strategy=id=>AF.strategies.find(s=>s.id===id);
    const volume=Math.round((120+rng()*950)*(1+Math.abs(change)*90));
    hours.push({time:END-(2159-i)*HOUR,open,high,low,close,volume,quoteVolume:Math.round(volume*(open+close)/2)});
   }
-  // Round the current executable sample quote to a hundredth of DEMO.
-  hours.at(-1).close=Math.round(hours.at(-1).close);hours.at(-1).high=Math.max(hours.at(-1).high,hours.at(-1).close);hours.at(-1).low=Math.min(hours.at(-1).low,hours.at(-1).close);
+  // The preview rounds after mapping every strategy to one common price scale.
+  if(!PREVIEW){hours.at(-1).close=Math.round(hours.at(-1).close);hours.at(-1).high=Math.max(hours.at(-1).high,hours.at(-1).close);hours.at(-1).low=Math.min(hours.at(-1).low,hours.at(-1).close);}
   const daily=[];
   for(let i=0;i<=90;i++){
    const t=i/90,wiggle=(Math.sin(i*.39+p.seed)-Math.sin(p.seed))*1.25*Math.sin(Math.PI*t);
@@ -665,6 +666,21 @@ AF.strategy=id=>AF.strategies.find(s=>s.id===id);
    daily.push({time:END-(90-i)*24*HOUR,value:nav,benchmark:bench});
   }
   series[s.id]={hours,daily};
+ }
+ if(PREVIEW){
+  // One common affine map preserves cross-strategy and within-candle variation.
+  // The 3–7 cent range leaves room for minimum fees and a 3% slippage bound.
+  let minimum=Infinity,maximum=-Infinity;
+  for(const {hours} of Object.values(series))for(const row of hours){minimum=Math.min(minimum,row.low);maximum=Math.max(maximum,row.high);}
+  const bounded=value=>3+(value-minimum)*4/(maximum-minimum);
+  for(const s of AF.strategies){
+   const hours=series[s.id].hours;
+   const last=hours.at(-1),current=bounded(last.close),target=Math.round(current),offset=target-current;
+   // Shift the whole path so the executable cent quote does not create a terminal candle jump.
+   for(const row of hours){row.open=bounded(row.open)+offset;row.high=bounded(row.high)+offset;row.low=bounded(row.low)+offset;row.close=bounded(row.close)+offset;row.quoteVolume=Math.round(row.volume*(row.open+row.close)/2);}
+   profiles[s.id].base=bounded(profiles[s.id].base)+offset;
+   last.close=target;last.high=Math.max(last.high,target);last.low=Math.min(last.low,target);last.quoteVolume=Math.round(last.volume*(last.open+last.close)/2);
+  }
  }
  const days={ '24h':1,'7d':7,'30d':30,'90d':90 };
  function candles(id,range='24h'){
@@ -689,9 +705,9 @@ AF.strategy=id=>AF.strategies.find(s=>s.id===id);
    .filter(s=>(category==='All'||s.category===category)&&(!savedOnly||favorite.includes(s.id))&&[s.name,s.author,s.market.ticker,s.category].join(' ').toLowerCase().includes(query.trim().toLowerCase()))
    .sort((a,b)=>(mode==='risk'?a.market[key]-b.market[key]:b.market[key]-a.market[key])||a.num.localeCompare(b.num));
  }
- const fmt=(c,d=2)=>new Intl.NumberFormat('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}).format(c/100);
+ const fmt=(c,d=2)=>{const digits=PREVIEW&&Math.abs(c)<10?6:d;return new Intl.NumberFormat('en-US',{minimumFractionDigits:digits,maximumFractionDigits:digits}).format(c/100);};
  const compact=c=>{const n=c/100;return n>=1e6?(n/1e6).toFixed(2)+'m':n>=1e3?(n/1e3).toFixed(1)+'k':n.toFixed(2);};
- const pct=n=>(n>=0?'+':'')+n.toFixed(2)+'%';
+ const pct=n=>(n>=0?'+':'')+n.toFixed(PREVIEW?4:2)+'%';
  AF.marketData={END,profiles,candles,returns,performance,metrics,ranking,fmt,compact,pct,days};
 })();
 
@@ -741,7 +757,7 @@ AF.strategy=id=>AF.strategies.find(s=>s.id===id);
   const impact=Math.ceil(gross*impactBps/10000),adjusted=side==='buy'?gross+impact:gross-impact,fee=Math.max(1,Math.ceil(adjusted*30/10000));
   const total=side==='buy'?adjusted+fee:adjusted-fee;
   if(total<=0)throw Error('The amount is too small to cover the simulated fee.');
-  return {strategy,side,qty,slippage,price,gross,impact,impactBps,fee,total,bound:side==='buy'?Math.ceil(total*(1+slippage/10000)):Math.floor(total*(1-slippage/10000))};
+  return {strategy,side,qty,slippage,price,gross,impact,impactBps,fee,total,bound:side==='buy'?Math.ceil(total*(1+slippage/10000)):(PREVIEW?Math.max(1,Math.floor(total*(1-slippage/10000))):Math.floor(total*(1-slippage/10000)))};
  }
  function check(q,s=state){if(q.side==='sell'&&q.qty>s.positions[q.strategy].qty)throw Error('Not enough tradable Passes. Trial Passes cannot be sold on the market.');if(PREVIEW&&q.side==='sell'&&(s.funding?.allocations[q.strategy]||0)>(s.positions[q.strategy].qty-q.qty)*FUNDING_SCALE)throw Error('These Passes are frozen in a strategy. Withdraw allocated USDT first.');if(q.side==='buy'&&q.bound>s.cash)throw Error('Insufficient Pass trading balance, including the slippage reserve.');if(q.side==='buy'&&s.positions[q.strategy].qty+q.qty>MAX_QTY)throw Error('This exceeds the demo position limit.');}
  function review(args,now=Date.now()){sync();const q=quote(args);check(q);return {...q,id:uid(),expectedRevision:state.revision,createdAt:now,expiresAt:now+30000};}
@@ -793,15 +809,16 @@ AF.strategy=id=>AF.strategies.find(s=>s.id===id);
  * Doodle border-image is restricted to the framing, never warps the financial axes. */
 (() => {
  const D=AF.marketData,esc=AF.ui.esc;
+ const PREVIEW=window.AF_PREVIEW_MODE===true&&!AF.publicMode;
  const G={W:900,L:16,R:818,T:20,B:282},pos={price:0,returns:0};
  const mobile=()=>window.innerWidth<=650;
  const num=n=>new Intl.NumberFormat('en-US',{maximumFractionDigits:0}).format(n);
  const label=(time,range)=>new Intl.DateTimeFormat('en-US',range==='24h'?{hour:'2-digit',minute:'2-digit',timeZone:'UTC',hour12:false}:{month:'2-digit',day:'2-digit',timeZone:'UTC'}).format(time);
- function bounds(values){const low=Math.min(...values),high=Math.max(...values),pad=Math.max((high-low)*.14,high*.006,.1);return {low:low-pad,high:high+pad};}
+ function bounds(values,price=false){const low=Math.min(...values),high=Math.max(...values),pad=PREVIEW&&price?Math.max((high-low)*.14,1e-9):Math.max((high-low)*.14,high*.006,.1);return {low:low-pad,high:high+pad};}
  function grid(lo,hi,B,format){return Array.from({length:5},(_,i)=>{const y=G.T+(B-G.T)*i/4,v=hi-(hi-lo)*i/4;return `<line x1="${G.L}" x2="${G.R}" y1="${y}" y2="${y}" class="chart-gridline"/><text x="${G.R+12}" y="${y+4}">${format(v)}</text>`;}).join('');}
  function times(rows,range,y){return [0,Math.floor(rows.length/3),Math.floor(rows.length*2/3),rows.length-1].filter((v,i,a)=>a.indexOf(v)===i).map(i=>`<text x="${G.L+i/(rows.length-1)*(G.R-G.L)}" y="${y}" text-anchor="${i===0?'start':i===rows.length-1?'end':'middle'}">${label(rows[i].time,range)}</text>`).join('');}
  function cursor(kind,B){return `<g id="${kind}-cursor" visibility="hidden" class="chart-crosshair"><line y1="${G.T}" y2="${B}"/><circle r="4"/></g>`;}
- function priceSVG(s){const B=mobile()?370:G.B,V=mobile()?490:369,H=mobile()?540:405;const range=AF.view.priceRange,rows=D.candles(s.id,range),{low,high}=bounds(rows.flatMap(r=>[r.low,r.high])),x=i=>G.L+(i+.5)/rows.length*(G.R-G.L),y=v=>B-(v-low)/(high-low)*(B-G.T),w=Math.max(3,(G.R-G.L)/rows.length*.6),maxVol=Math.max(...rows.map(r=>r.volume)),path=rows.map((r,i)=>`${i?'L':'M'}${x(i).toFixed(2)},${y(r.close).toFixed(2)}`).join(' '),last=rows.at(-1);
+ function priceSVG(s){const B=mobile()?370:G.B,V=mobile()?490:369,H=mobile()?540:405;const range=AF.view.priceRange,rows=D.candles(s.id,range),{low,high}=bounds(rows.flatMap(r=>[r.low,r.high]),true),x=i=>G.L+(i+.5)/rows.length*(G.R-G.L),y=v=>B-(v-low)/(high-low)*(B-G.T),w=Math.max(3,(G.R-G.L)/rows.length*.6),maxVol=Math.max(...rows.map(r=>r.volume)),path=rows.map((r,i)=>`${i?'L':'M'}${x(i).toFixed(2)},${y(r.close).toFixed(2)}`).join(' '),last=rows.at(-1);
  const candles=rows.map((r,i)=>{const up=r.close>=r.open,c=up?'chart-up':'chart-down';return `<g class="${c}"><line x1="${x(i)}" x2="${x(i)}" y1="${y(r.high)}" y2="${y(r.low)}"/><rect x="${x(i)-w/2}" y="${Math.min(y(r.open),y(r.close))}" width="${w}" height="${Math.max(1.3,Math.abs(y(r.close)-y(r.open)))}"/></g>`;}).join('');
  return `<svg class="price-chart-svg" data-v3-chart="price" data-strategy="${s.id}" viewBox="0 0 900 ${H}" tabindex="0" role="img" aria-label="${esc(s.name)} Pass price${AF.view.priceStyle==='line'?'Line':'Candlestick'} chart, ${range}synthetic data; use arrow keys to inspect samples">${grid(low,high,B,v=>D.fmt(v))}${AF.view.priceStyle==='line'?`<defs><linearGradient id="price-area" x1="0" y1="0" x2="0" y2="1"><stop stop-color="var(--sage-ink)" stop-opacity=".18"/><stop offset="1" stop-color="var(--sage-ink)" stop-opacity="0"/></linearGradient></defs><path d="${path} L${x(rows.length-1)},${B} L${x(0)},${B}Z" fill="url(#price-area)"/><path d="${path}" fill="none" stroke="var(--sage-ink)" stroke-width="2.2"/>`:candles}<line x1="${G.L}" x2="${G.R}" y1="${y(last.close)}" y2="${y(last.close)}" class="last-price-line"/><rect x="${G.R+5}" y="${y(last.close)-10}" width="70" height="21" rx="1" fill="var(--sage-ink)"/><text class="price-marker" x="${G.R+40}" y="${y(last.close)+4}" text-anchor="middle">${D.fmt(last.close)}</text><text x="${G.L}" y="${B+28}" class="volume-label">VOLUME / Pass · Synthetic volume</text>${rows.map((r,i)=>`<rect x="${x(i)-w/2}" y="${V-r.volume/maxVol*48}" width="${w}" height="${r.volume/maxVol*48}" fill="${r.close>=r.open?'var(--sage-ink)':'var(--rust)'}" opacity=".28"/>`).join('')}${times(rows,range,H-10)}${cursor('price',V)}</svg>`;
  }
@@ -810,8 +827,8 @@ AF.strategy=id=>AF.strategies.find(s=>s.id===id);
  return `<svg class="return-chart-svg" data-v3-chart="returns" data-strategy="${s.id}" viewBox="0 0 900 ${H}" tabindex="0" role="img" aria-label="Independent strategy return illustration, ${range}, not the Pass price; use arrow keys to inspect data">${grid(low,high,B,v=>v.toFixed(1)+'%')}<path d="${path('value')} L${G.R},${B} L${G.L},${B}Z" fill="var(--sage)" opacity=".35"/><path d="${path('benchmark')}" stroke="var(--muted)" stroke-width="1.6" stroke-dasharray="5 5" fill="none"/><path d="${path('value')}" stroke="${s.ink}" stroke-width="2.6" fill="none"/>${times(rows,range,H-7)}${cursor('returns',B)}</svg>`;
  }
  function returnBlock(s){const perf=D.performance(s.id,AF.view.returnRange),rows=D.returns(s.id,AF.view.returnRange),bench=rows.at(-1).benchmark;return `<section class="return-paper" aria-labelledby="return-title"><div class="return-head"><div><span class="section-label">THE STRATEGY / A DIFFERENT CURVE</span><h2 id="return-title">Strategy performance</h2></div><div class="terminal-switch" aria-label="Strategy return time range">${[['7d','7D'],['30d','30D'],['90d','90D']].map(([id,text])=>`<button data-return-range="${id}" aria-pressed="${AF.view.returnRange===id}">${text}</button>`).join('')}</div></div><div class="return-metrics"><div><span>Period return · Synthetic</span><strong class="${perf.change>=0?'up':'down'}">${D.pct(perf.change)}</strong></div><div><span>Period max drawdown</span><strong>${perf.drawdown.toFixed(2)}%</strong></div><div><span>Reference · Synthetic</span><strong>${D.pct(bench)}</strong></div></div><div class="return-legend"><span><i style="background:${s.ink}"></i>Strategy return</span><span><i class="benchmark-line"></i>Reference</span><output id="returns-readout">Rebased to 0% at the start of the selected period</output></div>${returnSVG(s)}<p class="chart-bottomnote">Independent synthetic returns, not Pass price changes. Not a backtest, live record or return promise. Fees are not modeled.</p></section>`;}
- function hover(svg,index){const kind=svg.dataset.v3Chart,id=svg.dataset.strategy,rows=kind==='price'?D.candles(id,AF.view.priceRange):D.returns(id,AF.view.returnRange),i=Math.max(0,Math.min(rows.length-1,index)),r=rows[i];pos[kind]=i;const values=kind==='price'?rows.flatMap(v=>[v.low,v.high]):[0,...rows.flatMap(v=>[v.value,v.benchmark])],{low,high}=bounds(values),B=kind==='price'?(mobile()?370:G.B):(mobile()?248:164),x=kind==='price'?G.L+(i+.5)/rows.length*(G.R-G.L):G.L+i/(rows.length-1)*(G.R-G.L),y=B-((kind==='price'?r.close:r.value)-low)/(high-low)*(B-G.T),g=document.getElementById(kind+'-cursor');if(!g)return;g.setAttribute('visibility','visible');const line=g.querySelector('line'),circle=g.querySelector('circle');line.setAttribute('x1',x);line.setAttribute('x2',x);circle.setAttribute('cx',x);circle.setAttribute('cy',y);const out=document.getElementById(kind==='price'?'price-readout':'returns-readout');out.textContent=kind==='price'?`${new Date(r.time).toISOString().slice(5,16).replace('T',' ')} UTC · O ${D.fmt(r.open)}  H ${D.fmt(r.high)}  L ${D.fmt(r.low)}  C ${D.fmt(r.close)}`:`${label(r.time,'30d')} · Strategy  ${D.pct(r.value)} / Reference  ${D.pct(r.benchmark)}`;}
- function spark(id,range='7d'){const rows=D.candles(id,range),v=rows.map(x=>x.close),lo=Math.min(...v),hi=Math.max(...v),p=v.map((n,i)=>`${i?'L':'M'}${(i/(v.length-1)*120).toFixed(1)} ${(32-(n-lo)/Math.max(hi-lo,.1)*27).toFixed(1)}`).join('');return `<svg class="mini-spark" viewBox="0 0 124 38" aria-hidden="true"><path d="${p}" fill="none" stroke="${v.at(-1)>=v[0]?'var(--sage-ink)':'var(--rust)'}" stroke-width="1.8"/></svg>`;}
+ function hover(svg,index){const kind=svg.dataset.v3Chart,id=svg.dataset.strategy,rows=kind==='price'?D.candles(id,AF.view.priceRange):D.returns(id,AF.view.returnRange),i=Math.max(0,Math.min(rows.length-1,index)),r=rows[i];pos[kind]=i;const values=kind==='price'?rows.flatMap(v=>[v.low,v.high]):[0,...rows.flatMap(v=>[v.value,v.benchmark])],{low,high}=bounds(values,kind==='price'),B=kind==='price'?(mobile()?370:G.B):(mobile()?248:164),x=kind==='price'?G.L+(i+.5)/rows.length*(G.R-G.L):G.L+i/(rows.length-1)*(G.R-G.L),y=B-((kind==='price'?r.close:r.value)-low)/(high-low)*(B-G.T),g=document.getElementById(kind+'-cursor');if(!g)return;g.setAttribute('visibility','visible');const line=g.querySelector('line'),circle=g.querySelector('circle');line.setAttribute('x1',x);line.setAttribute('x2',x);circle.setAttribute('cx',x);circle.setAttribute('cy',y);const out=document.getElementById(kind==='price'?'price-readout':'returns-readout');out.textContent=kind==='price'?`${new Date(r.time).toISOString().slice(5,16).replace('T',' ')} UTC · O ${D.fmt(r.open)}  H ${D.fmt(r.high)}  L ${D.fmt(r.low)}  C ${D.fmt(r.close)}`:`${label(r.time,'30d')} · Strategy  ${D.pct(r.value)} / Reference  ${D.pct(r.benchmark)}`;}
+ function spark(id,range='7d'){const rows=D.candles(id,range),v=rows.map(x=>x.close),lo=Math.min(...v),hi=Math.max(...v),p=v.map((n,i)=>`${i?'L':'M'}${(i/(v.length-1)*120).toFixed(1)} ${(32-(n-lo)/Math.max(hi-lo,PREVIEW?1e-9:.1)*27).toFixed(1)}`).join('');return `<svg class="mini-spark" viewBox="0 0 124 38" aria-hidden="true"><path d="${p}" fill="none" stroke="${v.at(-1)>=v[0]?'var(--sage-ink)':'var(--rust)'}" stroke-width="1.8"/></svg>`;}
  AF.charts={priceBlock,returnBlock,hover,pos,spark,G};
 })();
 

@@ -121,6 +121,64 @@ test('preview is an explicit, isolated build served by its configured command', 
       await restored.locator('[data-wallet-funding-form] input[name="amount"]').inputValue(),
       '1.5',
     );
+    await page.goto(origin + '#/trade/trend');
+    const readout = await page.locator('#price-readout').innerText();
+    const ohlc = [...readout.matchAll(/0\.\d{6}/g)].map(([value]) => value);
+    assert.equal(ohlc.length, 4, readout);
+    assert.ok(new Set(ohlc).size >= 3, readout);
+    const axisLabels = await page.locator('[data-v3-chart="price"] .chart-gridline + text').allTextContents();
+    assert.ok(new Set(axisLabels).size >= 4, axisLabels.join(', '));
+    const chart = page.locator('[data-v3-chart="price"]');
+    const geometry = await chart.evaluate((svg) => {
+      const wicks = [...svg.querySelectorAll('.chart-up > line, .chart-down > line')];
+      const coordinates = wicks.flatMap((line) => ['y1', 'y2'].map((name) => Number(line.getAttribute(name))));
+      const grid = [...svg.querySelectorAll('.chart-gridline')].map((line) => Number(line.getAttribute('y1')));
+      return { span: Math.max(...coordinates) - Math.min(...coordinates), plot: Math.max(...grid) - Math.min(...grid) };
+    });
+    assert.ok(geometry.span > geometry.plot / 2, `Candles are flattened: ${JSON.stringify(geometry)}`);
+    await chart.focus();
+    await chart.press('ArrowRight');
+    const cursorY = Number(await chart.locator('#price-cursor circle').getAttribute('cy'));
+    const inspectedClose = Number((await page.locator('#price-readout').innerText()).match(/C (0\.\d{6})/)?.[1]);
+    const topPrice = Number(axisLabels[0]);
+    const bottomPrice = Number(axisLabels.at(-1));
+    const expectedY = 20 + (topPrice - inspectedClose) / (topPrice - bottomPrice) * geometry.plot;
+    assert.ok(Math.abs(cursorY - expectedY) < 1, `Cursor disagrees with price axis: ${cursorY} vs ${expectedY}`);
+    const chartBox = await page.locator('[data-v3-chart="price"]').boundingBox();
+    assert.ok(chartBox);
+    await page.mouse.move(chartBox.x + chartBox.width * 0.58, chartBox.y + chartBox.height * 0.45);
+    await page.locator('[data-candle-tooltip]').waitFor();
+    const tooltipChange = await page.locator('[data-candle-field="change"]').innerText();
+    assert.match(tooltipChange, /0\.\d{6} OKB/);
+    assert.doesNotMatch(tooltipChange, /0\.000000 OKB/);
+    t.diagnostic(`Preview chart: ${readout}; axis ${axisLabels.join(', ')}; candle change ${tooltipChange}; wick span ${geometry.span.toFixed(1)}/${geometry.plot} viewBox units`);
+    const displayedPrice = Number(
+      (await page.locator('.quote-headline > strong').innerText()).replace(/,/g, ''),
+    );
+    assert.ok(displayedPrice > 0 && displayedPrice <= 0.1);
+    assert.match(await page.locator('.price-unit').innerText(), /OKB/);
+    await page.locator('#pass-qty').fill('1');
+    await page.locator('#pass-order-form button[type="submit"]').click();
+    const orderReview = page.locator('dialog[open]');
+    assert.match(await orderReview.innerText(), /Maximum payment[\s\S]*OKB/);
+    const payment = Number(
+      (await orderReview.locator('.receipt-amount').innerText()).match(/\d+(?:\.\d+)?/)?.[0],
+    );
+    assert.ok(payment > 0 && payment <= 0.1);
+    await orderReview.locator('[data-v3-action="commit-order"]').click();
+    assert.match(await page.locator('dialog[open]').innerText(), /purchase recorded[\s\S]*OKB/i);
+    await page.locator('dialog[open] [data-close]').click();
+    await page.locator('[data-pass-side="sell"]').click();
+    await page.locator('#pass-qty').fill('1');
+    await page.locator('#pass-order-form button[type="submit"]').click();
+    const saleReview = page.locator('dialog[open]');
+    assert.match(await saleReview.innerText(), /Minimum proceeds[\s\S]*OKB/);
+    const proceeds = Number(
+      (await saleReview.locator('.receipt-amount').innerText()).match(/\d+(?:\.\d+)?/)?.[0],
+    );
+    assert.ok(proceeds > 0 && proceeds <= 0.1);
+    await saleReview.locator('[data-v3-action="commit-order"]').click();
+    assert.match(await page.locator('dialog[open]').innerText(), /sale recorded[\s\S]*OKB/i);
     await page.close();
   }
   build('tools/build-xlayer.mjs');

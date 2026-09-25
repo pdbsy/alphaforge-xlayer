@@ -19,11 +19,11 @@ const number = (value: number, digits: number) =>
   new Intl.NumberFormat('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits }).format(
     value,
   );
-const money = (value: number | undefined, currency: string) =>
-  finite(value) ? `${number(value / 100, 2)} ${currency}` : '—';
+const money = (value: number | undefined, currency: string, digits = 2) =>
+  finite(value) ? `${number(value / 100, digits)} ${currency}` : '—';
 const sign = (value: number) => (value > 0 ? '+' : value < 0 ? '−' : '');
 
-export function candleDetails(row: Candle, currency = 'USDT') {
+export function candleDetails(row: Candle, currency = 'USDT', digits = 2) {
   const change = finite(row.open) && finite(row.close) ? row.close - row.open : NaN;
   const rate = row.open > 0 ? (change / row.open) * 100 : NaN;
   const amplitude =
@@ -35,18 +35,19 @@ export function candleDetails(row: Candle, currency = 'USDT') {
       finite(row.time) && Math.abs(row.time) <= 8.64e15
         ? new Date(row.time).toISOString().slice(0, 16).replace('T', ' ') + ' UTC'
         : '—',
-    open: money(row.open, currency),
-    high: money(row.high, currency),
-    low: money(row.low, currency),
-    close: money(row.close, currency),
-    change: finite(change) ? sign(change) + money(Math.abs(change), currency) : '—',
-    changePercent: finite(rate) ? sign(rate) + number(Math.abs(rate), 2) + '%' : '—',
-    amplitude: finite(amplitude) ? number(amplitude, 2) + '%' : '—',
+    open: money(row.open, currency, digits),
+    high: money(row.high, currency, digits),
+    low: money(row.low, currency, digits),
+    close: money(row.close, currency, digits),
+    change: finite(change) ? sign(change) + money(Math.abs(change), currency, digits) : '—',
+    changePercent: finite(rate) ? sign(rate) + number(Math.abs(rate), digits > 2 ? 4 : 2) + '%' : '—',
+    amplitude: finite(amplitude) ? number(amplitude, digits > 2 ? 4 : 2) + '%' : '—',
     volume:
       finite(row.volume) && row.volume >= 0
         ? new Intl.NumberFormat('en-US', { maximumFractionDigits: 8 }).format(row.volume) + ' Pass'
         : '—',
-    turnover: finite(row.quoteVolume) && row.quoteVolume >= 0 ? money(row.quoteVolume, currency) : '—',
+    turnover:
+      finite(row.quoteVolume) && row.quoteVolume >= 0 ? money(row.quoteVolume, currency, digits) : '—',
   };
 }
 
@@ -68,6 +69,7 @@ export function installCandleInspection(
   host: CandleChartHost,
   doc: Document = document,
   currency = 'USDT',
+  digits = 2,
 ): void {
   let panel: HTMLElement | undefined;
   let selected: SVGSVGElement | undefined;
@@ -133,7 +135,7 @@ export function installCandleInspection(
       svg.after(panel);
     }
     svg.setAttribute('aria-describedby', panel.id);
-    const details = candleDetails(row, currency);
+    const details = candleDetails(row, currency, digits);
     for (const [key, value] of Object.entries(details)) {
       const element = panel.querySelector<HTMLElement>(`[data-candle-field="${key}"]`)!;
       element.textContent = value;

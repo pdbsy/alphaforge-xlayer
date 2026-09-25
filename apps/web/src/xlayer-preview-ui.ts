@@ -285,6 +285,6 @@ const topline = document.querySelector('.topline-status');
 if (topline) topline.textContent = 'X Layer preview · OKB';
 const footer = document.querySelector('.footer-bottom span');
 if (footer) footer.textContent = 'AlphaForge · X Layer preview';
-installCandleInspection(AF, document, 'OKB');
+installCandleInspection(AF, document, 'OKB', 6);
 hydrateProductStyles();
 AF.app.render({ preserve: true });
