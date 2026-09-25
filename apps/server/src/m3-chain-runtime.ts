@@ -8,7 +8,10 @@ import {
   transitionOperation,
   type ChainOperation,
 } from '../../../packages/chain-adapter/src/lifecycle.ts';
-import type { DeploymentManifest } from '../../../packages/chain-adapter/src/manifest.ts';
+import type {
+  DeploymentManifest,
+  DeploymentNetworkExpectation,
+} from '../../../packages/chain-adapter/src/manifest.ts';
 import { validateDeploymentManifest } from '../../../packages/chain-adapter/src/manifest.ts';
 import { m3ChainSyncPolicy, type ChainSyncPolicy } from '../../../packages/chain-adapter/src/policy.ts';
 import { JsonRpcClient, type ReadonlyRpc } from '../../../packages/chain-adapter/src/rpc.ts';
@@ -57,6 +60,7 @@ export type M3ChainRuntimeDeployment =
       readonly rpcEndpoints: readonly string[];
       readonly manifestDocument: unknown;
       readonly expectedManifestDigest: BlockHash;
+      readonly expectedNetwork?: DeploymentNetworkExpectation;
       readonly expectedContractAddress: Address;
       readonly policy?: ChainSyncPolicy;
       readonly maxBlocksPerSync?: number;
@@ -385,8 +389,7 @@ export function composeM3ChainRuntime(
 ): M3ChainRuntime | null {
   if (input.deploymentStatus === 'NOT_DEPLOYED') return null;
   const manifest = validateDeploymentManifest(input.manifestDocument, {
-    environment: 'robinhood-chain-testnet',
-    chainId: 46_630,
+    ...(input.expectedNetwork ?? { environment: 'robinhood-chain-testnet', chainId: 46_630 }),
     manifestDigest: input.expectedManifestDigest,
     contractAddress: input.expectedContractAddress,
   });
