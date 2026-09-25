@@ -2047,7 +2047,7 @@
       "target_path": "apps/web/prototype/AlphaForge_v3_EN.html",
       "method": "selective source integration; shared-file resolution recorded in CONFLICTS.md",
       "original_sha256": "949627bc39a2076de97d234546ce7bebabda6db330d22b423874063eb0243b45",
-      "migrated_sha256": "e73751920d4bcf5da76ed12474702e34eb9553cc4b9b3498ad81b8e62451423e",
+      "migrated_sha256": "bff7d13474b074efad385aad44af4ed995db18897b543413ea66219e20187c6a",
       "subsequent_revisions": [
         {
           "task": "M3-04-PHASE1-PRODUCT",
@@ -2076,6 +2076,13 @@
           "previous_sha256": "09b1a8f92cf7d35c081f5daca78da2bde5b14adcd4260265aff11b9d5822e474",
           "sha256": "e73751920d4bcf5da76ed12474702e34eb9553cc4b9b3498ad81b8e62451423e",
           "reason": "Reviewed XLayer integration; retain the original artifact and every prior revision."
+        },
+        {
+          "task": "AF-XLAYER-R2",
+          "commit": "6d21dcbd15e35ddef88c82cac414c3fb7b6696a9",
+          "previous_sha256": "e73751920d4bcf5da76ed12474702e34eb9553cc4b9b3498ad81b8e62451423e",
+          "sha256": "bff7d13474b074efad385aad44af4ed995db18897b543413ea66219e20187c6a",
+          "reason": "Reviewed XLayer wallet account and isolated OKB preview, including the selective Macbeth01 UI synchronization. Original source and all prior revisions remain unchanged."
         }
       ]
     },
@@ -2127,7 +2134,7 @@
       "target_path": "apps/web/src/product-ui.ts",
       "method": "selective source integration; shared-file resolution recorded in CONFLICTS.md; M3-04-PRODUCT-UI adds the manifest-bound Vault runtime, finite approval review and canonical evidence readback",
       "original_sha256": "c094739b2c8308526a0d1470f72c32ac74de6c2157a3dcc0b0972584da755d38",
-      "migrated_sha256": "9b2579f2e8944b77dc7143384eca029c33e756d2b3c1373cd3e95d1e2dd1b23b",
+      "migrated_sha256": "9ebdf9d8c5c1cd0b286f0eada8c223da41abbf0b728a0839c1fba9923afa0911",
       "subsequent_adaptations": [
         {
           "task": "M3-01-PHASE1-CLOSEOUT",
@@ -2181,6 +2188,13 @@
           "previous_sha256": "0ce282ef2015abbddf18d15c51ab090c6d0bae737eac16befede23d92b226a51",
           "sha256": "9b2579f2e8944b77dc7143384eca029c33e756d2b3c1373cd3e95d1e2dd1b23b",
           "reason": "Reviewed XLayer integration; retain the original artifact and every prior revision."
+        },
+        {
+          "task": "AF-XLAYER-R2",
+          "commit": "6d21dcbd15e35ddef88c82cac414c3fb7b6696a9",
+          "previous_sha256": "9b2579f2e8944b77dc7143384eca029c33e756d2b3c1373cd3e95d1e2dd1b23b",
+          "sha256": "9ebdf9d8c5c1cd0b286f0eada8c223da41abbf0b728a0839c1fba9923afa0911",
+          "reason": "Reviewed XLayer wallet account and isolated OKB preview, including the selective Macbeth01 UI synchronization. Original source and all prior revisions remain unchanged."
         }
       ]
     },
@@ -2192,7 +2206,7 @@
       "target_path": "apps/web/vite.config.ts",
       "method": "selective source integration; shared-file resolution recorded in CONFLICTS.md",
       "original_sha256": "89412b0489e5ccb3d9d86ff20375eaeb9bdca5daad2e5a472057087d9858810f",
-      "migrated_sha256": "9f3b29e5a1f803e406934d19bbb364a4326c4565076e703d4cb9edcd167c81aa",
+      "migrated_sha256": "07d8f01f47b24969c6eaec545438a21ad5ba0fae81c47368e83b262b6873f9bd",
       "subsequent_revisions": [
         {
           "task": "AF-XLAYER-R2",
@@ -2200,6 +2214,13 @@
           "previous_sha256": "848464b255416f8de8afbbf4dd44f5dfe5dfe68e19c031a040d6e922dab00edb",
           "current_sha256": "9f3b29e5a1f803e406934d19bbb364a4326c4565076e703d4cb9edcd167c81aa",
           "reason": "XLayer website-only release output and explicit public startup mode; original migration hashes retained."
+        },
+        {
+          "task": "AF-XLAYER-R2",
+          "commit": "6d21dcbd15e35ddef88c82cac414c3fb7b6696a9",
+          "previous_sha256": "9f3b29e5a1f803e406934d19bbb364a4326c4565076e703d4cb9edcd167c81aa",
+          "sha256": "07d8f01f47b24969c6eaec545438a21ad5ba0fae81c47368e83b262b6873f9bd",
+          "reason": "Reviewed XLayer wallet account and isolated OKB preview, including the selective Macbeth01 UI synchronization. Original source and all prior revisions remain unchanged."
         }
       ]
     },
@@ -2211,7 +2232,7 @@
       "target_path": "test/ui-import.test.mjs",
       "method": "selective source integration; shared-file resolution recorded in CONFLICTS.md",
       "original_sha256": "91771696fc348750f34c55e49a181a95f8c1994e1f55de3f1fb62c20549e0c69",
-      "migrated_sha256": "ad6d9655fa2ff110a47919e6caa9be3c3baafc13fa86d340b1331966d9481403",
+      "migrated_sha256": "3b81b7688600b6c476bcddbcc6e8a7e228ac66b4ae727165b95e180e02c4315a",
       "subsequent_revisions": [
         {
           "task": "M3-04-PHASE1-PRODUCT",
@@ -2284,6 +2305,13 @@
           "previous_sha256": "2e27e9f91af8597727e065529bf2c206e281b9519643c2404aca4fe130cf80de",
           "sha256": "ad6d9655fa2ff110a47919e6caa9be3c3baafc13fa86d340b1331966d9481403",
           "reason": "Use reviewed HTML source ranges and exact parsed script attributes in importer assertions. Preserve original source, exact output bytes, malformed-input rejections and all prior revisions."
+        },
+        {
+          "task": "AF-XLAYER-R2",
+          "commit": "f6c7a3abbaecc1a1b61aa8545876f2de9e7f214e",
+          "previous_sha256": "ad6d9655fa2ff110a47919e6caa9be3c3baafc13fa86d340b1331966d9481403",
+          "sha256": "3b81b7688600b6c476bcddbcc6e8a7e228ac66b4ae727165b95e180e02c4315a",
+          "reason": "Bind the importer current-revision assertions to the exact reviewed wallet UI source; preserve all historical repaired-artifact assertions."
         }
       ]
     },

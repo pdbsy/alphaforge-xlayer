@@ -44,7 +44,7 @@ test('migration inventory accounts for source versions and validates imported ar
   );
   assert.equal(record.original_sha256, prototype.originalSha256);
   assert.equal(record.migrated_sha256, prototype.currentSha256);
-  assert.equal(record.subsequent_revisions.length, 4);
+  assert.equal(record.subsequent_revisions.length, 5);
   const prior = record.subsequent_revisions[0];
   assert.equal(prior.commit, prototype.previousRepairCommit);
   assert.equal(prior.previous_sha256, prototype.originalSha256);
@@ -58,9 +58,13 @@ test('migration inventory accounts for source versions and validates imported ar
   assert.equal(publicEntry.previous_sha256, prototype.repairedSha256);
   assert.equal(publicEntry.sha256, '09b1a8f92cf7d35c081f5daca78da2bde5b14adcd4260265aff11b9d5822e474');
   const publicFix = record.subsequent_revisions[3];
-  assert.equal(publicFix.commit, prototype.currentReviewCommit);
+  assert.equal(publicFix.commit, prototype.publicReviewCommit);
   assert.equal(publicFix.previous_sha256, publicEntry.sha256);
-  assert.equal(publicFix.sha256, prototype.currentSha256);
+  assert.equal(publicFix.sha256, prototype.publicSha256);
+  const wallet = record.subsequent_revisions[4];
+  assert.equal(wallet.commit, prototype.currentReviewCommit);
+  assert.equal(wallet.previous_sha256, publicFix.sha256);
+  assert.equal(wallet.sha256, prototype.currentSha256);
 });
 
 test('generated Forum uses external assets under the existing dashboard CSP', async () => {

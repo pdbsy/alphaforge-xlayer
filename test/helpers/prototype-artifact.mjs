@@ -12,7 +12,10 @@ const originalSha256 = '949627bc39a2076de97d234546ce7bebabda6db330d22b423874063e
 const previousRepairedSha256 = '499c1bda91a8637a9d9fc12547790236947d2d19151173b3d4865f891ef52161';
 const repairedSha256 = 'b9671bca14a388d08a7e5db492f831c5e02fcb15f8ff57baab8a65e863d4ff35';
 const publicReviewCommit = 'fe1f9ffaa589d3c33525561212da41afe68f71ec';
+const publicIntegrationCommit = '99d68c4a1ebf0f38ef89ab2dac5c01f78d0e077b';
 const publicSha256 = 'e73751920d4bcf5da76ed12474702e34eb9553cc4b9b3498ad81b8e62451423e';
+const walletReviewCommit = '6d21dcbd15e35ddef88c82cac414c3fb7b6696a9';
+const walletSha256 = 'bff7d13474b074efad385aad44af4ed995db18897b543413ea66219e20187c6a';
 const digest = (bytes) => createHash('sha256').update(bytes).digest('hex');
 
 // Keep the original artifact in the complete, immutable Git history. The current
@@ -38,10 +41,15 @@ export async function verifiedPrototypeArtifacts(root) {
   const current = await readFile(resolve(root, path), 'utf8');
   const currentSha256 = digest(current);
   assert.ok(
-    currentSha256 === repairedSha256 || currentSha256 === publicSha256,
+    currentSha256 === repairedSha256 || currentSha256 === publicSha256 || currentSha256 === walletSha256,
     'current artifact must match a reviewed revision',
   );
-  const currentReviewCommit = currentSha256 === publicSha256 ? publicReviewCommit : repairCommit;
+  const currentReviewCommit =
+    currentSha256 === walletSha256
+      ? walletReviewCommit
+      : currentSha256 === publicSha256
+        ? publicReviewCommit
+        : repairCommit;
   if (currentReviewCommit === repairCommit) assert.equal(current, repaired);
   const commit = (ref) => {
     const sha = git('rev-parse', '--verify', ref).trim();
@@ -62,7 +70,7 @@ export async function verifiedPrototypeArtifacts(root) {
   const xlayerBase = 'b2ed61311df8d1c97a48f623d1b4872798f5e888';
   const xlayerSource = '77a35249dc1b95605bf32e4cabed456ea104a669';
   const importedSource = ancestor(xlayerBase, head);
-  if (currentReviewCommit === publicReviewCommit) {
+  if (currentReviewCommit === publicReviewCommit || currentReviewCommit === walletReviewCommit) {
     assert.ok(importedSource, 'the public revision requires the exact XLayer import history');
     assert.ok(
       ancestor(xlayerBase, commit(publicReviewCommit)),
@@ -71,7 +79,27 @@ export async function verifiedPrototypeArtifacts(root) {
     const reviewedPublic = git('show', `${publicReviewCommit}:${path}`);
     assert.equal(Buffer.byteLength(reviewedPublic), 287492);
     assert.equal(digest(reviewedPublic), publicSha256, 'reviewed public artifact must remain exact');
-    assert.equal(current, reviewedPublic);
+    if (currentReviewCommit === publicReviewCommit) assert.equal(current, reviewedPublic);
+  }
+  if (currentReviewCommit === walletReviewCommit) {
+    assert.ok(importedSource, 'wallet preview requires the exact XLayer import history');
+    assert.ok(
+      ancestor(publicIntegrationCommit, commit(walletReviewCommit)),
+      'wallet preview retains the reviewed public source',
+    );
+    assert.ok(
+      ancestor(walletReviewCommit, head),
+      'wallet preview source must be retained in candidate history',
+    );
+    assert.equal(
+      git('show', `${publicIntegrationCommit}:${path}`),
+      git('show', `${publicReviewCommit}:${path}`),
+      'integrated public artifact retains the exact reviewed source',
+    );
+    const reviewedWallet = git('show', `${walletReviewCommit}:${path}`);
+    assert.equal(Buffer.byteLength(reviewedWallet), 293149);
+    assert.equal(digest(reviewedWallet), walletSha256, 'reviewed wallet artifact must remain exact');
+    assert.equal(current, reviewedWallet);
   }
   const retainedSourceRef = importedSource
     ? 'refs/remotes/upstream/macbeth01/m3-phase1-closeout'
@@ -156,6 +184,8 @@ export async function verifiedPrototypeArtifacts(root) {
     current,
     currentSha256,
     currentReviewCommit,
+    publicReviewCommit,
+    publicSha256,
     originalCommit,
     previousRepairCommit,
     repairCommit,
